@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { linkedinScrapeSchema } from '../_shared/validation.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +15,10 @@ serve(async (req) => {
   }
 
   try {
-    const { linkedin_url, company_id } = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validated = linkedinScrapeSchema.parse(body);
+    const { linkedin_url, company_id } = validated;
     console.log('[LinkedIn Scrape] Iniciando:', linkedin_url);
 
     const phantomApiKey = Deno.env.get('PHANTOMBUSTER_API_KEY');
@@ -81,8 +86,20 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('[LinkedIn Scrape] Erro:', error);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Dados inválidos',
+          details: error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Erro ao processar sua requisição' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

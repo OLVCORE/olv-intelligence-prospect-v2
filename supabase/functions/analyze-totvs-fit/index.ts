@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { totvsAnalysisSchema } from '../_shared/validation.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +15,10 @@ serve(async (req) => {
   }
 
   try {
-    const { companyId } = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validated = totvsAnalysisSchema.parse(body);
+    const { companyId } = validated;
     console.log('[TOTVS Fit] Analisando empresa:', companyId);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -197,8 +202,20 @@ Retorne APENAS um JSON válido com esta estrutura:
 
   } catch (error: any) {
     console.error('[TOTVS Fit] Erro:', error);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Dados inválidos',
+          details: error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Erro ao processar sua requisição' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500

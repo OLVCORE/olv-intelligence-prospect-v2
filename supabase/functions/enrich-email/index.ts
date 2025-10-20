@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { emailEnrichSchema } from '../_shared/validation.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +15,10 @@ serve(async (req) => {
   }
 
   try {
-    const { name, company_domain, decision_maker_id } = await req.json();
+    // Parse and validate input
+    const body = await req.json();
+    const validated = emailEnrichSchema.parse(body);
+    const { name, company_domain, decision_maker_id } = validated;
     console.log('[Enrich Email] Iniciando:', { name, company_domain });
 
     const hunterApiKey = Deno.env.get('HUNTER_API_KEY');
@@ -74,8 +79,20 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('[Enrich Email] Erro:', error);
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Dados inválidos',
+          details: error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Erro ao processar sua requisição' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
