@@ -1,65 +1,63 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Target, TrendingUp, CheckCircle2, AlertCircle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Target, TrendingUp, CheckCircle2, AlertCircle, Sparkles, Clock, Zap } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 export default function FitTOTVSPage() {
-  const { data: maturityData, isLoading } = useQuery({
-    queryKey: ['fit-totvs'],
+  const { toast } = useToast();
+
+  const { data: companies, isLoading, refetch } = useQuery({
+    queryKey: ['fit-totvs-companies'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('digital_maturity')
+        .from('companies')
         .select(`
           *,
-          companies (name, industry, employees, technologies)
+          digital_maturity (*),
+          buying_signals (*)
         `)
-        .order('overall_score', { ascending: false })
+        .not('digital_maturity_score', 'is', null)
+        .order('digital_maturity_score', { ascending: false })
         .limit(20);
       return data || [];
     }
   });
 
-  const calculateFit = (maturity: any) => {
-    const score = maturity.overall_score || 0;
-    const techs = maturity.companies?.technologies || [];
-    
-    let fitScore = score * 10;
-    let recommendations = [];
-    let products = [];
-
-    // Análise de fit baseado em score
-    if (score < 4) {
-      recommendations.push('Protheus + Fluig - Estruturação completa');
-      products.push('TOTVS Protheus', 'Fluig');
-      fitScore += 10;
-    } else if (score < 7) {
-      recommendations.push('TOTVS BI + Integração - Expansão gradual');
-      products.push('TOTVS BI', 'TOTVS Backoffice');
-      fitScore += 15;
-    } else {
-      recommendations.push('Carol AI + Advanced Analytics');
-      products.push('Carol AI', 'TOTVS Advanced Analytics');
-      fitScore += 20;
+  const analyzeMutation = useMutation({
+    mutationFn: async (companyId: string) => {
+      const { data, error } = await supabase.functions.invoke('analyze-totvs-fit', {
+        body: { companyId }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "✅ Análise concluída",
+        description: "Recomendações TOTVS geradas com IA",
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro na análise",
+        description: error.message,
+        variant: "destructive",
+      });
     }
+  });
 
-    // Análise de tecnologias
-    if (techs.some((t: string) => /SAP|Oracle/i.test(t))) {
-      recommendations.push('Migração SAP/Oracle → TOTVS (redução de TCO)');
-      fitScore += 15;
-    }
-    if (techs.some((t: string) => /Power BI|Tableau/i.test(t))) {
-      recommendations.push('TOTVS BI nativo integrado ao ERP');
-      fitScore += 10;
-    }
-
-    return {
-      fitScore: Math.min(100, fitScore),
-      recommendations,
-      products: [...new Set(products)]
-    };
+  const getAIAnalysis = (company: any) => {
+    const signal = company.buying_signals?.find(
+      (s: any) => s.signal_type === 'totvs_fit_analysis'
+    );
+    return signal?.raw_data as any;
   };
 
   return (
@@ -76,77 +74,215 @@ export default function FitTOTVSPage() {
           <>
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 w-full" />)}
           </>
-        ) : maturityData && maturityData.length > 0 ? (
-          maturityData.map((maturity: any) => {
-            const fit = calculateFit(maturity);
+        ) : companies && companies.length > 0 ? (
+          companies.map((company: any) => {
+            const aiAnalysis = getAIAnalysis(company);
+            const maturity = company.digital_maturity?.[0];
+            const isAnalyzing = analyzeMutation.isPending;
             
             return (
-              <Card key={maturity.id}>
-                <CardHeader>
+              <Card key={company.id} className="overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="flex items-center gap-2">
                         <Target className="h-5 w-5 text-primary" />
-                        {maturity.companies?.name}
+                        {company.name}
                       </CardTitle>
-                      <CardDescription>{maturity.companies?.industry}</CardDescription>
+                      <CardDescription className="mt-2 flex items-center gap-4">
+                        <span>{company.industry}</span>
+                        {company.employees && (
+                          <>
+                            <span>•</span>
+                            <span>{company.employees} funcionários</span>
+                          </>
+                        )}
+                      </CardDescription>
                     </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-bold text-primary">{fit.fitScore}</div>
-                      <p className="text-xs text-muted-foreground">Score de Fit</p>
+                    <div className="text-right space-y-2">
+                      {aiAnalysis ? (
+                        <>
+                          <div className="text-3xl font-bold text-primary">{aiAnalysis.fitScore}</div>
+                          <p className="text-xs text-muted-foreground">Score IA</p>
+                          <Badge variant="default" className="gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            Analisado
+                          </Badge>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => analyzeMutation.mutate(company.id)}
+                          disabled={isAnalyzing}
+                          className="gap-2"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          {isAnalyzing ? 'Analisando...' : 'Analisar com IA'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold">Nível de Aderência</span>
-                      <span className="text-sm text-muted-foreground">{fit.fitScore}%</span>
-                    </div>
-                    <Progress value={fit.fitScore} className="h-3" />
-                  </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-semibold">Produtos Recomendados</span>
+                <CardContent className="pt-6 space-y-6">
+                  {aiAnalysis ? (
+                    <>
+                      {/* AI Analysis Results */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold">Nível de Aderência</span>
+                          <span className="text-sm text-muted-foreground">{aiAnalysis.fitScore}%</span>
+                        </div>
+                        <Progress value={aiAnalysis.fitScore} className="h-3" />
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {fit.products.map((product, idx) => (
-                          <Badge key={idx} variant="default">{product}</Badge>
-                        ))}
+
+                      <Separator />
+
+                      {/* Summary */}
+                      {aiAnalysis.summary && (
+                        <div className="bg-muted/50 p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">📊 Resumo da Análise</p>
+                          <p className="text-sm text-muted-foreground">{aiAnalysis.summary}</p>
+                        </div>
+                      )}
+
+                      {/* Products */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-semibold">Produtos Recomendados</span>
+                        </div>
+                        <div className="space-y-3">
+                          {aiAnalysis.recommendations?.map((rec: any, idx: number) => (
+                            <div key={idx} className="border rounded-lg p-3 space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <Badge variant="outline" className="mb-2">{rec.category}</Badge>
+                                  <p className="font-semibold">{rec.product}</p>
+                                </div>
+                                <Badge variant={rec.priority === 'ALTA' ? 'destructive' : 'secondary'}>
+                                  {rec.priority}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{rec.reason}</p>
+                              <div className="grid grid-cols-2 gap-2 pt-2">
+                                <div className="text-xs">
+                                  <span className="font-medium">Impacto:</span>
+                                  <p className="text-muted-foreground mt-1">{rec.impact}</p>
+                                </div>
+                                <div className="text-xs">
+                                  <span className="font-medium">Implementação:</span>
+                                  <p className="text-muted-foreground mt-1">{rec.implementation}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Gaps */}
+                      {aiAnalysis.gaps && aiAnalysis.gaps.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-orange-600" />
+                            <span className="text-sm font-semibold">Gaps Identificados</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {aiAnalysis.gaps.map((gap: string, idx: number) => (
+                              <li key={idx} className="text-sm flex items-start gap-2">
+                                <span className="text-orange-600">⚠️</span>
+                                <span>{gap}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Strategy */}
+                      {aiAnalysis.strategy && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-semibold">Estratégia de Implementação</span>
+                          </div>
+                          <div className="grid md:grid-cols-3 gap-3">
+                            <div className="border rounded p-3 space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Zap className="h-3 w-3 text-green-600" />
+                                Curto Prazo
+                              </div>
+                              <ul className="text-xs space-y-1">
+                                {aiAnalysis.strategy.shortTerm?.map((item: string, idx: number) => (
+                                  <li key={idx} className="text-muted-foreground">• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="border rounded p-3 space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Clock className="h-3 w-3 text-blue-600" />
+                                Médio Prazo
+                              </div>
+                              <ul className="text-xs space-y-1">
+                                {aiAnalysis.strategy.mediumTerm?.map((item: string, idx: number) => (
+                                  <li key={idx} className="text-muted-foreground">• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="border rounded p-3 space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Target className="h-3 w-3 text-purple-600" />
+                                Longo Prazo
+                              </div>
+                              <ul className="text-xs space-y-1">
+                                {aiAnalysis.strategy.longTerm?.map((item: string, idx: number) => (
+                                  <li key={idx} className="text-muted-foreground">• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TCO Benefit */}
+                      {aiAnalysis.tcoBenefit && (
+                        <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                          <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                            💰 {aiAnalysis.tcoBenefit}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Basic Info when not analyzed yet */
+                    <div className="space-y-4">
+                      <div className="text-center py-8">
+                        <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Clique em "Analisar com IA" para gerar recomendações personalizadas
+                        </p>
+                        {maturity && (
+                          <div className="inline-flex items-center gap-2 text-sm">
+                            <span className="font-medium">Score Digital:</span>
+                            <Badge variant="outline">{maturity.overall_score?.toFixed(1)}</Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-semibold">Estratégia</span>
-                      </div>
-                      <ul className="space-y-2">
-                        {fit.recommendations.map((rec, idx) => (
-                          <li key={idx} className="text-sm flex items-start gap-2">
-                            <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                            <span>{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
+                  {/* Footer Stats */}
                   <div className="pt-4 border-t">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="text-2xl font-bold">{maturity.overall_score?.toFixed(1)}</p>
+                        <p className="text-2xl font-bold">{maturity?.overall_score?.toFixed(1) || 'N/A'}</p>
                         <p className="text-xs text-muted-foreground">Maturidade</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold">{maturity.companies?.employees || 'N/A'}</p>
+                        <p className="text-2xl font-bold">{company.employees || 'N/A'}</p>
                         <p className="text-xs text-muted-foreground">Funcionários</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold">{maturity.companies?.technologies?.length || 0}</p>
+                        <p className="text-2xl font-bold">{company.technologies?.length || 0}</p>
                         <p className="text-xs text-muted-foreground">Tecnologias</p>
                       </div>
                     </div>
@@ -160,7 +296,7 @@ export default function FitTOTVSPage() {
             <CardContent className="py-12 text-center">
               <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-sm text-muted-foreground">
-                Nenhuma análise de fit disponível. Busque empresas e analise maturidade primeiro.
+                Nenhuma empresa disponível. Busque empresas primeiro no módulo "Buscar Empresas".
               </p>
             </CardContent>
           </Card>

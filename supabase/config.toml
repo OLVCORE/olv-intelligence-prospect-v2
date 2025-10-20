@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.linkedin-scrape]
 verify_jwt = false
+
+[functions.analyze-totvs-fit]
+verify_jwt = false
