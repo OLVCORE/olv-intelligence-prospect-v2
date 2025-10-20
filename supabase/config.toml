@@ -2,3 +2,9 @@ project_id = "ioaxzpwlurpduanzkfrt"
 
 [functions.search-companies]
 verify_jwt = false
+
+[functions.enrich-email]
+verify_jwt = false
+
+[functions.linkedin-scrape]
+verify_jwt = false

@@ -1,7 +1,33 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, TrendingUp, FileText } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const [companiesRes, decisorsRes, maturityRes, historyRes] = await Promise.all([
+        supabase.from('companies').select('id, digital_maturity_score', { count: 'exact' }),
+        supabase.from('decision_makers').select('id', { count: 'exact' }),
+        supabase.from('digital_maturity').select('overall_score'),
+        supabase.from('search_history').select('id', { count: 'exact' })
+      ]);
+
+      const avgScore = maturityRes.data?.length 
+        ? maturityRes.data.reduce((acc, m) => acc + (m.overall_score || 0), 0) / maturityRes.data.length
+        : 0;
+
+      return {
+        companies: companiesRes.count || 0,
+        decisors: decisorsRes.count || 0,
+        avgScore: avgScore.toFixed(1),
+        searches: historyRes.count || 0
+      };
+    }
+  });
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -16,8 +42,16 @@ export default function Dashboard() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Nenhuma empresa cadastrada ainda</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.companies}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.companies === 0 ? 'Nenhuma empresa cadastrada ainda' : 'Empresas no sistema'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -27,8 +61,16 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Aguardando análise de empresas</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.decisors}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.decisors === 0 ? 'Aguardando análise de empresas' : 'Contatos identificados'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -38,19 +80,35 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Sem dados para calcular</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.avgScore || '-'}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.avgScore === '0.0' ? 'Sem dados para calcular' : 'Maturidade digital'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Relatórios Gerados</CardTitle>
+            <CardTitle className="text-sm font-medium">Buscas Realizadas</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Nenhum relatório gerado</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.searches}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.searches === 0 ? 'Nenhuma busca realizada' : 'Total de buscas'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
