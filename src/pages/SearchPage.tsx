@@ -41,12 +41,17 @@ export default function SearchPage() {
         throw new Error('Erro ao buscar empresa');
       }
 
-      setResult(data);
-      toast({
-        title: "Empresa encontrada!",
-        description: `${data.company.name} foi cadastrada com sucesso`,
-      });
-    } catch (error: any) {
+              setResult(data);
+              toast({
+                title: "Empresa encontrada!",
+                description: `${data.company.name} foi cadastrada com sucesso`,
+              });
+              
+              // Redirecionar para página de detalhes
+              setTimeout(() => {
+                window.location.href = `/company/${data.company.id}`;
+              }, 1500);
+            } catch (error: any) {
       toast({
         title: "Erro na busca",
         description: error.message,

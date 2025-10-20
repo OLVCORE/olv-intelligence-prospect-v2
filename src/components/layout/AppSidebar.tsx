@@ -71,13 +71,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Building2 className="h-8 w-8 text-sidebar-primary" />
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">OLV Intelligence</h1>
             <p className="text-xs text-sidebar-foreground/70">Sistema de Prospecção</p>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

@@ -3,6 +3,52 @@ import { Building2, Users, TrendingUp, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+
+function CompaniesTable() {
+  const { data: companies, isLoading } = useQuery({
+    queryKey: ['companies-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('companies')
+        .select('id, name, cnpj, industry, digital_maturity_score, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    }
+  });
+
+  if (isLoading) {
+    return <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {companies?.map((company: any) => (
+        <Link key={company.id} to={`/company/${company.id}`}>
+          <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="font-semibold">{company.name}</p>
+                <p className="text-sm text-muted-foreground">{company.industry}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                {company.digital_maturity_score && (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-primary">{company.digital_maturity_score.toFixed(1)}</p>
+                    <p className="text-xs text-muted-foreground">Score</p>
+                  </div>
+                )}
+                <Button variant="outline" size="sm">Ver Detalhes →</Button>
+              </div>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -113,12 +159,32 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Empresas Cadastradas</CardTitle>
+          <CardDescription>Clique para ver relatório completo</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+            </div>
+          ) : stats && stats.companies > 0 ? (
+            <CompaniesTable />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhuma empresa cadastrada. Vá em "Buscar Empresas" para começar.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 md:grid-cols-2 mt-8">
         <Card>
           <CardHeader>
             <CardTitle>Começar Prospecção</CardTitle>
             <CardDescription>
-              Busque empresas usando CNPJ ou website e obtenha insights em tempo real
+              Busque empresas usando CNPJ ou nome e obtenha insights em tempo real
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -159,7 +225,7 @@ export default function Dashboard() {
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-                <span>Acesse <strong>Intelligence</strong> para ver decisores e sinais de compra</span>
+                <span>Acesse <strong>Decisores</strong> para ver decisores e sinais de compra</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
@@ -167,7 +233,7 @@ export default function Dashboard() {
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
-                <span>Gere <strong>Relatórios</strong> executivos em PDF</span>
+                <span>Gere <strong>Playbooks</strong> de abordagem comercial</span>
               </li>
             </ol>
           </CardContent>

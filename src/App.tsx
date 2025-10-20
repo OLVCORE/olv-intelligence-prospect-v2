@@ -13,6 +13,7 @@ import TechStackPage from "./pages/TechStackPage";
 import FitTOTVSPage from "./pages/FitTOTVSPage";
 import BenchmarkPage from "./pages/BenchmarkPage";
 import PlaybooksPage from "./pages/PlaybooksPage";
+import CompanyDetailPage from "./pages/CompanyDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/benchmark" element={<BenchmarkPage />} />
             <Route path="/fit-totvs" element={<FitTOTVSPage />} />
             <Route path="/playbooks" element={<PlaybooksPage />} />
+            <Route path="/company/:id" element={<CompanyDetailPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
