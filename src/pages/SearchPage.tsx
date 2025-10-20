@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Building2, Loader2 } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SearchPage() {
-  const [searchType, setSearchType] = useState<"cnpj" | "website">("cnpj");
+  const [searchType, setSearchType] = useState<"cnpj" | "query">("cnpj");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -18,7 +19,7 @@ export default function SearchPage() {
     if (!searchQuery.trim()) {
       toast({
         title: "Campo vazio",
-        description: "Digite um CNPJ ou website para buscar",
+        description: "Digite um CNPJ ou nome da empresa para buscar",
         variant: "destructive",
       });
       return;
@@ -28,24 +29,22 @@ export default function SearchPage() {
     setResult(null);
 
     try {
-      const response = await fetch("/api/companies/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('search-companies', {
+        body: {
           [searchType]: searchQuery,
-        }),
+        },
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Erro ao buscar empresa");
+      if (!data.success) {
+        throw new Error('Erro ao buscar empresa');
       }
 
-      setResult(data.data);
+      setResult(data);
       toast({
         title: "Empresa encontrada!",
-        description: `${data.data.company.name} foi cadastrada com sucesso`,
+        description: `${data.company.name} foi cadastrada com sucesso`,
       });
     } catch (error: any) {
       toast({
@@ -79,10 +78,10 @@ export default function SearchPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "cnpj" | "website")}>
+            <Tabs value={searchType} onValueChange={(v) => setSearchType(v as "cnpj" | "query")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="cnpj">CNPJ</TabsTrigger>
-                <TabsTrigger value="website">Website</TabsTrigger>
+                <TabsTrigger value="query">Nome da Empresa</TabsTrigger>
               </TabsList>
 
               <TabsContent value="cnpj" className="space-y-4">
@@ -101,18 +100,18 @@ export default function SearchPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="website" className="space-y-4">
+              <TabsContent value="query" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="query">Nome da Empresa</Label>
                   <Input
-                    id="website"
-                    placeholder="https://empresa.com.br"
+                    id="query"
+                    placeholder="Ex: Magazine Luiza"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     disabled={isSearching}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Digite o website completo da empresa
+                    Digite o nome da empresa
                   </p>
                 </div>
               </TabsContent>
@@ -143,57 +142,67 @@ export default function SearchPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Empresa Encontrada
+                {result.company.name}
               </CardTitle>
-              <CardDescription>Dados cadastrados com sucesso</CardDescription>
+              <CardDescription>Dados da empresa e análise completa</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Razão Social</Label>
-                <p className="text-sm font-medium">{result.company.name}</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">CNPJ</Label>
+                  <p className="text-sm font-medium">{result.company.cnpj || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Website</Label>
+                  <p className="text-sm font-medium">{result.company.website || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Setor</Label>
+                  <p className="text-sm font-medium">{result.company.industry || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Funcionários</Label>
+                  <p className="text-sm font-medium">{result.company.employees || 'N/A'}</p>
+                </div>
               </div>
-              {result.company.tradeName && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Nome Fantasia</Label>
-                  <p className="text-sm font-medium">{result.company.tradeName}</p>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">Decisores Encontrados</span>
+                  </div>
+                  <span className="text-2xl font-bold text-primary">{result.stats.decisors}</span>
                 </div>
-              )}
-              <div>
-                <Label className="text-xs text-muted-foreground">CNPJ</Label>
-                <p className="text-sm font-medium">{result.company.cnpj}</p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">Maturidade Digital</span>
+                  </div>
+                  <span className="text-2xl font-bold text-primary">
+                    {result.company.digital_maturity_score ? result.company.digital_maturity_score.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
               </div>
-              {result.company.capital && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Capital Social</Label>
-                  <p className="text-sm font-medium">
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(result.company.capital)}
-                  </p>
-                </div>
-              )}
-              {result.company.size && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Porte</Label>
-                  <p className="text-sm font-medium">{result.company.size}</p>
-                </div>
-              )}
+
               <div className="pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-2">Próximos passos:</p>
+                <p className="text-xs text-muted-foreground mb-2">Dados salvos com sucesso:</p>
                 <ul className="text-sm space-y-1">
                   <li className="flex items-center gap-2">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
-                    Análise de decisores em andamento
+                    ✅ Dados da empresa cadastrados
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
-                    Detecção de tecnologias iniciada
+                    ✅ {result.stats.decisors} decisores identificados
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
-                    Acesse Intelligence para ver resultados
-                  </li>
+                  {result.stats.hasMaturity && (
+                    <li className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                      ✅ Análise de maturidade digital concluída
+                    </li>
+                  )}
                 </ul>
               </div>
             </CardContent>

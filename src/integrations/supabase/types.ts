@@ -14,7 +14,231 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buying_signals: {
+        Row: {
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string
+          description: string | null
+          detected_at: string
+          id: string
+          raw_data: Json | null
+          signal_type: string
+          source: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          raw_data?: Json | null
+          signal_type: string
+          source?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          raw_data?: Json | null
+          signal_type?: string
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buying_signals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          digital_maturity_score: number | null
+          domain: string | null
+          employees: number | null
+          id: string
+          industry: string | null
+          linkedin_url: string | null
+          location: Json | null
+          name: string
+          raw_data: Json | null
+          revenue: string | null
+          technologies: string[] | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          digital_maturity_score?: number | null
+          domain?: string | null
+          employees?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: Json | null
+          name: string
+          raw_data?: Json | null
+          revenue?: string | null
+          technologies?: string[] | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          digital_maturity_score?: number | null
+          domain?: string | null
+          employees?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: Json | null
+          name?: string
+          raw_data?: Json | null
+          revenue?: string | null
+          technologies?: string[] | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      decision_makers: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          id: string
+          linkedin_url: string | null
+          name: string
+          raw_data: Json | null
+          seniority: string | null
+          title: string | null
+          updated_at: string
+          verified_email: boolean | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          linkedin_url?: string | null
+          name: string
+          raw_data?: Json | null
+          seniority?: string | null
+          title?: string | null
+          updated_at?: string
+          verified_email?: boolean | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          linkedin_url?: string | null
+          name?: string
+          raw_data?: Json | null
+          seniority?: string | null
+          title?: string | null
+          updated_at?: string
+          verified_email?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_makers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_maturity: {
+        Row: {
+          analysis_data: Json | null
+          company_id: string | null
+          created_at: string
+          id: string
+          infrastructure_score: number | null
+          innovation_score: number | null
+          overall_score: number | null
+          processes_score: number | null
+          security_score: number | null
+          systems_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          infrastructure_score?: number | null
+          innovation_score?: number | null
+          overall_score?: number | null
+          processes_score?: number | null
+          security_score?: number | null
+          systems_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          infrastructure_score?: number | null
+          innovation_score?: number | null
+          overall_score?: number | null
+          processes_score?: number | null
+          security_score?: number | null
+          systems_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_maturity_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_history: {
+        Row: {
+          created_at: string
+          filters: Json | null
+          id: string
+          query: string
+          results_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          query: string
+          results_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          query?: string
+          results_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
