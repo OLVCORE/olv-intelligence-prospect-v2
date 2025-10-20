@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 import { companySearchSchema } from '../_shared/validation.ts';
+import { createErrorResponse } from '../_shared/errors.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
@@ -258,10 +259,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[Search] Erro:', error);
-    
-    // Handle validation errors
+    // Handle validation errors with details
     if (error instanceof z.ZodError) {
+      console.error('[Search] Validation error:', error.errors);
       return new Response(
         JSON.stringify({ 
           error: 'Dados inválidos',
@@ -271,12 +271,7 @@ serve(async (req) => {
       );
     }
     
-    return new Response(
-      JSON.stringify({ error: 'Erro ao processar sua requisição' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
+    // Use safe error mapping for all other errors
+    return createErrorResponse(error, corsHeaders, 500);
   }
 });
