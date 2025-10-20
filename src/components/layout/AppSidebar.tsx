@@ -3,8 +3,10 @@ import {
   Search, 
   Brain, 
   Target, 
-  FileText, 
-  Settings,
+  Server,
+  TrendingUp,
+  BookOpen,
+  BarChart3,
   Building2
 } from "lucide-react";
 import {
@@ -17,15 +19,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
-    url: "/",
+    url: "/dashboard",
   },
   {
     title: "Buscar Empresas",
@@ -33,23 +34,40 @@ const menuItems = [
     url: "/search",
   },
   {
-    title: "Intelligence",
+    title: "Tech Stack",
+    icon: Server,
+    url: "/tech-stack",
+  },
+  {
+    title: "Decisores",
     icon: Brain,
     url: "/intelligence",
   },
   {
-    title: "Maturidade Digital",
+    title: "Maturidade",
     icon: Target,
     url: "/maturity",
   },
   {
-    title: "Relatórios",
-    icon: FileText,
-    url: "/reports",
+    title: "Benchmark",
+    icon: BarChart3,
+    url: "/benchmark",
+  },
+  {
+    title: "Fit TOTVS",
+    icon: TrendingUp,
+    url: "/fit-totvs",
+  },
+  {
+    title: "Playbooks",
+    icon: BookOpen,
+    url: "/playbooks",
   },
 ];
 
 export function AppSidebar() {
+  const location = useLocation();
+  
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -57,41 +75,32 @@ export function AppSidebar() {
           <Building2 className="h-8 w-8 text-sidebar-primary" />
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">OLV Intelligence</h1>
-            <p className="text-xs text-sidebar-foreground/70">Prospecting System</p>
+            <p className="text-xs text-sidebar-foreground/70">Sistema de Prospecção</p>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel>Módulos Inteligentes</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link to="/settings">
-                <Settings className="h-4 w-4" />
-                <span>Configurações</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }
