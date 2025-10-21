@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.enrich-receitaws]
 verify_jwt = true
+
+[functions.mapbox-token]
+verify_jwt = false

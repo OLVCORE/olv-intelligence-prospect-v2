@@ -31,53 +31,67 @@ export default function LocationMap({
   const [loading, setLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
-  // Inicializar mapa com token público do Mapbox
+  // Inicializar mapa com token público do Mapbox (busca do env e fallback no backend)
   useEffect(() => {
     if (!mapContainer.current) return;
     if (map.current) return;
 
-    // Usar token público do Mapbox (configurado como secret)
-    const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-    
-    if (!mapboxToken) {
-      console.error('❌ Token do Mapbox não configurado');
-      return;
-    }
+    const initMap = async () => {
+      let mapboxToken: string | undefined = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
 
-    mapboxgl.accessToken = mapboxToken;
+      if (!mapboxToken) {
+        console.warn('⚠️ VITE_MAPBOX_PUBLIC_TOKEN não encontrado. Buscando no backend...');
+        try {
+          const { data, error } = await supabase.functions.invoke('mapbox-token');
+          if (error) throw error;
+          mapboxToken = data?.token;
+        } catch (err) {
+          console.error('❌ Não foi possível obter o token do Mapbox:', err);
+          return;
+        }
+      }
 
-    console.log('🗺️ Inicializando mapa Mapbox...');
+      if (!mapboxToken) {
+        console.error('❌ Token do Mapbox não configurado');
+        return;
+      }
 
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-47.8825, -15.7942],
-        zoom: 4,
-      });
+      mapboxgl.accessToken = mapboxToken;
+      console.log('🗺️ Inicializando mapa Mapbox...');
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      try {
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current!,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [-47.8825, -15.7942],
+          zoom: 4,
+        });
 
-      marker.current = new mapboxgl.Marker({
-        draggable: false,
-        color: '#3b82f6'
-      });
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      map.current.on('load', () => {
-        console.log('✅ Mapa Mapbox carregado com sucesso');
-        setMapReady(true);
-      });
+        marker.current = new mapboxgl.Marker({
+          draggable: false,
+          color: '#3b82f6'
+        });
 
-      map.current.on('error', (e) => {
-        console.error('❌ Erro ao carregar mapa Mapbox:', e);
-      });
+        map.current.on('load', () => {
+          console.log('✅ Mapa Mapbox carregado com sucesso');
+          setMapReady(true);
+        });
 
-      return () => {
-        map.current?.remove();
-      };
-    } catch (error) {
-      console.error('❌ Erro ao inicializar mapa:', error);
-    }
+        map.current.on('error', (e) => {
+          console.error('❌ Erro ao carregar mapa Mapbox:', e);
+        });
+      } catch (error) {
+        console.error('❌ Erro ao inicializar mapa:', error);
+      }
+    };
+
+    initMap();
+
+    return () => {
+      map.current?.remove();
+    };
   }, []);
 
   // Remover círculo existente
