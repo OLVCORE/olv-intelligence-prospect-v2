@@ -255,7 +255,7 @@ export default function LocationMap({
   }, [address, numero, municipio, estado, pais, cep, onLocationSelect, mapReady]);
 
   return (
-    <Card className="relative w-full h-full overflow-hidden">
+    <Card className="relative w-full min-h-[360px] overflow-hidden">
       <div ref={mapContainer} className="absolute inset-0" />
       
       {loading && (
