@@ -64,19 +64,10 @@ export default function SearchPage() {
   const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
   
-  // Configuração de APIs
-  const [showApiConfig, setShowApiConfig] = useState(false);
-  const [googleApiKey, setGoogleApiKey] = useState(() => localStorage.getItem('google_api_key') || '');
-  
-  const saveApiKeys = () => {
-    if (googleApiKey.trim()) {
-      localStorage.setItem('google_api_key', googleApiKey.trim());
-      toast({
-        title: "APIs Configuradas",
-        description: "Recarregue a página para aplicar as mudanças"
-      });
-      setTimeout(() => window.location.reload(), 1500);
-    }
+  // CEP formatting
+  const handleCepChange = (value: string) => {
+    const formatted = value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
+    setCep(formatted);
   };
   
   // Google Places Autocomplete
@@ -208,65 +199,11 @@ export default function SearchPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Buscar Empresas</h1>
-          <p className="text-muted-foreground">
-            Busque empresas por CNPJ ou nome e obtenha dados reais da web e fontes públicas
-          </p>
-        </div>
-        
-        <Dialog open={showApiConfig} onOpenChange={setShowApiConfig}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Configurar APIs
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Configurar APIs Externas</DialogTitle>
-              <DialogDescription>
-                Configure suas chaves de API para habilitar autocomplete de endereços
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="google-api-key">Google Places API Key</Label>
-                <Input
-                  id="google-api-key"
-                  placeholder="Cole sua Google API Key aqui"
-                  value={googleApiKey}
-                  onChange={(e) => setGoogleApiKey(e.target.value)}
-                  className="font-mono text-xs"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Para autocomplete de endereços (município, bairro, logradouro).{' '}
-                  <a 
-                    href="https://console.cloud.google.com/google/maps-apis/credentials" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    Obter chave gratuita →
-                  </a>
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Mapbox Token</Label>
-                <p className="text-xs text-muted-foreground">
-                  Configure o Mapbox token diretamente no mapa ao lado →
-                </p>
-              </div>
-              
-              <Button onClick={saveApiKeys} className="w-full" disabled={!googleApiKey.trim()}>
-                Salvar e Recarregar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground mb-2">Buscar Empresas</h1>
+        <p className="text-muted-foreground">
+          Busque empresas por CNPJ ou nome e obtenha dados reais da web e fontes públicas
+        </p>
       </div>
 
       <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) 500px' }}>

@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationMapProps {
   address?: string;
@@ -27,57 +26,42 @@ export default function LocationMap({
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState(() => {
-    // Tentar pegar do localStorage primeiro
-    return localStorage.getItem('mapbox_token') || '';
-  });
-  const [showTokenInput, setShowTokenInput] = useState(!mapboxToken);
+  const [mapReady, setMapReady] = useState(false);
 
-  const saveToken = () => {
-    if (mapboxToken.trim()) {
-      localStorage.setItem('mapbox_token', mapboxToken.trim());
-      setShowTokenInput(false);
-      window.location.reload(); // Recarregar para aplicar o token
-    }
-  };
-
-  // Inicializar mapa
+  // Inicializar mapa (sem token - será usado via edge function)
   useEffect(() => {
     if (!mapContainer.current) return;
-    if (map.current) return; // Inicializar apenas uma vez
+    if (map.current) return;
 
-    const token = mapboxToken || import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-    if (!token) {
-      console.error('MAPBOX_PUBLIC_TOKEN não configurado');
-      setShowTokenInput(true);
-      return;
-    }
-
-    mapboxgl.accessToken = token;
+    // Token público dummy - não usado para geocoding (usamos edge function)
+    mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZS1kZW1vIiwiYSI6ImNtNWp0ZGg5YzBiZHoya3F3NzVxenRyOWUifQ.demo';
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-47.8825, -15.7942], // Brasília como centro padrão
+      center: [-47.8825, -15.7942],
       zoom: 4,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // Adicionar marcador inicial
     marker.current = new mapboxgl.Marker({
       draggable: false,
       color: '#3b82f6'
     });
 
+    map.current.on('load', () => {
+      setMapReady(true);
+    });
+
     return () => {
       map.current?.remove();
     };
-  }, [mapboxToken]);
+  }, []);
 
-  // Atualizar localização quando os campos mudam
+  // Atualizar localização usando edge function
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapReady) return;
 
     const geocodeAddress = async () => {
       const parts = [address, municipio, estado, pais].filter(Boolean);
@@ -87,47 +71,41 @@ export default function LocationMap({
       setLoading(true);
 
       try {
-        const token = mapboxToken || import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-        if (!token) {
-          setShowTokenInput(true);
-          return;
-        }
-        
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchText)}.json?access_token=${token}&country=br&language=pt`
-        );
+        const { data, error } = await supabase.functions.invoke('mapbox-geocode', {
+          body: { 
+            searchText,
+            zoom: municipio ? 12 : estado ? 8 : 6
+          }
+        });
 
-        const data = await response.json();
+        if (error) throw error;
 
-        if (data.features && data.features.length > 0) {
-          const [lng, lat] = data.features[0].center;
+        if (data?.success && data.location) {
+          const { lat, lng } = data.location;
 
-          // Mover o mapa
           map.current?.flyTo({
             center: [lng, lat],
-            zoom: municipio ? 12 : estado ? 8 : 6,
+            zoom: data.zoom,
             duration: 1500
           });
 
-          // Atualizar marcador
           if (marker.current && map.current) {
             marker.current.setLngLat([lng, lat]).addTo(map.current);
           }
 
-          // Callback com a localização
           if (onLocationSelect) {
             onLocationSelect({ lat, lng });
           }
         }
       } catch (error) {
-        console.error('Erro ao geocodificar endereço:', error);
+        console.error('Erro ao geocodificar:', error);
       } finally {
         setLoading(false);
       }
     };
 
     geocodeAddress();
-  }, [address, municipio, estado, pais, cep, onLocationSelect]);
+  }, [address, municipio, estado, pais, cep, onLocationSelect, mapReady]);
 
   return (
     <Card className="relative w-full h-full overflow-hidden">
@@ -136,45 +114,6 @@ export default function LocationMap({
       {loading && (
         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
-      
-      {showTokenInput && (
-        <div className="absolute inset-0 bg-background/95 flex flex-col items-center justify-center p-6 z-20">
-          <div className="max-w-md w-full space-y-4">
-            <div className="text-center space-y-2">
-              <MapPin className="h-12 w-12 mx-auto text-primary" />
-              <h3 className="text-lg font-semibold">Configure o Mapbox Token</h3>
-              <p className="text-sm text-muted-foreground">
-                Para visualizar o mapa, você precisa adicionar sua chave pública do Mapbox.
-              </p>
-              <a 
-                href="https://account.mapbox.com/access-tokens/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline inline-block"
-              >
-                Obter token gratuito no Mapbox →
-              </a>
-            </div>
-            
-            <div className="space-y-2">
-              <Input
-                placeholder="Cole seu Mapbox Public Token aqui"
-                value={mapboxToken}
-                onChange={(e) => setMapboxToken(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveToken()}
-                className="font-mono text-xs"
-              />
-              <Button onClick={saveToken} className="w-full" disabled={!mapboxToken.trim()}>
-                Salvar e Carregar Mapa
-              </Button>
-            </div>
-            
-            <p className="text-xs text-muted-foreground text-center">
-              O token será salvo localmente no seu navegador
-            </p>
-          </div>
         </div>
       )}
     </Card>
