@@ -82,3 +82,22 @@ export function useUpdateCompany() {
     },
   });
 }
+
+export function useDeleteCompany() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COMPANIES_QUERY_KEY });
+    },
+  });
+}

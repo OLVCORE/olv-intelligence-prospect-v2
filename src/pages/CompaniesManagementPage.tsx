@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,51 +26,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
 
 export default function CompaniesManagementPage() {
   const navigate = useNavigate();
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: companies = [], isLoading: loading, refetch } = useCompanies();
+  const deleteCompany = useDeleteCompany();
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<any>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCompanies();
-  }, []);
-
-  const loadCompanies = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCompanies(data || []);
-    } catch (error) {
-      console.error('Error loading companies:', error);
-      toast.error('Erro ao carregar empresas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!companyToDelete) return;
 
     try {
-      const { error } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', companyToDelete.id);
-
-      if (error) throw error;
-
+      await deleteCompany.mutateAsync(companyToDelete.id);
       toast.success('Empresa excluída com sucesso');
-      setCompanies(companies.filter(c => c.id !== companyToDelete.id));
       setDeleteDialogOpen(false);
       setCompanyToDelete(null);
     } catch (error) {
@@ -91,7 +63,7 @@ export default function CompaniesManagementPage() {
       if (error) throw error;
 
       toast.success('Análise 360° concluída!');
-      loadCompanies(); // Recarrega para pegar dados atualizados
+      refetch(); // Recarrega para pegar dados atualizados
     } catch (error) {
       console.error('Error enriching company:', error);
       toast.error('Erro ao executar análise 360°');
