@@ -1,4 +1,4 @@
-// ✅ Adapter avançado para detectar stack tecnológico completo
+// ✅ Adapter avançado para detectar stack tecnológico via Serper API
 import { logger } from '@/lib/utils/logger';
 import { cache } from '@/lib/utils/cache';
 
@@ -46,7 +46,7 @@ export interface TechStackAnalysis {
 }
 
 /**
- * Analisa stack tecnológico completo da empresa
+ * Analisa stack tecnológico via Serper API
  */
 export async function analyzeAdvancedTechStack(
   companyName: string,
@@ -61,108 +61,149 @@ export async function analyzeAdvancedTechStack(
   }
 
   try {
-    logger.info('ADVANCED_TECH_STACK', 'Analyzing tech stack', { companyName, domain });
+    logger.info('ADVANCED_TECH_STACK', 'Analyzing tech stack via Serper', { companyName, domain });
 
-    // Mock de detecções realísticas
-    // Em produção, usaria Wappalyzer, BuiltWith, ou análise de DNS/HTTP headers
-    const mockTechnologies: TechnologyDetection[] = [
-      {
+    const serperApiKey = import.meta.env.VITE_SERPER_API_KEY;
+    if (!serperApiKey) {
+      throw new Error('SERPER_API_KEY not configured');
+    }
+
+    // Buscar menções a tecnologias específicas
+    const techQueries = domain ? [
+      `site:${domain} "SAP"`,
+      `site:${domain} "Oracle"`,
+      `site:${domain} "JD Edwards"`,
+      `site:${domain} "Microsoft Dynamics"`,
+      `site:${domain} "Salesforce"`,
+      `"${companyName}" ERP sistema`,
+      `"${companyName}" software gestão`
+    ] : [
+      `"${companyName}" SAP ERP`,
+      `"${companyName}" Oracle`,
+      `"${companyName}" "JD Edwards"`,
+      `"${companyName}" "Microsoft Dynamics"`,
+      `"${companyName}" Salesforce`,
+      `"${companyName}" ERP sistema`
+    ];
+
+    const searchResults = await Promise.allSettled(
+      techQueries.map(async (query) => {
+        const response = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': serperApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: query,
+            num: 5,
+            gl: 'br'
+          })
+        });
+        const data = await response.json();
+        return data.organic || [];
+      })
+    );
+
+    // Detectar tecnologias mencionadas
+    const detectedTech: TechnologyDetection[] = [];
+    const allSnippets = searchResults
+      .filter(r => r.status === 'fulfilled')
+      .flatMap((r: any) => r.value)
+      .map((item: any) => (item.snippet || '').toLowerCase())
+      .join(' ');
+
+    // Detectar ERPs
+    if (allSnippets.includes('sap')) {
+      detectedTech.push({
         name: 'SAP ERP',
         category: 'erp',
         vendor: 'SAP',
         confidence: 0.85,
-        version: 'S/4HANA 2021',
+        version: 'Desconhecida',
         licenseType: 'enterprise',
         cost: 'very_high',
         migrationDifficulty: 'very_hard'
-      },
-      {
+      });
+    }
+
+    if (allSnippets.match(/oracle|jd\s*edwards|peoplesoft/)) {
+      detectedTech.push({
+        name: 'Oracle / JD Edwards',
+        category: 'erp',
+        vendor: 'Oracle',
+        confidence: 0.80,
+        version: 'Desconhecida',
+        licenseType: 'enterprise',
+        cost: 'very_high',
+        migrationDifficulty: 'very_hard'
+      });
+    }
+
+    if (allSnippets.match(/microsoft\s*dynamics|dynamics\s*365/)) {
+      detectedTech.push({
+        name: 'Microsoft Dynamics',
+        category: 'erp',
+        vendor: 'Microsoft',
+        confidence: 0.75,
+        version: 'Desconhecida',
+        licenseType: 'professional',
+        cost: 'high',
+        migrationDifficulty: 'hard'
+      });
+    }
+
+    if (allSnippets.includes('salesforce')) {
+      detectedTech.push({
         name: 'Salesforce',
         category: 'crm',
         vendor: 'Salesforce',
-        confidence: 0.90,
-        licenseType: 'professional',
-        cost: 'high',
-        migrationDifficulty: 'medium'
-      },
-      {
-        name: 'Oracle Database',
-        category: 'database',
-        vendor: 'Oracle',
-        confidence: 0.95,
-        version: '19c',
-        licenseType: 'enterprise',
-        cost: 'very_high',
-        migrationDifficulty: 'hard'
-      },
-      {
-        name: 'AWS',
-        category: 'cloud',
-        vendor: 'Amazon',
         confidence: 0.80,
-        cost: 'medium',
-        migrationDifficulty: 'easy'
-      },
-      {
-        name: 'Power BI',
-        category: 'analytics',
-        vendor: 'Microsoft',
-        confidence: 0.75,
         licenseType: 'professional',
-        cost: 'medium',
-        migrationDifficulty: 'easy'
-      },
-      {
-        name: 'Magento',
-        category: 'ecommerce',
-        vendor: 'Adobe',
-        confidence: 0.70,
-        licenseType: 'enterprise',
         cost: 'high',
         migrationDifficulty: 'medium'
-      }
-    ];
+      });
+    }
 
     // Separar por categorias
-    const erpSystems = mockTechnologies.filter((t) => t.category === 'erp');
-    const crmSystems = mockTechnologies.filter((t) => t.category === 'crm');
-    const databases = mockTechnologies.filter((t) => t.category === 'database');
-    const cloudProviders = mockTechnologies.filter((t) => t.category === 'cloud');
+    const erpSystems = detectedTech.filter((t) => t.category === 'erp');
+    const crmSystems = detectedTech.filter((t) => t.category === 'crm');
+    const databases = detectedTech.filter((t) => t.category === 'database');
+    const cloudProviders = detectedTech.filter((t) => t.category === 'cloud');
 
     // Determinar nível de maturidade
-    const hasModernCloud = cloudProviders.some((c) => c.name.includes('AWS') || c.name.includes('Azure'));
-    const hasLegacyERP = erpSystems.some((e) => e.migrationDifficulty === 'very_hard');
-    
     let maturityLevel: 'legacy' | 'transitioning' | 'modern' | 'cutting_edge' = 'modern';
-    if (hasLegacyERP && !hasModernCloud) {
-      maturityLevel = 'legacy';
-    } else if (hasLegacyERP && hasModernCloud) {
+    let totalTechDebt: 'low' | 'medium' | 'high' | 'critical' = 'low';
+
+    const hasLegacyERP = detectedTech.some(t => 
+      t.name.includes('SAP') || t.name.includes('Oracle') || t.name.includes('JD Edwards')
+    );
+
+    if (hasLegacyERP) {
       maturityLevel = 'transitioning';
-    } else if (hasModernCloud) {
-      maturityLevel = 'cutting_edge';
+      totalTechDebt = 'high';
     }
 
     // Oportunidades de migração para TOTVS
-    const migrationOpportunities = [
-      {
-        technology: 'SAP ERP',
+    const migrationOpportunities = [];
+    
+    if (hasLegacyERP) {
+      migrationOpportunities.push({
+        technology: 'SAP / Oracle',
         totvsAlternative: 'TOTVS Protheus',
-        reasoning: 'Custos de licenciamento SAP são 3x maiores. TOTVS oferece mesma funcionalidade com suporte local.',
+        reasoning: 'Redução de custos de licenciamento em até 60%. TOTVS oferece mesma funcionalidade com suporte local.',
         priority: 'high' as const
-      },
-      {
-        technology: 'Salesforce',
+      });
+    }
+
+    if (crmSystems.length > 0) {
+      migrationOpportunities.push({
+        technology: crmSystems[0].name,
         totvsAlternative: 'TOTVS CRM',
         reasoning: 'Integração nativa com ERP TOTVS reduz custos e melhora eficiência.',
         priority: 'medium' as const
-      },
-      {
-        technology: 'Oracle Database',
-        totvsAlternative: 'PostgreSQL + TOTVS DBAccess',
-        reasoning: 'Eliminar custos de licenciamento Oracle (economia de até 70%).',
-        priority: 'high' as const
-      }
-    ];
+      });
+    }
 
     // Análise competitiva
     const competitorAnalysis: CompetitorAnalysis[] = [
@@ -192,48 +233,37 @@ export async function analyzeAdvancedTechStack(
     ];
 
     // Recomendações de produtos TOTVS
-    const totvsProductRecommendations = [
-      {
+    const totvsProductRecommendations = [];
+    
+    if (hasLegacyERP) {
+      totvsProductRecommendations.push({
         product: 'TOTVS Protheus',
-        reason: 'Substituir SAP ERP com economia de 60% e melhor suporte local',
+        reason: 'Substituir SAP/Oracle ERP com economia de 60% e melhor suporte local',
         confidence: 0.90
-      },
-      {
-        product: 'TOTVS Datasul',
-        reason: 'Alternativa moderna para gestão industrial',
-        confidence: 0.75
-      },
-      {
-        product: 'TOTVS BI',
-        reason: 'Integração nativa com ERP TOTVS, melhor que Power BI standalone',
-        confidence: 0.85
-      },
-      {
-        product: 'Fluig (BPM)',
-        reason: 'Automatizar processos e reduzir dependência de customizações SAP',
-        confidence: 0.80
-      }
-    ];
-
-    // Calcular débito técnico total
-    const highCostCount = mockTechnologies.filter((t) => t.cost === 'very_high' || t.cost === 'high').length;
-    const hardMigrationCount = mockTechnologies.filter(
-      (t) => t.migrationDifficulty === 'very_hard' || t.migrationDifficulty === 'hard'
-    ).length;
-
-    let totalTechDebt: 'low' | 'medium' | 'high' | 'critical' = 'low';
-    if (highCostCount >= 3 || hardMigrationCount >= 2) {
-      totalTechDebt = 'critical';
-    } else if (highCostCount >= 2 || hardMigrationCount >= 1) {
-      totalTechDebt = 'high';
-    } else if (highCostCount >= 1) {
-      totalTechDebt = 'medium';
+      });
+      totvsProductRecommendations.push({
+        product: 'Consultoria Premium ULV Internacional',
+        reason: 'Migração complexa requer expertise especializada para garantir sucesso',
+        confidence: 0.95
+      });
     }
+
+    totvsProductRecommendations.push({
+      product: 'TOTVS BI',
+      reason: 'Integração nativa com ERP TOTVS para analytics avançado',
+      confidence: 0.85
+    });
+
+    totvsProductRecommendations.push({
+      product: 'Fluig (BPM)',
+      reason: 'Automatizar processos e reduzir dependência de customizações',
+      confidence: 0.80
+    });
 
     const result: TechStackAnalysis = {
       companyName,
       domain,
-      detectedTechnologies: mockTechnologies,
+      detectedTechnologies: detectedTech,
       erpSystems,
       crmSystems,
       databases,
@@ -250,13 +280,28 @@ export async function analyzeAdvancedTechStack(
 
     logger.info('ADVANCED_TECH_STACK', 'Analysis complete', {
       companyName,
-      technologiesFound: mockTechnologies.length,
+      technologiesFound: detectedTech.length,
       maturityLevel
     });
 
     return result;
   } catch (error) {
     logger.error('ADVANCED_TECH_STACK', 'Failed to analyze', { error, companyName });
-    throw error;
+    
+    // Retornar análise vazia em caso de erro
+    return {
+      companyName,
+      domain,
+      detectedTechnologies: [],
+      erpSystems: [],
+      crmSystems: [],
+      databases: [],
+      cloudProviders: [],
+      maturityLevel: 'modern',
+      migrationOpportunities: [],
+      competitorAnalysis: [],
+      totvsProductRecommendations: [],
+      totalTechDebt: 'low'
+    };
   }
 }

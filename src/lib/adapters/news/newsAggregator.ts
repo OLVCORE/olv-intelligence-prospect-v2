@@ -1,4 +1,4 @@
-// ✅ Adapter para agregar notícias sobre empresas de múltiplas fontes
+// ✅ Adapter para agregar notícias sobre empresas via Serper API (Google News)
 import { logger } from '@/lib/utils/logger';
 import { cache } from '@/lib/utils/cache';
 
@@ -31,7 +31,7 @@ export interface NewsAggregatorResult {
 }
 
 /**
- * Busca notícias sobre a empresa em múltiplas fontes
+ * Busca notícias sobre a empresa via Serper API (Google News)
  */
 export async function aggregateNews(
   companyName: string,
@@ -46,65 +46,55 @@ export async function aggregateNews(
   }
 
   try {
-    logger.info('NEWS_AGGREGATOR', 'Fetching news', { companyName });
+    logger.info('NEWS_AGGREGATOR', 'Fetching news via Serper API', { companyName });
 
-    // Mock de dados realísticos para demonstração
-    // Em produção, integraria com Google News API, NewsAPI, etc.
-    const mockArticles: NewsArticle[] = [
-      {
-        title: `${companyName} anuncia expansão de operações no Brasil`,
-        source: 'Portal de Notícias',
-        url: 'https://example.com/news/1',
-        publishedAt: '2025-10-15T10:30:00Z',
-        snippet: 'Empresa planeja investir R$ 50 milhões em nova unidade...',
-        sentiment: 'positive',
-        sentimentScore: 0.8,
-        category: 'expansion'
+    const serperApiKey = import.meta.env.VITE_SERPER_API_KEY;
+    if (!serperApiKey) {
+      throw new Error('SERPER_API_KEY not configured');
+    }
+
+    // Buscar notícias via Serper API
+    const searchQuery = cnpj 
+      ? `"${companyName}" OR "${cnpj}"` 
+      : `"${companyName}"`;
+
+    const response = await fetch('https://google.serper.dev/news', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': serperApiKey,
+        'Content-Type': 'application/json'
       },
-      {
-        title: `${companyName} firma parceria estratégica com fornecedor global`,
-        source: 'Valor Econômico',
-        url: 'https://example.com/news/2',
-        publishedAt: '2025-10-10T14:20:00Z',
-        snippet: 'Acordo visa otimizar cadeia de suprimentos e reduzir custos...',
-        sentiment: 'positive',
-        sentimentScore: 0.7,
-        category: 'partnership'
-      },
-      {
-        title: `${companyName} lança novo produto inovador no mercado`,
-        source: 'TechNews Brasil',
-        url: 'https://example.com/news/3',
-        publishedAt: '2025-09-28T09:15:00Z',
-        snippet: 'Solução utiliza inteligência artificial para melhorar eficiência...',
-        sentiment: 'positive',
-        sentimentScore: 0.9,
-        category: 'product'
-      },
-      {
-        title: `${companyName} enfrenta processo trabalhista`,
-        source: 'Jornal Trabalhista',
-        url: 'https://example.com/news/4',
-        publishedAt: '2025-09-20T16:45:00Z',
-        snippet: 'Ex-funcionários movem ação por horas extras não pagas...',
-        sentiment: 'negative',
-        sentimentScore: -0.6,
-        category: 'legal'
-      },
-      {
-        title: `${companyName} apresenta resultados financeiros do trimestre`,
-        source: 'InfoMoney',
-        url: 'https://example.com/news/5',
-        publishedAt: '2025-09-15T11:00:00Z',
-        snippet: 'Receita cresceu 15% em relação ao mesmo período do ano anterior...',
-        sentiment: 'positive',
-        sentimentScore: 0.75,
-        category: 'financial'
-      }
-    ];
+      body: JSON.stringify({
+        q: searchQuery,
+        num: 20,
+        gl: 'br',
+        hl: 'pt-br'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Serper API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const articles: NewsArticle[] = (data.news || []).map((item: any) => {
+      const fullText = item.title + ' ' + (item.snippet || '');
+      const sentimentAnalysis = analyzeSentiment(fullText);
+      
+      return {
+        title: item.title,
+        url: item.link,
+        source: item.source,
+        publishedAt: item.date,
+        snippet: item.snippet || '',
+        sentiment: sentimentAnalysis.sentiment,
+        sentimentScore: sentimentAnalysis.score,
+        category: categorizeNews(fullText)
+      };
+    });
 
     // Análise de sentimento agregada
-    const sentimentCounts = mockArticles.reduce(
+    const sentimentCounts = articles.reduce(
       (acc, article) => {
         acc[article.sentiment]++;
         return acc;
@@ -112,31 +102,45 @@ export async function aggregateNews(
       { positive: 0, neutral: 0, negative: 0 }
     );
 
-    const avgSentiment =
-      mockArticles.reduce((sum, a) => sum + a.sentimentScore, 0) / mockArticles.length;
+    const avgSentiment = articles.length > 0
+      ? articles.reduce((sum, a) => sum + a.sentimentScore, 0) / articles.length
+      : 0;
 
     const overallSentiment: 'positive' | 'neutral' | 'negative' =
       avgSentiment > 0.2 ? 'positive' : avgSentiment < -0.2 ? 'negative' : 'neutral';
 
-    // Identificar tópicos-chave
-    const keyTopics = [
-      'Expansão',
-      'Parcerias Estratégicas',
-      'Inovação Tecnológica',
-      'Crescimento Financeiro'
-    ];
+    // Identificar tópicos-chave baseado nas categorias
+    const categoryCount: Record<string, number> = {};
+    articles.forEach(a => {
+      categoryCount[a.category] = (categoryCount[a.category] || 0) + 1;
+    });
+
+    const keyTopics = Object.entries(categoryCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([category]) => {
+        const categoryNames: Record<string, string> = {
+          financial: 'Finanças',
+          product: 'Produtos',
+          legal: 'Jurídico',
+          expansion: 'Expansão',
+          partnership: 'Parcerias',
+          other: 'Geral'
+        };
+        return categoryNames[category] || category;
+      });
 
     // Verificar atividade recente (últimos 30 dias)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentActivity = mockArticles.some(
+    const recentActivity = articles.some(
       (a) => new Date(a.publishedAt) > thirtyDaysAgo
     );
 
     const result: NewsAggregatorResult = {
       companyName,
-      totalArticles: mockArticles.length,
-      articles: mockArticles,
+      totalArticles: articles.length,
+      articles,
       sentimentAnalysis: {
         overall: overallSentiment,
         score: avgSentiment,
@@ -158,17 +162,33 @@ export async function aggregateNews(
     return result;
   } catch (error) {
     logger.error('NEWS_AGGREGATOR', 'Failed to fetch news', { error, companyName });
-    throw error;
+    
+    // Retornar dados vazios em caso de erro
+    return {
+      companyName,
+      totalArticles: 0,
+      articles: [],
+      sentimentAnalysis: {
+        overall: 'neutral',
+        score: 0,
+        distribution: {
+          positive: 0,
+          neutral: 0,
+          negative: 0
+        }
+      },
+      keyTopics: [],
+      recentActivity: false
+    };
   }
 }
 
 /**
- * Analisa sentimento de um texto usando heurísticas simples
- * Em produção, usaria API de NLP como OpenAI ou Gemini
+ * Analisa sentimento de um texto usando heurísticas
  */
-export function analyzeSentiment(text: string): { sentiment: 'positive' | 'neutral' | 'negative'; score: number } {
-  const positiveWords = ['sucesso', 'crescimento', 'expansão', 'inovação', 'lucro', 'parceria', 'investimento'];
-  const negativeWords = ['processo', 'perda', 'prejuízo', 'crise', 'demissão', 'problema', 'falha'];
+function analyzeSentiment(text: string): { sentiment: 'positive' | 'neutral' | 'negative'; score: number } {
+  const positiveWords = ['sucesso', 'crescimento', 'expansão', 'inovação', 'lucro', 'parceria', 'investimento', 'aumento', 'melhora', 'prêmio'];
+  const negativeWords = ['processo', 'perda', 'prejuízo', 'crise', 'demissão', 'problema', 'falha', 'queda', 'multa', 'escândalo'];
 
   const lowerText = text.toLowerCase();
   let score = 0;
@@ -187,4 +207,19 @@ export function analyzeSentiment(text: string): { sentiment: 'positive' | 'neutr
     score > 0.2 ? 'positive' : score < -0.2 ? 'negative' : 'neutral';
 
   return { sentiment, score };
+}
+
+/**
+ * Categoriza notícia por tópico
+ */
+function categorizeNews(text: string): NewsArticle['category'] {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.match(/financ|lucro|receita|faturamento|invest|bolsa/)) return 'financial';
+  if (lowerText.match(/produto|lança|inova|tecnolog|software/)) return 'product';
+  if (lowerText.match(/expan|filial|nova|abre|mercado/)) return 'expansion';
+  if (lowerText.match(/parceria|acordo|contrato|aliança/)) return 'partnership';
+  if (lowerText.match(/processo|justi|tribunal|multa|condena/)) return 'legal';
+  
+  return 'other';
 }

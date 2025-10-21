@@ -53,66 +53,83 @@ export async function fetchLinkedInCompanyData(
   }
 
   try {
-    logger.info('LINKEDIN_COMPANY', 'Fetching data', { url: linkedinUrl });
+    logger.info('LINKEDIN_COMPANY', 'Fetching data via PhantomBuster', { url: linkedinUrl });
 
-    // Via PhantomBuster API (scraping LinkedIn)
-    const phantomApiKey = import.meta.env.VITE_PHANTOMBUSTER_API_KEY;
-    if (!phantomApiKey) {
-      throw new Error('PhantomBuster API key not configured');
+    // Chamar edge function que usa PhantomBuster
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase.functions.invoke('linkedin-scrape', {
+      body: { linkedinUrl, ...options }
+    });
+
+    if (error) {
+      logger.error('LINKEDIN_COMPANY', 'PhantomBuster error', { error });
+      throw error;
     }
 
-    // Mock de dados realísticos para demonstração
-    // Em produção, isso seria substituído pela chamada real ao PhantomBuster
-    const mockData: LinkedInCompanyData = {
+    const result: LinkedInCompanyData = {
       companyUrl: linkedinUrl,
-      name: 'Empresa Demo',
-      description: 'Empresa líder em tecnologia e inovação',
-      website: 'https://example.com',
-      industry: 'Tecnologia da Informação',
-      companySize: '201-500 funcionários',
-      headquarters: 'São Paulo, Brasil',
-      founded: '2015',
-      followers: 12450,
-      employeesOnLinkedIn: 380,
-      specialties: ['Software Development', 'Cloud Computing', 'AI/ML'],
-      posts: [
-        {
-          text: 'Orgulhosos de anunciar novo produto...',
-          likes: 234,
-          comments: 45,
-          shares: 12,
-          date: '2025-10-15'
-        },
-        {
-          text: 'Nossa equipe cresceu 30% este ano...',
-          likes: 189,
-          comments: 28,
-          shares: 8,
-          date: '2025-10-10'
-        }
-      ],
-      engagement: {
-        totalPosts: 24,
-        avgLikes: 195,
-        avgComments: 32,
-        avgShares: 9,
-        engagementRate: 1.89
+      name: data.name || 'Empresa não encontrada',
+      description: data.description || '',
+      website: data.website || '',
+      industry: data.industry || '',
+      companySize: data.companySize || '',
+      headquarters: data.headquarters || '',
+      founded: data.founded || '',
+      followers: data.followers || 0,
+      employeesOnLinkedIn: data.employeesOnLinkedIn || 0,
+      specialties: data.specialties || [],
+      posts: data.posts || [],
+      engagement: data.engagement || {
+        totalPosts: 0,
+        avgLikes: 0,
+        avgComments: 0,
+        avgShares: 0,
+        engagementRate: 0
       },
-      presenceScore: 82.5
+      presenceScore: 0
     };
 
+    // Calcular presence score
+    result.presenceScore = calculateLinkedInPresenceScore(result);
+
     // Cachear por 24 horas (dados de empresa mudam pouco)
-    cache.set(cacheKey, mockData, 24 * 60 * 60 * 1000);
+    cache.set(cacheKey, result, 24 * 60 * 60 * 1000);
 
     logger.info('LINKEDIN_COMPANY', 'Data fetched successfully', {
       url: linkedinUrl,
-      followers: mockData.followers
+      followers: result.followers,
+      presenceScore: result.presenceScore
     });
 
-    return mockData;
+    return result;
   } catch (error) {
     logger.error('LINKEDIN_COMPANY', 'Failed to fetch data', { error, url: linkedinUrl });
-    throw error;
+    
+    // Fallback com dados mínimos
+    const fallbackData: LinkedInCompanyData = {
+      companyUrl: linkedinUrl,
+      name: 'Dados indisponíveis',
+      description: '',
+      website: '',
+      industry: '',
+      companySize: '',
+      headquarters: '',
+      founded: '',
+      followers: 0,
+      employeesOnLinkedIn: 0,
+      specialties: [],
+      posts: [],
+      engagement: {
+        totalPosts: 0,
+        avgLikes: 0,
+        avgComments: 0,
+        avgShares: 0,
+        engagementRate: 0
+      },
+      presenceScore: 0
+    };
+    
+    return fallbackData;
   }
 }
 
