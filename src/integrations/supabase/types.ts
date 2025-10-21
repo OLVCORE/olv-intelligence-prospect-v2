@@ -244,6 +244,110 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          channel: Json | null
+          company_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          meta: Json | null
+          name: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          meta?: Json | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          meta?: Json | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          assigned_to: string | null
+          channel: string
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          priority: string | null
+          sla_due_at: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          sla_due_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          sla_due_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decision_makers: {
         Row: {
           company_id: string | null
@@ -521,6 +625,59 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          attachments: Json | null
+          body: string | null
+          channel: string
+          conversation_id: string | null
+          created_at: string | null
+          direction: string
+          from_id: string | null
+          id: string
+          provider_message_id: string | null
+          raw: Json | null
+          status: string | null
+          to_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          body?: string | null
+          channel: string
+          conversation_id?: string | null
+          created_at?: string | null
+          direction: string
+          from_id?: string | null
+          id?: string
+          provider_message_id?: string | null
+          raw?: Json | null
+          status?: string | null
+          to_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string | null
+          channel?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          direction?: string
+          from_id?: string | null
+          id?: string
+          provider_message_id?: string | null
+          raw?: Json | null
+          status?: string | null
+          to_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_mentions: {
         Row: {
           company_id: string
@@ -704,6 +861,320 @@ export type Database = {
           severity?: string
           source?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sdr_audit: {
+        Row: {
+          action: string
+          created_at: string | null
+          entity: string
+          entity_id: string
+          id: string
+          payload: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          entity: string
+          entity_id: string
+          id?: string
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          entity?: string
+          entity_id?: string
+          id?: string
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      sdr_routing_rules: {
+        Row: {
+          active: boolean | null
+          assign_to: string | null
+          conditions: Json
+          created_at: string | null
+          id: string
+          name: string
+          priority: string | null
+          sla_minutes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          assign_to?: string | null
+          conditions?: Json
+          created_at?: string | null
+          id?: string
+          name: string
+          priority?: string | null
+          sla_minutes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          assign_to?: string | null
+          conditions?: Json
+          created_at?: string | null
+          id?: string
+          name?: string
+          priority?: string | null
+          sla_minutes?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sdr_sequence_runs: {
+        Row: {
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          current_step: number | null
+          id: string
+          last_sent_at: string | null
+          next_due_at: string | null
+          sequence_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_sequence_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_sequence_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_sequence_runs_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_sequence_steps: {
+        Row: {
+          channel: string
+          created_at: string | null
+          day_offset: number
+          id: string
+          sequence_id: string | null
+          skip_weekends: boolean | null
+          step_order: number
+          stop_on_reply: boolean | null
+          template_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          day_offset?: number
+          id?: string
+          sequence_id?: string | null
+          skip_weekends?: boolean | null
+          step_order: number
+          stop_on_reply?: boolean | null
+          template_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          day_offset?: number
+          id?: string
+          sequence_id?: string | null
+          skip_weekends?: boolean | null
+          step_order?: number
+          stop_on_reply?: boolean | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_sequence_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_sequences: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sdr_tasks: {
+        Row: {
+          assigned_to: string | null
+          company_id: string | null
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          reminders: Json | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          reminders?: Json | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          reminders?: Json | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_tasks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_templates: {
+        Row: {
+          channel: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          language: string | null
+          name: string
+          subject: string | null
+          updated_at: string | null
+          variables: string[] | null
+        }
+        Insert: {
+          channel: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          language?: string | null
+          name: string
+          subject?: string | null
+          updated_at?: string | null
+          variables?: string[] | null
+        }
+        Update: {
+          channel?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          language?: string | null
+          name?: string
+          subject?: string | null
+          updated_at?: string | null
+          variables?: string[] | null
         }
         Relationships: []
       }
