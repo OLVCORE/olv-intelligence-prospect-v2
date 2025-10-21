@@ -54,6 +54,9 @@ verify_jwt = false
 [functions.sdr-send-message]
 verify_jwt = true
 
+[functions.sdr-sequence-runner]
+verify_jwt = false
+
 [functions.integration-health-check]
 verify_jwt = true
 
