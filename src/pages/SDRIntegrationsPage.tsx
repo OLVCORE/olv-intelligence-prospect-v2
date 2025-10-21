@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Integration {
   id: string;
@@ -29,6 +30,7 @@ interface Integration {
   health_status?: any;
   last_health_check?: string;
   config: any;
+  credentials: any;
 }
 
 export default function SDRIntegrationsPage() {
@@ -305,6 +307,20 @@ function IntegrationForm({
   const [channel, setChannel] = useState(integration?.channel || defaultChannel || 'email');
   const [provider, setProvider] = useState(integration?.provider || 'imap_smtp');
 
+  // Ajusta o provedor padrão de acordo com o canal selecionado (evita salvar sem credenciais)
+  useEffect(() => {
+    if (!integration) {
+      const map: Record<string, string> = {
+        email: 'imap_smtp',
+        whatsapp: 'twilio',
+        sms: 'twilio',
+        telegram: 'bot',
+      };
+      const expected = map[channel];
+      if (expected && provider !== expected) setProvider(expected);
+    }
+  }, [channel, integration]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -337,6 +353,11 @@ function IntegrationForm({
         status: 'inactive',
         user_id: user.id,
       };
+
+      // Validação extra para evitar salvar WhatsApp sem provedor correto
+      if (channel === 'whatsapp' && provider !== 'twilio') {
+        throw new Error('Selecione o provedor Twilio para WhatsApp e preencha as credenciais.');
+      }
 
       if (integration) {
         const { error } = await supabase
@@ -377,25 +398,40 @@ function IntegrationForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="provider">Provedor</Label>
+        <Select value={provider} onValueChange={setProvider}>
+          <SelectTrigger id="provider">
+            <SelectValue placeholder="Selecione um provedor" />
+          </SelectTrigger>
+          <SelectContent>
+            {channel === 'email' && <SelectItem value="imap_smtp">IMAP/SMTP</SelectItem>}
+            {channel === 'whatsapp' && <SelectItem value="twilio">Twilio</SelectItem>}
+            {channel === 'sms' && <SelectItem value="twilio">Twilio</SelectItem>}
+            {channel === 'telegram' && <SelectItem value="bot">Bot API</SelectItem>}
+          </SelectContent>
+        </Select>
+      </div>
+
       {channel === 'email' && provider === 'imap_smtp' && (
         <>
           <div className="space-y-2">
             <Label htmlFor="imap-host">Servidor IMAP</Label>
-            <Input id="imap-host" name="cred.imap.host" placeholder="imap.gmail.com" required />
+            <Input id="imap-host" name="cred.imap.host" placeholder="imap.gmail.com" required defaultValue={String(integration?.credentials?.['imap.host'] ?? '')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="imap-port">Porta IMAP</Label>
-              <Input id="imap-port" name="cred.imap.port" type="number" placeholder="993" required />
+              <Input id="imap-port" name="cred.imap.port" type="number" placeholder="993" required defaultValue={String(integration?.credentials?.['imap.port'] ?? '')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="imap-secure">SSL/TLS</Label>
-              <Input id="imap-secure" name="config.imap.secure" defaultValue="true" />
+              <Input id="imap-secure" name="config.imap.secure" defaultValue={String(integration?.config?.['imap.secure'] ?? 'true')} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-user">Email</Label>
-            <Input id="imap-user" name="cred.imap.user" type="email" required />
+            <Input id="imap-user" name="cred.imap.user" type="email" required defaultValue={String(integration?.credentials?.['imap.user'] ?? '')} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-pass">Senha/App Password</Label>
@@ -403,21 +439,21 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-host">Servidor SMTP</Label>
-            <Input id="smtp-host" name="cred.smtp.host" placeholder="smtp.gmail.com" required />
+            <Input id="smtp-host" name="cred.smtp.host" placeholder="smtp.gmail.com" required defaultValue={String(integration?.credentials?.['smtp.host'] ?? '')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="smtp-port">Porta SMTP</Label>
-              <Input id="smtp-port" name="cred.smtp.port" type="number" placeholder="587" required />
+              <Input id="smtp-port" name="cred.smtp.port" type="number" placeholder="587" required defaultValue={String(integration?.credentials?.['smtp.port'] ?? '')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="smtp-secure">SSL/TLS</Label>
-              <Input id="smtp-secure" name="config.smtp.secure" defaultValue="true" />
+              <Input id="smtp-secure" name="config.smtp.secure" defaultValue={String(integration?.config?.['smtp.secure'] ?? 'true')} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-user">Email SMTP</Label>
-            <Input id="smtp-user" name="cred.smtp.user" type="email" required />
+            <Input id="smtp-user" name="cred.smtp.user" type="email" required defaultValue={String(integration?.credentials?.['smtp.user'] ?? '')} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-pass">Senha SMTP</Label>
@@ -430,7 +466,7 @@ function IntegrationForm({
         <>
           <div className="space-y-2">
             <Label htmlFor="twilio-sid">Account SID</Label>
-            <Input id="twilio-sid" name="cred.accountSid" required />
+            <Input id="twilio-sid" name="cred.accountSid" required defaultValue={String(integration?.credentials?.accountSid ?? '')} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="twilio-token">Auth Token</Label>
@@ -438,7 +474,7 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="twilio-phone">WhatsApp Number</Label>
-            <Input id="twilio-phone" name="cred.phoneNumber" placeholder="+5511999999999" required />
+            <Input id="twilio-phone" name="cred.phoneNumber" placeholder="+5511999999999" required defaultValue={String(integration?.credentials?.phoneNumber ?? '')} />
           </div>
         </>
       )}
