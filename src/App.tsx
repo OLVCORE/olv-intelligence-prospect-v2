@@ -16,6 +16,8 @@ import FitTOTVSPage from "./pages/FitTOTVSPage";
 import BenchmarkPage from "./pages/BenchmarkPage";
 import PlaybooksPage from "./pages/PlaybooksPage";
 import CompanyDetailPage from "./pages/CompanyDetailPage";
+import CanvasPage from "./pages/CanvasPage";
+import CanvasListPage from "./pages/CanvasListPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -115,6 +117,26 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <CompanyDetailPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/canvas"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <CanvasListPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/canvas/:id"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <CanvasPage />
                 </AppLayout>
               </ProtectedRoute>
             }

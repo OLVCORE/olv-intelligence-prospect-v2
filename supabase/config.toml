@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.analyze-totvs-fit]
 verify_jwt = true
+
+[functions.canvas-ai-command]
+verify_jwt = true

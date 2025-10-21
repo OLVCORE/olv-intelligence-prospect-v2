@@ -58,6 +58,53 @@ export type Database = {
           },
         ]
       }
+      canvas: {
+        Row: {
+          company_id: string | null
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_template: boolean | null
+          last_edited_by: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_template?: boolean | null
+          last_edited_by?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_template?: boolean | null
+          last_edited_by?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           cnpj: string | null

@@ -7,7 +7,8 @@ import {
   TrendingUp,
   BookOpen,
   BarChart3,
-  Building2
+  Building2,
+  PenTool
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +63,11 @@ const menuItems = [
     title: "Playbooks",
     icon: BookOpen,
     url: "/playbooks",
+  },
+  {
+    title: "Canvas",
+    icon: PenTool,
+    url: "/canvas",
   },
 ];
 
