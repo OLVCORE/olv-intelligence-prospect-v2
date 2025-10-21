@@ -583,6 +583,48 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_configs: {
+        Row: {
+          channel: string
+          config: Json
+          created_at: string | null
+          credentials: Json
+          health_status: Json | null
+          id: string
+          last_health_check: string | null
+          provider: string
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          config?: Json
+          created_at?: string | null
+          credentials?: Json
+          health_status?: Json | null
+          id?: string
+          last_health_check?: string | null
+          provider: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          config?: Json
+          created_at?: string | null
+          credentials?: Json
+          health_status?: Json | null
+          id?: string
+          last_health_check?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       legal_data: {
         Row: {
           active_processes: number | null
@@ -635,10 +677,12 @@ export type Database = {
           direction: string
           from_id: string | null
           id: string
+          metadata: Json | null
           provider_message_id: string | null
           raw: Json | null
           status: string | null
           to_id: string | null
+          webhook_id: string | null
         }
         Insert: {
           attachments?: Json | null
@@ -649,10 +693,12 @@ export type Database = {
           direction: string
           from_id?: string | null
           id?: string
+          metadata?: Json | null
           provider_message_id?: string | null
           raw?: Json | null
           status?: string | null
           to_id?: string | null
+          webhook_id?: string | null
         }
         Update: {
           attachments?: Json | null
@@ -663,10 +709,12 @@ export type Database = {
           direction?: string
           from_id?: string | null
           id?: string
+          metadata?: Json | null
           provider_message_id?: string | null
           raw?: Json | null
           status?: string | null
           to_id?: string | null
+          webhook_id?: string | null
         }
         Relationships: [
           {
@@ -674,6 +722,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -1220,6 +1275,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          channel: string
+          created_at: string | null
+          error: string | null
+          headers: Json | null
+          id: string
+          payload: Json
+          processed: boolean | null
+          provider: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          error?: string | null
+          headers?: Json | null
+          id?: string
+          payload: Json
+          processed?: boolean | null
+          provider: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          error?: string | null
+          headers?: Json | null
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          provider?: string
         }
         Relationships: []
       }

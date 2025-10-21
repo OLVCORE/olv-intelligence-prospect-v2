@@ -51,5 +51,11 @@ verify_jwt = false
 [functions.sdr-send-message]
 verify_jwt = true
 
-[functions.totvs-integration]
+[functions.integration-health-check]
 verify_jwt = true
+
+[functions.email-imap-receiver]
+verify_jwt = false
+
+[functions.realtime-inbox]
+verify_jwt = false

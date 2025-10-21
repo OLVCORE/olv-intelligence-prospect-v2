@@ -63,8 +63,9 @@ const menuItems = [
       { title: "Dashboard", icon: LayoutDashboard, url: "/sdr/dashboard" },
       { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline" },
       { title: "Inbox", icon: MessageSquare, url: "/sdr/inbox" },
-      { title: "Sequências", icon: MessageSquare, url: "/sdr/sequences" },
+      { title: "Sequências", icon: Zap, url: "/sdr/sequences" },
       { title: "Tarefas", icon: CheckCircle2, url: "/sdr/tasks" },
+      { title: "Integrações", icon: Zap, url: "/sdr/integrations" },
     ],
   },
   {
