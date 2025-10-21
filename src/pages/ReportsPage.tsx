@@ -3,8 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyReport } from "@/components/reports/CompanyReport";
+import { MaturityReport } from "@/components/reports/MaturityReport";
+import { FitReport } from "@/components/reports/FitReport";
 import { FileText, BarChart3, Target } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function ReportsPage() {
@@ -49,12 +50,12 @@ export default function ReportsPage() {
           <TabsTrigger value="maturity" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Maturidade
-            <Badge variant="outline" className="ml-1">Em breve</Badge>
+            <Badge variant="secondary" className="ml-1">Completo</Badge>
           </TabsTrigger>
           <TabsTrigger value="fit" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Fit TOTVS
-            <Badge variant="outline" className="ml-1">Em breve</Badge>
+            <Badge variant="secondary" className="ml-1">Completo</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -62,46 +63,12 @@ export default function ReportsPage() {
           <CompanyReport companyId={companyId} />
         </TabsContent>
 
-        <TabsContent value="maturity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Maturidade Digital</CardTitle>
-              <CardDescription>Análise detalhada da evolução digital da empresa</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-semibold mb-2">Em Desenvolvimento</p>
-                <p className="text-muted-foreground mb-6">
-                  Relatório de Maturidade Digital será implementado em breve
-                </p>
-                <Button variant="outline" disabled>
-                  Aguarde a próxima versão
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="maturity" className="space-y-6">
+          <MaturityReport companyId={companyId} />
         </TabsContent>
 
-        <TabsContent value="fit">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Fit TOTVS</CardTitle>
-              <CardDescription>Análise de adequação aos produtos TOTVS</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-semibold mb-2">Em Desenvolvimento</p>
-                <p className="text-muted-foreground mb-6">
-                  Análise de Fit TOTVS será implementada em breve
-                </p>
-                <Button variant="outline" disabled>
-                  Aguarde a próxima versão
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="fit" className="space-y-6">
+          <FitReport companyId={companyId} />
         </TabsContent>
       </Tabs>
     </div>
