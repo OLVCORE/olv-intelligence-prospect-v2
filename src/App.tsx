@@ -21,10 +21,11 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const IntelligencePage = lazy(() => import("./pages/IntelligencePage"));
+const Intelligence360Page = lazy(() => import("./pages/Intelligence360Page"));
 const MaturityPage = lazy(() => import("./pages/MaturityPage"));
 const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
-const BenchmarkPage = lazy(() => import("./pages/BenchmarkPage"));
+const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
 const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
 const CanvasPage = lazy(() => import("./pages/CanvasPage"));
@@ -117,11 +118,21 @@ const App = () => (
               }
             />
             <Route
+              path="/intelligence-360"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Intelligence360Page />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/benchmark"
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <BenchmarkPage />
+                    <EnhancedBenchmarkPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

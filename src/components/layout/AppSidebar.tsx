@@ -38,6 +38,11 @@ const menuItems = [
     url: "/dashboard",
   },
   {
+    title: "Inteligência 360º",
+    icon: Brain,
+    url: "/intelligence-360",
+  },
+  {
     title: "Buscar Empresas",
     icon: Search,
     url: "/search",
