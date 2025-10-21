@@ -346,9 +346,13 @@ function IntegrationForm({
 
         if (error) throw error;
       } else {
+        // Use upsert to handle duplicate key constraint
         const { error } = await supabase
           .from('integration_configs')
-          .insert([data]);
+          .upsert([data], {
+            onConflict: 'user_id,channel,provider',
+            ignoreDuplicates: false
+          });
 
         if (error) throw error;
       }
