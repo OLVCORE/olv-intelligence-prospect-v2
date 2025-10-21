@@ -41,10 +41,11 @@ export function useGooglePlacesAutocomplete(
   // Inicializar Google Places API
   useEffect(() => {
     const initGooglePlaces = async () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+      // Tentar pegar do localStorage ou .env
+      const apiKey = localStorage.getItem('google_api_key') || import.meta.env.VITE_GOOGLE_API_KEY;
       
       if (!apiKey) {
-        console.error('GOOGLE_API_KEY não configurado');
+        console.warn('Google API Key não configurado - autocomplete desabilitado');
         return;
       }
 
