@@ -35,6 +35,10 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const DigitalPresencePage = lazy(() => import("./pages/DigitalPresencePage"));
 const Analysis360Page = lazy(() => import("./pages/Analysis360Page"));
 const SDRInboxPage = lazy(() => import("./pages/SDRInboxPage"));
+const SDRDashboardPage = lazy(() => import("./pages/SDRDashboardPage"));
+const SDRPipelinePage = lazy(() => import("./pages/SDRPipelinePage"));
+const SDRSequencesPage = lazy(() => import("./pages/SDRSequencesPage"));
+const SDRTasksPage = lazy(() => import("./pages/SDRTasksPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -228,10 +232,42 @@ const App = () => (
               }
             />
             <Route
+              path="/sdr/dashboard"
+              element={
+                <ProtectedRoute>
+                  <SDRDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/pipeline"
+              element={
+                <ProtectedRoute>
+                  <SDRPipelinePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/sdr/inbox"
               element={
                 <ProtectedRoute>
                   <SDRInboxPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/sequences"
+              element={
+                <ProtectedRoute>
+                  <SDRSequencesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/tasks"
+              element={
+                <ProtectedRoute>
+                  <SDRTasksPage />
                 </ProtectedRoute>
               }
             />
