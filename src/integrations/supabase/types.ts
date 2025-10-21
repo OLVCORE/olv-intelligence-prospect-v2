@@ -347,6 +347,255 @@ export type Database = {
           },
         ]
       }
+      digital_presence: {
+        Row: {
+          company_id: string
+          created_at: string
+          engagement_score: number | null
+          facebook_data: Json | null
+          id: string
+          instagram_data: Json | null
+          last_updated: string
+          linkedin_data: Json | null
+          overall_score: number | null
+          social_score: number | null
+          twitter_data: Json | null
+          web_score: number | null
+          website_metrics: Json | null
+          youtube_data: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          engagement_score?: number | null
+          facebook_data?: Json | null
+          id?: string
+          instagram_data?: Json | null
+          last_updated?: string
+          linkedin_data?: Json | null
+          overall_score?: number | null
+          social_score?: number | null
+          twitter_data?: Json | null
+          web_score?: number | null
+          website_metrics?: Json | null
+          youtube_data?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          engagement_score?: number | null
+          facebook_data?: Json | null
+          id?: string
+          instagram_data?: Json | null
+          last_updated?: string
+          linkedin_data?: Json | null
+          overall_score?: number | null
+          social_score?: number | null
+          twitter_data?: Json | null
+          web_score?: number | null
+          website_metrics?: Json | null
+          youtube_data?: Json | null
+        }
+        Relationships: []
+      }
+      financial_data: {
+        Row: {
+          company_id: string
+          created_at: string
+          credit_score: number | null
+          debt_indicators: Json | null
+          financial_indicators: Json | null
+          id: string
+          last_updated: string
+          payment_history: Json | null
+          predictive_risk_score: number | null
+          risk_classification: string | null
+          scpc_data: Json | null
+          serasa_data: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          credit_score?: number | null
+          debt_indicators?: Json | null
+          financial_indicators?: Json | null
+          id?: string
+          last_updated?: string
+          payment_history?: Json | null
+          predictive_risk_score?: number | null
+          risk_classification?: string | null
+          scpc_data?: Json | null
+          serasa_data?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          credit_score?: number | null
+          debt_indicators?: Json | null
+          financial_indicators?: Json | null
+          id?: string
+          last_updated?: string
+          payment_history?: Json | null
+          predictive_risk_score?: number | null
+          risk_classification?: string | null
+          scpc_data?: Json | null
+          serasa_data?: Json | null
+        }
+        Relationships: []
+      }
+      insights: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          description: string | null
+          generated_by: string | null
+          id: string
+          insight_type: string
+          priority: string | null
+          title: string
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          generated_by?: string | null
+          id?: string
+          insight_type: string
+          priority?: string | null
+          title: string
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          generated_by?: string | null
+          id?: string
+          insight_type?: string
+          priority?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      legal_data: {
+        Row: {
+          active_processes: number | null
+          ceis_data: Json | null
+          cnep_data: Json | null
+          company_id: string
+          created_at: string
+          id: string
+          jusbrasil_data: Json | null
+          last_checked: string
+          legal_health_score: number | null
+          risk_level: string | null
+          total_processes: number | null
+        }
+        Insert: {
+          active_processes?: number | null
+          ceis_data?: Json | null
+          cnep_data?: Json | null
+          company_id: string
+          created_at?: string
+          id?: string
+          jusbrasil_data?: Json | null
+          last_checked?: string
+          legal_health_score?: number | null
+          risk_level?: string | null
+          total_processes?: number | null
+        }
+        Update: {
+          active_processes?: number | null
+          ceis_data?: Json | null
+          cnep_data?: Json | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          jusbrasil_data?: Json | null
+          last_checked?: string
+          legal_health_score?: number | null
+          risk_level?: string | null
+          total_processes?: number | null
+        }
+        Relationships: []
+      }
+      news_mentions: {
+        Row: {
+          company_id: string
+          content_summary: string | null
+          created_at: string
+          id: string
+          published_at: string | null
+          raw_data: Json | null
+          sentiment: string | null
+          sentiment_score: number | null
+          source: string | null
+          title: string
+          url: string | null
+        }
+        Insert: {
+          company_id: string
+          content_summary?: string | null
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          raw_data?: Json | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          source?: string | null
+          title: string
+          url?: string | null
+        }
+        Update: {
+          company_id?: string
+          content_summary?: string | null
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          raw_data?: Json | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          source?: string | null
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      pitches: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          pitch_type: string
+          target_persona: string | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          pitch_type: string
+          target_persona?: string | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          pitch_type?: string
+          target_persona?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -374,6 +623,87 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reputation_data: {
+        Row: {
+          company_id: string
+          created_at: string
+          google_reviews_data: Json | null
+          id: string
+          last_updated: string
+          overall_rating: number | null
+          reclame_aqui_data: Json | null
+          reputation_score: number | null
+          sentiment_score: number | null
+          total_reviews: number | null
+          trustpilot_data: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          google_reviews_data?: Json | null
+          id?: string
+          last_updated?: string
+          overall_rating?: number | null
+          reclame_aqui_data?: Json | null
+          reputation_score?: number | null
+          sentiment_score?: number | null
+          total_reviews?: number | null
+          trustpilot_data?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          google_reviews_data?: Json | null
+          id?: string
+          last_updated?: string
+          overall_rating?: number | null
+          reclame_aqui_data?: Json | null
+          reputation_score?: number | null
+          sentiment_score?: number | null
+          total_reviews?: number | null
+          trustpilot_data?: Json | null
+        }
+        Relationships: []
+      }
+      risks: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          detected_at: string
+          id: string
+          raw_data: Json | null
+          risk_type: string
+          severity: string
+          source: string | null
+          status: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          raw_data?: Json | null
+          risk_type: string
+          severity: string
+          source?: string | null
+          status?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          raw_data?: Json | null
+          risk_type?: string
+          severity?: string
+          source?: string | null
+          status?: string | null
         }
         Relationships: []
       }

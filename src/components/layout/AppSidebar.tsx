@@ -12,7 +12,8 @@ import {
   LogOut,
   Settings,
   User,
-  FileText
+  FileText,
+  Radio
 } from "lucide-react";
 import {
   Sidebar,
@@ -75,6 +76,11 @@ const menuItems = [
     title: "Relatórios",
     icon: FileText,
     url: "/reports",
+  },
+  {
+    title: "Presença Digital",
+    icon: Radio,
+    url: "/digital-presence",
   },
   {
     title: "Canvas",

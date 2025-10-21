@@ -30,6 +30,7 @@ const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
 const CanvasPage = lazy(() => import("./pages/CanvasPage"));
 const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const DigitalPresencePage = lazy(() => import("./pages/DigitalPresencePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -180,6 +181,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ReportsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/digital-presence"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <DigitalPresencePage />
                   </AppLayout>
                 </ProtectedRoute>
               }
