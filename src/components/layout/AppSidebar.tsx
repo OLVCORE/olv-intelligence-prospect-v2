@@ -33,9 +33,16 @@ import { Button } from "@/components/ui/button";
 
 const menuItems = [
   {
+    title: "Buscar Empresas",
+    icon: Search,
+    url: "/search",
+    highlighted: true,
+  },
+  {
     title: "Dashboard",
     icon: LayoutDashboard,
     url: "/dashboard",
+    highlighted: true,
   },
   {
     title: "Empresas",
@@ -46,11 +53,6 @@ const menuItems = [
     title: "Inteligência 360º",
     icon: Brain,
     url: "/intelligence-360",
-  },
-  {
-    title: "Buscar Empresas",
-    icon: Search,
-    url: "/search",
   },
   {
     title: "Tech Stack",
@@ -128,7 +130,11 @@ export function AppSidebar() {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive}
+                      className={(item as any).highlighted ? "font-semibold bg-primary/5 border-l-2 border-primary" : ""}
+                    >
                       <Link to={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
