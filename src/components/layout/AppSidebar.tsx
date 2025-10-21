@@ -83,6 +83,11 @@ const menuItems = [
     url: "/digital-presence",
   },
   {
+    title: "Análise 360°",
+    icon: Target,
+    url: "/analysis-360",
+  },
+  {
     title: "Canvas",
     icon: PenTool,
     url: "/canvas",
