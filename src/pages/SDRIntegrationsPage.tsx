@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { UserProfileCard } from '@/components/sdr/UserProfileCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,6 +115,10 @@ export default function SDRIntegrationsPage() {
       case 'whatsapp': return <MessageSquare className="h-5 w-5" />;
       case 'sms': return <Phone className="h-5 w-5" />;
       case 'telegram': return <Send className="h-5 w-5" />;
+      case 'linkedin': return <Send className="h-5 w-5" />;
+      case 'instagram': return <MessageSquare className="h-5 w-5" />;
+      case 'x': return <Send className="h-5 w-5" />;
+      case 'facebook': return <MessageSquare className="h-5 w-5" />;
       default: return <Zap className="h-5 w-5" />;
     }
   };
@@ -144,6 +149,9 @@ export default function SDRIntegrationsPage() {
             Atualizar
           </Button>
         </div>
+
+        {/* User Profile Card */}
+        <UserProfileCard />
 
         <Tabs defaultValue="all">
           <TabsList>
@@ -260,9 +268,13 @@ export default function SDRIntegrationsPage() {
         <div className="grid gap-4 md:grid-cols-4">
           {[
             { channel: 'email', label: 'Email (IMAP/SMTP)', icon: Mail },
-            { channel: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+            { channel: 'whatsapp', label: 'WhatsApp (Meta)', icon: MessageSquare },
             { channel: 'sms', label: 'SMS', icon: Phone },
             { channel: 'telegram', label: 'Telegram', icon: Send },
+            { channel: 'linkedin', label: 'LinkedIn', icon: Send },
+            { channel: 'instagram', label: 'Instagram', icon: MessageSquare },
+            { channel: 'x', label: 'X (Twitter)', icon: Send },
+            { channel: 'facebook', label: 'Facebook', icon: MessageSquare },
           ].map((item) => (
             <Dialog key={item.channel}>
               <DialogTrigger asChild>
@@ -312,14 +324,18 @@ function IntegrationForm({
     if (!integration) {
       const map: Record<string, string> = {
         email: 'imap_smtp',
-        whatsapp: 'twilio',
+        whatsapp: 'meta_cloud',
         sms: 'twilio',
         telegram: 'bot',
+        linkedin: 'api',
+        instagram: 'graph_api',
+        x: 'api',
+        facebook: 'graph_api',
       };
       const expected = map[channel];
       if (expected && provider !== expected) setProvider(expected);
     }
-  }, [channel, integration]);
+  }, [channel, integration, provider]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,9 +370,9 @@ function IntegrationForm({
         user_id: user.id,
       };
 
-      // Validação extra para evitar salvar WhatsApp sem provedor correto
-      if (channel === 'whatsapp' && provider !== 'twilio') {
-        throw new Error('Selecione o provedor Twilio para WhatsApp e preencha as credenciais.');
+      // Validação extra para evitar salvar sem provedor correto
+      if (channel === 'whatsapp' && !['meta_cloud', 'twilio'].includes(provider)) {
+        throw new Error('Selecione um provedor válido para WhatsApp (Meta Cloud ou Twilio).');
       }
 
       if (integration) {
@@ -406,9 +422,18 @@ function IntegrationForm({
           </SelectTrigger>
           <SelectContent>
             {channel === 'email' && <SelectItem value="imap_smtp">IMAP/SMTP</SelectItem>}
-            {channel === 'whatsapp' && <SelectItem value="twilio">Twilio</SelectItem>}
+            {channel === 'whatsapp' && (
+              <>
+                <SelectItem value="meta_cloud">Meta Cloud API</SelectItem>
+                <SelectItem value="twilio">Twilio WhatsApp</SelectItem>
+              </>
+            )}
             {channel === 'sms' && <SelectItem value="twilio">Twilio</SelectItem>}
             {channel === 'telegram' && <SelectItem value="bot">Bot API</SelectItem>}
+            {channel === 'linkedin' && <SelectItem value="api">LinkedIn API</SelectItem>}
+            {channel === 'instagram' && <SelectItem value="graph_api">Instagram Graph API</SelectItem>}
+            {channel === 'x' && <SelectItem value="api">X API v2</SelectItem>}
+            {channel === 'facebook' && <SelectItem value="graph_api">Facebook Graph API</SelectItem>}
           </SelectContent>
         </Select>
       </div>
@@ -462,6 +487,23 @@ function IntegrationForm({
         </>
       )}
 
+      {channel === 'whatsapp' && provider === 'meta_cloud' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="meta-token">Access Token</Label>
+            <Input id="meta-token" name="cred.accessToken" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="meta-phone-id">Phone Number ID</Label>
+            <Input id="meta-phone-id" name="cred.phoneNumberId" required defaultValue={String(integration?.credentials?.phoneNumberId ?? '')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="meta-business-id">WhatsApp Business Account ID</Label>
+            <Input id="meta-business-id" name="cred.businessAccountId" required defaultValue={String(integration?.credentials?.businessAccountId ?? '')} />
+          </div>
+        </>
+      )}
+
       {channel === 'whatsapp' && provider === 'twilio' && (
         <>
           <div className="space-y-2">
@@ -475,6 +517,66 @@ function IntegrationForm({
           <div className="space-y-2">
             <Label htmlFor="twilio-phone">WhatsApp Number</Label>
             <Input id="twilio-phone" name="cred.phoneNumber" placeholder="+5511999999999" required defaultValue={String(integration?.credentials?.phoneNumber ?? '')} />
+          </div>
+        </>
+      )}
+
+      {channel === 'linkedin' && provider === 'api' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="linkedin-token">Access Token</Label>
+            <Input id="linkedin-token" name="cred.accessToken" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="linkedin-org">Organization ID</Label>
+            <Input id="linkedin-org" name="cred.organizationId" defaultValue={String(integration?.credentials?.organizationId ?? '')} />
+          </div>
+        </>
+      )}
+
+      {channel === 'instagram' && provider === 'graph_api' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="ig-token">Access Token</Label>
+            <Input id="ig-token" name="cred.accessToken" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ig-account">Instagram Account ID</Label>
+            <Input id="ig-account" name="cred.instagramAccountId" required defaultValue={String(integration?.credentials?.instagramAccountId ?? '')} />
+          </div>
+        </>
+      )}
+
+      {channel === 'x' && provider === 'api' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="x-api-key">API Key</Label>
+            <Input id="x-api-key" name="cred.apiKey" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="x-api-secret">API Secret</Label>
+            <Input id="x-api-secret" name="cred.apiSecret" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="x-access-token">Access Token</Label>
+            <Input id="x-access-token" name="cred.accessToken" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="x-access-secret">Access Token Secret</Label>
+            <Input id="x-access-secret" name="cred.accessTokenSecret" type="password" required />
+          </div>
+        </>
+      )}
+
+      {channel === 'facebook' && provider === 'graph_api' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="fb-token">Access Token</Label>
+            <Input id="fb-token" name="cred.accessToken" type="password" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fb-page">Page ID</Label>
+            <Input id="fb-page" name="cred.pageId" required defaultValue={String(integration?.credentials?.pageId ?? '')} />
           </div>
         </>
       )}
