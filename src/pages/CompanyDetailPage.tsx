@@ -1,5 +1,6 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +9,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
-  CheckCircle, TrendingUp, Activity
+  CheckCircle, TrendingUp, Activity, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -538,6 +552,14 @@ export default function CompanyDetailPage() {
                   <Shield className="h-4 w-4 mr-2" />
                   Atualizar Dados da Receita
                 </Button>
+                <Button 
+                  className="w-full" 
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Empresa
+                </Button>
               </CardContent>
             </Card>
 
@@ -569,6 +591,43 @@ export default function CompanyDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{company?.name}</strong>?
+              Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from('companies')
+                    .delete()
+                    .eq('id', id);
+
+                  if (error) throw error;
+
+                  toast.success('Empresa excluída com sucesso');
+                  navigate('/companies');
+                } catch (error) {
+                  console.error('Error deleting company:', error);
+                  toast.error('Erro ao excluir empresa');
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
