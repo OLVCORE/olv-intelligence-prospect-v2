@@ -67,6 +67,8 @@ export default function LocationMap({
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
           style: 'mapbox://styles/mapbox/light-v11',
+          center: [-47.8825, -15.7942], // Centro do Brasil (fallback inicial)
+          zoom: 3.8,
         });
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -80,6 +82,28 @@ export default function LocationMap({
           console.log('✅ Mapa Mapbox carregado com sucesso');
            setMapReady(true);
            setMapError(null);
+
+          // Centralizar na localização do usuário no primeiro carregamento (com fallback por IP)
+          if (!address && !cep && !municipio && !estado) {
+            const jumpTo = (lng: number, lat: number, zoom = 12) => {
+              try { map.current?.jumpTo({ center: [lng, lat], zoom }); } catch {}
+            };
+
+            if ('geolocation' in navigator) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => jumpTo(pos.coords.longitude, pos.coords.latitude, 13),
+                async () => {
+                  try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    const j = await res.json();
+                    if (j?.longitude && j?.latitude) jumpTo(j.longitude, j.latitude, 11);
+                  } catch {}
+                },
+                { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 }
+              );
+            }
+          }
+
           // Garantir renderização correta após layout
           try {
             map.current?.resize();
@@ -140,6 +164,11 @@ export default function LocationMap({
   // Adicionar círculo de área (quando não tem número exato)
   const addCircle = (lng: number, lat: number, radius: number) => {
     if (!map.current) return;
+
+    if (!map.current.isStyleLoaded()) {
+      map.current.once('style.load', () => addCircle(lng, lat, radius));
+      return;
+    }
 
     removeCircle();
 
@@ -214,8 +243,25 @@ export default function LocationMap({
         zoomLevel = 8;
         showAreaCircle = true;
       } else {
-        // Sem dados suficientes, não fazer nada
+        // Sem dados suficientes -> centralizar na localização do usuário (geolocalização com fallback por IP)
         console.log('⚠️ Sem dados suficientes para geocodificar');
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              try { map.current?.jumpTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 13 }); } catch {}
+            },
+            async () => {
+              try {
+                const res = await fetch('https://ipapi.co/json/');
+                const j = await res.json();
+                if (j?.longitude && j?.latitude) {
+                  try { map.current?.jumpTo({ center: [j.longitude, j.latitude], zoom: 11 }); } catch {}
+                }
+              } catch {}
+            },
+            { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 }
+          );
+        }
         return;
       }
 
