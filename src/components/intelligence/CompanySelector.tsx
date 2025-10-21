@@ -56,6 +56,7 @@ export function CompanySelector({
   const handleSelect = (company: any) => {
     setSelectedCompany(company);
     setOpen(false);
+    setSearch(''); // Limpa a busca ao selecionar
     
     if (onSelect) {
       onSelect(company.id);
@@ -110,25 +111,32 @@ export function CompanySelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between hover:bg-accent", className)}
+          size="lg"
         >
           {selectedCompany ? (
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="truncate">{selectedCompany.name}</span>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="truncate font-medium">{selectedCompany.name}</span>
               {selectedCompany.cnpj && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs shrink-0">
                   {selectedCompany.cnpj}
                 </Badge>
               )}
             </div>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Search className="h-4 w-4" />
+              <span>{placeholder}</span>
+            </div>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[700px] p-0 bg-popover border-border shadow-lg z-50" align="start">
+      <PopoverContent 
+        className="w-[700px] p-0 bg-popover border-border shadow-lg z-50" 
+        align="start"
+      >
         <div className="border-b border-border p-3 bg-muted/50">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -137,7 +145,6 @@ export function CompanySelector({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-background"
-              autoFocus
             />
           </div>
           <div className="flex items-center justify-between mt-2 text-xs">
