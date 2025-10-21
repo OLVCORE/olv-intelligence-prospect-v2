@@ -7,8 +7,26 @@ export const cnpjSchema = z.string()
   .refine(s => s.length === 14, 'CNPJ deve ter 14 dígitos');
 
 export const companySearchSchema = z.object({
+  // Busca principal
   query: z.string().trim().min(2, 'Mínimo 2 caracteres').max(200, 'Máximo 200 caracteres').optional(),
-  cnpj: cnpjSchema.optional()
+  cnpj: cnpjSchema.optional(),
+  
+  // Presença Digital (campos de refinamento)
+  website: z.string().trim().url('URL inválida').optional().or(z.literal('')),
+  instagram: z.string().trim().max(100).optional(),
+  linkedin: z.string().trim().max(200).optional(),
+  
+  // Produtos & Segmentação
+  produto: z.string().trim().max(100).optional(),
+  marca: z.string().trim().max(100).optional(),
+  linkProduto: z.string().trim().url('URL inválida').optional().or(z.literal('')),
+  
+  // Localização
+  logradouro: z.string().trim().max(200).optional(),
+  bairro: z.string().trim().max(100).optional(),
+  municipio: z.string().trim().max(100).optional(),
+  estado: z.string().trim().max(2).optional(),
+  pais: z.string().trim().max(100).optional()
 }).refine(data => data.query || data.cnpj, {
   message: 'Informe uma empresa ou CNPJ para buscar'
 });

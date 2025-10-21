@@ -126,8 +126,31 @@ serve(async (req) => {
     // Parse and validate input
     const body = await req.json();
     const validated = companySearchSchema.parse(body);
-    const { query, cnpj } = validated;
-    console.log('[Search] Iniciando busca:', { query, cnpj });
+    const { 
+      query, 
+      cnpj, 
+      website, 
+      instagram, 
+      linkedin,
+      produto,
+      marca,
+      linkProduto,
+      logradouro,
+      bairro,
+      municipio,
+      estado,
+      pais
+    } = validated;
+    
+    console.log('[Search] Iniciando busca:', { 
+      query, 
+      cnpj,
+      refinamentos: {
+        presencaDigital: { website, instagram, linkedin },
+        produtos: { produto, marca, linkProduto },
+        localizacao: { municipio, estado, pais, bairro, logradouro }
+      }
+    });
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -143,28 +166,61 @@ serve(async (req) => {
 
     // 2. Buscar dados do Apollo.io
     const companyName = query || receitaData?.nome || '';
-    const domain = receitaData?.email?.split('@')[1] || '';
+    
+    // Usar website fornecido ou extrair do email da ReceitaWS
+    let domain = '';
+    if (website) {
+      // Extrair domínio do website fornecido
+      try {
+        domain = new URL(website).hostname.replace('www.', '');
+      } catch {
+        domain = website.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+      }
+    } else {
+      domain = receitaData?.email?.split('@')[1] || '';
+    }
     
     const apolloData = await fetchApolloData(companyName, domain);
     console.log('[Search] Apollo:', apolloData ? '✅' : '❌');
+    
+    // Log de dados de refinamento usados
+    if (instagram || linkedin || produto || marca || municipio) {
+      console.log('[Search] Refinamentos aplicados:', {
+        instagram: !!instagram,
+        linkedin: !!linkedin,
+        produto: !!produto,
+        marca: !!marca,
+        localizacao: !!municipio || !!estado || !!pais
+      });
+    }
 
-    // 3. Salvar empresa no banco
+    // 3. Salvar empresa no banco (com dados de refinamento)
     const companyPayload = {
       name: companyName,
       cnpj: cnpj || receitaData?.cnpj,
       domain: domain || apolloData?.primary_domain,
-      website: apolloData?.website_url || receitaData?.fantasia,
+      website: website || apolloData?.website_url || receitaData?.fantasia,
       industry: apolloData?.industry || receitaData?.atividade_principal?.[0]?.text,
       employees: apolloData?.estimated_num_employees || 0,
       revenue: apolloData?.annual_revenue,
       location: {
-        city: apolloData?.city || receitaData?.municipio,
-        state: apolloData?.state || receitaData?.uf,
-        country: apolloData?.country || 'Brasil'
+        city: municipio || apolloData?.city || receitaData?.municipio,
+        state: estado || apolloData?.state || receitaData?.uf,
+        country: pais || apolloData?.country || 'Brasil',
+        ...(bairro && { bairro }),
+        ...(logradouro && { logradouro })
       },
-      linkedin_url: apolloData?.linkedin_url,
+      linkedin_url: linkedin || apolloData?.linkedin_url,
       technologies: apolloData?.technologies || [],
-      raw_data: { receita: receitaData, apollo: apolloData }
+      raw_data: { 
+        receita: receitaData, 
+        apollo: apolloData,
+        refinamentos: {
+          presencaDigital: { website, instagram, linkedin },
+          produtos: { produto, marca, linkProduto },
+          localizacao: { logradouro, bairro, municipio, estado, pais }
+        }
+      }
     };
 
     const { data: company, error: companyError } = await supabase
@@ -222,10 +278,23 @@ serve(async (req) => {
       }
     }
 
-    // 6. Registrar no histórico
+    // 6. Registrar no histórico (com filtros de refinamento)
     await supabase.from('search_history').insert({
       query: query || cnpj,
-      filters: { cnpj: !!cnpj },
+      filters: { 
+        cnpj: !!cnpj,
+        hasWebsite: !!website,
+        hasInstagram: !!instagram,
+        hasLinkedin: !!linkedin,
+        hasProduto: !!produto,
+        hasMarca: !!marca,
+        hasLocalizacao: !!(municipio || estado || pais),
+        refinamentos: {
+          presencaDigital: { website, instagram, linkedin },
+          produtos: { produto, marca, linkProduto },
+          localizacao: { logradouro, bairro, municipio, estado, pais }
+        }
+      },
       results_count: 1
     });
 

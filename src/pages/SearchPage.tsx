@@ -23,10 +23,22 @@ export default function SearchPage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // Campos de refinamento
+  // Campos de refinamento - Presença Digital
   const [website, setWebsite] = useState("");
   const [instagram, setInstagram] = useState("");
   const [linkedin, setLinkedin] = useState("");
+  
+  // Campos de refinamento - Produtos/Segmentação
+  const [produto, setProduto] = useState("");
+  const [marca, setMarca] = useState("");
+  const [linkProduto, setLinkProduto] = useState("");
+  
+  // Campos de refinamento - Localização
+  const [logradouro, setLogradouro] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [estado, setEstado] = useState("");
+  const [pais, setPais] = useState("Brasil");
 
   // Fetch autocomplete suggestions from Google
   const fetchSuggestions = async (query: string) => {
@@ -101,10 +113,22 @@ export default function SearchPage() {
         [searchType]: searchQuery,
       };
 
-      // Adicionar campos de refinamento se fornecidos
+      // Adicionar campos de refinamento - Presença Digital
       if (website) searchBody.website = website;
       if (instagram) searchBody.instagram = instagram;
       if (linkedin) searchBody.linkedin = linkedin;
+      
+      // Adicionar campos de refinamento - Produtos
+      if (produto) searchBody.produto = produto;
+      if (marca) searchBody.marca = marca;
+      if (linkProduto) searchBody.linkProduto = linkProduto;
+      
+      // Adicionar campos de refinamento - Localização
+      if (logradouro) searchBody.logradouro = logradouro;
+      if (bairro) searchBody.bairro = bairro;
+      if (municipio) searchBody.municipio = municipio;
+      if (estado) searchBody.estado = estado;
+      if (pais && pais !== "Brasil") searchBody.pais = pais;
 
       const { data, error } = await supabase.functions.invoke('search-companies', {
         body: searchBody,
@@ -251,53 +275,185 @@ export default function SearchPage() {
                   </p>
                 </div>
                 
-                {/* Campos de refinamento */}
+                {/* Campos de refinamento em duas colunas */}
                 <div className="space-y-4 pt-4 border-t">
                   <Label className="text-sm font-semibold">Campos de Refinamento (Opcional)</Label>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="website" className="text-xs flex items-center gap-2">
-                      <Globe className="h-3 w-3" />
-                      Website
-                    </Label>
-                    <Input
-                      id="website"
-                      placeholder="https://exemplo.com.br"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      disabled={isSearching}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Coluna 1: Presença Digital */}
+                    <div className="space-y-3">
+                      <Label className="text-xs font-semibold text-primary">Presença Digital</Label>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="website" className="text-xs flex items-center gap-2">
+                          <Globe className="h-3 w-3" />
+                          Website
+                        </Label>
+                        <Input
+                          id="website"
+                          placeholder="https://exemplo.com.br"
+                          value={website}
+                          onChange={(e) => setWebsite(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram" className="text-xs flex items-center gap-2">
+                          <Instagram className="h-3 w-3" />
+                          Instagram
+                        </Label>
+                        <Input
+                          id="instagram"
+                          placeholder="@olvinternacional ou instagram.com/..."
+                          value={instagram}
+                          onChange={(e) => setInstagram(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedin" className="text-xs flex items-center gap-2">
+                          <Linkedin className="h-3 w-3" />
+                          LinkedIn
+                        </Label>
+                        <Input
+                          id="linkedin"
+                          placeholder="linkedin.com/company/empresa"
+                          value={linkedin}
+                          onChange={(e) => setLinkedin(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Coluna 2: Produtos e Localização */}
+                    <div className="space-y-3">
+                      <Label className="text-xs font-semibold text-primary">Produtos & Segmentação</Label>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="produto" className="text-xs">
+                          Produto / Categoria
+                        </Label>
+                        <Input
+                          id="produto"
+                          placeholder="ERP, CRM, Software, etc"
+                          value={produto}
+                          onChange={(e) => setProduto(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="marca" className="text-xs">
+                          Marca
+                        </Label>
+                        <Input
+                          id="marca"
+                          placeholder="Nome da marca"
+                          value={marca}
+                          onChange={(e) => setMarca(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="linkProduto" className="text-xs">
+                          Link do Produto/Marketplace
+                        </Label>
+                        <Input
+                          id="linkProduto"
+                          placeholder="mercadolivre.com.br/..., alibaba.com/..."
+                          value={linkProduto}
+                          onChange={(e) => setLinkProduto(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="instagram" className="text-xs flex items-center gap-2">
-                      <Instagram className="h-3 w-3" />
-                      Instagram
-                    </Label>
-                    <Input
-                      id="instagram"
-                      placeholder="@empresa"
-                      value={instagram}
-                      onChange={(e) => setInstagram(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      disabled={isSearching}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="linkedin" className="text-xs flex items-center gap-2">
-                      <Linkedin className="h-3 w-3" />
-                      LinkedIn
-                    </Label>
-                    <Input
-                      id="linkedin"
-                      placeholder="linkedin.com/company/empresa"
-                      value={linkedin}
-                      onChange={(e) => setLinkedin(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      disabled={isSearching}
-                    />
+                  {/* Seção de Localização (largura total) */}
+                  <div className="space-y-3 pt-3 border-t">
+                    <Label className="text-xs font-semibold text-primary">Localização</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="municipio" className="text-xs">
+                          Município
+                        </Label>
+                        <Input
+                          id="municipio"
+                          placeholder="São Paulo"
+                          value={municipio}
+                          onChange={(e) => setMunicipio(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="estado" className="text-xs">
+                          Estado
+                        </Label>
+                        <Input
+                          id="estado"
+                          placeholder="SP"
+                          value={estado}
+                          onChange={(e) => setEstado(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="pais" className="text-xs">
+                          País
+                        </Label>
+                        <Input
+                          id="pais"
+                          placeholder="Brasil"
+                          value={pais}
+                          onChange={(e) => setPais(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="bairro" className="text-xs">
+                          Bairro
+                        </Label>
+                        <Input
+                          id="bairro"
+                          placeholder="Nome do bairro"
+                          value={bairro}
+                          onChange={(e) => setBairro(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="logradouro" className="text-xs">
+                          Logradouro
+                        </Label>
+                        <Input
+                          id="logradouro"
+                          placeholder="Rua, Av, etc"
+                          value={logradouro}
+                          onChange={(e) => setLogradouro(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
