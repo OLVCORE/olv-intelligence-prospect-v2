@@ -28,6 +28,7 @@ export default function LocationMap({
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const circle = useRef<string | null>(null); // ID da camada de círculo
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [loading, setLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
@@ -62,9 +63,7 @@ export default function LocationMap({
       try {
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [-47.8825, -15.7942],
-          zoom: 4,
+          style: 'mapbox://styles/mapbox/light-v11',
         });
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -83,6 +82,20 @@ export default function LocationMap({
           } catch (e) {
             console.warn('Map resize após load falhou:', e);
           }
+
+          // Reajustar também quando o estilo terminar de carregar
+          map.current?.on('style.load', () => {
+            try { map.current?.resize(); } catch {}
+          });
+
+          // Observar mudanças de tamanho do container e forçar resize
+          if (mapContainer.current && 'ResizeObserver' in window) {
+            resizeObserverRef.current?.disconnect();
+            resizeObserverRef.current = new ResizeObserver(() => {
+              try { map.current?.resize(); } catch {}
+            });
+            resizeObserverRef.current.observe(mapContainer.current);
+          }
         });
 
         map.current.on('error', (e) => {
@@ -96,6 +109,7 @@ export default function LocationMap({
     initMap();
 
     return () => {
+      try { resizeObserverRef.current?.disconnect(); } catch {}
       map.current?.remove();
     };
   }, []);
