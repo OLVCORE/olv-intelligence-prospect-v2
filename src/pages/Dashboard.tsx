@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { EdgeFunctionTester } from "@/components/debug/EdgeFunctionTester";
 
 function CompaniesTable() {
   const { data: companies, isLoading } = useQuery({
@@ -178,6 +179,12 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {import.meta.env.DEV && (
+        <div className="mt-8">
+          <EdgeFunctionTester />
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 mt-8">
         <Card>
