@@ -33,6 +33,9 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   
   // Autocomplete states
@@ -145,6 +148,7 @@ export default function SearchPage() {
     }
 
     setIsSearching(true);
+    setPreviewData(null);
     setResult(null);
     setShowSuggestions(false);
 
@@ -184,16 +188,14 @@ export default function SearchPage() {
         throw new Error('Erro ao buscar empresa');
       }
 
-      setResult(data);
+      // Armazenar dados no preview ao invés de salvar direto
+      setPreviewData(data);
+      setShowPreview(true);
+      
       toast({
         title: "Empresa encontrada!",
-        description: `${data.company.name} foi cadastrada com sucesso`,
+        description: `Revise os dados de ${data.company.name} antes de confirmar`,
       });
-      
-      // Redirecionar para página de detalhes
-      setTimeout(() => {
-        window.location.href = `/company/${data.company.id}`;
-      }, 1500);
     } catch (error: any) {
       toast({
         title: "Erro na busca",
@@ -203,6 +205,32 @@ export default function SearchPage() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const confirmSave = () => {
+    if (!previewData) return;
+    
+    setResult(previewData);
+    setShowPreview(false);
+    
+    toast({
+      title: "Empresa salva!",
+      description: `${previewData.company.name} foi cadastrada com sucesso`,
+    });
+    
+    // Redirecionar para página de detalhes
+    setTimeout(() => {
+      window.location.href = `/company/${previewData.company.id}`;
+    }, 1500);
+  };
+
+  const cancelPreview = () => {
+    setShowPreview(false);
+    setPreviewData(null);
+    toast({
+      title: "Cancelado",
+      description: "A empresa não foi salva",
+    });
   };
 
   return (
@@ -677,7 +705,118 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Card de Resultados (full width) */}
+      {/* Dialog de Preview antes de salvar */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Preview da Empresa
+            </DialogTitle>
+            <DialogDescription>
+              Revise os dados encontrados antes de confirmar o cadastro
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewData && (
+            <div className="space-y-6">
+              <div className="bg-accent/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-2">{previewData.company.name}</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">CNPJ</Label>
+                    <p className="font-medium">{previewData.company.cnpj || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Website</Label>
+                    <p className="font-medium">{previewData.company.website || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Setor</Label>
+                    <p className="font-medium">{previewData.company.industry || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Funcionários</Label>
+                    <p className="font-medium">{previewData.company.employees || 'Não informado'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">Decisores</span>
+                    </div>
+                    <span className="text-2xl font-bold text-primary">{previewData.stats.decisors}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <BarChart className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">Maturidade Digital</span>
+                    </div>
+                    <span className="text-2xl font-bold text-primary">
+                      {previewData.company.digital_maturity_score ? previewData.company.digital_maturity_score.toFixed(1) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-xs text-muted-foreground mb-2">O que será salvo:</p>
+                <ul className="text-sm space-y-1">
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                    Dados da empresa e informações de contato
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                    {previewData.stats.decisors} decisores identificados
+                  </li>
+                  {previewData.stats.hasMaturity && (
+                    <li className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                      Análise de maturidade digital
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={confirmSave}
+                  disabled={isSaving}
+                  className="flex-1"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Confirmar e Salvar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={cancelPreview}
+                  variant="outline"
+                  disabled={isSaving}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Card de Resultados confirmados (full width) */}
       {result && (
         <Card className="mt-6">
           <CardHeader>
@@ -685,7 +824,7 @@ export default function SearchPage() {
               <Building2 className="h-5 w-5" />
               {result.company.name}
             </CardTitle>
-            <CardDescription>Dados da empresa e análise completa</CardDescription>
+            <CardDescription>Dados da empresa salvos e análise completa</CardDescription>
           </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">

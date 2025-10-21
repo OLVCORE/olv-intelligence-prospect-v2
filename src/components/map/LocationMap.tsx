@@ -64,17 +64,29 @@ export default function LocationMap({
     if (!map.current || !mapReady) return;
 
     const geocodeAddress = async () => {
-      const parts = [address, municipio, estado, pais].filter(Boolean);
-      if (parts.length === 0) return;
+      // Priorizar CEP se disponível
+      let searchText = '';
+      let zoomLevel = 6;
 
-      const searchText = parts.join(', ');
+      if (cep && cep.length >= 8) {
+        // Se CEP está preenchido, usar apenas ele para busca mais precisa
+        searchText = `${cep}, Brasil`;
+        zoomLevel = 15;
+      } else {
+        // Caso contrário, construir endereço a partir dos campos disponíveis
+        const parts = [address, municipio, estado, pais].filter(Boolean);
+        if (parts.length === 0) return;
+        searchText = parts.join(', ');
+        zoomLevel = municipio ? 12 : estado ? 8 : 6;
+      }
+
       setLoading(true);
 
       try {
         const { data, error } = await supabase.functions.invoke('mapbox-geocode', {
           body: { 
             searchText,
-            zoom: municipio ? 12 : estado ? 8 : 6
+            zoom: zoomLevel
           }
         });
 
