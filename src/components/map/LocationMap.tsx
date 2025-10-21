@@ -31,35 +31,53 @@ export default function LocationMap({
   const [loading, setLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
-  // Inicializar mapa (sem token - será usado via edge function)
+  // Inicializar mapa com token público do Mapbox
   useEffect(() => {
     if (!mapContainer.current) return;
     if (map.current) return;
 
-    // Token público dummy - não usado para geocoding (usamos edge function)
-    mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZS1kZW1vIiwiYSI6ImNtNWp0ZGg5YzBiZHoya3F3NzVxenRyOWUifQ.demo';
+    // Usar token público do Mapbox (configurado como secret)
+    const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+    
+    if (!mapboxToken) {
+      console.error('❌ Token do Mapbox não configurado');
+      return;
+    }
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-47.8825, -15.7942],
-      zoom: 4,
-    });
+    mapboxgl.accessToken = mapboxToken;
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    console.log('🗺️ Inicializando mapa Mapbox...');
 
-    marker.current = new mapboxgl.Marker({
-      draggable: false,
-      color: '#3b82f6'
-    });
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-47.8825, -15.7942],
+        zoom: 4,
+      });
 
-    map.current.on('load', () => {
-      setMapReady(true);
-    });
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    return () => {
-      map.current?.remove();
-    };
+      marker.current = new mapboxgl.Marker({
+        draggable: false,
+        color: '#3b82f6'
+      });
+
+      map.current.on('load', () => {
+        console.log('✅ Mapa Mapbox carregado com sucesso');
+        setMapReady(true);
+      });
+
+      map.current.on('error', (e) => {
+        console.error('❌ Erro ao carregar mapa Mapbox:', e);
+      });
+
+      return () => {
+        map.current?.remove();
+      };
+    } catch (error) {
+      console.error('❌ Erro ao inicializar mapa:', error);
+    }
   }, []);
 
   // Remover círculo existente
