@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Linkedin, Scale, DollarSign, Star } from 'lucide-react';
+import { CompanySelector } from '@/components/intelligence/CompanySelector';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Linkedin, Scale, DollarSign, Star, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DigitalHealthScore } from '@/lib/engines/intelligence/digitalHealthScore';
 
@@ -153,10 +154,25 @@ export default function DigitalPresencePage() {
 
   if (!company || !healthScore) {
     return (
-      <div className="p-8">
+      <div className="p-8 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Painel de Presença Digital</h1>
+          <p className="text-muted-foreground">
+            Análise completa de saúde digital, jurídica, financeira e reputação
+          </p>
+        </div>
         <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">Selecione uma empresa para visualizar o painel de presença digital.</p>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Selecione uma Empresa
+            </CardTitle>
+            <CardDescription>
+              Escolha uma empresa da base para visualizar o painel de presença digital
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CompanySelector redirectTo="/digital-presence" />
           </CardContent>
         </Card>
       </div>

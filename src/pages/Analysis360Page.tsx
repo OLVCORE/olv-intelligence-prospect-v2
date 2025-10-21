@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { CompanySelector } from '@/components/intelligence/CompanySelector';
 import { 
   Loader2, Building2, TrendingUp, AlertTriangle, CheckCircle, 
   Linkedin, Scale, DollarSign, Star, ShoppingCart, Server, 
@@ -110,10 +111,25 @@ export default function Analysis360Page() {
 
   if (!company) {
     return (
-      <div className="p-8">
+      <div className="p-8 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Análise 360° Completa</h1>
+          <p className="text-muted-foreground">
+            Análise detalhada de presença digital, jurídica, financeira e reputação
+          </p>
+        </div>
         <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">Selecione uma empresa para visualizar a análise 360°.</p>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Selecione uma Empresa
+            </CardTitle>
+            <CardDescription>
+              Escolha uma empresa da base para visualizar a análise 360° completa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CompanySelector redirectTo="/analysis-360" />
           </CardContent>
         </Card>
       </div>

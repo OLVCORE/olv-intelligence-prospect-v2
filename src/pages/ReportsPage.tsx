@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { MaturityReport } from "@/components/reports/MaturityReport";
 import { FitReport } from "@/components/reports/FitReport";
-import { FileText, BarChart3, Target } from "lucide-react";
+import { CompanySelector } from "@/components/intelligence/CompanySelector";
+import { FileText, BarChart3, Target, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function ReportsPage() {
@@ -15,16 +16,25 @@ export default function ReportsPage() {
 
   if (!companyId) {
     return (
-      <div className="p-8">
+      <div className="p-8 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Relatórios Executivos</h1>
+          <p className="text-muted-foreground">
+            Análises completas e insights acionáveis gerados por IA
+          </p>
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle>Relatórios</CardTitle>
-            <CardDescription>Selecione uma empresa para gerar relatórios</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Selecione uma Empresa
+            </CardTitle>
+            <CardDescription>
+              Escolha uma empresa da base para gerar relatórios executivos
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Nenhuma empresa selecionada. Vá para a página de empresas e selecione uma para visualizar relatórios.
-            </p>
+            <CompanySelector redirectTo="/reports" queryParamName="companyId" />
           </CardContent>
         </Card>
       </div>
