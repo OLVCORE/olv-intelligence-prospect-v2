@@ -310,6 +310,12 @@ function IntegrationForm({
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const formData = new FormData(e.target as HTMLFormElement);
       const config = {};
       const credentials = {};
@@ -329,6 +335,7 @@ function IntegrationForm({
         config,
         credentials,
         status: 'inactive',
+        user_id: user.id,
       };
 
       if (integration) {
