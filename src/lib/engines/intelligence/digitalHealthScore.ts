@@ -50,6 +50,7 @@ export interface DigitalHealthScore {
     type: string;
     severity: 'baixa' | 'media' | 'alta' | 'critica';
     description: string;
+    source?: string;
   }>;
   opportunities: string[];
 }
@@ -231,8 +232,8 @@ function generateRecommendations(input: DigitalHealthInput, overall: number): st
   return recs;
 }
 
-function identifyRisks(input: DigitalHealthInput): Array<{ type: string; severity: 'baixa' | 'media' | 'alta' | 'critica'; description: string }> {
-  const risks: Array<{ type: string; severity: 'baixa' | 'media' | 'alta' | 'critica'; description: string }> = [];
+function identifyRisks(input: DigitalHealthInput): Array<{ type: string; severity: 'baixa' | 'media' | 'alta' | 'critica'; description: string; source?: string }> {
+  const risks: Array<{ type: string; severity: 'baixa' | 'media' | 'alta' | 'critica'; description: string; source?: string }> = [];
 
   // Riscos jurídicos
   if (input.legal) {

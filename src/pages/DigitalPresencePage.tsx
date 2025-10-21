@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanySelector } from '@/components/intelligence/CompanySelector';
-import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Linkedin, Scale, DollarSign, Star, Building2 } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Linkedin, Scale, DollarSign, Star, Building2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import type { DigitalHealthScore } from '@/lib/engines/intelligence/digitalHealthScore';
 
 export default function DigitalPresencePage() {
@@ -76,23 +77,50 @@ export default function DigitalPresencePage() {
         .maybeSingle();
       setReputationData(reputationDataResult);
 
-      // Calcular health score
-      // Em produção, isso viria do backend
-      const mockScore: DigitalHealthScore = {
-        overall: 76.8,
+      // Chamar IA para gerar análise em tempo real
+      const { data: aiAnalysis } = await supabase.functions.invoke('ai-contextual-analysis', {
+        body: {
+          company_id: companyId,
+          analysis_type: 'digital_health'
+        }
+      });
+
+      // Calcular scores reais baseados nos dados
+      const digitalScore = presenceData?.overall_score || 0;
+      const legalScore = legalDataResult?.legal_health_score || 0;
+      const financialScore = financialDataResult?.predictive_risk_score || 0;
+      const reputationScore = reputationDataResult?.reputation_score || 0;
+
+      // Calcular overall score ponderado
+      const overallScore = (
+        (digitalScore * 0.25) +
+        (legalScore * 0.30) +
+        (financialScore * 0.35) +
+        (reputationScore * 0.10)
+      );
+
+      // Classificação baseada no score
+      let classification: 'Excelente' | 'Bom' | 'Regular' | 'Ruim' | 'Crítico' = 'Crítico';
+      if (overallScore >= 85) classification = 'Excelente';
+      else if (overallScore >= 70) classification = 'Bom';
+      else if (overallScore >= 50) classification = 'Regular';
+      else if (overallScore >= 30) classification = 'Ruim';
+
+      const realScore: DigitalHealthScore = {
+        overall: Math.round(overallScore * 10) / 10,
         components: {
           digitalPresence: {
-            score: presenceData?.overall_score || 75,
+            score: digitalScore,
             weight: 0.25,
             details: {
-              linkedin: presenceData?.social_score || 82,
-              social: 70,
-              web: 78,
-              engagement: presenceData?.engagement_score || 65
+              linkedin: (presenceData?.linkedin_data as any)?.score || 0,
+              social: presenceData?.social_score || 0,
+              web: presenceData?.web_score || 0,
+              engagement: presenceData?.engagement_score || 0
             }
           },
           legalHealth: {
-            score: legalDataResult?.legal_health_score || 68,
+            score: legalScore,
             weight: 0.30,
             details: {
               totalProcesses: legalDataResult?.total_processes || 0,
@@ -101,43 +129,30 @@ export default function DigitalPresencePage() {
             }
           },
           financialHealth: {
-            score: financialDataResult?.predictive_risk_score || 72,
+            score: financialScore,
             weight: 0.35,
             details: {
               creditScore: financialDataResult?.credit_score || 0,
-              riskClassification: financialDataResult?.risk_classification || 'B',
-              predictiveRisk: financialDataResult?.predictive_risk_score || 72
+              riskClassification: financialDataResult?.risk_classification || 'N/A',
+              predictiveRisk: financialScore
             }
           },
           reputation: {
-            score: reputationDataResult?.reputation_score || 85,
+            score: reputationScore,
             weight: 0.10,
             details: {
-              sentiment: reputationDataResult?.sentiment_score || 78,
+              sentiment: reputationDataResult?.sentiment_score || 0,
               reviews: reputationDataResult?.total_reviews || 0
             }
           }
         },
-        classification: 'Bom',
-        recommendations: [
-          'Fortalecer presença digital no LinkedIn com posts regulares',
-          'Resolver processos jurídicos ativos para reduzir risco',
-          'Manter boa reputação com atendimento de qualidade'
-        ],
-        risks: [
-          {
-            type: 'Jurídico',
-            severity: 'media',
-            description: '3 processos ativos requerem atenção'
-          }
-        ],
-        opportunities: [
-          'Boa reputação online indica momento para expansão',
-          'Score financeiro estável permite negociações'
-        ]
+        classification,
+        recommendations: aiAnalysis?.recommendations || [],
+        risks: aiAnalysis?.risks || [],
+        opportunities: aiAnalysis?.opportunities || []
       };
 
-      setHealthScore(mockScore);
+      setHealthScore(realScore);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erro ao carregar dados da empresa');
@@ -181,6 +196,25 @@ export default function DigitalPresencePage() {
     );
   }
 
+  const hasNoData = !digitalPresence && !legalData && !financialData && !reputationData;
+
+  const handleEnrich = async () => {
+    try {
+      toast.loading('Iniciando enriquecimento 360°...');
+      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
+        body: { company_id: companyId }
+      });
+
+      if (error) throw error;
+
+      toast.success('Enriquecimento concluído! Recarregando dados...');
+      setTimeout(() => loadData(), 2000);
+    } catch (error) {
+      console.error('Error enriching:', error);
+      toast.error('Erro ao enriquecer dados');
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600';
     if (score >= 70) return 'text-blue-600';
@@ -203,13 +237,37 @@ export default function DigitalPresencePage() {
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Presença Digital 360°</h1>
-        <p className="text-muted-foreground">{company.name}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Presença Digital 360°</h1>
+          <p className="text-muted-foreground">{company.name}</p>
+        </div>
+        {hasNoData && (
+          <Button onClick={handleEnrich} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Enriquecer com Dados Reais
+          </Button>
+        )}
       </div>
 
-      {/* Score Geral */}
-      <Card>
+      {hasNoData ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Building2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">Dados Não Enriquecidos</h3>
+            <p className="text-muted-foreground mb-6">
+              Esta empresa ainda não possui dados de presença digital, jurídicos, financeiros ou de reputação.
+            </p>
+            <Button onClick={handleEnrich} size="lg" className="gap-2">
+              <RefreshCw className="w-5 h-5" />
+              Enriquecer Agora com APIs Reais
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Score Geral */}
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -317,50 +375,98 @@ export default function DigitalPresencePage() {
         </TabsList>
 
         <TabsContent value="risks" className="space-y-4">
-          {healthScore.risks.map((risk, index) => (
-            <Card key={index}>
-              <CardContent className="p-4 flex items-start gap-3">
-                <AlertTriangle className={`w-5 h-5 mt-0.5 ${
-                  risk.severity === 'critica' ? 'text-red-500' :
-                  risk.severity === 'alta' ? 'text-orange-500' :
-                  risk.severity === 'media' ? 'text-yellow-500' : 'text-blue-500'
-                }`} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold">{risk.type}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {risk.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{risk.description}</p>
-                </div>
+          {healthScore.risks.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                <h3 className="font-semibold text-lg mb-2">Nenhum Risco Detectado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Não foram identificados riscos significativos para esta empresa.
+                </p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            healthScore.risks.map((risk, index) => (
+              <Card key={index}>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <AlertTriangle className={`w-5 h-5 mt-0.5 ${
+                    risk.severity === 'critica' ? 'text-red-500' :
+                    risk.severity === 'alta' ? 'text-orange-500' :
+                    risk.severity === 'media' ? 'text-yellow-500' : 'text-blue-500'
+                  }`} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold">{risk.type}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {risk.severity}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{risk.description}</p>
+                    {risk.source && (
+                      <a 
+                        href={risk.source} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        🔗 Ver fonte
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="recommendations" className="space-y-4">
-          {healthScore.recommendations.map((rec, index) => (
-            <Card key={index}>
-              <CardContent className="p-4 flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 mt-0.5 text-blue-500" />
-                <p className="text-sm flex-1">{rec}</p>
+          {healthScore.recommendations.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                <h3 className="font-semibold text-lg mb-2">Dados Insuficientes</h3>
+                <p className="text-sm text-muted-foreground">
+                  Execute o enriquecimento 360° para gerar recomendações baseadas em IA.
+                </p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            healthScore.recommendations.map((rec, index) => (
+              <Card key={index}>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 mt-0.5 text-blue-500" />
+                  <p className="text-sm flex-1">{rec}</p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="opportunities" className="space-y-4">
-          {healthScore.opportunities.map((opp, index) => (
-            <Card key={index}>
-              <CardContent className="p-4 flex items-start gap-3">
-                <TrendingUp className="w-5 h-5 mt-0.5 text-green-500" />
-                <p className="text-sm flex-1">{opp}</p>
+          {healthScore.opportunities.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <TrendingUp className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                <h3 className="font-semibold text-lg mb-2">Dados Insuficientes</h3>
+                <p className="text-sm text-muted-foreground">
+                  Execute o enriquecimento 360° para identificar oportunidades baseadas em IA.
+                </p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            healthScore.opportunities.map((opp, index) => (
+              <Card key={index}>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <TrendingUp className="w-5 h-5 mt-0.5 text-green-500" />
+                  <p className="text-sm flex-1">{opp}</p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </TabsContent>
       </Tabs>
+      </>
+      )}
     </div>
   );
 }
