@@ -249,6 +249,12 @@ export function EnhancedCompanyInputForm() {
                     id="cnpj"
                     placeholder="00.000.000/0000-00"
                     {...form.register('cnpj')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleFetchReceitaWS();
+                      }
+                    }}
                   />
                   <Button
                     type="button"

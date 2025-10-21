@@ -97,6 +97,12 @@ export default function SearchPage() {
                     placeholder="00.000.000/0000-00"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearch();
+                      }
+                    }}
                     disabled={isSearching}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -113,6 +119,12 @@ export default function SearchPage() {
                     placeholder="Ex: Magazine Luiza"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearch();
+                      }
+                    }}
                     disabled={isSearching}
                   />
                   <p className="text-xs text-muted-foreground">

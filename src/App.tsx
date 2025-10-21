@@ -22,6 +22,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const IntelligencePage = lazy(() => import("./pages/IntelligencePage"));
 const Intelligence360Page = lazy(() => import("./pages/Intelligence360Page"));
+const CompaniesManagementPage = lazy(() => import("./pages/CompaniesManagementPage"));
 const MaturityPage = lazy(() => import("./pages/MaturityPage"));
 const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
@@ -114,6 +115,14 @@ const App = () => (
                   <AppLayout>
                     <MaturityPage />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/companies"
+              element={
+                <ProtectedRoute>
+                  <CompaniesManagementPage />
                 </ProtectedRoute>
               }
             />

@@ -44,10 +44,15 @@ export function CompanySelector({
         .select('id, name, cnpj, industry, domain')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
       setCompanies(data || []);
     } catch (error) {
       console.error('Error loading companies:', error);
+      // Não mostra toast de erro para não poluir a UX
     } finally {
       setLoading(false);
     }
