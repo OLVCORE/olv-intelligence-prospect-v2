@@ -11,15 +11,28 @@ export const companySearchSchema = z.object({
   query: z.string().trim().min(2, 'Mínimo 2 caracteres').max(200, 'Máximo 200 caracteres').optional(),
   cnpj: cnpjSchema.optional(),
   
-  // Presença Digital (campos de refinamento)
-  website: z.string().trim().url('URL inválida').optional().or(z.literal('')),
+  // Presença Digital (campos de refinamento) - URLs flexíveis
+  website: z.string().trim().optional().or(z.literal('')).transform(val => {
+    if (!val || val === '') return '';
+    // Adicionar https:// se não tiver protocolo
+    if (!/^https?:\/\//i.test(val)) {
+      return `https://${val}`;
+    }
+    return val;
+  }),
   instagram: z.string().trim().max(100).optional(),
   linkedin: z.string().trim().max(200).optional(),
   
   // Produtos & Segmentação
   produto: z.string().trim().max(100).optional(),
   marca: z.string().trim().max(100).optional(),
-  linkProduto: z.string().trim().url('URL inválida').optional().or(z.literal('')),
+  linkProduto: z.string().trim().optional().or(z.literal('')).transform(val => {
+    if (!val || val === '') return '';
+    if (!/^https?:\/\//i.test(val)) {
+      return `https://${val}`;
+    }
+    return val;
+  }),
   
   // Localização
   logradouro: z.string().trim().max(200).optional(),
@@ -28,8 +41,13 @@ export const companySearchSchema = z.object({
   estado: z.string().trim().max(2).optional(),
   pais: z.string().trim().max(100).optional(),
   cep: z.string().trim().regex(/^\d{5}-?\d{3}$/, 'CEP inválido').optional().or(z.literal(''))
-}).refine(data => data.query || data.cnpj, {
-  message: 'Informe uma empresa ou CNPJ para buscar'
+}).refine(data => {
+  // Permitir busca com QUALQUER campo preenchido
+  return data.query || data.cnpj || data.website || data.instagram || data.linkedin ||
+         data.produto || data.marca || data.linkProduto || 
+         data.logradouro || data.bairro || data.municipio || data.estado || data.cep;
+}, {
+  message: 'Preencha pelo menos um campo para buscar'
 });
 
 export const emailEnrichSchema = z.object({
