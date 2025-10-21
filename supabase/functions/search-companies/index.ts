@@ -135,6 +135,7 @@ serve(async (req) => {
       produto,
       marca,
       linkProduto,
+      cep,
       logradouro,
       bairro,
       municipio,
@@ -148,7 +149,7 @@ serve(async (req) => {
       refinamentos: {
         presencaDigital: { website, instagram, linkedin },
         produtos: { produto, marca, linkProduto },
-        localizacao: { municipio, estado, pais, bairro, logradouro }
+        localizacao: { cep, municipio, estado, pais, bairro, logradouro }
       }
     });
 
@@ -207,6 +208,7 @@ serve(async (req) => {
         city: municipio || apolloData?.city || receitaData?.municipio,
         state: estado || apolloData?.state || receitaData?.uf,
         country: pais || apolloData?.country || 'Brasil',
+        ...(cep && { cep }),
         ...(bairro && { bairro }),
         ...(logradouro && { logradouro })
       },
@@ -218,7 +220,7 @@ serve(async (req) => {
         refinamentos: {
           presencaDigital: { website, instagram, linkedin },
           produtos: { produto, marca, linkProduto },
-          localizacao: { logradouro, bairro, municipio, estado, pais }
+          localizacao: { cep, logradouro, bairro, municipio, estado, pais }
         }
       }
     };
@@ -289,10 +291,11 @@ serve(async (req) => {
         hasProduto: !!produto,
         hasMarca: !!marca,
         hasLocalizacao: !!(municipio || estado || pais),
+        hasCep: !!cep,
         refinamentos: {
           presencaDigital: { website, instagram, linkedin },
           produtos: { produto, marca, linkProduto },
-          localizacao: { logradouro, bairro, municipio, estado, pais }
+          localizacao: { cep, logradouro, bairro, municipio, estado, pais }
         }
       },
       results_count: 1

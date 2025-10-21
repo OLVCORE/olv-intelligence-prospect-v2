@@ -4,11 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBrazilianAddressAutocomplete } from "@/hooks/useGooglePlacesAutocomplete";
+import LocationMap from "@/components/map/LocationMap";
+
+// Estados brasileiros
+const ESTADOS_BRASIL = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+];
 
 export default function SearchPage() {
   const [searchType, setSearchType] = useState<"cnpj" | "query">("cnpj");
@@ -34,11 +44,22 @@ export default function SearchPage() {
   const [linkProduto, setLinkProduto] = useState("");
   
   // Campos de refinamento - Localização
+  const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
   const [bairro, setBairro] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [estado, setEstado] = useState("");
   const [pais, setPais] = useState("Brasil");
+  
+  // Autocomplete states para endereços
+  const [showMunicipioSuggestions, setShowMunicipioSuggestions] = useState(false);
+  const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
+  const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
+  
+  // Google Places Autocomplete
+  const { predictions: municipioPredictions } = useBrazilianAddressAutocomplete(municipio, 'locality');
+  const { predictions: bairroPredictions } = useBrazilianAddressAutocomplete(bairro, 'sublocality');
+  const { predictions: logradouroPredictions } = useBrazilianAddressAutocomplete(logradouro, 'route');
 
   // Fetch autocomplete suggestions from Google
   const fetchSuggestions = async (query: string) => {
@@ -124,6 +145,7 @@ export default function SearchPage() {
       if (linkProduto) searchBody.linkProduto = linkProduto;
       
       // Adicionar campos de refinamento - Localização
+      if (cep) searchBody.cep = cep;
       if (logradouro) searchBody.logradouro = logradouro;
       if (bairro) searchBody.bairro = bairro;
       if (municipio) searchBody.municipio = municipio;
@@ -170,8 +192,8 @@ export default function SearchPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) 500px' }}>
+        <Card className="h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
@@ -380,19 +402,31 @@ export default function SearchPage() {
                   
                   {/* Seção de Localização (largura total) */}
                   <div className="space-y-3 pt-3 border-t">
-                    <Label className="text-xs font-semibold text-primary">Localização</Label>
+                    <Label className="text-xs font-semibold text-primary flex items-center gap-2">
+                      <MapPin className="h-3 w-3" />
+                      Localização
+                    </Label>
+                    
+                    {/* Linha 1: CEP, Estado, País */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="municipio" className="text-xs">
-                          Município
+                        <Label htmlFor="cep" className="text-xs">
+                          CEP
                         </Label>
                         <Input
-                          id="municipio"
-                          placeholder="São Paulo"
-                          value={municipio}
-                          onChange={(e) => setMunicipio(e.target.value)}
+                          id="cep"
+                          placeholder="00000-000"
+                          value={cep}
+                          onChange={(e) => {
+                            const formatted = e.target.value
+                              .replace(/\D/g, '')
+                              .replace(/^(\d{5})(\d)/, '$1-$2')
+                              .slice(0, 9);
+                            setCep(formatted);
+                          }}
                           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                           disabled={isSearching}
+                          maxLength={9}
                         />
                       </div>
                       
@@ -400,14 +434,18 @@ export default function SearchPage() {
                         <Label htmlFor="estado" className="text-xs">
                           Estado
                         </Label>
-                        <Input
-                          id="estado"
-                          placeholder="SP"
-                          value={estado}
-                          onChange={(e) => setEstado(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                        />
+                        <Select value={estado} onValueChange={setEstado} disabled={isSearching}>
+                          <SelectTrigger id="estado" className="bg-background">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-50 max-h-[300px]">
+                            {ESTADOS_BRASIL.map((uf) => (
+                              <SelectItem key={uf} value={uf}>
+                                {uf}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       
                       <div className="space-y-2">
@@ -425,33 +463,154 @@ export default function SearchPage() {
                       </div>
                     </div>
                     
+                    {/* Linha 2: Município (autocomplete) */}
+                    <div className="space-y-2">
+                      <Label htmlFor="municipio" className="text-xs">
+                        Município
+                      </Label>
+                      <Popover open={showMunicipioSuggestions && municipioPredictions.length > 0} onOpenChange={setShowMunicipioSuggestions}>
+                        <PopoverTrigger asChild>
+                          <Input
+                            id="municipio"
+                            placeholder="Digite para buscar (ex: São Paulo)"
+                            value={municipio}
+                            onChange={(e) => {
+                              setMunicipio(e.target.value);
+                              setShowMunicipioSuggestions(true);
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            onFocus={() => municipio.length >= 3 && setShowMunicipioSuggestions(true)}
+                            disabled={isSearching}
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                          <Command>
+                            <CommandList>
+                              <CommandEmpty>Nenhum município encontrado</CommandEmpty>
+                              <CommandGroup>
+                                {municipioPredictions.map((pred) => (
+                                  <CommandItem
+                                    key={pred.place_id}
+                                    onSelect={() => {
+                                      setMunicipio(pred.structured_formatting.main_text);
+                                      setShowMunicipioSuggestions(false);
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {pred.structured_formatting.secondary_text}
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    {/* Linha 3: Bairro e Logradouro (ambos com autocomplete) */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label htmlFor="bairro" className="text-xs">
                           Bairro
                         </Label>
-                        <Input
-                          id="bairro"
-                          placeholder="Nome do bairro"
-                          value={bairro}
-                          onChange={(e) => setBairro(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                        />
+                        <Popover open={showBairroSuggestions && bairroPredictions.length > 0} onOpenChange={setShowBairroSuggestions}>
+                          <PopoverTrigger asChild>
+                            <Input
+                              id="bairro"
+                              placeholder="Digite para buscar"
+                              value={bairro}
+                              onChange={(e) => {
+                                setBairro(e.target.value);
+                                setShowBairroSuggestions(true);
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                              onFocus={() => bairro.length >= 3 && setShowBairroSuggestions(true)}
+                              disabled={isSearching}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                            <Command>
+                              <CommandList>
+                                <CommandEmpty>Nenhum bairro encontrado</CommandEmpty>
+                                <CommandGroup>
+                                  {bairroPredictions.map((pred) => (
+                                    <CommandItem
+                                      key={pred.place_id}
+                                      onSelect={() => {
+                                        setBairro(pred.structured_formatting.main_text);
+                                        setShowBairroSuggestions(false);
+                                      }}
+                                      className="cursor-pointer"
+                                    >
+                                      <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {pred.structured_formatting.secondary_text}
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="logradouro" className="text-xs">
                           Logradouro
                         </Label>
-                        <Input
-                          id="logradouro"
-                          placeholder="Rua, Av, etc"
-                          value={logradouro}
-                          onChange={(e) => setLogradouro(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                        />
+                        <Popover open={showLogradouroSuggestions && logradouroPredictions.length > 0} onOpenChange={setShowLogradouroSuggestions}>
+                          <PopoverTrigger asChild>
+                            <Input
+                              id="logradouro"
+                              placeholder="Rua, Av, etc"
+                              value={logradouro}
+                              onChange={(e) => {
+                                setLogradouro(e.target.value);
+                                setShowLogradouroSuggestions(true);
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                              onFocus={() => logradouro.length >= 3 && setShowLogradouroSuggestions(true)}
+                              disabled={isSearching}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                            <Command>
+                              <CommandList>
+                                <CommandEmpty>Nenhum logradouro encontrado</CommandEmpty>
+                                <CommandGroup>
+                                  {logradouroPredictions.map((pred) => (
+                                    <CommandItem
+                                      key={pred.place_id}
+                                      onSelect={() => {
+                                        setLogradouro(pred.structured_formatting.main_text);
+                                        setShowLogradouroSuggestions(false);
+                                      }}
+                                      className="cursor-pointer"
+                                    >
+                                      <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {pred.structured_formatting.secondary_text}
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
@@ -479,15 +638,28 @@ export default function SearchPage() {
           </CardContent>
         </Card>
 
-        {result && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                {result.company.name}
-              </CardTitle>
-              <CardDescription>Dados da empresa e análise completa</CardDescription>
-            </CardHeader>
+        {/* Mapa Interativo */}
+        <div className="h-[800px]">
+          <LocationMap
+            address={logradouro}
+            municipio={municipio}
+            estado={estado}
+            pais={pais}
+            cep={cep}
+          />
+        </div>
+      </div>
+
+      {/* Card de Resultados (full width) */}
+      {result && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              {result.company.name}
+            </CardTitle>
+            <CardDescription>Dados da empresa e análise completa</CardDescription>
+          </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -550,7 +722,6 @@ export default function SearchPage() {
             </CardContent>
           </Card>
         )}
-      </div>
     </div>
   );
 }

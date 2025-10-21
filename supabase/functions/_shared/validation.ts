@@ -26,7 +26,8 @@ export const companySearchSchema = z.object({
   bairro: z.string().trim().max(100).optional(),
   municipio: z.string().trim().max(100).optional(),
   estado: z.string().trim().max(2).optional(),
-  pais: z.string().trim().max(100).optional()
+  pais: z.string().trim().max(100).optional(),
+  cep: z.string().trim().regex(/^\d{5}-?\d{3}$/, 'CEP inválido').optional().or(z.literal(''))
 }).refine(data => data.query || data.cnpj, {
   message: 'Informe uma empresa ou CNPJ para buscar'
 });
