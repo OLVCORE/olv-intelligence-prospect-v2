@@ -1,5 +1,8 @@
 project_id = "ioaxzpwlurpduanzkfrt"
 
+[functions.api-health]
+verify_jwt = false
+
 [functions.google-search]
 verify_jwt = true
 

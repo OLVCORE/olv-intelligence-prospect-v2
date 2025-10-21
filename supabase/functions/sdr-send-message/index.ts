@@ -1,5 +1,5 @@
-import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,236 +17,190 @@ interface SendMessageRequest {
   templateId?: string;
 }
 
-// Send WhatsApp message via provider
-async function sendWhatsApp(to: string, body: string): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
-  const provider = Deno.env.get('WHATSAPP_PROVIDER') || 'twilio';
-
-  try {
-    switch (provider) {
-      case 'twilio': {
-        const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-        const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-        const from = Deno.env.get('TWILIO_WHATSAPP_FROM');
-
-        if (!accountSid || !authToken || !from) {
-          return { success: false, error: 'Twilio credentials not configured' };
-        }
-
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-        const auth = btoa(`${accountSid}:${authToken}`);
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            From: `whatsapp:${from}`,
-            To: `whatsapp:${to}`,
-            Body: body,
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-          return { success: false, error: data.message || 'Twilio API error' };
-        }
-
-        return { success: true, providerMessageId: data.sid };
-      }
-
-      case 'meta360': {
-        const phoneNumberId = Deno.env.get('META_WA_PHONE_NUMBER_ID');
-        const accessToken = Deno.env.get('META_WA_ACCESS_TOKEN');
-
-        if (!phoneNumberId || !accessToken) {
-          return { success: false, error: 'Meta WhatsApp credentials not configured' };
-        }
-
-        const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: to,
-            type: 'text',
-            text: { body: body },
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-          return { success: false, error: data.error?.message || 'Meta API error' };
-        }
-
-        return { success: true, providerMessageId: data.messages?.[0]?.id };
-      }
-
-      default:
-        return { success: false, error: `Unknown provider: ${provider}` };
-    }
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-// Send Email via SMTP
-async function sendEmail(to: string, subject: string, body: string): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
-  // For now, return not implemented
-  // In production, use nodemailer or similar
-  return { success: false, error: 'Email sending not yet implemented' };
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
-    const { channel, conversationId, companyId, contactId, to, body, subject, templateId }: SendMessageRequest = await req.json();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
 
-    if (!channel || !to || !body) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    const request: SendMessageRequest = await req.json();
+    console.log(`[Send Message] Channel: ${request.channel}, To: ${request.to}`);
+
+    // Validate required fields
+    if (!request.to || !request.body) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: channel, to, body' }),
+        JSON.stringify({ 
+          error: 'Missing required fields', 
+          details: 'to and body are required' 
+        }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate Company Context
-    if (!companyId && !conversationId && !contactId) {
+    // Company context validation (STRICT)
+    if (!request.companyId && !request.conversationId) {
       return new Response(
-        JSON.stringify({ error: 'Company context required: provide companyId, conversationId, or contactId' }),
+        JSON.stringify({ 
+          error: 'Company context required',
+          details: 'Either companyId or conversationId with company linkage is required'
+        }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    let conversationId = request.conversationId;
+    let companyId = request.companyId;
 
-    // Get conversation or create new one
-    let conversation;
-    if (conversationId) {
-      const { data } = await supabase
-        .from('conversations')
+    // Get or create conversation
+    if (!conversationId) {
+      // Find or create contact
+      const phoneOrEmail = request.channel === 'whatsapp' ? { phone: request.to } : { email: request.to };
+      
+      let { data: contact } = await supabase
+        .from('contacts')
         .select('*')
-        .eq('id', conversationId)
-        .single();
-      conversation = data;
-    } else {
-      // Find contact or create
-      let contact;
-      if (contactId) {
-        const { data } = await supabase
-          .from('contacts')
-          .select('*')
-          .eq('id', contactId)
-          .single();
-        contact = data;
-      } else {
-        // Create contact from to address
-        const { data: newContact } = await supabase
+        .match(phoneOrEmail)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (!contact) {
+        const { data: newContact, error: contactError } = await supabase
           .from('contacts')
           .insert({
-            [channel === 'whatsapp' ? 'phone' : 'email']: to,
-            name: to,
+            ...phoneOrEmail,
+            name: request.to,
             company_id: companyId,
-            channel: { whatsapp: channel === 'whatsapp', email: channel === 'email' },
+            channel: { [request.channel]: true },
           })
           .select()
           .single();
+
+        if (contactError) throw contactError;
         contact = newContact;
       }
 
       // Create conversation
-      const { data: newConv } = await supabase
+      const { data: newConv, error: convError } = await supabase
         .from('conversations')
         .insert({
-          contact_id: contact?.id,
+          contact_id: contact.id,
           company_id: companyId,
-          channel,
+          channel: request.channel,
           status: 'open',
+          priority: 'medium',
           last_message_at: new Date().toISOString(),
         })
         .select()
         .single();
-      conversation = newConv;
-    }
 
-    if (!conversation) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to create or find conversation' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (convError) throw convError;
+      conversationId = newConv.id;
+    } else {
+      // Validate conversation exists and get company_id
+      const { data: conv, error: convError } = await supabase
+        .from('conversations')
+        .select('company_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError || !conv) {
+        return new Response(
+          JSON.stringify({ error: 'Conversation not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!conv.company_id) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Conversation not linked to company',
+            details: 'This conversation must be linked to a company before sending messages'
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      companyId = conv.company_id;
     }
 
     // Send message via provider
     let sendResult;
-    if (channel === 'whatsapp') {
-      sendResult = await sendWhatsApp(to, body);
+    if (request.channel === 'whatsapp') {
+      sendResult = await sendWhatsApp(request.to, request.body);
+    } else if (request.channel === 'email') {
+      sendResult = await sendEmail(request.to, request.subject || 'Mensagem', request.body);
     } else {
-      sendResult = await sendEmail(to, subject || 'No Subject', body);
+      throw new Error('Unsupported channel');
     }
 
     if (!sendResult.success) {
-      return new Response(
-        JSON.stringify({ error: sendResult.error, raw: sendResult }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(sendResult.error || 'Failed to send message');
     }
 
     // Save message to database
-    const { data: message, error: messageError } = await supabase
+    const { data: message, error: msgError } = await supabase
       .from('messages')
       .insert({
-        conversation_id: conversation.id,
+        conversation_id: conversationId,
+        channel: request.channel,
         direction: 'out',
-        channel,
-        from_id: channel === 'whatsapp' ? Deno.env.get('TWILIO_WHATSAPP_FROM') : Deno.env.get('SMTP_USER'),
-        to_id: to,
-        body,
-        provider_message_id: sendResult.providerMessageId,
+        from_id: user.id,
+        to_id: request.to,
+        body: request.body,
         status: 'sent',
+        provider_message_id: sendResult.providerMessageId,
+        metadata: {
+          subject: request.subject,
+          templateId: request.templateId,
+        },
       })
       .select()
       .single();
 
-    if (messageError) {
-      console.error('[Send Message] Error saving message:', messageError);
-    }
+    if (msgError) throw msgError;
 
     // Update conversation
     await supabase
       .from('conversations')
       .update({
-        status: 'open',
         last_message_at: new Date().toISOString(),
+        status: 'open',
       })
-      .eq('id', conversation.id);
+      .eq('id', conversationId);
 
     // Log audit
     await supabase.from('sdr_audit').insert({
       entity: 'message',
-      entity_id: conversation.id,
+      entity_id: message.id,
       action: 'sent',
-      payload: { channel, to, providerMessageId: sendResult.providerMessageId },
+      user_id: user.id,
+      payload: { channel: request.channel, to: request.to, companyId },
     });
+
+    console.log(`[Send Message] Success: ${message.id}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: message?.id,
-        conversationId: conversation.id,
-        providerMessageId: sendResult.providerMessageId 
+        messageId: message.id,
+        conversationId,
+        providerMessageId: sendResult.providerMessageId,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -259,3 +213,100 @@ serve(async (req) => {
     );
   }
 });
+
+async function sendWhatsApp(to: string, body: string): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
+  const provider = Deno.env.get('WHATSAPP_PROVIDER') || 'twilio';
+  
+  try {
+    if (provider === 'twilio') {
+      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+      const fromNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
+
+      if (!accountSid || !authToken || !fromNumber) {
+        return { 
+          success: false, 
+          error: 'Twilio credentials not configured. Please configure in Integrations page.' 
+        };
+      }
+
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            To: `whatsapp:${to}`,
+            From: `whatsapp:${fromNumber}`,
+            Body: body,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('[Twilio] Error:', error);
+        return { success: false, error: `Twilio error: ${response.statusText}` };
+      }
+
+      const data = await response.json();
+      return { success: true, providerMessageId: data.sid };
+    }
+
+    if (provider === 'meta360') {
+      const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+      const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
+
+      if (!accessToken || !phoneNumberId) {
+        return { 
+          success: false, 
+          error: 'Meta 360 credentials not configured. Please configure in Integrations page.' 
+        };
+      }
+
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: to,
+            type: 'text',
+            text: { body },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('[Meta 360] Error:', error);
+        return { success: false, error: `Meta 360 error: ${response.statusText}` };
+      }
+
+      const data = await response.json();
+      return { success: true, providerMessageId: data.messages?.[0]?.id };
+    }
+
+    return { success: false, error: `Unsupported provider: ${provider}` };
+
+  } catch (error: any) {
+    console.error('[WhatsApp] Send error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function sendEmail(to: string, subject: string, body: string): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
+  // TODO: Implement SMTP email sending
+  console.log('[Email] Not implemented yet');
+  return { 
+    success: false, 
+    error: 'Email sending not implemented. Please configure SMTP in Integrations page.' 
+  };
+}

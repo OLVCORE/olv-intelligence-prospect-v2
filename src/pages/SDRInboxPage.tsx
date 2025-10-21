@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeInbox } from '@/hooks/useRealtimeInbox';
 import { 
   Search, Mail, MessageSquare, Clock, User, 
   Tag, Send, Paperclip, MoreVertical, Star,
-  Archive, UserPlus, AlertCircle, CheckCircle2
+  Archive, UserPlus, AlertCircle, CheckCircle2, Building2, Link2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,6 +52,7 @@ interface Message {
 
 export default function SDRInboxPage() {
   const { toast } = useToast();
+  const { connected, messages: realtimeMessages } = useRealtimeInbox();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,10 +61,12 @@ export default function SDRInboxPage() {
   const [view, setView] = useState<'all' | 'my' | 'unassigned' | 'urgent'>('all');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [companies, setCompanies] = useState<any[]>([]);
 
-  // Load conversations
+  // Load conversations and companies
   useEffect(() => {
     loadConversations();
+    loadCompanies();
     
     // Subscribe to realtime updates
     const channel = supabase
@@ -80,6 +85,19 @@ export default function SDRInboxPage() {
       supabase.removeChannel(channel);
     };
   }, [view]);
+
+  // Handle realtime messages
+  useEffect(() => {
+    if (realtimeMessages.length > 0 && selectedConv) {
+      const newMsg = realtimeMessages[realtimeMessages.length - 1];
+      if (newMsg.conversation_id === selectedConv.id) {
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === newMsg.id);
+          return exists ? prev : [...prev, newMsg];
+        });
+      }
+    }
+  }, [realtimeMessages, selectedConv]);
 
   // Load messages when conversation selected
   useEffect(() => {
@@ -159,8 +177,56 @@ export default function SDRInboxPage() {
     }
   };
 
+  const loadCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error: any) {
+      console.error('Error loading companies:', error);
+    }
+  };
+
+  const linkToCompany = async (conversationId: string, companyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ company_id: companyId })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Empresa vinculada',
+        description: 'Conversa vinculada à empresa com sucesso',
+      });
+
+      loadConversations();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao vincular empresa',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const sendMessage = async () => {
     if (!messageInput.trim() || !selectedConv) return;
+
+    // Validação STRICT de company context
+    if (!selectedConv.company?.id) {
+      toast({
+        title: 'Empresa não vinculada',
+        description: 'Por favor, vincule esta conversa a uma empresa antes de enviar mensagens',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSending(true);
     try {
@@ -176,6 +242,7 @@ export default function SDRInboxPage() {
         body: {
           channel: selectedConv.channel,
           conversationId: selectedConv.id,
+          companyId: selectedConv.company.id,
           to,
           body: messageInput,
         },
@@ -193,11 +260,21 @@ export default function SDRInboxPage() {
       loadMessages(selectedConv.id);
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast({
-        title: 'Erro ao enviar mensagem',
-        description: error.message,
-        variant: 'destructive',
-      });
+      
+      // Error 422 explicativo
+      if (error.message.includes('Company context')) {
+        toast({
+          title: 'Contexto de empresa necessário',
+          description: 'Esta conversa precisa estar vinculada a uma empresa para enviar mensagens',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro ao enviar mensagem',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSending(false);
     }
@@ -330,44 +407,75 @@ export default function SDRInboxPage() {
           {selectedConv ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b flex items-center justify-between bg-card">
-                <div className="flex items-center gap-3">
-                  <div>
-                    {selectedConv.channel === 'whatsapp' ? (
-                      <MessageSquare className="h-6 w-6 text-green-600" />
-                    ) : (
-                      <Mail className="h-6 w-6 text-blue-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">
-                      {selectedConv.contact?.name || selectedConv.contact?.phone || selectedConv.contact?.email}
-                    </h3>
-                    {selectedConv.company && (
-                      <p className="text-sm text-muted-foreground">{selectedConv.company.name}</p>
-                    )}
-                  </div>
-                  {(() => {
-                    const sla = getSLAStatus(selectedConv);
-                    return sla && (
-                      <Badge variant={sla.variant}>
-                        <Clock className="h-3 w-3 mr-1" />
-                        SLA: {sla.label}
+              <div className="p-4 border-b bg-card space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      {selectedConv.channel === 'whatsapp' ? (
+                        <MessageSquare className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <Mail className="h-6 w-6 text-blue-600" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">
+                        {selectedConv.contact?.name || selectedConv.contact?.phone || selectedConv.contact?.email}
+                      </h3>
+                      {selectedConv.company && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {selectedConv.company.name}
+                        </p>
+                      )}
+                    </div>
+                    {(() => {
+                      const sla = getSLAStatus(selectedConv);
+                      return sla && (
+                        <Badge variant={sla.variant}>
+                          <Clock className="h-3 w-3 mr-1" />
+                          SLA: {sla.label}
+                        </Badge>
+                      );
+                    })()}
+                    {connected && (
+                      <Badge variant="outline" className="text-xs">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
+                        Conectado
                       </Badge>
-                    );
-                  })()}
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Star className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Star className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
+
+                {/* Company Linking - STRICT VALIDATION */}
+                {!selectedConv.company && (
+                  <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <span className="text-sm flex-1">Vincule uma empresa para enviar mensagens</span>
+                    <Select onValueChange={(companyId) => linkToCompany(selectedConv.id, companyId)}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Selecionar empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Messages */}
@@ -413,26 +521,33 @@ export default function SDRInboxPage() {
 
               {/* Composer */}
               <div className="p-4 border-t bg-card">
-                <div className="flex items-end gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Textarea
-                    placeholder="Digite sua mensagem..."
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    className="min-h-[80px] resize-none"
-                  />
-                  <Button onClick={sendMessage} disabled={sending || !messageInput.trim()}>
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+                {!selectedConv.company ? (
+                  <div className="text-center p-4 text-muted-foreground">
+                    <Link2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Vincule uma empresa para enviar mensagens</p>
+                  </div>
+                ) : (
+                  <div className="flex items-end gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                    <Textarea
+                      placeholder="Digite sua mensagem..."
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      className="min-h-[80px] resize-none"
+                    />
+                    <Button onClick={sendMessage} disabled={sending || !messageInput.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           ) : (
