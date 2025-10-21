@@ -68,7 +68,7 @@ export default function SearchPage() {
   const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
   
-  // CEP autopreenchimento via ViaCEP com fallback inteligente
+  // CEP autopreenchimento via ViaCEP
   const fetchAddressFromCep = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
@@ -76,30 +76,29 @@ export default function SearchPage() {
     console.log('🔍 Buscando CEP:', cleanCep);
 
     try {
-      // Tentar busca direta primeiro
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
 
       if (data.erro) {
-        console.log('❌ CEP não encontrado na base, tentando região...');
+        console.log('⚠️ CEP não encontrado na base ViaCEP');
         
-        // Tentar busca por região (primeiros 5 dígitos + 000)
+        // Tentar busca por região (primeiros 5 dígitos)
         const regionCep = cleanCep.substring(0, 5) + '000';
-        console.log('🔍 Buscando região:', regionCep);
+        console.log('🔍 Buscando região aproximada:', regionCep);
         
         try {
           const regionResponse = await fetch(`https://viacep.com.br/ws/${regionCep}/json/`);
           const regionData = await regionResponse.json();
           
           if (!regionData.erro) {
-            console.log('✅ Região encontrada:', regionData);
+            console.log('✅ Região aproximada encontrada');
             if (regionData.localidade) setMunicipio(regionData.localidade);
             if (regionData.uf) setEstado(regionData.uf);
             if (regionData.bairro) setBairro(regionData.bairro);
             
             toast({
-              title: "Região localizada!",
-              description: `${regionData.localidade} - ${regionData.uf}. Adicione o número para localização precisa.`,
+              title: "Região identificada",
+              description: `${regionData.localidade} - ${regionData.uf}. Preencha o logradouro e número manualmente.`,
             });
             return;
           }
@@ -107,31 +106,16 @@ export default function SearchPage() {
           console.error('Erro ao buscar região:', regionError);
         }
         
-        // Último fallback: usar dados fixos para CEPs conhecidos da Paulista
-        if (cleanCep.startsWith('01311') || cleanCep.startsWith('01310')) {
-          console.log('✅ CEP Paulista identificado, usando dados fixos');
-          setMunicipio('São Paulo');
-          setEstado('SP');
-          setBairro('Bela Vista');
-          setLogradouro('Avenida Paulista');
-          
-          toast({
-            title: "Região Paulista identificada!",
-            description: "Adicione o número do estabelecimento para localização precisa no mapa",
-          });
-          return;
-        }
-        
-        // CEP não reconhecido mas deixa continuar
+        // CEP não encontrado mas permite continuar
         toast({
-          title: "CEP válido mas não catalogado",
-          description: "Preencha manualmente os campos de endereço. O mapa ainda funcionará.",
+          title: "CEP não catalogado no ViaCEP",
+          description: "Preencha os campos manualmente. O mapa usará o CEP para localização aproximada.",
           variant: "default",
         });
         return;
       }
 
-      console.log('✅ CEP encontrado:', data);
+      console.log('✅ CEP encontrado com sucesso');
       
       // Preencher campos automaticamente
       if (data.logradouro) setLogradouro(data.logradouro);
@@ -140,14 +124,14 @@ export default function SearchPage() {
       if (data.uf) setEstado(data.uf);
 
       toast({
-        title: "Endereço completo encontrado!",
-        description: `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`,
+        title: "Endereço encontrado!",
+        description: `${data.logradouro || 'Logradouro não informado'}, ${data.localidade}/${data.uf}`,
       });
     } catch (error) {
       console.error('❌ Erro ao buscar CEP:', error);
       toast({
-        title: "Serviço de CEP indisponível",
-        description: "Preencha manualmente os campos. O mapa ainda funcionará com o CEP informado.",
+        title: "Erro na consulta de CEP",
+        description: "Preencha os campos manualmente. O mapa ainda funcionará.",
         variant: "default",
       });
     }
