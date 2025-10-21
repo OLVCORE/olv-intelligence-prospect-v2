@@ -814,27 +814,48 @@ export type Database = {
           company_name: string | null
           created_at: string
           email: string
+          facebook_url: string | null
           full_name: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
+          phone: string | null
+          telegram_username: string | null
+          twitter_url: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string
           email: string
+          facebook_url?: string | null
           full_name?: string | null
           id: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          phone?: string | null
+          telegram_username?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          phone?: string | null
+          telegram_username?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

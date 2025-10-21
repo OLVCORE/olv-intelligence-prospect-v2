@@ -129,6 +129,11 @@ const menuItems = [
     icon: PenTool,
     url: "/canvas",
   },
+  {
+    title: "Configurações",
+    icon: Settings,
+    url: "/settings",
+  },
 ];
 
 export function AppSidebar() {

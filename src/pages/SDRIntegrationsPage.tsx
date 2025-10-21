@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { UserProfileCard } from '@/components/sdr/UserProfileCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,9 +149,6 @@ export default function SDRIntegrationsPage() {
             Atualizar
           </Button>
         </div>
-
-        {/* User Profile Card */}
-        <UserProfileCard />
 
         <Tabs defaultValue="all">
           <TabsList>
@@ -318,6 +315,29 @@ function IntegrationForm({
   const [loading, setLoading] = useState(false);
   const [channel, setChannel] = useState(integration?.channel || defaultChannel || 'email');
   const [provider, setProvider] = useState(integration?.provider || 'imap_smtp');
+  const [profile, setProfile] = useState<any>(null);
+  const [useProfileData, setUseProfileData] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   // Ajusta o provedor padrão de acordo com o canal selecionado (evita salvar sem credenciais)
   useEffect(() => {
@@ -414,6 +434,42 @@ function IntegrationForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Profile Data Info */}
+      {profile && useProfileData && (
+        <div className="bg-muted p-4 rounded-lg space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Usando dados do seu perfil</p>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setUseProfileData(false)}
+            >
+              Usar outros dados
+            </Button>
+          </div>
+          {channel === 'email' && profile.email && (
+            <p className="text-xs text-muted-foreground">Email: {profile.email}</p>
+          )}
+          {channel === 'whatsapp' && profile.whatsapp && (
+            <p className="text-xs text-muted-foreground">WhatsApp: {profile.whatsapp}</p>
+          )}
+          {channel === 'telegram' && profile.telegram_username && (
+            <p className="text-xs text-muted-foreground">Telegram: {profile.telegram_username}</p>
+          )}
+        </div>
+      )}
+
+      {!profile && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            Configure seu perfil primeiro em{' '}
+            <Link to="/settings" className="font-medium underline">Configurações</Link>
+            {' '}para pré-preencher automaticamente seus dados.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="provider">Provedor</Label>
         <Select value={provider} onValueChange={setProvider}>
@@ -456,7 +512,13 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-user">Email</Label>
-            <Input id="imap-user" name="cred.imap.user" type="email" required defaultValue={String(integration?.credentials?.['imap.user'] ?? '')} />
+            <Input 
+              id="imap-user" 
+              name="cred.imap.user" 
+              type="email" 
+              required 
+              defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['imap.user'] ?? '')} 
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-pass">Senha/App Password</Label>
@@ -478,7 +540,13 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-user">Email SMTP</Label>
-            <Input id="smtp-user" name="cred.smtp.user" type="email" required defaultValue={String(integration?.credentials?.['smtp.user'] ?? '')} />
+            <Input 
+              id="smtp-user" 
+              name="cred.smtp.user" 
+              type="email" 
+              required 
+              defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['smtp.user'] ?? '')} 
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-pass">Senha SMTP</Label>
@@ -516,7 +584,13 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="twilio-phone">WhatsApp Number</Label>
-            <Input id="twilio-phone" name="cred.phoneNumber" placeholder="+5511999999999" required defaultValue={String(integration?.credentials?.phoneNumber ?? '')} />
+            <Input 
+              id="twilio-phone" 
+              name="cred.phoneNumber" 
+              placeholder="+5511999999999" 
+              required 
+              defaultValue={useProfileData && profile?.whatsapp ? profile.whatsapp : String(integration?.credentials?.phoneNumber ?? '')} 
+            />
           </div>
         </>
       )}

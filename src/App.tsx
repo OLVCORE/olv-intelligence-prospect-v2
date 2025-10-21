@@ -41,6 +41,7 @@ const SDRSequencesPage = lazy(() => import("./pages/SDRSequencesPage"));
 const SDRTasksPage = lazy(() => import("./pages/SDRTasksPage"));
 const SDRIntegrationsPage = lazy(() => import("./pages/SDRIntegrationsPage"));
 const SDRAnalyticsPage = lazy(() => import("./pages/SDRAnalyticsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -286,6 +287,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SDRAnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
