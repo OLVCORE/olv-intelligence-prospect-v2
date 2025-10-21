@@ -25,39 +25,38 @@ serve(async (req) => {
 
     console.log('AI_CONTEXTUAL_ANALYSIS', 'Processing prompt', { promptLength: prompt.length });
 
-    // Usar Lovable AI (Gemini)
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Usar OpenAI GPT-4
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
-            content: 'Você é um analista de inteligência de negócios especializado em análise 360° de empresas. Forneça insights estratégicos, objetivos e acionáveis.'
+            content: 'Você é um analista de inteligência de negócios especializado em análise 360° de empresas B2B. Forneça insights estratégicos, objetivos e acionáveis baseados em dados reais.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 800
+        max_completion_tokens: 800
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI_CONTEXTUAL_ANALYSIS', 'Lovable AI error', { status: response.status, error: errorText });
-      throw new Error(`Lovable AI error: ${response.status}`);
+      console.error('AI_CONTEXTUAL_ANALYSIS', 'OpenAI error', { status: response.status, error: errorText });
+      throw new Error(`OpenAI error: ${response.status}`);
     }
 
     const data = await response.json();
