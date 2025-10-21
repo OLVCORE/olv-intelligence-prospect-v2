@@ -13,7 +13,8 @@ import {
   Settings,
   User,
   FileText,
-  Radio
+  Radio,
+  MessageSquare
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +31,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
   {
@@ -43,6 +45,13 @@ const menuItems = [
     icon: LayoutDashboard,
     url: "/dashboard",
     highlighted: true,
+  },
+  {
+    title: "SDR (OLV)",
+    icon: MessageSquare,
+    url: "/sdr/inbox",
+    highlighted: true,
+    special: true,
   },
   {
     title: "Empresas",
@@ -133,7 +142,10 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      className={(item as any).highlighted ? "font-semibold bg-primary/5 border-l-2 border-primary" : ""}
+                      className={cn(
+                        (item as any).highlighted && "font-semibold bg-primary/5 border-l-2 border-primary",
+                        (item as any).special && "bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-l-2 border-purple-500 font-bold"
+                      )}
                     >
                       <Link to={item.url}>
                         <item.icon className="h-4 w-4" />

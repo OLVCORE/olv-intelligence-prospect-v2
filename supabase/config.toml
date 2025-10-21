@@ -44,3 +44,9 @@ verify_jwt = true
 
 [functions.mapbox-token]
 verify_jwt = false
+
+[functions.sdr-whatsapp-webhook]
+verify_jwt = false
+
+[functions.sdr-send-message]
+verify_jwt = true

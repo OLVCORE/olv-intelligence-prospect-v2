@@ -34,6 +34,7 @@ const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const DigitalPresencePage = lazy(() => import("./pages/DigitalPresencePage"));
 const Analysis360Page = lazy(() => import("./pages/Analysis360Page"));
+const SDRInboxPage = lazy(() => import("./pages/SDRInboxPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -223,6 +224,14 @@ const App = () => (
                   <AppLayout>
                     <Analysis360Page />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/inbox"
+              element={
+                <ProtectedRoute>
+                  <SDRInboxPage />
                 </ProtectedRoute>
               }
             />
