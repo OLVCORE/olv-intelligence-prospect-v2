@@ -63,9 +63,6 @@ export default function SearchPage() {
   const [estado, setEstado] = useState("");
   const [pais, setPais] = useState("Brasil");
   
-  // Alinhamento do mapa com a seção de Localização
-  const localizacaoRef = useRef<HTMLDivElement>(null);
-  const [mapTopOffset, setMapTopOffset] = useState(0);
   
   // Autocomplete states para endereços
   const [showMunicipioSuggestions, setShowMunicipioSuggestions] = useState(false);
@@ -210,17 +207,6 @@ export default function SearchPage() {
     };
   }, [searchQuery, searchType]);
 
-  // Ajustar o topo do mapa para alinhar com a seção "Localização"
-  useEffect(() => {
-    const compute = () => {
-      if (localizacaoRef.current) {
-        setMapTopOffset(localizacaoRef.current.offsetTop || 0);
-      }
-    };
-    compute();
-    window.addEventListener('resize', compute);
-    return () => window.removeEventListener('resize', compute);
-  }, [searchType]);
   const handleSearch = async () => {
     // Verificar se pelo menos um campo foi preenchido
     const hasSearchQuery = searchQuery.trim().length > 0;
@@ -332,7 +318,7 @@ export default function SearchPage() {
         </p>
       </div>
 
-      <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) 500px' }}>
+      <div className="grid gap-6">
         <Card className="h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -545,231 +531,248 @@ export default function SearchPage() {
                     </div>
                   </div>
                   
-                  {/* Seção de Localização (largura total) */}
-                  <div ref={localizacaoRef} className="space-y-3 pt-3 border-t">
+                  {/* Seção de Localização + Mapa lado a lado */}
+                  <div className="space-y-3 pt-3 border-t">
                     <Label className="text-xs font-semibold text-primary flex items-center gap-2">
                       <MapPin className="h-3 w-3" />
                       Localização
                     </Label>
-                    
-                    {/* Linha 1: CEP, Estado, País */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="cep" className="text-xs">
-                          CEP
-                        </Label>
-                        <Input
-                          id="cep"
-                          placeholder="00000-000"
-                          value={cep}
-                          onChange={(e) => handleCepChange(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                          maxLength={9}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Digite o CEP para preencher automaticamente
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="estado" className="text-xs">
-                          Estado
-                        </Label>
-                        <Select value={estado} onValueChange={setEstado} disabled={isSearching}>
-                          <SelectTrigger id="estado" className="bg-background">
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover z-50 max-h-[300px]">
-                            {ESTADOS_BRASIL.map((uf) => (
-                              <SelectItem key={uf} value={uf}>
-                                {uf}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="pais" className="text-xs">
-                          País
-                        </Label>
-                        <Input
-                          id="pais"
-                          placeholder="Brasil"
-                          value={pais}
-                          onChange={(e) => setPais(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Linha 2: Município (autocomplete) */}
-                    <div className="space-y-2">
-                      <Label htmlFor="municipio" className="text-xs">
-                        Município
-                      </Label>
-                      <Popover open={showMunicipioSuggestions && municipioPredictions.length > 0} onOpenChange={setShowMunicipioSuggestions}>
-                        <PopoverTrigger asChild>
-                          <Input
-                            id="municipio"
-                            placeholder="Digite para buscar (ex: São Paulo)"
-                            value={municipio}
-                            onChange={(e) => {
-                              setMunicipio(e.target.value);
-                              setShowMunicipioSuggestions(true);
-                            }}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            onFocus={() => municipio.length >= 3 && setShowMunicipioSuggestions(true)}
-                            disabled={isSearching}
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
-                          <Command>
-                            <CommandList>
-                              <CommandEmpty>Nenhum município encontrado</CommandEmpty>
-                              <CommandGroup>
-                                {municipioPredictions.map((pred) => (
-                                  <CommandItem
-                                    key={pred.place_id}
-                                    onSelect={() => {
-                                      setMunicipio(pred.structured_formatting.main_text);
-                                      setShowMunicipioSuggestions(false);
-                                    }}
-                                    className="cursor-pointer"
-                                  >
-                                    <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {pred.structured_formatting.secondary_text}
-                                      </div>
-                                    </div>
-                                  </CommandItem>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Coluna esquerda: campos de localização */}
+                      <div className="space-y-3">
+                        {/* Linha 1: CEP, Estado, País */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="cep" className="text-xs">
+                              CEP
+                            </Label>
+                            <Input
+                              id="cep"
+                              placeholder="00000-000"
+                              value={cep}
+                              onChange={(e) => handleCepChange(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                              disabled={isSearching}
+                              maxLength={9}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Digite o CEP para preencher automaticamente
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="estado" className="text-xs">
+                              Estado
+                            </Label>
+                            <Select value={estado} onValueChange={setEstado} disabled={isSearching}>
+                              <SelectTrigger id="estado" className="bg-background">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover z-50 max-h-[300px]">
+                                {ESTADOS_BRASIL.map((uf) => (
+                                  <SelectItem key={uf} value={uf}>
+                                    {uf}
+                                  </SelectItem>
                                 ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    
-                    {/* Linha 3: Bairro e Logradouro (ambos com autocomplete) */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="bairro" className="text-xs">
-                          Bairro
-                        </Label>
-                        <Popover open={showBairroSuggestions && bairroPredictions.length > 0} onOpenChange={setShowBairroSuggestions}>
-                          <PopoverTrigger asChild>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="pais" className="text-xs">
+                              País
+                            </Label>
                             <Input
-                              id="bairro"
-                              placeholder="Digite para buscar"
-                              value={bairro}
-                              onChange={(e) => {
-                                setBairro(e.target.value);
-                                setShowBairroSuggestions(true);
-                              }}
+                              id="pais"
+                              placeholder="Brasil"
+                              value={pais}
+                              onChange={(e) => setPais(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                              onFocus={() => bairro.length >= 3 && setShowBairroSuggestions(true)}
                               disabled={isSearching}
                             />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
-                            <Command>
-                              <CommandList>
-                                <CommandEmpty>Nenhum bairro encontrado</CommandEmpty>
-                                <CommandGroup>
-                                  {bairroPredictions.map((pred) => (
-                                    <CommandItem
-                                      key={pred.place_id}
-                                      onSelect={() => {
-                                        setBairro(pred.structured_formatting.main_text);
-                                        setShowBairroSuggestions(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {pred.structured_formatting.secondary_text}
+                          </div>
+                        </div>
+                        
+                        {/* Linha 2: Município (autocomplete) */}
+                        <div className="space-y-2">
+                          <Label htmlFor="municipio" className="text-xs">
+                            Município
+                          </Label>
+                          <Popover open={showMunicipioSuggestions && municipioPredictions.length > 0} onOpenChange={setShowMunicipioSuggestions}>
+                            <PopoverTrigger asChild>
+                              <Input
+                                id="municipio"
+                                placeholder="Digite para buscar (ex: São Paulo)"
+                                value={municipio}
+                                onChange={(e) => {
+                                  setMunicipio(e.target.value);
+                                  setShowMunicipioSuggestions(true);
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                onFocus={() => municipio.length >= 3 && setShowMunicipioSuggestions(true)}
+                                disabled={isSearching}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                              <Command>
+                                <CommandList>
+                                  <CommandEmpty>Nenhum município encontrado</CommandEmpty>
+                                  <CommandGroup>
+                                    {municipioPredictions.map((pred) => (
+                                      <CommandItem
+                                        key={pred.place_id}
+                                        onSelect={() => {
+                                          setMunicipio(pred.structured_formatting.main_text);
+                                          setShowMunicipioSuggestions(false);
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                          <div className="text-xs text-muted-foreground truncate">
+                                            {pred.structured_formatting.secondary_text}
+                                          </div>
                                         </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="logradouro" className="text-xs">
-                          Logradouro
-                        </Label>
-                        <Popover open={showLogradouroSuggestions && logradouroPredictions.length > 0} onOpenChange={setShowLogradouroSuggestions}>
-                          <PopoverTrigger asChild>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        
+                        {/* Linha 3: Bairro e Logradouro (ambos com autocomplete) */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="bairro" className="text-xs">
+                              Bairro
+                            </Label>
+                            <Popover open={showBairroSuggestions && bairroPredictions.length > 0} onOpenChange={setShowBairroSuggestions}>
+                              <PopoverTrigger asChild>
+                                <Input
+                                  id="bairro"
+                                  placeholder="Digite para buscar"
+                                  value={bairro}
+                                  onChange={(e) => {
+                                    setBairro(e.target.value);
+                                    setShowBairroSuggestions(true);
+                                  }}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                  onFocus={() => bairro.length >= 3 && setShowBairroSuggestions(true)}
+                                  disabled={isSearching}
+                                />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                                <Command>
+                                  <CommandList>
+                                    <CommandEmpty>Nenhum bairro encontrado</CommandEmpty>
+                                    <CommandGroup>
+                                      {bairroPredictions.map((pred) => (
+                                        <CommandItem
+                                          key={pred.place_id}
+                                          onSelect={() => {
+                                            setBairro(pred.structured_formatting.main_text);
+                                            setShowBairroSuggestions(false);
+                                          }}
+                                          className="cursor-pointer"
+                                        >
+                                          <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                            <div className="text-xs text-muted-foreground truncate">
+                                              {pred.structured_formatting.secondary_text}
+                                            </div>
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="logradouro" className="text-xs">
+                              Logradouro
+                            </Label>
+                            <Popover open={showLogradouroSuggestions && logradouroPredictions.length > 0} onOpenChange={setShowLogradouroSuggestions}>
+                              <PopoverTrigger asChild>
+                                <Input
+                                  id="logradouro"
+                                  placeholder="Rua, Av, etc"
+                                  value={logradouro}
+                                  onChange={(e) => {
+                                    setLogradouro(e.target.value);
+                                    setShowLogradouroSuggestions(true);
+                                  }}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                  onFocus={() => logradouro.length >= 3 && setShowLogradouroSuggestions(true)}
+                                  disabled={isSearching}
+                                />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
+                                <Command>
+                                  <CommandList>
+                                    <CommandEmpty>Nenhum logradouro encontrado</CommandEmpty>
+                                    <CommandGroup>
+                                      {logradouroPredictions.map((pred) => (
+                                        <CommandItem
+                                          key={pred.place_id}
+                                          onSelect={() => {
+                                            setLogradouro(pred.structured_formatting.main_text);
+                                            setShowLogradouroSuggestions(false);
+                                          }}
+                                          className="cursor-pointer"
+                                        >
+                                          <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
+                                            <div className="text-xs text-muted-foreground truncate">
+                                              {pred.structured_formatting.secondary_text}
+                                            </div>
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="numero" className="text-xs">
+                              Número
+                            </Label>
                             <Input
-                              id="logradouro"
-                              placeholder="Rua, Av, etc"
-                              value={logradouro}
-                              onChange={(e) => {
-                                setLogradouro(e.target.value);
-                                setShowLogradouroSuggestions(true);
-                              }}
+                              id="numero"
+                              placeholder="Ex: 1578"
+                              value={numero}
+                              onChange={(e) => setNumero(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                              onFocus={() => logradouro.length >= 3 && setShowLogradouroSuggestions(true)}
                               disabled={isSearching}
                             />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
-                            <Command>
-                              <CommandList>
-                                <CommandEmpty>Nenhum logradouro encontrado</CommandEmpty>
-                                <CommandGroup>
-                                  {logradouroPredictions.map((pred) => (
-                                    <CommandItem
-                                      key={pred.place_id}
-                                      onSelect={() => {
-                                        setLogradouro(pred.structured_formatting.main_text);
-                                        setShowLogradouroSuggestions(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {pred.structured_formatting.secondary_text}
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                            <p className="text-xs text-muted-foreground">
+                              Adicione o número para pin preciso no mapa
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="numero" className="text-xs">
-                          Número
-                        </Label>
-                        <Input
-                          id="numero"
-                          placeholder="Ex: 1578"
-                          value={numero}
-                          onChange={(e) => setNumero(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
+
+                      {/* Coluna direita: mapa */}
+                      <div className="min-h-[480px] md:min-h-[640px]">
+                        <LocationMap
+                          address={logradouro}
+                          numero={numero}
+                          municipio={municipio}
+                          estado={estado}
+                          pais={pais}
+                          cep={cep}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Adicione o número para pin preciso no mapa
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -797,17 +800,6 @@ export default function SearchPage() {
           </CardContent>
         </Card>
 
-        {/* Mapa Interativo */}
-        <div className="h-[800px]" style={{ marginTop: mapTopOffset }}>
-          <LocationMap
-            address={logradouro}
-            numero={numero}
-            municipio={municipio}
-            estado={estado}
-            pais={pais}
-            cep={cep}
-          />
-        </div>
       </div>
 
       {/* Dialog de Preview antes de salvar */}
