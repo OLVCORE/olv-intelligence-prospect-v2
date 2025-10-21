@@ -65,6 +65,7 @@ const menuItems = [
       { title: "Inbox", icon: MessageSquare, url: "/sdr/inbox" },
       { title: "Sequências", icon: Zap, url: "/sdr/sequences" },
       { title: "Tarefas", icon: CheckCircle2, url: "/sdr/tasks" },
+      { title: "Analytics", icon: BarChart3, url: "/sdr/analytics" },
       { title: "Integrações", icon: Zap, url: "/sdr/integrations" },
     ],
   },
