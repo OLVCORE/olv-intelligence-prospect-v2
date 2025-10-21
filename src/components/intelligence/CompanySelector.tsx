@@ -5,7 +5,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronsUpDown, Building2, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Check, ChevronsUpDown, Building2, Loader2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CompanySelectorProps {
@@ -64,11 +66,18 @@ export function CompanySelector({
     }
   };
 
-  const filteredCompanies = companies.filter(company => 
-    company.name.toLowerCase().includes(search.toLowerCase()) ||
-    (company.cnpj && company.cnpj.includes(search)) ||
-    (company.domain && company.domain.toLowerCase().includes(search.toLowerCase()))
-  );
+  // Filtro refinado que busca em qualquer parte do nome
+  const filteredCompanies = companies.filter(company => {
+    const searchTerm = search.toLowerCase().trim();
+    if (!searchTerm) return true;
+    
+    const nameMatch = company.name.toLowerCase().includes(searchTerm);
+    const cnpjMatch = company.cnpj?.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''));
+    const domainMatch = company.domain?.toLowerCase().includes(searchTerm);
+    const industryMatch = company.industry?.toLowerCase().includes(searchTerm);
+    
+    return nameMatch || cnpjMatch || domainMatch || industryMatch;
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -95,56 +104,90 @@ export function CompanySelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[600px] p-0 bg-popover z-50" align="start">
-        <Command>
-          <CommandInput 
-            placeholder="Digite o nome, CNPJ ou website da empresa..." 
-            value={search}
-            onValueChange={setSearch}
-          />
-          <CommandList className="max-h-[400px]">
-            <CommandEmpty>
-              {loading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                "Nenhuma empresa encontrada."
-              )}
-            </CommandEmpty>
-            <CommandGroup heading={`${filteredCompanies.length} empresas encontradas`}>
+      <PopoverContent className="w-[700px] p-0 bg-popover border-border shadow-lg z-50" align="start">
+        <div className="border-b border-border p-3 bg-muted/50">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Digite qualquer parte do nome, CNPJ, website ou setor..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-background"
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+            <span>{filteredCompanies.length} empresas encontradas</span>
+            {search && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearch('')}
+                className="h-6 text-xs"
+              >
+                Limpar
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <ScrollArea className="h-[400px]">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredCompanies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+              <Building2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {search ? 'Nenhuma empresa encontrada com esses critérios' : 'Nenhuma empresa cadastrada'}
+              </p>
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
               {filteredCompanies.map((company) => (
-                <CommandItem
+                <button
                   key={company.id}
-                  value={company.id}
-                  onSelect={() => handleSelect(company)}
-                  className="cursor-pointer"
+                  onClick={() => handleSelect(company)}
+                  className={cn(
+                    "w-full text-left p-3 rounded-md transition-colors",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    selectedCompany?.id === company.id && "bg-accent text-accent-foreground"
+                  )}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedCompany?.id === company.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex-1 flex items-center justify-between gap-2">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{company.name}</span>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {company.cnpj && <span>CNPJ: {company.cnpj}</span>}
-                        {company.industry && <span>• {company.industry}</span>}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building2 className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="font-medium truncate">{company.name}</span>
+                        {selectedCompany?.id === company.id && (
+                          <Check className="h-4 w-4 shrink-0 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {company.cnpj && (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            CNPJ: {company.cnpj}
+                          </Badge>
+                        )}
+                        {company.industry && (
+                          <Badge variant="secondary" className="text-xs font-normal">
+                            {company.industry}
+                          </Badge>
+                        )}
+                        {company.domain && (
+                          <Badge variant="secondary" className="text-xs font-normal">
+                            {company.domain}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    {company.domain && (
-                      <Badge variant="outline" className="text-xs">
-                        {company.domain}
-                      </Badge>
-                    )}
                   </div>
-                </CommandItem>
+                </button>
               ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+            </div>
+          )}
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
