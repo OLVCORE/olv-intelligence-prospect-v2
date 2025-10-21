@@ -5,8 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SearchPage from "./pages/SearchPage";
 import IntelligencePage from "./pages/IntelligencePage";
@@ -28,99 +30,123 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Index />} />
-          <Route
-            path="/dashboard"
-            element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <AppLayout>
-                <SearchPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/tech-stack"
-            element={
-              <AppLayout>
-                <TechStackPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/intelligence"
-            element={
-              <AppLayout>
-                <IntelligencePage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/maturity"
-            element={
-              <AppLayout>
-                <MaturityPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/benchmark"
-            element={
-              <AppLayout>
-                <BenchmarkPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/fit-totvs"
-            element={
-              <AppLayout>
-                <FitTOTVSPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/playbooks"
-            element={
-              <AppLayout>
-                <PlaybooksPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/company/:id"
-            element={
-              <AppLayout>
-                <CompanyDetailPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/canvas"
-            element={
-              <AppLayout>
-                <CanvasListPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/canvas/:id"
-            element={
-              <AppLayout>
-                <CanvasPage />
-              </AppLayout>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Auth />} />
+            <Route path="/" element={<Index />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SearchPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tech-stack"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TechStackPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/intelligence"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <IntelligencePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/maturity"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <MaturityPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/benchmark"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <BenchmarkPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fit-totvs"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <FitTOTVSPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/playbooks"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PlaybooksPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/company/:id"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CompanyDetailPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/canvas"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CanvasListPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/canvas/:id"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CanvasPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

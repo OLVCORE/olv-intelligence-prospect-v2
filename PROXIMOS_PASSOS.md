@@ -120,26 +120,26 @@ src/lib/utils/
 
 ---
 
-### FASE 4: AUTENTICAÇÃO E SEGURANÇA (Próxima)
-**Status:** 🔜 AGUARDANDO
+### FASE 4: AUTENTICAÇÃO E SEGURANÇA
+**Status:** ✅ CONCLUÍDA
 
 #### 4.1 Implementar Autenticação
-- [ ] Reativar Supabase Auth
-- [ ] Criar sistema de signup/login
+- [x] Reativar Supabase Auth
+- [x] Criar sistema de signup/login
 - [ ] Implementar recuperação de senha
 - [ ] Adicionar login social (Google, LinkedIn)
 
 #### 4.2 Ajustar RLS Policies
-- [ ] Policies por usuário em companies
-- [ ] Policies por usuário em canvas
-- [ ] Policies em decision_makers
-- [ ] Audit logs de acesso
+- [x] Policies por usuário em companies
+- [x] Policies por usuário em canvas
+- [x] Policies em decision_makers
+- [x] RLS em todas as tabelas principais
 
 #### 4.3 Perfis de Usuário
-- [ ] Criar tabela profiles
-- [ ] Trigger de criação automática
-- [ ] Gestão de permissões
-- [ ] Roles (admin, user, viewer)
+- [x] Criar tabela profiles
+- [x] Trigger de criação automática
+- [x] Gestão de permissões
+- [x] Roles (admin, user, viewer)
 
 ---
 

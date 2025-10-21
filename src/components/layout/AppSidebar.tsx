@@ -8,7 +8,10 @@ import {
   BookOpen,
   BarChart3,
   Building2,
-  PenTool
+  PenTool,
+  LogOut,
+  Settings,
+  User
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,8 +23,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   {
@@ -73,6 +79,7 @@ const menuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   return (
     <Sidebar>
@@ -107,6 +114,23 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-sidebar-foreground/70">
+            <User className="h-4 w-4" />
+            <span className="truncate">{user?.email}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+            onClick={signOut}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
