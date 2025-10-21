@@ -126,7 +126,7 @@ src/lib/utils/
 #### 4.1 Implementar Autenticação
 - [x] Reativar Supabase Auth
 - [x] Criar sistema de signup/login
-- [ ] Implementar recuperação de senha
+- [x] Implementar recuperação de senha
 - [ ] Adicionar login social (Google, LinkedIn)
 
 #### 4.2 Ajustar RLS Policies
@@ -155,14 +155,14 @@ src/lib/utils/
 - [ ] Virtualização de listas grandes
 
 #### 5.2 Backend
-- [ ] Cache de APIs externas
+- [x] Cache de APIs externas
 - [ ] Rate limiting interno
 - [ ] Otimização de queries
-- [ ] Indexes no banco
+- [x] Indexes no banco
 - [ ] Connection pooling
 
 #### 5.3 Observabilidade
-- [ ] Setup de logs estruturados
+- [x] Setup de logs estruturados
 - [ ] Métricas de performance
 - [ ] Alertas de erro
 - [ ] Dashboard de monitoramento

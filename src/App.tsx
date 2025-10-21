@@ -13,6 +13,10 @@ import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
+// Lazy load auth pages
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
 // Lazy load all dashboard pages for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
@@ -54,8 +58,10 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/login" element={<Auth />} />
+          <Routes>
+            <Route path="/login" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<Index />} />
               <Route
                 path="/dashboard"

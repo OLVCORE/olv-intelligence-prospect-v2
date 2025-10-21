@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,6 +112,14 @@ export default function Auth() {
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Entrar
                 </Button>
+                <div className="text-center">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4"
+                  >
+                    Esqueceu sua senha?
+                  </Link>
+                </div>
               </form>
             </TabsContent>
 
