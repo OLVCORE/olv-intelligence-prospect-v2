@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.sdr-send-message]
 verify_jwt = true
+
+[functions.totvs-integration]
+verify_jwt = true

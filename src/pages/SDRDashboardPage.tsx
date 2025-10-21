@@ -1,130 +1,23 @@
-import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, Users, MessageSquare, CheckCircle2, 
-  Clock, Target, Zap, AlertCircle, Calendar, BarChart3
+  Clock, Target, Zap, AlertCircle, Calendar, BarChart3, Building2, ExternalLink
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-interface DashboardMetrics {
-  totalContacts: number;
-  activeConversations: number;
-  tasksToday: number;
-  completedTasks: number;
-  responseRate: number;
-  avgResponseTime: number;
-  conversionRate: number;
-  sequencesRunning: number;
-}
-
-interface Activity {
-  id: string;
-  type: 'task' | 'message' | 'sequence' | 'conversion';
-  description: string;
-  timestamp: string;
-  priority?: string;
-}
+import { useSDRMetrics } from '@/hooks/useSDRMetrics';
+import { useSDRActivities } from '@/hooks/useSDRActivities';
+import { useNavigate } from 'react-router-dom';
 
 export default function SDRDashboardPage() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalContacts: 0,
-    activeConversations: 0,
-    tasksToday: 0,
-    completedTasks: 0,
-    responseRate: 0,
-    avgResponseTime: 0,
-    conversionRate: 0,
-    sequencesRunning: 0,
-  });
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDashboard();
-    
-    // Realtime updates
-    const channel = supabase
-      .channel('sdr-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, loadDashboard)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sdr_tasks' }, loadDashboard)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const loadDashboard = async () => {
-    setLoading(true);
-    try {
-      // Contacts
-      const { count: contactsCount } = await supabase
-        .from('contacts')
-        .select('*', { count: 'exact', head: true });
-
-      // Active conversations
-      const { count: conversationsCount } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['open', 'pending']);
-
-      // Tasks today
-      const today = new Date().toISOString().split('T')[0];
-      const { count: tasksTodayCount } = await supabase
-        .from('sdr_tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('due_date', today);
-
-      const { count: completedTasksCount } = await supabase
-        .from('sdr_tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('due_date', today)
-        .eq('status', 'done');
-
-      // Running sequences
-      const { count: sequencesCount } = await supabase
-        .from('sdr_sequence_runs')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'running');
-
-      // Recent activities
-      const { data: recentTasks } = await supabase
-        .from('sdr_tasks')
-        .select('id, title, created_at, status')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      const activitiesList: Activity[] = (recentTasks || []).map(task => ({
-        id: task.id,
-        type: 'task',
-        description: task.title,
-        timestamp: task.created_at,
-      }));
-
-      setMetrics({
-        totalContacts: contactsCount || 0,
-        activeConversations: conversationsCount || 0,
-        tasksToday: tasksTodayCount || 0,
-        completedTasks: completedTasksCount || 0,
-        responseRate: 75, // Mock
-        avgResponseTime: 45, // Mock (minutes)
-        conversionRate: 12, // Mock
-        sequencesRunning: sequencesCount || 0,
-      });
-
-      setActivities(activitiesList);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const navigate = useNavigate();
+  const { metrics, loading } = useSDRMetrics();
+  const { activities } = useSDRActivities(15);
 
   const MetricCard = ({ 
     title, 
@@ -261,11 +154,25 @@ export default function SDRDashboardPage() {
                       </div>
                       <Progress value={taskCompletionRate} />
                     </div>
-                    {activities.slice(0, 5).map(activity => (
-                      <div key={activity.id} className="flex items-center gap-3 p-2 hover:bg-accent rounded-lg">
+                  {activities.slice(0, 5).map(activity => (
+                      <div 
+                        key={activity.id} 
+                        className="flex items-center gap-3 p-2 hover:bg-accent rounded-lg cursor-pointer"
+                        onClick={() => {
+                          if (activity.metadata?.company_id) {
+                            navigate(`/companies/${activity.metadata.company_id}`);
+                          }
+                        }}
+                      >
                         <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">{activity.description}</p>
+                          {activity.metadata?.company_name && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {activity.metadata.company_name}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(activity.timestamp), { 
                               addSuffix: true, 
@@ -273,6 +180,9 @@ export default function SDRDashboardPage() {
                             })}
                           </p>
                         </div>
+                        {activity.metadata?.company_id && (
+                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -326,14 +236,30 @@ export default function SDRDashboardPage() {
               <CardContent>
                 <div className="space-y-3">
                   {activities.map(activity => (
-                    <div key={activity.id} className="flex items-start gap-3 p-2 hover:bg-accent rounded-lg">
+                    <div 
+                      key={activity.id} 
+                      className="flex items-start gap-3 p-2 hover:bg-accent rounded-lg cursor-pointer"
+                      onClick={() => {
+                        if (activity.metadata?.company_id) {
+                          navigate(`/companies/${activity.metadata.company_id}`);
+                        }
+                      }}
+                    >
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         {activity.type === 'task' && <CheckCircle2 className="h-4 w-4 text-primary" />}
                         {activity.type === 'message' && <MessageSquare className="h-4 w-4 text-primary" />}
                         {activity.type === 'sequence' && <Zap className="h-4 w-4 text-primary" />}
+                        {activity.type === 'contact' && <Users className="h-4 w-4 text-primary" />}
+                        {activity.type === 'company' && <Building2 className="h-4 w-4 text-primary" />}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">{activity.description}</p>
+                        {activity.metadata?.company_name && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {activity.metadata.company_name}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(activity.timestamp), { 
                             addSuffix: true, 
@@ -341,6 +267,9 @@ export default function SDRDashboardPage() {
                           })}
                         </p>
                       </div>
+                      {activity.metadata?.company_id && (
+                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      )}
                     </div>
                   ))}
                 </div>

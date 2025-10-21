@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Search, Plus, Building2, Mail, Phone, 
-  TrendingUp, ExternalLink, Calendar 
+  TrendingUp, ExternalLink, Calendar, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useSDRPipeline } from '@/hooks/useSDRPipeline';
 
 interface Lead {
   id: string;
@@ -41,75 +41,11 @@ const STAGES = [
 export default function SDRPipelinePage() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const { leads, loading, updateLeadStage } = useSDRPipeline();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [draggedLead, setDraggedLead] = useState<any>(null);
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
-
-  const loadLeads = async () => {
-    setLoading(true);
-    try {
-      // Mock data - em produção viria do banco
-      const mockLeads: Lead[] = [
-        {
-          id: '1',
-          company_id: '1',
-          contact_id: '1',
-          stage: 'new',
-          value: 50000,
-          probability: 20,
-          next_action: 'Ligar para agendar reunião',
-          next_action_date: new Date().toISOString(),
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          company: { id: '1', name: 'Empresa ABC Ltda', website: 'empresaabc.com.br' },
-          contact: { name: 'João Silva', email: 'joao@empresaabc.com.br', phone: '11999999999' },
-        },
-        {
-          id: '2',
-          company_id: '2',
-          contact_id: '2',
-          stage: 'contacted',
-          value: 75000,
-          probability: 40,
-          next_action: 'Enviar proposta técnica',
-          next_action_date: new Date().toISOString(),
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          company: { id: '2', name: 'Tech Solutions', website: 'techsolutions.com.br' },
-          contact: { name: 'Maria Santos', email: 'maria@techsolutions.com.br' },
-        },
-        {
-          id: '3',
-          company_id: '3',
-          contact_id: '3',
-          stage: 'qualified',
-          value: 120000,
-          probability: 60,
-          next_action: 'Reunião com decisor',
-          next_action_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          company: { id: '3', name: 'Indústria XYZ S.A.', website: 'industriaxyz.com.br' },
-          contact: { name: 'Carlos Oliveira', phone: '11988888888' },
-        },
-      ];
-
-      setLeads(mockLeads);
-    } catch (error: any) {
-      console.error('Error loading leads:', error);
-      toast({
-        title: 'Erro ao carregar pipeline',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDragStart = (lead: Lead) => {
+  const handleDragStart = (lead: any) => {
     setDraggedLead(lead);
   };
 
@@ -123,17 +59,22 @@ export default function SDRPipelinePage() {
       return;
     }
 
-    // Update lead stage
-    const updatedLeads = leads.map(lead =>
-      lead.id === draggedLead.id ? { ...lead, stage: stageId } : lead
-    );
-    setLeads(updatedLeads);
-    setDraggedLead(null);
-
-    toast({
-      title: 'Lead movido',
-      description: `Lead movido para ${STAGES.find(s => s.id === stageId)?.label}`,
-    });
+    try {
+      await updateLeadStage(draggedLead.id, stageId);
+      
+      toast({
+        title: 'Lead movido',
+        description: `Lead movido para ${STAGES.find(s => s.id === stageId)?.label}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao mover lead',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDraggedLead(null);
+    }
   };
 
   const filteredLeads = leads.filter(lead => {
@@ -190,6 +131,11 @@ export default function SDRPipelinePage() {
 
         {/* Pipeline Board */}
         <div className="flex-1 overflow-x-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <div className="flex gap-4 h-full min-w-max">
             {STAGES.map(stage => {
               const stageLeads = getLeadsByStage(stage.id);
@@ -282,8 +228,19 @@ export default function SDRPipelinePage() {
                               <Building2 className="h-3 w-3 mr-1" />
                               Ver Empresa
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate(`/sdr/inbox`)}
+                            >
+                              Ver Conversa
+                            </Button>
                             {lead.company?.website && (
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => window.open(`https://${lead.company?.website}`, '_blank')}
+                              >
                                 <ExternalLink className="h-3 w-3" />
                               </Button>
                             )}
@@ -302,6 +259,7 @@ export default function SDRPipelinePage() {
               );
             })}
           </div>
+          )}
         </div>
       </div>
     </AppLayout>
