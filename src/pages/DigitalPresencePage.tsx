@@ -25,6 +25,8 @@ export default function DigitalPresencePage() {
   useEffect(() => {
     if (companyId) {
       loadData();
+    } else {
+      setLoading(false);
     }
   }, [companyId]);
 
