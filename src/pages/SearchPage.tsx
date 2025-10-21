@@ -130,10 +130,15 @@ export default function SearchPage() {
   }, [searchQuery, searchType]);
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+    // Verificar se pelo menos um campo foi preenchido
+    const hasSearchQuery = searchQuery.trim().length > 0;
+    const hasRefinement = website || instagram || linkedin || produto || marca || linkProduto || 
+                          cep || logradouro || bairro || municipio || estado;
+    
+    if (!hasSearchQuery && !hasRefinement) {
       toast({
-        title: "Campo vazio",
-        description: "Digite um CNPJ ou nome da empresa para buscar",
+        title: "Preencha ao menos um campo",
+        description: "Digite um CNPJ/nome da empresa OU preencha campos de refinamento para buscar",
         variant: "destructive",
       });
       return;
@@ -144,9 +149,12 @@ export default function SearchPage() {
     setShowSuggestions(false);
 
     try {
-      const searchBody: any = {
-        [searchType]: searchQuery,
-      };
+      const searchBody: any = {};
+      
+      // Adicionar CNPJ ou nome apenas se preenchido
+      if (searchQuery.trim()) {
+        searchBody[searchType] = searchQuery;
+      }
 
       // Adicionar campos de refinamento - Presença Digital
       if (website) searchBody.website = website;
@@ -214,7 +222,7 @@ export default function SearchPage() {
               Busca de Empresas
             </CardTitle>
             <CardDescription>
-              Digite o CNPJ ou nome da empresa para iniciar a prospecção
+              Digite CNPJ/nome da empresa OU use os campos de refinamento abaixo
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -241,7 +249,7 @@ export default function SearchPage() {
                     disabled={isSearching}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Digite o CNPJ com ou sem formatação (Enter para buscar)
+                    CNPJ é opcional - você pode buscar apenas com campos de refinamento abaixo
                   </p>
                 </div>
               </TabsContent>
@@ -307,13 +315,18 @@ export default function SearchPage() {
                     </PopoverContent>
                   </Popover>
                   <p className="text-xs text-muted-foreground">
-                    Digite pelo menos 3 caracteres para ver sugestões (Enter para buscar)
+                    Nome é opcional - você pode buscar apenas com campos de refinamento abaixo
                   </p>
                 </div>
                 
                 {/* Campos de refinamento em duas colunas */}
                 <div className="space-y-4 pt-4 border-t">
-                  <Label className="text-sm font-semibold">Campos de Refinamento (Opcional)</Label>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Campos de Refinamento</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Preencha qualquer combinação de campos para uma busca mais específica
+                    </p>
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     {/* Coluna 1: Presença Digital */}
