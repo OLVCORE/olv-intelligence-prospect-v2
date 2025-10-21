@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCanvasIntelligence } from '@/hooks/useCanvasIntelligence';
 import { CompanyDataPanel } from '@/components/canvas/CompanyDataPanel';
 import { InsightsPanel } from '@/components/canvas/InsightsPanel';
-import { CanvasBlock } from '@/hooks/useCanvas';
+import { CanvasBlock } from '@/hooks/useCanvasRealtime';
 import { 
   ArrowLeft, 
   Save, 

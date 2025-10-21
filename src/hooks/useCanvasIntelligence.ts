@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useCanvas } from './useCanvas';
+import { useCanvas } from './useCanvasRealtime';
 
 export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
   const canvas = useCanvas(canvasId);

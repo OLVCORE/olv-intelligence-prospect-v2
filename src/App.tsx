@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,22 +7,44 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Loader2 } from "lucide-react";
+
+// Eager load only critical pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import SearchPage from "./pages/SearchPage";
-import IntelligencePage from "./pages/IntelligencePage";
-import MaturityPage from "./pages/MaturityPage";
-import TechStackPage from "./pages/TechStackPage";
-import FitTOTVSPage from "./pages/FitTOTVSPage";
-import BenchmarkPage from "./pages/BenchmarkPage";
-import PlaybooksPage from "./pages/PlaybooksPage";
-import CompanyDetailPage from "./pages/CompanyDetailPage";
-import CanvasPage from "./pages/CanvasPage";
-import CanvasListPage from "./pages/CanvasListPage";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy load all dashboard pages for code splitting
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const IntelligencePage = lazy(() => import("./pages/IntelligencePage"));
+const MaturityPage = lazy(() => import("./pages/MaturityPage"));
+const TechStackPage = lazy(() => import("./pages/TechStackPage"));
+const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
+const BenchmarkPage = lazy(() => import("./pages/BenchmarkPage"));
+const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
+const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
+const CanvasPage = lazy(() => import("./pages/CanvasPage"));
+const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Query client with optimized defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,19 +53,20 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Auth />} />
-            <Route path="/" element={<Index />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Dashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Auth />} />
+              <Route path="/" element={<Index />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Dashboard />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
             <Route
               path="/search"
               element={
@@ -144,8 +167,9 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
