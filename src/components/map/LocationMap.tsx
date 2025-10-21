@@ -77,6 +77,12 @@ export default function LocationMap({
         map.current.on('load', () => {
           console.log('✅ Mapa Mapbox carregado com sucesso');
           setMapReady(true);
+          // Garantir renderização correta após layout
+          try {
+            map.current?.resize();
+          } catch (e) {
+            console.warn('Map resize após load falhou:', e);
+          }
         });
 
         map.current.on('error', (e) => {
@@ -207,6 +213,8 @@ export default function LocationMap({
           
           console.log('✅ Localização encontrada:', { lat, lng, zoom: data.zoom });
 
+          // Garantir que o mapa conheça o tamanho atual do container
+          try { map.current?.resize(); } catch {}
           map.current?.flyTo({
             center: [lng, lat],
             zoom: data.zoom,

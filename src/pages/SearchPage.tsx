@@ -63,11 +63,14 @@ export default function SearchPage() {
   const [estado, setEstado] = useState("");
   const [pais, setPais] = useState("Brasil");
   
+  // Alinhamento do mapa com a seção de Localização
+  const localizacaoRef = useRef<HTMLDivElement>(null);
+  const [mapTopOffset, setMapTopOffset] = useState(0);
+  
   // Autocomplete states para endereços
   const [showMunicipioSuggestions, setShowMunicipioSuggestions] = useState(false);
   const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
-  
   // CEP autopreenchimento via ViaCEP
   const fetchAddressFromCep = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
@@ -95,6 +98,7 @@ export default function SearchPage() {
             if (regionData.localidade) setMunicipio(regionData.localidade);
             if (regionData.uf) setEstado(regionData.uf);
             if (regionData.bairro) setBairro(regionData.bairro);
+            if (regionData.logradouro) setLogradouro(regionData.logradouro);
             
             toast({
               title: "Região identificada",
@@ -206,6 +210,17 @@ export default function SearchPage() {
     };
   }, [searchQuery, searchType]);
 
+  // Ajustar o topo do mapa para alinhar com a seção "Localização"
+  useEffect(() => {
+    const compute = () => {
+      if (localizacaoRef.current) {
+        setMapTopOffset(localizacaoRef.current.offsetTop || 0);
+      }
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [searchType]);
   const handleSearch = async () => {
     // Verificar se pelo menos um campo foi preenchido
     const hasSearchQuery = searchQuery.trim().length > 0;
@@ -531,7 +546,7 @@ export default function SearchPage() {
                   </div>
                   
                   {/* Seção de Localização (largura total) */}
-                  <div className="space-y-3 pt-3 border-t">
+                  <div ref={localizacaoRef} className="space-y-3 pt-3 border-t">
                     <Label className="text-xs font-semibold text-primary flex items-center gap-2">
                       <MapPin className="h-3 w-3" />
                       Localização
@@ -783,7 +798,7 @@ export default function SearchPage() {
         </Card>
 
         {/* Mapa Interativo */}
-        <div className="h-[800px]">
+        <div className="h-[800px]" style={{ marginTop: mapTopOffset }}>
           <LocationMap
             address={logradouro}
             numero={numero}
