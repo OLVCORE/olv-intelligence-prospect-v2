@@ -129,13 +129,14 @@ export default function LocationMap({
     });
   };
 
-  // Atualizar localização usando edge function
+  // Atualizar localização usando edge function - SEMPRE que tiver CEP ou dados
   useEffect(() => {
     if (!map.current || !mapReady) return;
 
     const geocodeAddress = async () => {
       // Determinar se temos endereço completo (com número) ou apenas região
       const hasNumero = numero && numero.trim().length > 0;
+      const hasCep = cep && cep.replace(/\D/g, '').length === 8;
       
       // Construir texto de busca
       let searchText = '';
@@ -147,31 +148,35 @@ export default function LocationMap({
         searchText = `${address}, ${numero}, ${municipio}, ${estado}, Brasil`;
         zoomLevel = 18;
         showAreaCircle = false;
-      } else if (cep && cep.length >= 8) {
-        // CEP sem número - mostrar área
+      } else if (hasCep) {
+        // CEP (com ou sem número) - SEMPRE mostrar no mapa
         searchText = `${cep}, Brasil`;
         zoomLevel = 16;
         showAreaCircle = true;
+        console.log('🗺️ Carregando mapa com CEP:', cep);
       } else if (address && municipio) {
         // Logradouro sem número - mostrar área da rua
         searchText = `${address}, ${municipio}, ${estado}, Brasil`;
         zoomLevel = 16;
         showAreaCircle = true;
-      } else if (municipio) {
-        // Apenas município - área maior
+      } else if (municipio && estado) {
+        // Município - área maior
         searchText = `${municipio}, ${estado}, Brasil`;
         zoomLevel = 12;
         showAreaCircle = true;
-      } else {
-        // Apenas estado ou país
-        const parts = [estado, pais].filter(Boolean);
-        if (parts.length === 0) return;
-        searchText = parts.join(', ');
-        zoomLevel = estado ? 8 : 6;
+      } else if (estado) {
+        // Apenas estado
+        searchText = `${estado}, Brasil`;
+        zoomLevel = 8;
         showAreaCircle = true;
+      } else {
+        // Sem dados suficientes, não fazer nada
+        console.log('⚠️ Sem dados suficientes para geocodificar');
+        return;
       }
 
       setLoading(true);
+      console.log('📍 Geocodificando:', searchText);
 
       try {
         const { data, error } = await supabase.functions.invoke('mapbox-geocode', {
@@ -185,6 +190,8 @@ export default function LocationMap({
 
         if (data?.success && data.location) {
           const { lat, lng } = data.location;
+          
+          console.log('✅ Localização encontrada:', { lat, lng, zoom: data.zoom });
 
           map.current?.flyTo({
             center: [lng, lat],
@@ -209,11 +216,13 @@ export default function LocationMap({
             const radius = radiusMap[data.zoom] || 50;
             
             addCircle(lng, lat, radius);
+            console.log('🔵 Círculo adicionado com raio:', radius);
           } else {
             // Mostrar pin preciso (sem círculo)
             removeCircle();
             if (marker.current && map.current) {
               marker.current.setLngLat([lng, lat]).addTo(map.current);
+              console.log('📍 Pin adicionado');
             }
           }
 
@@ -222,7 +231,7 @@ export default function LocationMap({
           }
         }
       } catch (error) {
-        console.error('Erro ao geocodificar:', error);
+        console.error('❌ Erro ao geocodificar:', error);
       } finally {
         setLoading(false);
       }
