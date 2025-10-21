@@ -105,6 +105,91 @@ export type Database = {
           },
         ]
       }
+      canvas_comments: {
+        Row: {
+          assigned_to: string | null
+          canvas_id: string
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          status: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          canvas_id: string
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          canvas_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_comments_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_versions: {
+        Row: {
+          canvas_id: string
+          change_summary: string | null
+          content: Json
+          created_at: string
+          created_by: string
+          id: string
+          version_number: number
+        }
+        Insert: {
+          canvas_id: string
+          change_summary?: string | null
+          content: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          version_number: number
+        }
+        Update: {
+          canvas_id?: string
+          change_summary?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_versions_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           cnpj: string | null

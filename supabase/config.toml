@@ -13,4 +13,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.canvas-ai-command]
-verify_jwt = true
+verify_jwt = false
+
+[functions.canvas-ai-proactive]
+verify_jwt = false

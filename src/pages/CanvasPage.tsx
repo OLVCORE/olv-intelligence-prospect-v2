@@ -7,7 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCanvas, CanvasBlock } from '@/hooks/useCanvas';
+import { useCanvasIntelligence } from '@/hooks/useCanvasIntelligence';
+import { CompanyDataPanel } from '@/components/canvas/CompanyDataPanel';
+import { InsightsPanel } from '@/components/canvas/InsightsPanel';
+import { CanvasBlock } from '@/hooks/useCanvas';
 import { 
   ArrowLeft, 
   Save, 
@@ -17,7 +20,8 @@ import {
   GripVertical,
   FileText,
   Heading1,
-  List
+  List,
+  Zap
 } from 'lucide-react';
 import {
   Select,
@@ -30,7 +34,26 @@ import {
 export default function CanvasPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canvas, isLoading, isSaving, isExecutingAI, updateContent, executeAICommand } = useCanvas(id);
+  const companyId = new URLSearchParams(window.location.search).get('company_id') || undefined;
+  
+  const {
+    canvas,
+    isLoading,
+    isSaving,
+    isExecutingAI,
+    updateContent,
+    executeAICommand,
+    companyData,
+    digitalMaturity,
+    buyingSignals,
+    comments,
+    isLoadingData,
+    addComment,
+    updateCommentStatus,
+    deleteComment,
+    executeProactiveAI
+  } = useCanvasIntelligence(id!, companyId);
+  
   const [aiCommand, setAiCommand] = useState('');
 
   const handleAddBlock = (type: CanvasBlock['type']) => {
@@ -146,8 +169,8 @@ export default function CanvasPage() {
   return (
     <AppLayout>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header - War Room */}
+        <div className="flex items-center justify-between border-b border-primary/20 pb-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -157,20 +180,43 @@ export default function CanvasPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">{canvas.title}</h1>
+              <h1 className="text-3xl font-bold flex items-center gap-3">
+                <Zap className="h-8 w-8 text-primary" />
+                {canvas.title}
+                <Badge variant="secondary" className="text-xs">WAR ROOM</Badge>
+              </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {isSaving ? 'Salvando...' : 'Todas as alterações são salvas automaticamente'}
+                {isSaving ? 'Salvando...' : 'Colaboração em tempo real • IA proativa ativa'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isSaving && <Badge variant="secondary">Salvando...</Badge>}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={executeProactiveAI}
+              disabled={!companyData}
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              IA Proativa
+            </Button>
             <Badge variant="outline">
               <Save className="h-3 w-3 mr-1" />
-              Autosave ativo
+              Autosave
             </Badge>
           </div>
         </div>
+
+        {/* Company Data Panel */}
+        {companyData && (
+          <CompanyDataPanel
+            company={companyData}
+            digitalMaturity={digitalMaturity}
+            techStack={companyData.technologies}
+            buyingSignals={buyingSignals}
+          />
+        )}
 
         {/* AI Command Bar */}
         <Card className="border-primary/50 bg-gradient-to-r from-primary/5 to-primary/10">
@@ -251,8 +297,20 @@ export default function CanvasPage() {
           </CardContent>
         </Card>
 
-        {/* Canvas Blocks */}
-        <div className="space-y-4">
+        {/* Main Grid: Insights + Canvas */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Insights Panel (1/3) */}
+          <div className="lg:col-span-1">
+            <InsightsPanel
+              comments={comments}
+              onAddComment={addComment}
+              onUpdateStatus={updateCommentStatus}
+              onDelete={deleteComment}
+            />
+          </div>
+
+          {/* Canvas Blocks (2/3) */}
+          <div className="lg:col-span-2 space-y-4">
           {canvas.content.blocks.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
@@ -285,10 +343,11 @@ export default function CanvasPage() {
               </Card>
             ))
           )}
+          </div>
         </div>
 
         {/* Collaborators indicator */}
-        <Card className="border-dashed">
+        <Card className="border-dashed bg-gradient-to-r from-primary/5 to-transparent">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Canvas colaborativo • Todas as alterações são sincronizadas em tempo real</span>
