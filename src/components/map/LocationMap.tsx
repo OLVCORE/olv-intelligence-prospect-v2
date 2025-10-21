@@ -29,8 +29,9 @@ export default function LocationMap({
   const marker = useRef<mapboxgl.Marker | null>(null);
   const circle = useRef<string | null>(null); // ID da camada de círculo
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
+   const [loading, setLoading] = useState(false);
+   const [mapReady, setMapReady] = useState(false);
+   const [mapError, setMapError] = useState<string | null>(null);
 
   // Inicializar mapa com token público do Mapbox (busca do env e fallback no backend)
   useEffect(() => {
@@ -46,16 +47,18 @@ export default function LocationMap({
           const { data, error } = await supabase.functions.invoke('mapbox-token');
           if (error) throw error;
           mapboxToken = data?.token;
-        } catch (err) {
-          console.error('❌ Não foi possível obter o token do Mapbox:', err);
-          return;
-        }
+         } catch (err) {
+           console.error('❌ Não foi possível obter o token do Mapbox:', err);
+           setMapError('Não foi possível obter o token do Mapbox. Verifique o token público no backend.');
+           return;
+         }
       }
 
-      if (!mapboxToken) {
-        console.error('❌ Token do Mapbox não configurado');
-        return;
-      }
+       if (!mapboxToken) {
+         console.error('❌ Token do Mapbox não configurado');
+         setMapError('Token do Mapbox não configurado. Cadastre um token público (pk...) e libere este domínio.');
+         return;
+       }
 
       mapboxgl.accessToken = mapboxToken;
       console.log('🗺️ Inicializando mapa Mapbox...');
@@ -75,7 +78,8 @@ export default function LocationMap({
 
         map.current.on('load', () => {
           console.log('✅ Mapa Mapbox carregado com sucesso');
-          setMapReady(true);
+           setMapReady(true);
+           setMapError(null);
           // Garantir renderização correta após layout
           try {
             map.current?.resize();
@@ -98,9 +102,15 @@ export default function LocationMap({
           }
         });
 
-        map.current.on('error', (e) => {
-          console.error('❌ Erro ao carregar mapa Mapbox:', e);
-        });
+         map.current.on('error', (e) => {
+           console.error('❌ Erro ao carregar mapa Mapbox:', e);
+           const msg = (e as any)?.error?.message || (e as any)?.message || 'Erro desconhecido ao carregar tiles';
+           if (/401|403|Unauthorized|Forbidden/i.test(msg)) {
+             setMapError('Falha ao carregar o mapa (token inválido ou restrição de domínio). Verifique se o token público (pk...) permite o domínio atual.');
+           } else {
+             setMapError(msg);
+           }
+         });
       } catch (error) {
         console.error('❌ Erro ao inicializar mapa:', error);
       }
@@ -280,11 +290,20 @@ export default function LocationMap({
     <Card className="relative w-full min-h-[360px] overflow-hidden">
       <div ref={mapContainer} className="absolute inset-0" />
       
-      {loading && (
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
+       {loading && (
+         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
+           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+         </div>
+       )}
+
+       {mapError && (
+         <div className="absolute left-4 right-4 bottom-4 z-10 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-destructive text-sm">
+           {mapError}
+           <div className="text-xs text-muted-foreground mt-1">
+             Domínio atual: {typeof window !== 'undefined' ? window.location.host : ''}
+           </div>
+         </div>
+       )}
     </Card>
   );
 }
