@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface LocationMapProps {
   address?: string;
+  numero?: string; // Número do estabelecimento
   municipio?: string;
   estado?: string;
   pais?: string;
@@ -16,6 +17,7 @@ interface LocationMapProps {
 
 export default function LocationMap({
   address,
+  numero,
   municipio,
   estado,
   pais = 'Brasil',
@@ -25,6 +27,7 @@ export default function LocationMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
+  const circle = useRef<string | null>(null); // ID da camada de círculo
   const [loading, setLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
@@ -59,25 +62,95 @@ export default function LocationMap({
     };
   }, []);
 
+  // Remover círculo existente
+  const removeCircle = () => {
+    if (map.current && circle.current) {
+      if (map.current.getLayer(circle.current)) {
+        map.current.removeLayer(circle.current);
+      }
+      if (map.current.getSource(circle.current)) {
+        map.current.removeSource(circle.current);
+      }
+      circle.current = null;
+    }
+  };
+
+  // Adicionar círculo de área (quando não tem número exato)
+  const addCircle = (lng: number, lat: number, radius: number) => {
+    if (!map.current) return;
+
+    removeCircle();
+
+    const circleId = `area-circle-${Date.now()}`;
+    circle.current = circleId;
+
+    map.current.addSource(circleId, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        properties: {}
+      }
+    });
+
+    map.current.addLayer({
+      id: circleId,
+      type: 'circle',
+      source: circleId,
+      paint: {
+        'circle-radius': radius,
+        'circle-color': '#3b82f6',
+        'circle-opacity': 0.2,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#3b82f6',
+        'circle-stroke-opacity': 0.5
+      }
+    });
+  };
+
   // Atualizar localização usando edge function
   useEffect(() => {
     if (!map.current || !mapReady) return;
 
     const geocodeAddress = async () => {
-      // Priorizar CEP se disponível
+      // Determinar se temos endereço completo (com número) ou apenas região
+      const hasNumero = numero && numero.trim().length > 0;
+      
+      // Construir texto de busca
       let searchText = '';
       let zoomLevel = 6;
+      let showAreaCircle = false;
 
-      if (cep && cep.length >= 8) {
-        // Se CEP está preenchido, usar apenas ele para busca mais precisa
+      if (hasNumero && address) {
+        // Endereço completo com número - pin preciso
+        searchText = `${address}, ${numero}, ${municipio}, ${estado}, Brasil`;
+        zoomLevel = 18;
+        showAreaCircle = false;
+      } else if (cep && cep.length >= 8) {
+        // CEP sem número - mostrar área
         searchText = `${cep}, Brasil`;
-        zoomLevel = 15;
+        zoomLevel = 16;
+        showAreaCircle = true;
+      } else if (address && municipio) {
+        // Logradouro sem número - mostrar área da rua
+        searchText = `${address}, ${municipio}, ${estado}, Brasil`;
+        zoomLevel = 16;
+        showAreaCircle = true;
+      } else if (municipio) {
+        // Apenas município - área maior
+        searchText = `${municipio}, ${estado}, Brasil`;
+        zoomLevel = 12;
+        showAreaCircle = true;
       } else {
-        // Caso contrário, construir endereço a partir dos campos disponíveis
-        const parts = [address, municipio, estado, pais].filter(Boolean);
+        // Apenas estado ou país
+        const parts = [estado, pais].filter(Boolean);
         if (parts.length === 0) return;
         searchText = parts.join(', ');
-        zoomLevel = municipio ? 12 : estado ? 8 : 6;
+        zoomLevel = estado ? 8 : 6;
+        showAreaCircle = true;
       }
 
       setLoading(true);
@@ -101,8 +174,29 @@ export default function LocationMap({
             duration: 1500
           });
 
-          if (marker.current && map.current) {
-            marker.current.setLngLat([lng, lat]).addTo(map.current);
+          if (showAreaCircle) {
+            // Mostrar círculo de área (sem pin)
+            removeCircle();
+            if (marker.current) {
+              marker.current.remove();
+            }
+            
+            // Calcular raio baseado no zoom (quanto menor o zoom, maior o raio)
+            const radiusMap: Record<number, number> = {
+              6: 150,   // País/Estado
+              8: 100,   // Estado
+              12: 60,   // Município
+              16: 30,   // Rua/CEP
+            };
+            const radius = radiusMap[data.zoom] || 50;
+            
+            addCircle(lng, lat, radius);
+          } else {
+            // Mostrar pin preciso (sem círculo)
+            removeCircle();
+            if (marker.current && map.current) {
+              marker.current.setLngLat([lng, lat]).addTo(map.current);
+            }
           }
 
           if (onLocationSelect) {
@@ -117,7 +211,7 @@ export default function LocationMap({
     };
 
     geocodeAddress();
-  }, [address, municipio, estado, pais, cep, onLocationSelect, mapReady]);
+  }, [address, numero, municipio, estado, pais, cep, onLocationSelect, mapReady]);
 
   return (
     <Card className="relative w-full h-full overflow-hidden">

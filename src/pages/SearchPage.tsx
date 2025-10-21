@@ -57,6 +57,7 @@ export default function SearchPage() {
   // Campos de refinamento - Localização
   const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
+  const [numero, setNumero] = useState(""); // Número do estabelecimento
   const [bairro, setBairro] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [estado, setEstado] = useState("");
@@ -67,7 +68,7 @@ export default function SearchPage() {
   const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
   
-  // CEP autopreenchimento via ViaCEP
+  // CEP autopreenchimento via ViaCEP com fallback para área geral
   const fetchAddressFromCep = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
@@ -77,10 +78,29 @@ export default function SearchPage() {
       const data = await response.json();
 
       if (data.erro) {
+        // CEP não encontrado exatamente, mas ainda podemos buscar a região
+        // Usar os primeiros 5 dígitos para buscar a região geral
+        const regionCep = cleanCep.substring(0, 5) + '000';
+        const regionResponse = await fetch(`https://viacep.com.br/ws/${regionCep}/json/`);
+        const regionData = await regionResponse.json();
+        
+        if (!regionData.erro) {
+          if (regionData.localidade) setMunicipio(regionData.localidade);
+          if (regionData.uf) setEstado(regionData.uf);
+          if (regionData.bairro) setBairro(regionData.bairro);
+          
+          toast({
+            title: "Região encontrada",
+            description: `${regionData.localidade} - ${regionData.uf} (CEP aproximado)`,
+          });
+          return;
+        }
+        
+        // Se nem a região funcionar, apenas mostrar aviso mas manter o CEP
         toast({
-          title: "CEP não encontrado",
-          description: "Verifique o CEP digitado",
-          variant: "destructive",
+          title: "CEP não cadastrado",
+          description: "O mapa mostrará a região aproximada",
+          variant: "default",
         });
         return;
       }
@@ -99,8 +119,8 @@ export default function SearchPage() {
       console.error('Erro ao buscar CEP:', error);
       toast({
         title: "Erro ao buscar CEP",
-        description: "Não foi possível consultar o CEP",
-        variant: "destructive",
+        description: "Não foi possível consultar o CEP, mas você pode continuar",
+        variant: "default",
       });
     }
   };
@@ -178,7 +198,7 @@ export default function SearchPage() {
     // Verificar se pelo menos um campo foi preenchido
     const hasSearchQuery = searchQuery.trim().length > 0;
     const hasRefinement = website || instagram || linkedin || produto || marca || linkProduto || 
-                          cep || logradouro || bairro || municipio || estado;
+                          cep || logradouro || numero || bairro || municipio || estado;
     
     if (!hasSearchQuery && !hasRefinement) {
       toast({
@@ -215,6 +235,7 @@ export default function SearchPage() {
       // Adicionar campos de refinamento - Localização
       if (cep) searchBody.cep = cep;
       if (logradouro) searchBody.logradouro = logradouro;
+      if (numero) searchBody.numero = numero;
       if (bairro) searchBody.bairro = bairro;
       if (municipio) searchBody.municipio = municipio;
       if (estado) searchBody.estado = estado;
@@ -706,6 +727,23 @@ export default function SearchPage() {
                           </PopoverContent>
                         </Popover>
                       </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="numero" className="text-xs">
+                          Número
+                        </Label>
+                        <Input
+                          id="numero"
+                          placeholder="Ex: 1578"
+                          value={numero}
+                          onChange={(e) => setNumero(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Adicione o número para pin preciso no mapa
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -736,6 +774,7 @@ export default function SearchPage() {
         <div className="h-[800px]">
           <LocationMap
             address={logradouro}
+            numero={numero}
             municipio={municipio}
             estado={estado}
             pais={pais}
