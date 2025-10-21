@@ -34,111 +34,89 @@ const App = () => (
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
             }
           />
           <Route
             path="/search"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <SearchPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <SearchPage />
+              </AppLayout>
             }
           />
           <Route
             path="/tech-stack"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <TechStackPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <TechStackPage />
+              </AppLayout>
             }
           />
           <Route
             path="/intelligence"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <IntelligencePage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <IntelligencePage />
+              </AppLayout>
             }
           />
           <Route
             path="/maturity"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <MaturityPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <MaturityPage />
+              </AppLayout>
             }
           />
           <Route
             path="/benchmark"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <BenchmarkPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <BenchmarkPage />
+              </AppLayout>
             }
           />
           <Route
             path="/fit-totvs"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <FitTOTVSPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <FitTOTVSPage />
+              </AppLayout>
             }
           />
           <Route
             path="/playbooks"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <PlaybooksPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <PlaybooksPage />
+              </AppLayout>
             }
           />
           <Route
             path="/company/:id"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CompanyDetailPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <CompanyDetailPage />
+              </AppLayout>
             }
           />
           <Route
             path="/canvas"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CanvasListPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <CanvasListPage />
+              </AppLayout>
             }
           />
           <Route
             path="/canvas/:id"
             element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CanvasPage />
-                </AppLayout>
-              </ProtectedRoute>
+              <AppLayout>
+                <CanvasPage />
+              </AppLayout>
             }
           />
           <Route path="*" element={<NotFound />} />
