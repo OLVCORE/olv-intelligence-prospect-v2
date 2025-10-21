@@ -67,10 +67,52 @@ export default function SearchPage() {
   const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showLogradouroSuggestions, setShowLogradouroSuggestions] = useState(false);
   
-  // CEP formatting
+  // CEP autopreenchimento via ViaCEP
+  const fetchAddressFromCep = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast({
+          title: "CEP não encontrado",
+          description: "Verifique o CEP digitado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Preencher campos automaticamente
+      if (data.logradouro) setLogradouro(data.logradouro);
+      if (data.bairro) setBairro(data.bairro);
+      if (data.localidade) setMunicipio(data.localidade);
+      if (data.uf) setEstado(data.uf);
+
+      toast({
+        title: "Endereço encontrado!",
+        description: `${data.localidade} - ${data.uf}`,
+      });
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      toast({
+        title: "Erro ao buscar CEP",
+        description: "Não foi possível consultar o CEP",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCepChange = (value: string) => {
     const formatted = value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
     setCep(formatted);
+    
+    // Buscar endereço automaticamente quando CEP estiver completo
+    if (formatted.replace(/\D/g, '').length === 8) {
+      fetchAddressFromCep(formatted);
+    }
   };
   
   // Google Places Autocomplete
@@ -472,17 +514,14 @@ export default function SearchPage() {
                           id="cep"
                           placeholder="00000-000"
                           value={cep}
-                          onChange={(e) => {
-                            const formatted = e.target.value
-                              .replace(/\D/g, '')
-                              .replace(/^(\d{5})(\d)/, '$1-$2')
-                              .slice(0, 9);
-                            setCep(formatted);
-                          }}
+                          onChange={(e) => handleCepChange(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                           disabled={isSearching}
                           maxLength={9}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Digite o CEP para preencher automaticamente
+                        </p>
                       </div>
                       
                       <div className="space-y-2">
