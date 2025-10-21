@@ -29,6 +29,7 @@ const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
 const CanvasPage = lazy(() => import("./pages/CanvasPage"));
 const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -169,6 +170,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CanvasPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ReportsPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

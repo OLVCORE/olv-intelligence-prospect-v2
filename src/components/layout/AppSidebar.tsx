@@ -11,7 +11,8 @@ import {
   PenTool,
   LogOut,
   Settings,
-  User
+  User,
+  FileText
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,11 @@ const menuItems = [
     title: "Playbooks",
     icon: BookOpen,
     url: "/playbooks",
+  },
+  {
+    title: "Relatórios",
+    icon: FileText,
+    url: "/reports",
   },
   {
     title: "Canvas",
