@@ -6,7 +6,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { InsightsDock } from "@/components/insights/InsightsDock";
 import { Button } from "@/components/ui/button";
-import { Brain } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -28,11 +28,11 @@ export function AppLayout({ children }: AppLayoutProps) {
             <GlobalSearch />
             <Button
               variant="outline"
-              size="icon"
               onClick={() => setInsightsOpen(true)}
-              className="relative"
+              className="relative gap-2"
             >
-              <Brain className="h-4 w-4" />
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">Insights</span>
               <span className="absolute -top-1 -right-1 h-2 w-2 bg-purple-500 rounded-full animate-pulse" />
             </Button>
           </div>
