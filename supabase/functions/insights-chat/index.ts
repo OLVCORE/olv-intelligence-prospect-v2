@@ -127,76 +127,116 @@ DIRETRIZES:
 async function buildRAGContext(supabase: any): Promise<string> {
   const contexts: string[] = [];
 
-  // Get companies summary
-  const { data: companies } = await supabase
-    .from('companies')
-    .select('id, name, domain, industry, size, enrichment_status')
-    .limit(100);
+  try {
+    // Get companies summary
+    const { data: companies, error: companiesError } = await supabase
+      .from('companies')
+      .select('id, name, domain, industry, employees')
+      .limit(100);
 
-  if (companies && companies.length > 0) {
-    contexts.push(`EMPRESAS CADASTRADAS (${companies.length} empresas):
+    if (companiesError) {
+      console.error('Error fetching companies:', companiesError);
+    } else if (companies && companies.length > 0) {
+      contexts.push(`EMPRESAS CADASTRADAS (${companies.length} empresas):
 ${companies.slice(0, 10).map((c: any) => 
-  `- ${c.name} (${c.industry || 'N/A'}, ${c.size || 'N/A'} funcionários, Status: ${c.enrichment_status})`
-).join('\n')}`);
-  }
+  `- ${c.name} (${c.industry || 'Setor não informado'}, ${c.employees || 'N/A'} funcionários)`
+).join('\n')}
+${companies.length > 10 ? `\n... e mais ${companies.length - 10} empresas` : ''}`);
+    }
 
-  // Get digital maturity scores
-  const { data: maturityScores } = await supabase
-    .from('digital_maturity')
-    .select('company_id, overall_score, technology_score, online_presence_score')
-    .order('overall_score', { ascending: false })
-    .limit(50);
+    // Get digital maturity scores
+    const { data: maturityScores, error: maturityError } = await supabase
+      .from('digital_maturity')
+      .select('company_id, overall_score, infrastructure_score, systems_score')
+      .order('overall_score', { ascending: false })
+      .limit(50);
 
-  if (maturityScores && maturityScores.length > 0) {
-    const avgScore = maturityScores.reduce((sum: number, s: any) => sum + (s.overall_score || 0), 0) / maturityScores.length;
-    contexts.push(`MATURIDADE DIGITAL:
+    if (maturityError) {
+      console.error('Error fetching maturity scores:', maturityError);
+    } else if (maturityScores && maturityScores.length > 0) {
+      const avgScore = maturityScores.reduce((sum: number, s: any) => sum + (s.overall_score || 0), 0) / maturityScores.length;
+      contexts.push(`MATURIDADE DIGITAL:
 - Média geral: ${avgScore.toFixed(1)}/100
 - Empresas analisadas: ${maturityScores.length}
-- Top performers: ${maturityScores.slice(0, 5).map((s: any) => `${s.overall_score}/100`).join(', ')}`);
-  }
+- Top 5 scores: ${maturityScores.slice(0, 5).map((s: any) => `${(s.overall_score || 0).toFixed(1)}`).join(', ')}`);
+    }
 
-  // Get buying signals
-  const { data: signals } = await supabase
-    .from('buying_signals')
-    .select('company_id, signal_type, strength, description')
-    .order('created_at', { ascending: false })
-    .limit(50);
+    // Get buying signals
+    const { data: signals, error: signalsError } = await supabase
+      .from('buying_signals')
+      .select('company_id, signal_type, confidence_score, description')
+      .order('detected_at', { ascending: false })
+      .limit(50);
 
-  if (signals && signals.length > 0) {
-    const strongSignals = signals.filter((s: any) => s.strength === 'high').length;
-    contexts.push(`SINAIS DE COMPRA:
+    if (signalsError) {
+      console.error('Error fetching signals:', signalsError);
+    } else if (signals && signals.length > 0) {
+      const highConfidence = signals.filter((s: any) => (s.confidence_score || 0) > 0.7).length;
+      contexts.push(`SINAIS DE COMPRA:
 - Total de sinais ativos: ${signals.length}
-- Sinais fortes: ${strongSignals}
-- Tipos principais: ${[...new Set(signals.map((s: any) => s.signal_type))].slice(0, 5).join(', ')}`);
+- Alta confiança: ${highConfidence}
+- Tipos: ${[...new Set(signals.map((s: any) => s.signal_type))].slice(0, 5).join(', ')}`);
+    }
+
+    // Get decision makers
+    const { data: decisionMakers, error: decisorsError } = await supabase
+      .from('decision_makers')
+      .select('name, title, seniority, department, company_id')
+      .limit(50);
+
+    if (decisorsError) {
+      console.error('Error fetching decision makers:', decisorsError);
+    } else if (decisionMakers && decisionMakers.length > 0) {
+      contexts.push(`DECISORES MAPEADOS:
+- Total: ${decisionMakers.length} decisores
+- Senioridades: ${[...new Set(decisionMakers.map((d: any) => d.seniority).filter(Boolean))].slice(0, 5).join(', ')}`);
+    }
+
+    // Get financial data summary
+    const { data: financial, error: financialError } = await supabase
+      .from('financial_data')
+      .select('company_id, credit_score, risk_classification')
+      .limit(50);
+
+    if (financialError) {
+      console.error('Error fetching financial data:', financialError);
+    } else if (financial && financial.length > 0) {
+      const avgCredit = financial.reduce((sum: number, f: any) => sum + (f.credit_score || 0), 0) / financial.length;
+      contexts.push(`DADOS FINANCEIROS:
+- Empresas com análise: ${financial.length}
+- Score de crédito médio: ${avgCredit.toFixed(1)}`);
+    }
+
+    // Get digital presence data
+    const { data: presence, error: presenceError } = await supabase
+      .from('digital_presence')
+      .select('company_id, overall_score, social_score, web_score')
+      .order('overall_score', { ascending: false })
+      .limit(30);
+
+    if (presenceError) {
+      console.error('Error fetching digital presence:', presenceError);
+    } else if (presence && presence.length > 0) {
+      const avgPresence = presence.reduce((sum: number, p: any) => sum + (p.overall_score || 0), 0) / presence.length;
+      contexts.push(`PRESENÇA DIGITAL:
+- Empresas analisadas: ${presence.length}
+- Score médio: ${avgPresence.toFixed(1)}/100`);
+    }
+
+  } catch (error) {
+    console.error('Error building RAG context:', error);
   }
 
-  // Get decisors
-  const { data: decisors } = await supabase
-    .from('decisors')
-    .select('name, role, seniority_level, company_id')
-    .limit(50);
-
-  if (decisors && decisors.length > 0) {
-    contexts.push(`DECISORES MAPEADOS:
-- Total: ${decisors.length} decisores
-- Níveis: ${[...new Set(decisors.map((d: any) => d.seniority_level).filter(Boolean))].join(', ')}`);
+  if (contexts.length === 0) {
+    return `Sistema ainda em fase de inicialização. 
+    
+Para melhor análise, recomendo:
+1. Cadastrar empresas no sistema
+2. Executar enriquecimento de dados
+3. Analisar maturidade digital das empresas cadastradas`;
   }
 
-  // Get recent activities
-  const { data: activities } = await supabase
-    .from('sdr_activities')
-    .select('activity_type, outcome')
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  if (activities && activities.length > 0) {
-    const successRate = activities.filter((a: any) => a.outcome === 'success').length / activities.length * 100;
-    contexts.push(`ATIVIDADES RECENTES:
-- Total: ${activities.length} atividades
-- Taxa de sucesso: ${successRate.toFixed(1)}%`);
-  }
-
-  return contexts.join('\n\n') || 'Ainda não há dados suficientes no sistema.';
+  return contexts.join('\n\n');
 }
 
 async function storeInteraction(supabase: any, question: string, answer: string) {
