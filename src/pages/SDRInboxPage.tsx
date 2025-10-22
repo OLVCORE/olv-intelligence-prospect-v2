@@ -67,7 +67,7 @@ export default function SDRInboxPage() {
   const [subjectInput, setSubjectInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [view, setView] = useState<'all' | 'my' | 'unassigned' | 'urgent'>('all');
-  const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [channelFilter, setChannelFilter] = useState<string>('email'); // Email como padrão
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
