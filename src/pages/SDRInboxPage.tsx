@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import {
   Search, Mail, MessageSquare, Clock, User, 
   Tag, Send, Paperclip, MoreVertical, Star,
   Archive, UserPlus, AlertCircle, CheckCircle2, Building2, Link2,
-  Instagram, Facebook, Linkedin, Twitter, Phone
+  Instagram, Facebook, Linkedin, Twitter, Phone, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -68,11 +69,13 @@ export default function SDRInboxPage() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [activeIntegrations, setActiveIntegrations] = useState<any[]>([]);
 
-  // Load conversations and companies
+  // Load conversations, companies and integrations
   useEffect(() => {
     loadConversations();
     loadCompanies();
+    loadActiveIntegrations();
     
     // Subscribe to realtime updates
     const channel = supabase
@@ -194,6 +197,20 @@ export default function SDRInboxPage() {
       setCompanies(data || []);
     } catch (error: any) {
       console.error('Error loading companies:', error);
+    }
+  };
+
+  const loadActiveIntegrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('integration_configs')
+        .select('*')
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      setActiveIntegrations(data || []);
+    } catch (error: any) {
+      console.error('Error loading integrations:', error);
     }
   };
 
@@ -328,6 +345,24 @@ export default function SDRInboxPage() {
     sms: conversations.filter(c => c.channel === 'sms').length,
   };
 
+  // Get available channels from active integrations
+  const availableChannels = [
+    { key: 'all', label: 'Todos', count: channelCounts.all, icon: null, provider: undefined },
+    ...activeIntegrations.map(int => ({
+      key: int.channel,
+      label: int.channel === 'email' ? 'Email' :
+             int.channel === 'whatsapp' ? 'WhatsApp' :
+             int.channel === 'instagram' ? 'Instagram' :
+             int.channel === 'facebook' ? 'Facebook' :
+             int.channel === 'linkedin' ? 'LinkedIn' :
+             int.channel === 'twitter' ? 'Twitter' :
+             int.channel === 'sms' ? 'SMS' : int.channel,
+      count: channelCounts[int.channel as keyof typeof channelCounts] || 0,
+      provider: int.provider,
+      icon: int.channel
+    }))
+  ].filter((ch, idx, arr) => arr.findIndex(c => c.key === ch.key) === idx);
+
   return (
     <AppLayout>
       <div className="h-[calc(100vh-4rem)] flex">
@@ -380,61 +415,49 @@ export default function SDRInboxPage() {
               </TabsList>
             </Tabs>
 
-            {/* Channel Filter */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={channelFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setChannelFilter('all')}
-                className="flex-1"
-              >
-                Todos ({channelCounts.all})
-              </Button>
-              {channelCounts.email > 0 && (
-                <Button
-                  variant={channelFilter === 'email' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChannelFilter('email')}
-                  className="gap-1"
-                >
-                  <ChannelIcon channel="email" size="sm" />
-                  <span className="text-xs">({channelCounts.email})</span>
-                </Button>
-              )}
-              {channelCounts.whatsapp > 0 && (
-                <Button
-                  variant={channelFilter === 'whatsapp' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChannelFilter('whatsapp')}
-                  className="gap-1"
-                >
-                  <ChannelIcon channel="whatsapp" size="sm" />
-                  <span className="text-xs">({channelCounts.whatsapp})</span>
-                </Button>
-              )}
-              {channelCounts.instagram > 0 && (
-                <Button
-                  variant={channelFilter === 'instagram' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChannelFilter('instagram')}
-                  className="gap-1"
-                >
-                  <ChannelIcon channel="instagram" size="sm" />
-                  <span className="text-xs">({channelCounts.instagram})</span>
-                </Button>
-              )}
-              {channelCounts.facebook > 0 && (
-                <Button
-                  variant={channelFilter === 'facebook' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChannelFilter('facebook')}
-                  className="gap-1"
-                >
-                  <ChannelIcon channel="facebook" size="sm" />
-                  <span className="text-xs">({channelCounts.facebook})</span>
-                </Button>
-              )}
-            </div>
+            {/* Channel Filter Tabs */}
+            {activeIntegrations.length > 0 ? (
+              <Tabs value={channelFilter} onValueChange={setChannelFilter} className="w-full">
+                <TabsList className="w-full h-auto flex-wrap justify-start gap-1">
+                  {availableChannels.map((channel) => (
+                    <TabsTrigger
+                      key={channel.key}
+                      value={channel.key}
+                      className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      {channel.icon && (
+                        <ChannelIcon 
+                          channel={channel.icon} 
+                          provider={channel.provider}
+                          size="sm" 
+                        />
+                      )}
+                      <span className="font-medium">{channel.label}</span>
+                      {channel.count > 0 && (
+                        <Badge 
+                          variant="secondary" 
+                          className="ml-1 h-5 px-1.5 text-xs data-[state=active]:bg-primary-foreground data-[state=active]:text-primary"
+                        >
+                          {channel.count}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            ) : (
+              <Card className="p-4">
+                <div className="text-center text-sm text-muted-foreground">
+                  <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="mb-2">Nenhuma integração ativa</p>
+                  <Button size="sm" asChild variant="outline">
+                    <Link to="/sdr/integrations">
+                      Configurar Integrações
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
 
           <ScrollArea className="flex-1">
