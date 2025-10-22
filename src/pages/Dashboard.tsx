@@ -9,6 +9,7 @@ import {
   BarChart,
   Bar,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -39,8 +40,10 @@ import {
   MessageSquare,
   BarChart3,
   Sparkles,
-  ArrowUp,
-  ArrowDown,
+  ArrowUpRight,
+  TrendingDown,
+  Activity,
+  Layers,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -57,12 +60,15 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-8 bg-background">
-        <div className="space-y-6">
-          <Skeleton className="h-32 w-full" />
+      <div className="min-h-screen p-8 gradient-mesh">
+        <div className="container mx-auto space-y-8">
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-96" />
+            <Skeleton className="h-6 w-64" />
+          </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32" />
+              <Skeleton key={i} className="h-40 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -71,409 +77,530 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-bold tracking-tight">Dashboard Executivo</h1>
-            <p className="text-muted-foreground text-lg">
-              Visão estratégica completa • Análise em tempo real
-            </p>
+    <div className="min-h-screen gradient-mesh">
+      <div className="container mx-auto p-8 space-y-8">
+        {/* Hero Header */}
+        <div className="relative">
+          <div className="flex items-start justify-between mb-8">
+            <div className="space-y-3 animate-float">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20">
+                <Activity className="h-4 w-4 text-primary animate-pulse" />
+                <span className="text-sm font-medium">Live Intelligence</span>
+              </div>
+              <h1 className="text-6xl font-bold tracking-tight text-gradient">
+                Command Center
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl">
+                Análise estratégica em tempo real com inteligência artificial avançada
+              </p>
+            </div>
+            <BulkUploadDialog />
           </div>
-          <BulkUploadDialog />
+
+          {/* Hero Metrics - Destaque */}
+          <div className="grid gap-6 md:grid-cols-4 mb-8">
+            <HeroMetric
+              title="Empresas Ativas"
+              value={data.totalCompanies.toString()}
+              change={15.5}
+              icon={Building2}
+              trend="up"
+              color="blue"
+            />
+            <HeroMetric
+              title="Decisores Mapped"
+              value={data.totalDecisors.toString()}
+              change={23.4}
+              icon={Users}
+              trend="up"
+              color="green"
+            />
+            <HeroMetric
+              title="Pipeline Revenue"
+              value={`$${(data.pipelineValue / 1000000).toFixed(1)}M`}
+              change={data.conversionRate}
+              icon={DollarSign}
+              trend="up"
+              color="cyan"
+              highlight
+            />
+            <HeroMetric
+              title="Win Rate"
+              value={`${data.conversionRate.toFixed(1)}%`}
+              change={8.7}
+              icon={Target}
+              trend="up"
+              color="purple"
+            />
+          </div>
         </div>
 
-        {/* KPIs principais */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Total de Empresas"
-            value={data.totalCompanies.toString()}
-            change={15.5}
-            trend="up"
-            icon={Building2}
-            color="blue"
-          />
-          <MetricCard
-            title="Decisores Identificados"
-            value={data.totalDecisors.toString()}
-            change={12.3}
-            trend="up"
-            icon={Users}
-            color="green"
-          />
-          <MetricCard
-            title="Pipeline Total"
-            value={`R$ ${(data.pipelineValue / 1000000).toFixed(1)}M`}
-            change={data.conversionRate}
-            trend="up"
-            icon={DollarSign}
-            color="cyan"
-          />
-          <MetricCard
-            title="Taxa de Conversão"
-            value={`${data.conversionRate.toFixed(1)}%`}
-            change={8.2}
-            trend="up"
-            icon={Target}
-            color="purple"
-          />
-        </div>
-
-        {/* Tabs principais */}
-        <Tabs defaultValue="mercado" className="space-y-4">
-          <TabsList className="bg-muted p-1">
-            <TabsTrigger value="mercado">
-              <Globe className="mr-2 h-4 w-4" />
-              Mercado
+        {/* Main Content */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="glass-card p-1.5 gap-1">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:glass-card">
+              <Layers className="h-4 w-4" />
+              Overview
             </TabsTrigger>
-            <TabsTrigger value="fit">
-              <Award className="mr-2 h-4 w-4" />
-              Fit TOTVS
+            <TabsTrigger value="mercado" className="gap-2 data-[state=active]:glass-card">
+              <Globe className="h-4 w-4" />
+              Market Intel
             </TabsTrigger>
-            <TabsTrigger value="tech">
-              <Zap className="mr-2 h-4 w-4" />
-              Tecnologia
+            <TabsTrigger value="fit" className="gap-2 data-[state=active]:glass-card">
+              <Award className="h-4 w-4" />
+              Fit Analysis
             </TabsTrigger>
-            <TabsTrigger value="saude">
-              <Shield className="mr-2 h-4 w-4" />
-              Saúde
+            <TabsTrigger value="tech" className="gap-2 data-[state=active]:glass-card">
+              <Zap className="h-4 w-4" />
+              Tech Stack
             </TabsTrigger>
-            <TabsTrigger value="pipeline">
-              <Briefcase className="mr-2 h-4 w-4" />
-              Pipeline
+            <TabsTrigger value="saude" className="gap-2 data-[state=active]:glass-card">
+              <Shield className="h-4 w-4" />
+              Health
             </TabsTrigger>
-            <TabsTrigger value="preditiva">
-              <Sparkles className="mr-2 h-4 w-4" />
-              IA Preditiva
+            <TabsTrigger value="preditiva" className="gap-2 data-[state=active]:glass-card">
+              <Sparkles className="h-4 w-4" />
+              AI Insights
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab: Mercado */}
-          <TabsContent value="mercado" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-primary" />
-                    Distribuição Geográfica
-                  </CardTitle>
-                  <CardDescription>Empresas por região</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Chart grande - 2 colunas */}
+              <div className="lg:col-span-2">
+                <PremiumCard
+                  title="Distribuição Geográfica & Maturidade"
+                  description="Performance por região com análise de maturidade digital"
+                  icon={Globe}
+                >
+                  <ResponsiveContainer width="100%" height={350}>
                     <ComposedChart data={data.companiesByRegion}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="region" className="text-xs" />
-                      <YAxis className="text-xs" />
+                      <defs>
+                        <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis 
+                        dataKey="region" 
+                        stroke="hsl(var(--muted-foreground))" 
+                        fontSize={12}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        stroke="hsl(var(--muted-foreground))" 
+                        fontSize={12}
+                        tickLine={false}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '0.5rem',
+                          borderRadius: '12px',
+                          padding: '12px',
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="count" fill={CHART_COLORS.primary} name="Empresas" radius={[4, 4, 0, 0]} />
-                      <Line type="monotone" dataKey="avgMaturity" stroke={CHART_COLORS.tertiary} name="Maturidade Média" strokeWidth={2} />
+                      <Bar 
+                        dataKey="count" 
+                        fill="url(#colorBar)" 
+                        name="Empresas" 
+                        radius={[8, 8, 0, 0]} 
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="avgMaturity" 
+                        stroke={CHART_COLORS.tertiary} 
+                        name="Maturidade" 
+                        strokeWidth={3}
+                        dot={{ r: 4 }}
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </PremiumCard>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    Top Segmentos
-                  </CardTitle>
-                  <CardDescription>Principais indústrias</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis type="number" className="text-xs" />
-                      <YAxis dataKey="industry" type="category" width={120} className="text-xs" />
-                      <Tooltip />
-                      <Bar dataKey="count" fill={CHART_COLORS.secondary} radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+              {/* Sidebar com métricas */}
+              <div className="space-y-6">
+                <PremiumCard title="Performance Overview" icon={Activity} compact>
+                  <div className="space-y-4">
+                    <MetricRow
+                      label="Total Pipeline"
+                      value={`$${(data.pipelineValue / 1000000).toFixed(1)}M`}
+                      progress={75}
+                      color="blue"
+                    />
+                    <MetricRow
+                      label="Avg Deal Size"
+                      value={`$${(data.avgDealSize / 1000).toFixed(0)}K`}
+                      progress={data.conversionRate}
+                      color="green"
+                    />
+                    <MetricRow
+                      label="Conversations"
+                      value={data.totalConversations.toString()}
+                      progress={65}
+                      color="purple"
+                    />
+                  </div>
+                </PremiumCard>
 
-          {/* Tab: Fit TOTVS */}
-          <TabsContent value="fit" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-primary" />
-                    Fit por Produto
-                  </CardTitle>
-                  <CardDescription>Compatibilidade TOTVS</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data.fitByProduct}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="product" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip />
-                      <Bar dataKey="companies" fill={CHART_COLORS.secondary} name="Empresas" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    Top Empresas - Fit Score
-                  </CardTitle>
-                  <CardDescription>Maiores oportunidades</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <PremiumCard title="Health Status" icon={Shield} compact>
                   <div className="space-y-3">
-                    {data.topFitCompanies.slice(0, 5).map((company, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{company.name}</p>
-                          <p className="text-xs text-muted-foreground">{company.recommendedProducts[0] || 'N/A'}</p>
+                    {data.healthDistribution.slice(0, 3).map((health, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{health.category}</span>
+                          <span className="text-muted-foreground">{health.score.toFixed(0)}</span>
                         </div>
-                        <div className="flex items-center gap-3 ml-4">
-                          <Progress value={company.fitScore} className="w-20" />
-                          <Badge variant="secondary">{company.fitScore}%</Badge>
-                        </div>
+                        <Progress value={health.score} className="h-2" />
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </PremiumCard>
+              </div>
+            </div>
+
+            {/* Segunda linha - 3 cards */}
+            <div className="grid gap-6 md:grid-cols-3">
+              <PremiumCard
+                title="Top Segmentos"
+                description="Principais indústrias"
+                icon={BarChart3}
+              >
+                <div className="space-y-3 mt-4">
+                  {data.companiesByIndustry.slice(0, 5).map((industry, i) => (
+                    <div key={i} className="flex items-center justify-between group cursor-pointer">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent-cyan" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{industry.industry}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {industry.avgEmployees.toLocaleString()} funcionários
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">{industry.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </PremiumCard>
+
+              <PremiumCard
+                title="Maturidade Digital"
+                description="Distribuição"
+                icon={Zap}
+              >
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={data.maturityDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="count"
+                    >
+                      {data.maturityDistribution.map((_, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={Object.values(CHART_COLORS)[index % 5]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-4 text-xs mt-4">
+                  {data.maturityDistribution.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: Object.values(CHART_COLORS)[i % 5] }}
+                      />
+                      <span>{item.level}</span>
+                    </div>
+                  ))}
+                </div>
+              </PremiumCard>
+
+              <PremiumCard
+                title="Alertas Críticos"
+                description="Empresas em risco"
+                icon={AlertTriangle}
+              >
+                <div className="space-y-4 mt-4">
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-red-500/20">
+                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{data.companiesAtRisk}</p>
+                        <p className="text-xs text-muted-foreground">Alto Risco</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-orange-500/20">
+                        <Shield className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{Math.round(data.totalCompanies * 0.15)}</p>
+                        <p className="text-xs text-muted-foreground">Monitorar</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PremiumCard>
             </div>
           </TabsContent>
 
-          {/* Tab: Tecnologia */}
-          <TabsContent value="tech" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Stack Tecnológico
-                  </CardTitle>
-                  <CardDescription>Tecnologias mais usadas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data.topTechnologies.slice(0, 10)}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="technology" angle={-45} textAnchor="end" height={100} className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip />
-                      <Bar dataKey="count" fill={CHART_COLORS.quaternary} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+          {/* Market Intel Tab */}
+          <TabsContent value="mercado" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <PremiumCard
+                title="Distribuição Geográfica"
+                description="Empresas por região"
+                icon={Globe}
+              >
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={data.companiesByRegion}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="region" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill={CHART_COLORS.primary} name="Empresas" radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="avgMaturity" stroke={CHART_COLORS.tertiary} name="Maturidade" strokeWidth={2} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </PremiumCard>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    Maturidade Digital
-                  </CardTitle>
-                  <CardDescription>Distribuição por nível</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={data.maturityDistribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ level, percentage }) => `${level} (${percentage.toFixed(0)}%)`}
-                        outerRadius={100}
-                        dataKey="count"
-                      >
-                        {data.maturityDistribution.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={Object.values(CHART_COLORS)[index % 5]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <PremiumCard
+                title="Top Segmentos"
+                description="Principais indústrias"
+                icon={BarChart3}
+              >
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="industry" type="category" width={120} className="text-xs" />
+                    <Tooltip />
+                    <Bar dataKey="count" fill={CHART_COLORS.secondary} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </PremiumCard>
             </div>
           </TabsContent>
 
-          {/* Tab: Saúde */}
-          <TabsContent value="saude" className="space-y-4">
+          {/* Fit Analysis Tab */}
+          <TabsContent value="fit" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <PremiumCard
+                title="Fit por Produto TOTVS"
+                description="Compatibilidade"
+                icon={Award}
+              >
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.fitByProduct}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="product" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="companies" fill={CHART_COLORS.secondary} name="Empresas" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </PremiumCard>
+
+              <PremiumCard
+                title="Top Empresas - Fit Score"
+                description="Maiores oportunidades"
+                icon={Target}
+              >
+                <div className="space-y-3 mt-4">
+                  {data.topFitCompanies.slice(0, 6).map((company, i) => (
+                    <div key={i} className="group">
+                      <div className="flex items-center justify-between p-3 rounded-xl glass-card glass-card-hover">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{company.name}</p>
+                          <p className="text-xs text-muted-foreground">{company.recommendedProducts[0]}</p>
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <Progress value={company.fitScore} className="w-20" />
+                          <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0">
+                            {company.fitScore}%
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </PremiumCard>
+            </div>
+          </TabsContent>
+
+          {/* Tech Stack Tab */}
+          <TabsContent value="tech" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <PremiumCard
+                title="Stack Tecnológico"
+                description="Top 10 tecnologias"
+                icon={Zap}
+              >
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={data.topTechnologies.slice(0, 10)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="technology" angle={-45} textAnchor="end" height={100} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill={CHART_COLORS.quaternary} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </PremiumCard>
+
+              <PremiumCard
+                title="Maturidade Digital"
+                description="Distribuição"
+                icon={Activity}
+              >
+                <ResponsiveContainer width="100%" height={320}>
+                  <PieChart>
+                    <Pie
+                      data={data.maturityDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ level, percentage }) => `${level} ${percentage.toFixed(0)}%`}
+                      outerRadius={110}
+                      dataKey="count"
+                    >
+                      {data.maturityDistribution.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={Object.values(CHART_COLORS)[index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </PremiumCard>
+            </div>
+          </TabsContent>
+
+          {/* Health Tab */}
+          <TabsContent value="saude" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-4">
               {data.healthDistribution.map((health, i) => (
-                <Card key={i}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      {health.category}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">{health.score.toFixed(1)}</div>
-                    <Progress value={health.score} className="mt-2 h-2" />
-                  </CardContent>
-                </Card>
+                <PremiumCard key={i} title={health.category} icon={Shield} compact>
+                  <div className="space-y-3 mt-2">
+                    <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
+                      {health.score.toFixed(1)}
+                    </div>
+                    <Progress value={health.score} className="h-2" />
+                  </div>
+                </PremiumCard>
               ))}
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Empresas Críticas
-                </CardTitle>
-                <CardDescription>Requerem atenção imediata</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="p-4 rounded-lg border-l-4 border-l-destructive bg-destructive/10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
-                      <h4 className="font-semibold">Alto Risco</h4>
+            <PremiumCard
+              title="Status Crítico"
+              description="Empresas que requerem atenção"
+              icon={AlertTriangle}
+            >
+              <div className="grid gap-4 md:grid-cols-2 mt-4">
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border border-red-500/20">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="p-3 rounded-xl bg-red-500/20">
+                      <AlertTriangle className="h-6 w-6 text-red-600" />
                     </div>
-                    <p className="text-3xl font-bold">{data.companiesAtRisk}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Empresas com scores críticos</p>
-                  </div>
-                  <div className="p-4 rounded-lg border-l-4 border-l-orange-500 bg-orange-500/10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="h-5 w-5 text-orange-600" />
-                      <h4 className="font-semibold">Monitoramento</h4>
+                    <div>
+                      <p className="text-3xl font-bold">{data.companiesAtRisk}</p>
+                      <p className="text-sm text-muted-foreground">Alto Risco</p>
                     </div>
-                    <p className="text-3xl font-bold">{Math.round(data.totalCompanies * 0.15)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Empresas para acompanhar</p>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Empresas com scores críticos que necessitam intervenção imediata
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="p-3 rounded-xl bg-orange-500/20">
+                      <Shield className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{Math.round(data.totalCompanies * 0.15)}</p>
+                      <p className="text-sm text-muted-foreground">Monitoramento</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Empresas com indicadores de atenção para acompanhamento regular
+                  </p>
+                </div>
+              </div>
+            </PremiumCard>
           </TabsContent>
 
-          {/* Tab: Pipeline */}
-          <TabsContent value="pipeline" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Pipeline Total
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">R$ {(data.pipelineValue / 1000000).toFixed(1)}M</div>
-                  <p className="text-sm text-muted-foreground mt-1">Valor em negociação</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Taxa de Conversão
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{data.conversionRate.toFixed(1)}%</div>
-                  <Progress value={data.conversionRate} className="mt-2" />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Ticket Médio
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">R$ {(data.avgDealSize / 1000).toFixed(0)}K</div>
-                  <p className="text-sm text-muted-foreground mt-1">Por oportunidade</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Conversas Ativas
-                </CardTitle>
-                <CardDescription>Engajamento com prospects</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <div className="text-5xl font-bold text-primary">{data.totalConversations}</div>
-                  <p className="text-muted-foreground mt-2">Conversas em andamento</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tab: IA Preditiva */}
-          <TabsContent value="preditiva" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Oportunidades Emergentes
-                </CardTitle>
-                <CardDescription>Identificadas por IA</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {data.emergingOpportunities.slice(0, 5).map((opp, i) => (
-                    <div key={i} className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{opp.type}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">{opp.description}</p>
-                        </div>
-                        <Badge>{opp.companies} empresas</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{opp.potential}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Tendências de Mercado
-                </CardTitle>
-                <CardDescription>Análise preditiva</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {data.marketTrends.map((trend, i) => (
-                    <div key={i} className="p-4 rounded-lg border bg-card">
-                      <div className="flex items-center gap-2 mb-2">
+          {/* AI Insights Tab */}
+          <TabsContent value="preditiva" className="space-y-6">
+            <PremiumCard
+              title="Oportunidades Emergentes"
+              description="Identificadas por Inteligência Artificial"
+              icon={Sparkles}
+            >
+              <div className="grid gap-4 md:grid-cols-2 mt-4">
+                {data.emergingOpportunities.slice(0, 6).map((opp, i) => (
+                  <div 
+                    key={i} 
+                    className="p-6 rounded-2xl glass-card glass-card-hover group cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
                         <Sparkles className="h-5 w-5 text-primary" />
-                        <h4 className="font-semibold">{trend.trend}</h4>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{trend.impact}</p>
-                      <p className="text-2xl font-bold text-primary">{trend.companies}</p>
-                      <p className="text-xs text-muted-foreground">empresas impactadas</p>
+                      <Badge variant="secondary">{opp.companies} empresas</Badge>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <h4 className="font-semibold mb-2">{opp.type}</h4>
+                    <p className="text-sm text-muted-foreground mb-3">{opp.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-primary font-medium group-hover:gap-3 transition-all">
+                      <span>{opp.potential}</span>
+                      <ArrowUpRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </PremiumCard>
+
+            <PremiumCard
+              title="Tendências de Mercado"
+              description="Análise preditiva baseada em IA"
+              icon={TrendingUp}
+            >
+              <div className="grid gap-4 md:grid-cols-3 mt-4">
+                {data.marketTrends.map((trend, i) => (
+                  <div 
+                    key={i} 
+                    className="p-6 rounded-2xl glass-card glass-card-hover"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent-cyan/20">
+                        <Activity className="h-5 w-5 text-primary" />
+                      </div>
+                      <h4 className="font-semibold text-sm">{trend.trend}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{trend.impact}</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl font-bold text-primary">{trend.companies}</p>
+                      <p className="text-xs text-muted-foreground">empresas</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </PremiumCard>
           </TabsContent>
         </Tabs>
       </div>
@@ -481,14 +608,15 @@ export default function Dashboard() {
   );
 }
 
-// Componente de Métrica
-function MetricCard({
+// Hero Metric Component - Premium
+function HeroMetric({
   title,
   value,
   change,
   trend,
   icon: Icon,
   color,
+  highlight = false,
 }: {
   title: string;
   value: string;
@@ -496,36 +624,91 @@ function MetricCard({
   trend: 'up' | 'down';
   icon: any;
   color: 'blue' | 'green' | 'cyan' | 'purple';
+  highlight?: boolean;
 }) {
   const colorClasses = {
-    blue: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20',
-    green: 'text-green-600 bg-green-50 dark:bg-green-950/20',
-    cyan: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/20',
-    purple: 'text-purple-600 bg-purple-50 dark:bg-purple-950/20',
+    blue: { bg: 'from-blue-500/20 to-blue-500/5', icon: 'text-blue-600', border: 'border-blue-500/20' },
+    green: { bg: 'from-green-500/20 to-green-500/5', icon: 'text-green-600', border: 'border-green-500/20' },
+    cyan: { bg: 'from-cyan-500/20 to-cyan-500/5', icon: 'text-cyan-600', border: 'border-cyan-500/20' },
+    purple: { bg: 'from-purple-500/20 to-purple-500/5', icon: 'text-purple-600', border: 'border-purple-500/20' },
   };
 
+  const colors = colorClasses[color];
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-4 w-4" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-          {trend === 'up' ? (
-            <ArrowUp className="h-3 w-3 text-green-600" />
-          ) : (
-            <ArrowDown className="h-3 w-3 text-red-600" />
-          )}
-          <span className={trend === 'up' ? 'text-green-600' : 'text-red-600'}>
+    <div className={`relative overflow-hidden rounded-2xl glass-card glass-card-hover p-6 ${highlight ? 'ring-2 ring-primary' : ''}`}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-50`} />
+      <div className="relative">
+        <div className="flex items-start justify-between mb-4">
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border}`}>
+            <Icon className={`h-5 w-5 ${colors.icon}`} />
+          </div>
+          <Badge 
+            variant={trend === 'up' ? 'default' : 'destructive'} 
+            className="gap-1 font-semibold"
+          >
+            {trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {change > 0 ? '+' : ''}{change.toFixed(1)}%
-          </span>
-          <span>vs. período anterior</span>
+          </Badge>
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-sm text-muted-foreground font-medium mb-2">{title}</p>
+        <p className="text-4xl font-bold tracking-tight">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// Premium Card Component
+function PremiumCard({
+  title,
+  description,
+  icon: Icon,
+  children,
+  compact = false,
+}: {
+  title: string;
+  description?: string;
+  icon: any;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl glass-card glass-card-hover p-6">
+      <div className={`flex items-center gap-3 ${compact ? 'mb-4' : 'mb-6'}`}>
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-lg">{title}</h3>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Metric Row Component
+function MetricRow({
+  label,
+  value,
+  progress,
+  color,
+}: {
+  label: string;
+  value: string;
+  progress: number;
+  color: 'blue' | 'green' | 'purple';
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-lg font-bold">{value}</span>
+      </div>
+      <Progress value={progress} className="h-2" />
+    </div>
   );
 }
