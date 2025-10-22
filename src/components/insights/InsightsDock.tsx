@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,17 +72,30 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] h-[600px] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Sparkles className="h-5 w-5" />
-            OLV Insight Dock
-          </DialogTitle>
-          <p className="text-sm text-white/80 mt-1">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent 
+        side="right" 
+        className="w-full sm:w-[540px] lg:w-[640px] p-0 flex flex-col"
+      >
+        <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2 text-white">
+              <Sparkles className="h-5 w-5" />
+              OLV Insight Dock
+            </SheetTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="text-white hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <p className="text-sm text-white/80 mt-1 text-left">
             Pergunte algo como: "Quais empresas têm maior FIT esta semana?"
           </p>
-        </DialogHeader>
+        </SheetHeader>
 
         <ScrollArea className="flex-1 px-6 py-4" ref={scrollRef}>
           <div className="space-y-4">
@@ -92,6 +105,15 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
                 <p className="text-sm">
                   Faça uma pergunta sobre suas empresas, análises, métricas ou estratégias.
                 </p>
+                <div className="mt-6 space-y-2 text-left">
+                  <p className="text-xs font-semibold text-foreground/70">Exemplos de perguntas:</p>
+                  <div className="space-y-1 text-xs">
+                    <p className="p-2 bg-muted/50 rounded">• Quais empresas têm maior potencial de venda?</p>
+                    <p className="p-2 bg-muted/50 rounded">• Quais empresas precisam de consultoria urgente?</p>
+                    <p className="p-2 bg-muted/50 rounded">• Mostre empresas com baixa maturidade digital</p>
+                    <p className="p-2 bg-muted/50 rounded">• Quais decisores devo contatar esta semana?</p>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -101,22 +123,22 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  className={`max-w-[85%] rounded-lg px-4 py-3 ${
                     msg.role === "user"
                       ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
-                      : "bg-muted text-foreground"
+                      : "bg-muted text-foreground border"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                 </div>
               </div>
             ))}
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Analisando...</span>
+                <div className="bg-muted rounded-lg px-4 py-3 flex items-center gap-2 border">
+                  <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                  <span className="text-sm">Analisando dados...</span>
                 </div>
               </div>
             )}
@@ -129,14 +151,14 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escreva sua pergunta..."
-              className="min-h-[60px] resize-none"
+              placeholder="Digite sua pergunta aqui..."
+              className="min-h-[60px] max-h-[120px] resize-none"
               disabled={isLoading}
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-4"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-4 self-end"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -145,8 +167,11 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
               )}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Pressione Enter para enviar, Shift+Enter para nova linha
+          </p>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
