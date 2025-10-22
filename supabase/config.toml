@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.trigger-batch-enrichment]
 verify_jwt = true
+
+[functions.global-search]
+verify_jwt = false
