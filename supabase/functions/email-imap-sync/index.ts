@@ -167,7 +167,7 @@ serve(async (req) => {
             messageId: email.messageId,
           },
           provider_message_id: email.messageId,
-          status: 'received',
+          status: 'delivered',
         });
 
       if (messageError) {

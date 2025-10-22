@@ -63,6 +63,7 @@ export default function SDRInboxPage() {
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
+  const [subjectInput, setSubjectInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [view, setView] = useState<'all' | 'my' | 'unassigned' | 'urgent'>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
@@ -278,6 +279,7 @@ export default function SDRInboxPage() {
           conversationId: selectedConv.id,
           companyId: selectedConv.company.id,
           to,
+          subject: subjectInput || 'Mensagem',
           body: messageInput,
         },
       });
@@ -696,25 +698,34 @@ export default function SDRInboxPage() {
                     <p className="text-sm">Vincule uma empresa para enviar mensagens</p>
                   </div>
                 ) : (
-                  <div className="flex items-end gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                    <Textarea
-                      placeholder="Digite sua mensagem..."
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      className="min-h-[80px] resize-none"
-                    />
-                    <Button onClick={sendMessage} disabled={sending || !messageInput.trim()}>
-                      <Send className="h-4 w-4" />
-                    </Button>
+                  <div className="flex flex-col gap-2 w-full">
+                    {selectedConv.channel === 'email' && (
+                      <Input 
+                        placeholder="Assunto"
+                        value={subjectInput}
+                        onChange={(e) => setSubjectInput(e.target.value)}
+                      />
+                    )}
+                    <div className="flex items-end gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <Textarea
+                        placeholder={selectedConv.channel === 'email' ? 'Escreva sua resposta por email...' : 'Digite sua mensagem...'}
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        className="min-h-[100px] resize-none"
+                      />
+                      <Button onClick={sendMessage} disabled={sending || !messageInput.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
