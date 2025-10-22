@@ -369,23 +369,64 @@ function IntegrationForm({
       }
 
       const formData = new FormData(e.target as HTMLFormElement);
-      const config = {};
-      const credentials = {};
+      const config: any = {};
+      const newCredentials: any = {};
 
-      // Collect form data
+      // Helpers para montar objeto aninhado a partir de caminhos com ponto (ex: "imap.host")
+      const setDeep = (obj: any, path: string, value: any) => {
+        const parts = path.split('.');
+        let curr = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const p = parts[i];
+          curr[p] = curr[p] || {};
+          curr = curr[p];
+        }
+        curr[parts[parts.length - 1]] = value;
+      };
+
+      const deepMerge = (target: any, source: any) => {
+        const output = Array.isArray(target) ? [...target] : { ...target };
+        Object.keys(source || {}).forEach((key) => {
+          const srcVal: any = (source as any)[key];
+          if (srcVal && typeof srcVal === 'object' && !Array.isArray(srcVal)) {
+            (output as any)[key] = deepMerge((target || {})[key] || {}, srcVal);
+          } else {
+            (output as any)[key] = srcVal;
+          }
+        });
+        return output;
+      };
+
+      // Coletar dados do formulário
       for (const [key, value] of formData.entries()) {
         if (key.startsWith('config.')) {
           (config as any)[key.replace('config.', '')] = value;
         } else if (key.startsWith('cred.')) {
-          (credentials as any)[key.replace('cred.', '')] = value;
+          const path = key.replace('cred.', '');
+          const val = String(value);
+          // Se estiver editando e o campo sensível vier vazio, preserva o valor atual salvo
+          const isSecret = path.endsWith('password') || path.endsWith('authToken') || path.endsWith('apiKey') || path.endsWith('apiSecret') || path.endsWith('accessToken') || path.endsWith('accessTokenSecret');
+          if (integration && isSecret && !val) {
+            // mantém existente (suporta chaves planas ou aninhadas)
+            const existing = integration.credentials || {};
+            const flatExisting = (p: string) => existing?.[p];
+            const nestedExisting = (p: string) => p.split('.').reduce((acc: any, k: string) => (acc ? acc[k] : undefined), existing);
+            const keep = flatExisting(path) ?? nestedExisting(path);
+            if (keep !== undefined) setDeep(newCredentials, path, keep);
+          } else if (val !== '') {
+            setDeep(newCredentials, path, val);
+          }
         }
       }
+
+      const mergedCredentials = integration ? deepMerge(integration.credentials || {}, newCredentials) : newCredentials;
+
 
       const data = {
         channel,
         provider,
         config,
-        credentials,
+        credentials: newCredentials,
         status: 'active', // Ativa automaticamente após salvar
         user_id: user.id,
       };
@@ -494,12 +535,12 @@ function IntegrationForm({
         <>
           <div className="space-y-2">
             <Label htmlFor="imap-host">Servidor IMAP</Label>
-            <Input id="imap-host" name="cred.imap.host" placeholder="imap.gmail.com" required defaultValue={String(integration?.credentials?.['imap.host'] ?? '')} />
+            <Input id="imap-host" name="cred.imap.host" placeholder="imap.gmail.com" required={!integration} defaultValue={String((integration?.credentials?.['imap.host'] ?? integration?.credentials?.imap?.host) ?? '')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="imap-port">Porta IMAP</Label>
-              <Input id="imap-port" name="cred.imap.port" type="number" placeholder="993" required defaultValue={String(integration?.credentials?.['imap.port'] ?? '')} />
+              <Input id="imap-port" name="cred.imap.port" type="number" placeholder="993" required={!integration} defaultValue={String((integration?.credentials?.['imap.port'] ?? integration?.credentials?.imap?.port) ?? '')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="imap-secure">SSL/TLS</Label>
@@ -512,22 +553,22 @@ function IntegrationForm({
               id="imap-user" 
               name="cred.imap.user" 
               type="email" 
-              required 
-              defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['imap.user'] ?? '')} 
+              required={!integration}
+              defaultValue={useProfileData && profile?.email ? profile.email : String((integration?.credentials?.['imap.user'] ?? integration?.credentials?.imap?.user) ?? '')} 
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-pass">Senha/App Password</Label>
-            <Input id="imap-pass" name="cred.imap.password" type="password" required />
+            <Input id="imap-pass" name="cred.imap.password" type="password" required={!integration} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-host">Servidor SMTP</Label>
-            <Input id="smtp-host" name="cred.smtp.host" placeholder="smtp.gmail.com" required defaultValue={String(integration?.credentials?.['smtp.host'] ?? '')} />
+            <Input id="smtp-host" name="cred.smtp.host" placeholder="smtp.gmail.com" required={!integration} defaultValue={String((integration?.credentials?.['smtp.host'] ?? integration?.credentials?.smtp?.host) ?? '')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="smtp-port">Porta SMTP</Label>
-              <Input id="smtp-port" name="cred.smtp.port" type="number" placeholder="587" required defaultValue={String(integration?.credentials?.['smtp.port'] ?? '')} />
+              <Input id="smtp-port" name="cred.smtp.port" type="number" placeholder="587" required={!integration} defaultValue={String((integration?.credentials?.['smtp.port'] ?? integration?.credentials?.smtp?.port) ?? '')} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="smtp-secure">SSL/TLS</Label>
@@ -540,8 +581,8 @@ function IntegrationForm({
               id="smtp-user" 
               name="cred.smtp.user" 
               type="email" 
-              required 
-              defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['smtp.user'] ?? '')} 
+              required={!integration}
+              defaultValue={useProfileData && profile?.email ? profile.email : String((integration?.credentials?.['smtp.user'] ?? integration?.credentials?.smtp?.user) ?? '')} 
             />
           </div>
           <div className="space-y-2">
