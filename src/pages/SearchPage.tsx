@@ -283,21 +283,44 @@ export default function SearchPage() {
     }
   };
 
-  const confirmSave = () => {
+  const confirmSave = async () => {
     if (!previewData) return;
     
-    setResult(previewData);
-    setShowPreview(false);
-    
-    toast({
-      title: "Empresa salva!",
-      description: `${previewData.company.name} foi cadastrada com sucesso`,
-    });
-    
-    // Redirecionar para página de detalhes
-    setTimeout(() => {
-      window.location.href = `/company/${previewData.company.id}`;
-    }, 1500);
+    try {
+      setIsSaving(true);
+      
+      // Salvar empresa via edge function
+      const { data, error } = await supabase.functions.invoke('save-company', {
+        body: {
+          company: previewData.company,
+          decision_makers: previewData.decision_makers,
+          digital_maturity: previewData.digital_maturity
+        }
+      });
+
+      if (error) throw error;
+
+      setResult(data);
+      setShowPreview(false);
+      
+      toast({
+        title: "Empresa salva!",
+        description: `${previewData.company.name} foi cadastrada com sucesso`,
+      });
+      
+      // Redirecionar para página de detalhes
+      setTimeout(() => {
+        window.location.href = `/company/${data.company.id}`;
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const cancelPreview = () => {

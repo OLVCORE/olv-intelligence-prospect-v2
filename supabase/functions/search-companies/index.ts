@@ -195,7 +195,7 @@ serve(async (req) => {
       });
     }
 
-    // 3. Salvar empresa no banco (com dados de refinamento)
+    // 3. Preparar dados da empresa (NÃO SALVAR AINDA - apenas retornar para preview)
     const companyPayload = {
       name: companyName,
       cnpj: cnpj || receitaData?.cnpj,
@@ -225,100 +225,37 @@ serve(async (req) => {
       }
     };
 
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .upsert(companyPayload, { onConflict: 'cnpj' })
-      .select()
-      .single();
-
-    if (companyError) throw companyError;
-    console.log('[Search] Empresa salva:', company.id);
-
-    // 4. Buscar e salvar decisores
+    // 4. Buscar decisores (mas não salvar ainda)
     const decisionMakers = await fetchDecisionMakers(companyName);
     console.log('[Search] Decisores encontrados:', decisionMakers.length);
 
-    if (decisionMakers.length > 0) {
-      const decisorsPayload = decisionMakers.map((person: any) => ({
-        company_id: company.id,
-        name: person.name,
-        title: person.title,
-        email: person.email,
-        linkedin_url: person.linkedin_url,
-        department: person.functions?.[0] || 'Não especificado',
-        seniority: person.seniority || 'Não especificado',
-        verified_email: person.email_status === 'verified',
-        raw_data: person
-      }));
+    const decisorsPayload = decisionMakers.map((person: any) => ({
+      name: person.name,
+      title: person.title,
+      email: person.email,
+      linkedin_url: person.linkedin_url,
+      department: person.functions?.[0] || 'Não especificado',
+      seniority: person.seniority || 'Não especificado',
+      verified_email: person.email_status === 'verified',
+      raw_data: person
+    }));
 
-      await supabase.from('decision_makers').insert(decisorsPayload);
-    }
-
-    // 5. Análise de maturidade digital
+    // 5. Análise de maturidade digital (mas não salvar ainda)
     let maturityData = null;
     if (domain) {
       maturityData = await analyzeDigitalMaturity(companyName, domain);
       console.log('[Search] Maturidade:', maturityData ? '✅' : '❌');
-
-      if (maturityData) {
-        await supabase.from('digital_maturity').insert({
-          company_id: company.id,
-          infrastructure_score: maturityData.infrastructure,
-          systems_score: maturityData.systems,
-          processes_score: maturityData.processes,
-          security_score: maturityData.security,
-          innovation_score: maturityData.innovation,
-          overall_score: maturityData.overall,
-          analysis_data: maturityData.analysis_data
-        });
-
-        // Atualizar score na empresa
-        await supabase
-          .from('companies')
-          .update({ digital_maturity_score: maturityData.overall })
-          .eq('id', company.id);
-      }
     }
 
-    // 6. Registrar no histórico (com filtros de refinamento)
-    await supabase.from('search_history').insert({
-      query: query || cnpj,
-      filters: { 
-        cnpj: !!cnpj,
-        hasWebsite: !!website,
-        hasInstagram: !!instagram,
-        hasLinkedin: !!linkedin,
-        hasProduto: !!produto,
-        hasMarca: !!marca,
-        hasLocalizacao: !!(municipio || estado || pais),
-        hasCep: !!cep,
-        refinamentos: {
-          presencaDigital: { website, instagram, linkedin },
-          produtos: { produto, marca, linkProduto },
-          localizacao: { cep, logradouro, bairro, municipio, estado, pais }
-        }
-      },
-      results_count: 1
-    });
+    console.log('[Search] ✅ Busca concluída - dados prontos para preview');
 
-    // 7. Buscar dados completos para retornar
-    const { data: fullCompany } = await supabase
-      .from('companies')
-      .select(`
-        *,
-        decision_makers (*),
-        digital_maturity (*),
-        buying_signals (*)
-      `)
-      .eq('id', company.id)
-      .single();
-
-    console.log('[Search] ✅ Busca concluída');
-
+    // Retornar todos os dados para o frontend decidir se salva ou não
     return new Response(
       JSON.stringify({ 
         success: true,
-        company: fullCompany,
+        company: companyPayload,
+        decision_makers: decisorsPayload,
+        digital_maturity: maturityData,
         stats: {
           decisors: decisionMakers.length,
           hasMaturity: !!maturityData

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -36,19 +37,63 @@ export default function CompaniesManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<any>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
 
     try {
+      setIsDeleting(true);
       await deleteCompany.mutateAsync(companyToDelete.id);
       toast.success('Empresa excluída com sucesso');
       setDeleteDialogOpen(false);
       setCompanyToDelete(null);
+      await refetch();
     } catch (error) {
       console.error('Error deleting company:', error);
       toast.error('Erro ao excluir empresa');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCompanies.length === 0) return;
+
+    try {
+      setIsDeleting(true);
+      
+      // Delete all selected companies
+      for (const companyId of selectedCompanies) {
+        await deleteCompany.mutateAsync(companyId);
+      }
+      
+      toast.success(`${selectedCompanies.length} empresa(s) excluída(s) com sucesso`);
+      setSelectedCompanies([]);
+      await refetch();
+    } catch (error) {
+      console.error('Error deleting companies:', error);
+      toast.error('Erro ao excluir empresas');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCompanies.length === filteredCompanies.length) {
+      setSelectedCompanies([]);
+    } else {
+      setSelectedCompanies(filteredCompanies.map(c => c.id));
+    }
+  };
+
+  const toggleSelectCompany = (companyId: string) => {
+    setSelectedCompanies(prev =>
+      prev.includes(companyId)
+        ? prev.filter(id => id !== companyId)
+        : [...prev, companyId]
+    );
   };
 
   const handleEnrich = async (companyId: string) => {
@@ -99,10 +144,26 @@ export default function CompaniesManagementPage() {
               Visualize, edite, exclua e enriqueça empresas cadastradas
             </p>
           </div>
-          <Button size="lg" onClick={() => navigate('/search')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Empresa
-          </Button>
+          <div className="flex gap-2">
+            {selectedCompanies.length > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Excluir {selectedCompanies.length} selecionada(s)
+              </Button>
+            )}
+            <Button size="lg" onClick={() => navigate('/search')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Empresa
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -148,6 +209,12 @@ export default function CompaniesManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedCompanies.length === filteredCompanies.length && filteredCompanies.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>CNPJ</TableHead>
                     <TableHead>Setor</TableHead>
@@ -158,6 +225,12 @@ export default function CompaniesManagementPage() {
                 <TableBody>
                   {filteredCompanies.map((company) => (
                     <TableRow key={company.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedCompanies.includes(company.id)}
+                          onCheckedChange={() => toggleSelectCompany(company.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-primary" />
@@ -260,8 +333,10 @@ export default function CompaniesManagementPage() {
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
+                disabled={isDeleting}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Excluir
               </AlertDialogAction>
             </AlertDialogFooter>
