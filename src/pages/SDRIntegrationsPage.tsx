@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -272,9 +273,10 @@ export default function SDRIntegrationsPage() {
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Configurar Integração</DialogTitle>
-                            </DialogHeader>
+                          <DialogHeader>
+                            <DialogTitle>Configurar Integração</DialogTitle>
+                            <DialogDescription>Edite ou substitua as credenciais desta integração</DialogDescription>
+                          </DialogHeader>
                             <IntegrationForm 
                               integration={integration} 
                               onSuccess={loadIntegrations} 
@@ -346,6 +348,7 @@ function IntegrationForm({
   const [provider, setProvider] = useState(integration?.provider || 'imap_smtp');
   const [profile, setProfile] = useState<any>(null);
   const [useProfileData, setUseProfileData] = useState(true);
+  const [resetCreds, setResetCreds] = useState(!!integration);
 
   useEffect(() => {
     loadProfile();
@@ -412,8 +415,8 @@ function IntegrationForm({
           // Se estiver editando e o campo sensível vier vazio, preserva o valor atual
           const isSecret = path.includes('password') || path.includes('authToken') || path.includes('apiKey') || path.includes('apiSecret') || path.includes('accessToken');
           
-          if (integration && isSecret && !val) {
-            // Mantém valor existente
+          if (integration && !resetCreds && isSecret && !val) {
+            // Mantém valor existente quando não estamos limpando credenciais
             const existing = integration.credentials?.[path];
             if (existing) {
               newCredentials[path] = existing;
@@ -425,9 +428,11 @@ function IntegrationForm({
         }
       }
 
-      // Se estiver editando, mescla com credenciais existentes
+      // Se estiver editando, decide entre mesclar ou substituir credenciais
       const mergedCredentials = integration 
-        ? { ...integration.credentials, ...newCredentials }
+        ? (resetCreds
+            ? Object.fromEntries(Object.entries(newCredentials).filter(([, v]) => v !== '' && v !== undefined && v !== null))
+            : { ...integration.credentials, ...newCredentials })
         : newCredentials;
 
       // Regras específicas para WhatsApp/Twilio
@@ -457,7 +462,9 @@ function IntegrationForm({
         provider, 
         credentialKeys: Object.keys(mergedCredentials),
         hasAccountSid: !!mergedCredentials.accountSid,
-        hasAuthToken: !!mergedCredentials.authToken
+        hasAuthToken: !!mergedCredentials.authToken,
+        hasApiKeys: !!(mergedCredentials.apiKeySid && mergedCredentials.apiKeySecret),
+        resetCreds
       });
 
       // Validação extra para evitar salvar sem provedor correto
@@ -559,6 +566,13 @@ function IntegrationForm({
           </SelectContent>
         </Select>
       </div>
+
+      {integration && (
+        <div className="flex items-center space-x-2">
+          <Checkbox id="reset-creds" checked={resetCreds} onCheckedChange={(v) => setResetCreds(Boolean(v))} />
+          <Label htmlFor="reset-creds" className="text-sm">Limpar credenciais antigas antes de salvar</Label>
+        </div>
+      )}
 
       {channel === 'email' && provider === 'imap_smtp' && (
         <>
