@@ -3,6 +3,9 @@ project_id = "ioaxzpwlurpduanzkfrt"
 [functions.api-health]
 verify_jwt = false
 
+[functions.insights-chat]
+verify_jwt = false
+
 [functions.canvas-create]
 verify_jwt = true
 
