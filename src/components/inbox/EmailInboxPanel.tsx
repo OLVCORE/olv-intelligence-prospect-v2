@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Link } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -56,6 +58,9 @@ interface EmailInboxPanelProps {
   onRefresh: () => void;
   onDelete: (convId: string) => Promise<void>;
   onArchive?: (convId: string) => Promise<void>;
+  companies: { id: string; name: string }[];
+  onLinkCompany: (convId: string, companyId: string) => Promise<void>;
+  createCompanyPath?: string;
 }
 
 export function EmailInboxPanel({
@@ -66,7 +71,10 @@ export function EmailInboxPanel({
   onSendMessage,
   onRefresh,
   onDelete,
-  onArchive
+  onArchive,
+  companies,
+  onLinkCompany,
+  createCompanyPath
 }: EmailInboxPanelProps) {
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const [composing, setComposing] = useState(false);
@@ -74,6 +82,7 @@ export function EmailInboxPanel({
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
   const toggleEmailSelection = (convId: string) => {
     const newSelection = new Set(selectedEmails);
@@ -292,6 +301,27 @@ export function EmailInboxPanel({
                 <Badge variant="outline" className="mt-2">
                   {selectedConv.company.name}
                 </Badge>
+              )}
+              {/* Vincular conversa a empresa */}
+              {!selectedConv.company && (
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <Select onValueChange={(v) => setSelectedCompanyId(v)}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Vincular a uma empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" disabled={!selectedCompanyId} onClick={() => onLinkCompany(selectedConv.id, selectedCompanyId)}>
+                    Vincular
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={createCompanyPath || "/companies"}>Nova empresa</Link>
+                  </Button>
+                </div>
               )}
             </div>
 

@@ -468,10 +468,8 @@ export default function SDRInboxPage() {
                 });
                 return;
               }
-              
               const to = selectedConv.contact?.email;
               if (!to) throw new Error('Email do destinatário não encontrado');
-
               const { error } = await supabase.functions.invoke('sdr-send-message', {
                 body: {
                   channel: 'email',
@@ -482,19 +480,15 @@ export default function SDRInboxPage() {
                   body,
                 },
               });
-
               if (error) throw error;
-              
-              toast({
-                title: 'Email enviado',
-                description: 'Sua mensagem foi enviada com sucesso',
-              });
-              
+              toast({ title: 'Email enviado', description: 'Sua mensagem foi enviada com sucesso' });
               loadMessages(selectedConv.id);
             }}
             onRefresh={loadConversations}
             onDelete={deleteConversation}
             onArchive={archiveConversation}
+            companies={companies}
+            onLinkCompany={linkToCompany}
           />
         </div>
       </AppLayout>
