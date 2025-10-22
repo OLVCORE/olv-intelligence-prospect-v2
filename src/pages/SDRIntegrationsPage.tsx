@@ -386,7 +386,7 @@ function IntegrationForm({
         provider,
         config,
         credentials,
-        status: 'inactive',
+        status: 'active', // Ativa automaticamente após salvar
         user_id: user.id,
       };
 

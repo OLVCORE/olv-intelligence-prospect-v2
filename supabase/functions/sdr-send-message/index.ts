@@ -142,7 +142,7 @@ serve(async (req) => {
     // Send message via provider
     let sendResult;
     if (request.channel === 'whatsapp') {
-      sendResult = await sendWhatsApp(request.to, request.body);
+      sendResult = await sendWhatsApp(request.to, request.body, user.id, supabase);
     } else if (request.channel === 'email') {
       sendResult = await sendEmail(request.to, request.subject || 'Mensagem', request.body);
     } else {
@@ -214,19 +214,42 @@ serve(async (req) => {
   }
 });
 
-async function sendWhatsApp(to: string, body: string): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
-  const provider = Deno.env.get('WHATSAPP_PROVIDER') || 'twilio';
-  
+async function sendWhatsApp(to: string, body: string, userId: string, supabase: any): Promise<{ success: boolean; providerMessageId?: string; error?: string }> {
   try {
+    // Get WhatsApp integration credentials from database
+    const { data: integration, error: integrationError } = await supabase
+      .from('integration_configs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('channel', 'whatsapp')
+      .maybeSingle();
+
+    if (integrationError) {
+      console.error('[WhatsApp] Error loading integration:', integrationError);
+      return { 
+        success: false, 
+        error: 'Erro ao carregar configuração de integração' 
+      };
+    }
+
+    if (!integration) {
+      return { 
+        success: false, 
+        error: 'WhatsApp não configurado. Configure em Integrações > WhatsApp.' 
+      };
+    }
+
+    const provider = integration.provider;
+    
     if (provider === 'twilio') {
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-      const fromNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
+      const accountSid = integration.credentials?.accountSid;
+      const authToken = integration.credentials?.authToken;
+      const fromNumber = integration.credentials?.phoneNumber;
 
       if (!accountSid || !authToken || !fromNumber) {
         return { 
           success: false, 
-          error: 'Twilio credentials not configured. Please configure in Integrations page.' 
+          error: 'Credenciais Twilio incompletas. Verifique Account SID, Auth Token e número do WhatsApp.' 
         };
       }
 
@@ -256,14 +279,14 @@ async function sendWhatsApp(to: string, body: string): Promise<{ success: boolea
       return { success: true, providerMessageId: data.sid };
     }
 
-    if (provider === 'meta360') {
-      const accessToken = Deno.env.get('META_ACCESS_TOKEN');
-      const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
+    if (provider === 'meta_cloud') {
+      const accessToken = integration.credentials?.accessToken;
+      const phoneNumberId = integration.credentials?.phoneNumberId;
 
       if (!accessToken || !phoneNumberId) {
         return { 
           success: false, 
-          error: 'Meta 360 credentials not configured. Please configure in Integrations page.' 
+          error: 'Credenciais Meta Cloud incompletas. Verifique Access Token e Phone Number ID.' 
         };
       }
 
