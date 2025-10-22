@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
 import {
   Table,
   TableBody,
@@ -218,6 +219,7 @@ export default function CompaniesManagementPage() {
                     <TableHead>Empresa</TableHead>
                     <TableHead>CNPJ</TableHead>
                     <TableHead>Setor</TableHead>
+                    <TableHead>Status Análise</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -251,6 +253,9 @@ export default function CompaniesManagementPage() {
                       </TableCell>
                       <TableCell>
                         {company.industry || <span className="text-xs text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell>
+                        <EnrichmentStatusBadge companyId={company.id} showProgress />
                       </TableCell>
                       <TableCell>
                         {company.website ? (

@@ -4,6 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { BulkUploadDialog } from "@/components/companies/BulkUploadDialog";
+import { BatchEnrichmentButton } from "@/components/admin/BatchEnrichmentButton";
+import { EnrichmentMonitor } from "@/components/admin/EnrichmentMonitor";
+import { SystemHealthPanel } from "@/components/admin/SystemHealthPanel";
 import {
   ComposedChart,
   BarChart,
@@ -94,7 +97,10 @@ export default function Dashboard() {
                 Análise estratégica em tempo real com inteligência artificial avançada
               </p>
             </div>
-            <BulkUploadDialog />
+            <div className="flex flex-col gap-3">
+              <BulkUploadDialog />
+              <BatchEnrichmentButton />
+            </div>
           </div>
 
           {/* Hero Metrics - Destaque */}
@@ -166,6 +172,12 @@ export default function Dashboard() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Monitoring Row */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <EnrichmentMonitor />
+              <SystemHealthPanel />
+            </div>
+            
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Chart grande - 2 colunas */}
               <div className="lg:col-span-2">

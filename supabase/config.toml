@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.bulk-upload-companies]
 verify_jwt = true
+
+[functions.auto-enrich-company]
+verify_jwt = false
+
+[functions.trigger-batch-enrichment]
+verify_jwt = true

@@ -86,6 +86,21 @@ serve(async (req) => {
 
     console.log('[Save Company] ✅ Salvamento concluído');
 
+    // 🚀 Dispara análise automática em background (sem esperar)
+    supabase.functions.invoke('auto-enrich-company', {
+      body: {
+        companyId: fullCompany.id,
+        cnpj: fullCompany.cnpj,
+        name: fullCompany.name,
+        website: fullCompany.website,
+        linkedin_url: fullCompany.linkedin_url
+      }
+    }).then(() => {
+      console.log(`✅ Auto-enrichment started for ${fullCompany.name}`);
+    }).catch(err => {
+      console.error(`❌ Failed to start auto-enrichment for ${fullCompany.name}:`, err);
+    });
+
     return new Response(
       JSON.stringify({ 
         success: true,

@@ -121,6 +121,21 @@ serve(async (req) => {
         console.log(`Successfully saved company: ${company.name} (${company.id})`);
         results.success++;
 
+        // 🚀 Dispara análise automática em background (sem esperar)
+        supabaseClient.functions.invoke('auto-enrich-company', {
+          body: {
+            companyId: company.id,
+            cnpj: company.cnpj,
+            name: company.name,
+            website: company.website,
+            linkedin_url: company.linkedin_url
+          }
+        }).then(() => {
+          console.log(`Auto-enrichment started for ${company.name}`);
+        }).catch(err => {
+          console.error(`Failed to start auto-enrichment for ${company.name}:`, err);
+        });
+
       } catch (error) {
         console.error(`Error processing row ${i + 2}:`, error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
