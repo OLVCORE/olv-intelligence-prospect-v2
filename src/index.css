@@ -38,6 +38,15 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
+    /* Futuristic Colors */
+    --neon-cyan: 188 100% 50%;
+    --neon-blue: 217 91% 60%;
+    --neon-green: 142 71% 45%;
+    --neon-yellow: 45 93% 58%;
+    --neon-purple: 271 91% 65%;
+    --glass-bg: 220 27% 18%;
+    --glass-border: 220 27% 35%;
+
     --sidebar-background: 220 25% 8%;
     --sidebar-foreground: 220 15% 85%;
     --sidebar-primary: 217 91% 60%;
@@ -55,33 +64,42 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 25% 8%;
+    --background: 220 27% 8%;
     --foreground: 220 15% 92%;
 
-    --card: 220 20% 10%;
+    --card: 220 20% 12%;
     --card-foreground: 220 15% 92%;
 
     --popover: 220 20% 10%;
     --popover-foreground: 220 15% 92%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 188 100% 50%;
+    --primary-foreground: 220 27% 8%;
 
-    --secondary: 220 20% 15%;
+    --secondary: 220 20% 18%;
     --secondary-foreground: 220 15% 92%;
 
-    --muted: 220 20% 15%;
+    --muted: 220 20% 18%;
     --muted-foreground: 220 15% 60%;
 
-    --accent: 220 20% 15%;
-    --accent-foreground: 217 91% 60%;
+    --accent: 188 100% 50%;
+    --accent-foreground: 220 27% 8%;
 
     --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 220 15% 92%;
 
-    --border: 220 20% 18%;
+    --border: 220 20% 25%;
     --input: 220 20% 18%;
-    --ring: 217 91% 60%;
+    --ring: 188 100% 50%;
+
+    /* Futuristic Colors - same for dark */
+    --neon-cyan: 188 100% 50%;
+    --neon-blue: 217 91% 60%;
+    --neon-green: 142 71% 45%;
+    --neon-yellow: 45 93% 58%;
+    --neon-purple: 271 91% 65%;
+    --glass-bg: 220 27% 18%;
+    --glass-border: 220 27% 35%;
 
     --sidebar-background: 220 25% 8%;
     --sidebar-foreground: 220 15% 85%;
@@ -92,11 +110,11 @@ All colors MUST be HSL.
     --sidebar-border: 220 20% 15%;
     --sidebar-ring: 217 91% 60%;
 
-    --chart-1: 217 91% 60%;
-    --chart-2: 220 70% 50%;
-    --chart-3: 220 80% 40%;
-    --chart-4: 220 90% 30%;
-    --chart-5: 220 100% 20%;
+    --chart-1: 188 100% 50%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 45 93% 58%;
+    --chart-4: 271 91% 65%;
+    --chart-5: 217 91% 60%;
   }
 }
 

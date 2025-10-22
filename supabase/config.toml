@@ -72,5 +72,8 @@ verify_jwt = false
 [functions.save-company]
 verify_jwt = true
 
-[functions.delete-company]
+[functions.totvs-integration]
+verify_jwt = false
+
+[functions.bulk-upload-companies]
 verify_jwt = true
