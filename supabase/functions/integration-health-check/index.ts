@@ -79,21 +79,29 @@ async function checkEmailHealth(provider: string, config: any, credentials: any)
   console.log(`Checking ${provider} email health`);
 
   if (provider === 'imap_smtp') {
-    const { imap, smtp } = credentials;
+    // Normaliza credenciais: suporta formato aninhado (imap.host) e plano ('imap': { host })
+    const imap = credentials?.imap || {
+      host: credentials?.['imap.host'],
+      port: credentials?.['imap.port'],
+      user: credentials?.['imap.user'],
+      password: credentials?.['imap.password'],
+    };
+    const smtp = credentials?.smtp || {
+      host: credentials?.['smtp.host'],
+      port: credentials?.['smtp.port'],
+      user: credentials?.['smtp.user'],
+      password: credentials?.['smtp.password'],
+    };
 
-    // Test IMAP connection
-    let imapStatus = { connected: false, error: null };
+    // Test IMAP connection (simulado)
+    let imapStatus = { connected: false, error: null as string | null };
     try {
-      // Simulate IMAP connection test
       if (!imap?.host || !imap?.port || !imap?.user || !imap?.password) {
         throw new Error('Missing IMAP credentials');
       }
 
       console.log(`Testing IMAP: ${imap.host}:${imap.port}`);
-      
-      // In production, use a library like node-imap or similar
-      // For now, we'll simulate the check
-      const imapTest = await fetch(`https://${imap.host}:${imap.port}`, {
+      await fetch(`https://${imap.host}:${imap.port}`, {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000),
       }).catch(() => null);
@@ -103,16 +111,14 @@ async function checkEmailHealth(provider: string, config: any, credentials: any)
       imapStatus.error = error.message;
     }
 
-    // Test SMTP connection
-    let smtpStatus = { connected: false, error: null };
+    // Test SMTP connection (simulado)
+    let smtpStatus = { connected: false, error: null as string | null };
     try {
       if (!smtp?.host || !smtp?.port || !smtp?.user || !smtp?.password) {
         throw new Error('Missing SMTP credentials');
       }
 
       console.log(`Testing SMTP: ${smtp.host}:${smtp.port}`);
-      
-      // In production, use a library to test SMTP
       smtpStatus.connected = true;
     } catch (error: any) {
       smtpStatus.error = error.message;
@@ -143,13 +149,12 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
 
   try {
     if (provider === 'twilio') {
-      const { accountSid, authToken, phoneNumber } = credentials;
+      const { accountSid, authToken, phoneNumber } = credentials || {};
 
-      if (!accountSid || !authToken || !phoneNumber) {
+      if (!accountSid || !authToken) {
         throw new Error('Missing Twilio credentials');
       }
 
-      // Test Twilio API
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
         {
@@ -160,6 +165,9 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
       );
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Twilio API error: Unauthorized (check Account SID and Auth Token)');
+        }
         throw new Error(`Twilio API error: ${response.statusText}`);
       }
 
@@ -179,14 +187,13 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
       };
     }
 
-    if (provider === 'meta360') {
-      const { accessToken, phoneNumberId, businessAccountId } = credentials;
+    if (provider === 'meta_cloud' || provider === 'meta360') {
+      const { accessToken, phoneNumberId, businessAccountId } = credentials || {};
 
       if (!accessToken || !phoneNumberId) {
-        throw new Error('Missing Meta 360 credentials');
+        throw new Error('Missing Meta Cloud credentials');
       }
 
-      // Test Meta Graph API
       const response = await fetch(
         `https://graph.facebook.com/v18.0/${phoneNumberId}`,
         {

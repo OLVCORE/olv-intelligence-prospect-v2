@@ -587,7 +587,7 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-pass">Senha SMTP</Label>
-            <Input id="smtp-pass" name="cred.smtp.password" type="password" required />
+            <Input id="smtp-pass" name="cred.smtp.password" type="password" required={!integration} />
           </div>
         </>
       )}
