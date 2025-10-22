@@ -26,6 +26,12 @@ serve(async (req) => {
     const { channel, provider, config, credentials }: HealthCheckRequest = await req.json();
 
     console.log(`Health check for ${channel}/${provider}`);
+    console.log(`Credentials received:`, {
+      keys: Object.keys(credentials || {}),
+      hasAccountSid: !!credentials?.accountSid,
+      hasAuthToken: !!credentials?.authToken,
+      hasAccessToken: !!credentials?.accessToken,
+    });
 
     let healthStatus: any = {
       status: 'unknown',
@@ -79,14 +85,14 @@ async function checkEmailHealth(provider: string, config: any, credentials: any)
   console.log(`Checking ${provider} email health`);
 
   if (provider === 'imap_smtp') {
-    // Normaliza credenciais: suporta formato aninhado (imap.host) e plano ('imap': { host })
-    const imap = credentials?.imap || {
+    // Lê credenciais no formato plano (ex: "imap.host")
+    const imap = {
       host: credentials?.['imap.host'],
       port: credentials?.['imap.port'],
       user: credentials?.['imap.user'],
       password: credentials?.['imap.password'],
     };
-    const smtp = credentials?.smtp || {
+    const smtp = {
       host: credentials?.['smtp.host'],
       port: credentials?.['smtp.port'],
       user: credentials?.['smtp.user'],
@@ -146,20 +152,17 @@ async function checkEmailHealth(provider: string, config: any, credentials: any)
 
 async function checkWhatsAppHealth(provider: string, config: any, credentials: any) {
   console.log(`Checking ${provider} WhatsApp health`);
+  console.log('Received credentials:', Object.keys(credentials || {}));
 
   try {
     if (provider === 'twilio') {
-      // Usa segredos do ambiente se as credenciais estiverem vazias
-      let { accountSid, authToken, phoneNumber } = credentials || {};
-      
-      if (!accountSid) accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      if (!authToken) authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+      const { accountSid, authToken, phoneNumber } = credentials || {};
 
       if (!accountSid || !authToken) {
-        throw new Error('Missing Twilio credentials (check form or environment secrets)');
+        throw new Error(`Missing Twilio credentials. accountSid=${!!accountSid}, authToken=${!!authToken}`);
       }
       
-      console.log(`Testing Twilio with Account SID: ${accountSid?.substring(0, 8)}...`);
+      console.log(`Testing Twilio Account: ${accountSid.substring(0, 10)}...`);
 
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,

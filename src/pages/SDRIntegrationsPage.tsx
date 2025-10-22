@@ -372,64 +372,52 @@ function IntegrationForm({
       const config: any = {};
       const newCredentials: any = {};
 
-      // Helpers para montar objeto aninhado a partir de caminhos com ponto (ex: "imap.host")
-      const setDeep = (obj: any, path: string, value: any) => {
-        const parts = path.split('.');
-        let curr = obj;
-        for (let i = 0; i < parts.length - 1; i++) {
-          const p = parts[i];
-          curr[p] = curr[p] || {};
-          curr = curr[p];
-        }
-        curr[parts[parts.length - 1]] = value;
-      };
-
-      const deepMerge = (target: any, source: any) => {
-        const output = Array.isArray(target) ? [...target] : { ...target };
-        Object.keys(source || {}).forEach((key) => {
-          const srcVal: any = (source as any)[key];
-          if (srcVal && typeof srcVal === 'object' && !Array.isArray(srcVal)) {
-            (output as any)[key] = deepMerge((target || {})[key] || {}, srcVal);
-          } else {
-            (output as any)[key] = srcVal;
-          }
-        });
-        return output;
-      };
-
-      // Coletar dados do formulário
+      // Coletar dados do formulário - salva em formato PLANO (sem aninhamento)
       for (const [key, value] of formData.entries()) {
         if (key.startsWith('config.')) {
-          (config as any)[key.replace('config.', '')] = value;
+          config[key.replace('config.', '')] = value;
         } else if (key.startsWith('cred.')) {
           const path = key.replace('cred.', '');
-          const val = String(value);
-          // Se estiver editando e o campo sensível vier vazio, preserva o valor atual salvo
-          const isSecret = path.endsWith('password') || path.endsWith('authToken') || path.endsWith('apiKey') || path.endsWith('apiSecret') || path.endsWith('accessToken') || path.endsWith('accessTokenSecret');
+          const val = String(value).trim();
+          
+          // Se estiver editando e o campo sensível vier vazio, preserva o valor atual
+          const isSecret = path.includes('password') || path.includes('authToken') || path.includes('apiKey') || path.includes('apiSecret') || path.includes('accessToken');
+          
           if (integration && isSecret && !val) {
-            // mantém existente (suporta chaves planas ou aninhadas)
-            const existing = integration.credentials || {};
-            const flatExisting = (p: string) => existing?.[p];
-            const nestedExisting = (p: string) => p.split('.').reduce((acc: any, k: string) => (acc ? acc[k] : undefined), existing);
-            const keep = flatExisting(path) ?? nestedExisting(path);
-            if (keep !== undefined) setDeep(newCredentials, path, keep);
-          } else if (val !== '') {
-            setDeep(newCredentials, path, val);
+            // Mantém valor existente
+            const existing = integration.credentials?.[path];
+            if (existing) {
+              newCredentials[path] = existing;
+            }
+          } else if (val) {
+            // Salva novo valor
+            newCredentials[path] = val;
           }
         }
       }
 
-      const mergedCredentials = integration ? deepMerge(integration.credentials || {}, newCredentials) : newCredentials;
+      // Se estiver editando, mescla com credenciais existentes
+      const mergedCredentials = integration 
+        ? { ...integration.credentials, ...newCredentials }
+        : newCredentials;
 
 
       const data = {
         channel,
         provider,
         config,
-        credentials: newCredentials,
-        status: 'active', // Ativa automaticamente após salvar
+        credentials: mergedCredentials,
+        status: 'active',
         user_id: user.id,
       };
+
+      console.log('Salvando integração:', { 
+        channel, 
+        provider, 
+        credentialKeys: Object.keys(mergedCredentials),
+        hasAccountSid: !!mergedCredentials.accountSid,
+        hasAuthToken: !!mergedCredentials.authToken
+      });
 
       // Validação extra para evitar salvar sem provedor correto
       if (channel === 'whatsapp' && !['meta_cloud', 'twilio'].includes(provider)) {
@@ -613,11 +601,23 @@ function IntegrationForm({
         <>
           <div className="space-y-2">
             <Label htmlFor="twilio-sid">Account SID</Label>
-            <Input id="twilio-sid" name="cred.accountSid" required defaultValue={String(integration?.credentials?.accountSid ?? '')} />
+            <Input 
+              id="twilio-sid" 
+              name="cred.accountSid" 
+              placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              required 
+              defaultValue={String(integration?.credentials?.accountSid ?? '')} 
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="twilio-token">Auth Token</Label>
-            <Input id="twilio-token" name="cred.authToken" type="password" required />
+            <Input 
+              id="twilio-token" 
+              name="cred.authToken" 
+              type="password" 
+              required={!integration}
+              placeholder={integration ? "Deixe vazio para manter o atual" : ""}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="twilio-phone">WhatsApp Number</Label>
