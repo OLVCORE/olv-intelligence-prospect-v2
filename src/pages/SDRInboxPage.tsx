@@ -23,6 +23,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChannelIcon } from '@/components/inbox/ChannelIcon';
 import { MessageRenderer } from '@/components/inbox/MessageRenderer';
+import { EmailInboxPanel } from '@/components/inbox/EmailInboxPanel';
 
 interface Contact {
   id: string;
@@ -316,6 +317,64 @@ export default function SDRInboxPage() {
     }
   };
 
+  const deleteConversation = async (convId: string) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', convId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Conversa excluída',
+        description: 'A conversa foi excluída com sucesso',
+      });
+
+      if (selectedConv?.id === convId) {
+        setSelectedConv(null);
+        setMessages([]);
+      }
+
+      loadConversations();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao excluir',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const archiveConversation = async (convId: string) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ status: 'archived' })
+        .eq('id', convId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Conversa arquivada',
+        description: 'A conversa foi arquivada com sucesso',
+      });
+
+      if (selectedConv?.id === convId) {
+        setSelectedConv(null);
+        setMessages([]);
+      }
+
+      loadConversations();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao arquivar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getSLAStatus = (conv: Conversation) => {
     if (!conv.sla_due_at) return null;
     const due = new Date(conv.sla_due_at);
@@ -387,6 +446,60 @@ export default function SDRInboxPage() {
       isActive: !!integration,
     };
   });
+
+  // Email-specific view with modern email client interface
+  if (channelFilter === 'email') {
+    const emailConversations = filteredConversations.filter(c => c.channel === 'email');
+    
+    return (
+      <AppLayout>
+        <div className="h-[calc(100vh-4rem)]">
+          <EmailInboxPanel
+            conversations={emailConversations}
+            selectedConv={selectedConv}
+            messages={messages}
+            onSelectConversation={(conv) => setSelectedConv(conv)}
+            onSendMessage={async (body: string, subject?: string) => {
+              if (!selectedConv?.company?.id) {
+                toast({
+                  title: 'Empresa não vinculada',
+                  description: 'Vincule esta conversa a uma empresa antes de enviar',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              
+              const to = selectedConv.contact?.email;
+              if (!to) throw new Error('Email do destinatário não encontrado');
+
+              const { error } = await supabase.functions.invoke('sdr-send-message', {
+                body: {
+                  channel: 'email',
+                  conversationId: selectedConv.id,
+                  companyId: selectedConv.company.id,
+                  to,
+                  subject: subject || 'Mensagem',
+                  body,
+                },
+              });
+
+              if (error) throw error;
+              
+              toast({
+                title: 'Email enviado',
+                description: 'Sua mensagem foi enviada com sucesso',
+              });
+              
+              loadMessages(selectedConv.id);
+            }}
+            onRefresh={loadConversations}
+            onDelete={deleteConversation}
+            onArchive={archiveConversation}
+          />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
