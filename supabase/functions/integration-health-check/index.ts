@@ -149,11 +149,17 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
 
   try {
     if (provider === 'twilio') {
-      const { accountSid, authToken, phoneNumber } = credentials || {};
+      // Usa segredos do ambiente se as credenciais estiverem vazias
+      let { accountSid, authToken, phoneNumber } = credentials || {};
+      
+      if (!accountSid) accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      if (!authToken) authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
 
       if (!accountSid || !authToken) {
-        throw new Error('Missing Twilio credentials');
+        throw new Error('Missing Twilio credentials (check form or environment secrets)');
       }
+      
+      console.log(`Testing Twilio with Account SID: ${accountSid?.substring(0, 8)}...`);
 
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
