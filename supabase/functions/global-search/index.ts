@@ -46,40 +46,97 @@ serve(async (req) => {
       }
     };
 
-    // 1. Companies (principais + raw_data)
+    // 1. Companies (principais + raw_data profundo)
     const { data: companies } = await supabase
       .from('companies')
       .select('id, name, cnpj, industry, revenue, digital_maturity_score, raw_data')
-      .or(`name.ilike.${searchTerm},cnpj.ilike.${searchTerm},industry.ilike.${searchTerm}`)
-      .limit(5);
+      .limit(30); // Buscar mais empresas para filtrar no backend
 
     if (companies) {
       companies.forEach(company => {
+        let found = false;
         let subtitle = `${company.industry || 'Indústria'} • Score: ${company.digital_maturity_score || 'N/A'}`;
         
-        // Buscar em raw_data se não encontrou nos campos principais
-        if (company.raw_data) {
-          const rawDataStr = JSON.stringify(company.raw_data).toLowerCase();
-          if (rawDataStr.includes(queryLower)) {
+        // Busca em campos principais
+        if (
+          company.name?.toLowerCase().includes(queryLower) ||
+          company.cnpj?.includes(query) ||
+          company.industry?.toLowerCase().includes(queryLower)
+        ) {
+          found = true;
+        }
+        
+        // Busca profunda em raw_data (sócios, atividades, etc)
+        if (!found && company.raw_data) {
+          try {
             const rawData = company.raw_data as any;
-            if (rawData?.qsa) {
-              const socio = rawData.qsa.find((s: any) => 
-                JSON.stringify(s).toLowerCase().includes(queryLower)
-              );
-              if (socio) subtitle = `Sócio: ${socio.nome} • ${company.industry || 'Indústria'}`;
+            
+            // Buscar em sócios (QSA)
+            if (rawData?.qsa && Array.isArray(rawData.qsa)) {
+              for (const socio of rawData.qsa) {
+                if (socio?.nome?.toLowerCase().includes(queryLower)) {
+                  found = true;
+                  subtitle = `Sócio: ${socio.nome} • ${socio.qual || 'Cargo não especificado'}`;
+                  break;
+                }
+              }
             }
+            
+            // Buscar em atividade principal
+            if (!found && rawData?.atividade_principal) {
+              const atividadeStr = JSON.stringify(rawData.atividade_principal).toLowerCase();
+              if (atividadeStr.includes(queryLower)) {
+                found = true;
+                subtitle = `Atividade: ${rawData.atividade_principal[0]?.text || 'Não especificada'}`;
+              }
+            }
+            
+            // Buscar em atividades secundárias
+            if (!found && rawData?.atividades_secundarias && Array.isArray(rawData.atividades_secundarias)) {
+              for (const atividade of rawData.atividades_secundarias) {
+                if (atividade?.text?.toLowerCase().includes(queryLower)) {
+                  found = true;
+                  subtitle = `Atividade Secundária: ${atividade.text}`;
+                  break;
+                }
+              }
+            }
+            
+            // Buscar em outros campos (fantasia, endereço, etc)
+            if (!found) {
+              const fieldsToSearch = [
+                rawData?.fantasia,
+                rawData?.logradouro,
+                rawData?.bairro,
+                rawData?.municipio,
+                rawData?.uf,
+                rawData?.situacao,
+                rawData?.abertura
+              ];
+              
+              for (const field of fieldsToSearch) {
+                if (field && String(field).toLowerCase().includes(queryLower)) {
+                  found = true;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing raw_data:', e);
           }
         }
 
-        addResult({
-          id: company.id,
-          type: 'empresa',
-          title: company.name,
-          subtitle,
-          url: `/companies/${company.id}`,
-          metadata: { cnpj: company.cnpj },
-          score: company.digital_maturity_score
-        });
+        if (found) {
+          addResult({
+            id: company.id,
+            type: 'empresa',
+            title: company.name,
+            subtitle,
+            url: `/companies/${company.id}`,
+            metadata: { cnpj: company.cnpj },
+            score: company.digital_maturity_score
+          });
+        }
       });
     }
 
