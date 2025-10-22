@@ -165,16 +165,14 @@ export function AppSidebar() {
   const { open, isMobile } = useSidebar();
   
   return (
-    <Sidebar collapsible="icon" className="group/sidebar">
+    <Sidebar collapsible="icon" className="group/sidebar hover:w-64 transition-all duration-300">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary" />
-          {(open || isMobile) && (
-            <div className="min-w-0">
-              <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
-              <p className="text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
-            </div>
-          )}
+          <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
+          <div className="min-w-0 overflow-hidden">
+            <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate whitespace-nowrap">OLV Intelligence</h1>
+            <p className="text-xs text-sidebar-foreground/70 truncate whitespace-nowrap">Sistema de Prospecção</p>
+          </div>
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -276,12 +274,10 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
         <div className="space-y-2">
-          {(open || isMobile) && (
-            <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70">
-              <User className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{user?.email}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden">
+            <User className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate whitespace-nowrap">{user?.email}</span>
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -290,15 +286,13 @@ export function AppSidebar() {
                 className="w-full justify-start"
                 onClick={signOut}
               >
-                <LogOut className="h-4 w-4" />
-                {(open || isMobile) && <span className="ml-2">Sair</span>}
+                <LogOut className="h-4 w-4 flex-shrink-0" />
+                <span className="ml-2 whitespace-nowrap">Sair</span>
               </Button>
             </TooltipTrigger>
-            {!open && !isMobile && (
-              <TooltipContent side="right">
-                <p>Sair</p>
-              </TooltipContent>
-            )}
+            <TooltipContent side="right">
+              <p>Sair da plataforma</p>
+            </TooltipContent>
           </Tooltip>
         </div>
       </SidebarFooter>
