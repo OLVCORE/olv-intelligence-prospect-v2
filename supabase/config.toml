@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.save-company]
 verify_jwt = true
+
+[functions.delete-company]
+verify_jwt = true

@@ -88,16 +88,18 @@ export function useDeleteCompany() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', id);
-      
+      const { data, error } = await supabase.functions.invoke('delete-company', {
+        body: { id }
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return id;
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['company', id] });
+      // Opcional: invalidar estatísticas do dashboard
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     },
   });
 }
