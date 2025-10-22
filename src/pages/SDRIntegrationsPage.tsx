@@ -74,7 +74,7 @@ export default function SDRIntegrationsPage() {
           channel: integration.channel,
           provider: integration.provider,
           config: integration.config,
-          credentials: {}, // In production, load from secure storage
+          credentials: integration.credentials || {},
         },
       });
 
@@ -403,13 +403,9 @@ function IntegrationForm({
 
         if (error) throw error;
       } else {
-        // Use upsert to handle duplicate key constraint
         const { error } = await supabase
           .from('integration_configs')
-          .upsert([data], {
-            onConflict: 'user_id,channel,provider',
-            ignoreDuplicates: false
-          });
+          .insert([data]);
 
         if (error) throw error;
       }
