@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_interactions: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       buying_signals: {
         Row: {
           company_id: string | null
