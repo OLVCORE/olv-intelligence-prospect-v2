@@ -36,198 +36,287 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const searchTerm = `%${query}%`;
+    const queryLower = query.toLowerCase();
     const results: SearchResult[] = [];
 
-    // 1. Buscar em Companies (campos principais)
+    // Helper para adicionar resultado sem duplicatas
+    const addResult = (result: SearchResult) => {
+      if (results.length < 10 && !results.find(r => r.id === result.id && r.type === result.type)) {
+        results.push(result);
+      }
+    };
+
+    // 1. Companies (principais + raw_data)
     const { data: companies } = await supabase
       .from('companies')
-      .select('id, name, cnpj, industry, revenue, digital_maturity_score')
+      .select('id, name, cnpj, industry, revenue, digital_maturity_score, raw_data')
       .or(`name.ilike.${searchTerm},cnpj.ilike.${searchTerm},industry.ilike.${searchTerm}`)
-      .limit(10);
+      .limit(5);
 
     if (companies) {
       companies.forEach(company => {
-        results.push({
+        let subtitle = `${company.industry || 'Indústria'} • Score: ${company.digital_maturity_score || 'N/A'}`;
+        
+        // Buscar em raw_data se não encontrou nos campos principais
+        if (company.raw_data) {
+          const rawDataStr = JSON.stringify(company.raw_data).toLowerCase();
+          if (rawDataStr.includes(queryLower)) {
+            const rawData = company.raw_data as any;
+            if (rawData?.qsa) {
+              const socio = rawData.qsa.find((s: any) => 
+                JSON.stringify(s).toLowerCase().includes(queryLower)
+              );
+              if (socio) subtitle = `Sócio: ${socio.nome} • ${company.industry || 'Indústria'}`;
+            }
+          }
+        }
+
+        addResult({
           id: company.id,
           type: 'empresa',
           title: company.name,
-          subtitle: `${company.industry || 'Indústria não definida'} • Score: ${company.digital_maturity_score || 'N/A'}`,
+          subtitle,
           url: `/companies/${company.id}`,
-          metadata: { cnpj: company.cnpj, revenue: company.revenue },
+          metadata: { cnpj: company.cnpj },
           score: company.digital_maturity_score
         });
       });
     }
 
-    // 1b. Buscar em raw_data (sócios, atividades, dados da Receita Federal)
-    if (results.length < 10) {
-      const { data: companiesRawData } = await supabase
-        .from('companies')
-        .select('id, name, cnpj, industry, raw_data')
-        .not('raw_data', 'is', null)
-        .limit(50); // Buscar em mais empresas mas filtrar no backend
-
-      if (companiesRawData) {
-        const queryLower = query.toLowerCase();
-        
-        companiesRawData.forEach(company => {
-          const rawDataString = JSON.stringify(company.raw_data).toLowerCase();
-          
-          if (rawDataString.includes(queryLower)) {
-            // Tentar identificar o contexto da busca
-            let context = 'Dados da Receita Federal';
-            const rawData = company.raw_data as any;
-            
-            // Buscar em sócios
-            if (rawData?.qsa) {
-              const socio = rawData.qsa.find((s: any) => 
-                JSON.stringify(s).toLowerCase().includes(queryLower)
-              );
-              if (socio) {
-                context = `Sócio: ${socio.nome || 'Nome não especificado'}`;
-              }
-            }
-            
-            // Buscar em atividades
-            if (rawData?.atividade_principal || rawData?.atividades_secundarias) {
-              const atividadePrincipal = JSON.stringify(rawData.atividade_principal || '').toLowerCase();
-              if (atividadePrincipal.includes(queryLower)) {
-                context = `Atividade: ${rawData.atividade_principal?.[0]?.text || 'Não especificada'}`;
-              }
-            }
-            
-            results.push({
-              id: company.id,
-              type: 'empresa',
-              title: company.name,
-              subtitle: `${context} • ${company.industry || 'Indústria não definida'}`,
-              url: `/companies/${company.id}`,
-              metadata: { cnpj: company.cnpj, source: 'raw_data' }
-            });
-          }
-        });
-      }
-    }
-
-    // 2. Buscar em Canvas
+    // 2. Canvas
     if (results.length < 10) {
       const { data: canvas } = await supabase
         .from('canvas')
-        .select('id, title, purpose, status, created_at')
+        .select('id, title, purpose, status, created_at, company_id')
         .or(`title.ilike.${searchTerm},purpose.ilike.${searchTerm}`)
-        .limit(10 - results.length);
+        .limit(5);
 
       if (canvas) {
-        canvas.forEach(item => {
-          results.push({
-            id: item.id,
-            type: 'canvas',
-            title: item.title,
-            subtitle: `${item.purpose || 'War Room'} • ${item.status}`,
-            url: `/canvas/${item.id}`,
-            metadata: { created_at: item.created_at }
-          });
-        });
+        canvas.forEach(item => addResult({
+          id: item.id,
+          type: 'canvas',
+          title: item.title,
+          subtitle: `${item.purpose || 'War Room'} • ${item.status}`,
+          url: `/canvas/${item.id}`,
+          metadata: { created_at: item.created_at }
+        }));
       }
     }
 
-    // 3. Buscar em Decision Makers
+    // 3. Decision Makers
     if (results.length < 10) {
       const { data: decisors } = await supabase
         .from('decision_makers')
         .select('id, name, title, email, company_id, companies(name)')
         .or(`name.ilike.${searchTerm},title.ilike.${searchTerm},email.ilike.${searchTerm}`)
-        .limit(10 - results.length);
+        .limit(5);
 
       if (decisors) {
-        decisors.forEach(decisor => {
-          results.push({
-            id: decisor.id,
-            type: 'decisor',
-            title: decisor.name,
-            subtitle: `${decisor.title} • ${(decisor as any).companies?.name || 'Empresa não vinculada'}`,
-            url: `/intelligence?decisor=${decisor.id}`,
-            metadata: { email: decisor.email }
-          });
-        });
+        decisors.forEach(decisor => addResult({
+          id: decisor.id,
+          type: 'decisor',
+          title: decisor.name,
+          subtitle: `${decisor.title} • ${(decisor as any).companies?.name || 'Empresa'}`,
+          url: `/intelligence?decisor=${decisor.id}`,
+          metadata: { email: decisor.email }
+        }));
       }
     }
 
-    // 4. Buscar em Insights
+    // 4. SDR Tasks
+    if (results.length < 10) {
+      const { data: tasks } = await supabase
+        .from('sdr_tasks')
+        .select('id, title, description, status, due_date, companies(name)')
+        .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+        .limit(5);
+
+      if (tasks) {
+        tasks.forEach(task => addResult({
+          id: task.id,
+          type: 'tarefa',
+          title: task.title,
+          subtitle: `${task.status} • ${(task as any).companies?.name || 'Sem empresa'} • Vence: ${task.due_date || 'N/A'}`,
+          url: `/sdr/tasks?task=${task.id}`
+        }));
+      }
+    }
+
+    // 5. Messages / Inbox
+    if (results.length < 10) {
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('id, body, channel, direction, created_at, conversations(id, contacts(name))')
+        .ilike('body', searchTerm)
+        .limit(5);
+
+      if (messages) {
+        messages.forEach(msg => addResult({
+          id: msg.id,
+          type: 'mensagem',
+          title: msg.body?.substring(0, 60) + '...' || 'Mensagem',
+          subtitle: `${msg.channel} • ${msg.direction} • ${(msg as any).conversations?.contacts?.name || 'Contato'}`,
+          url: `/sdr/inbox?message=${msg.id}`
+        }));
+      }
+    }
+
+    // 6. Canvas Comments
+    if (results.length < 10) {
+      const { data: comments } = await supabase
+        .from('canvas_comments')
+        .select('id, content, type, canvas_id, canvas(title)')
+        .ilike('content', searchTerm)
+        .limit(5);
+
+      if (comments) {
+        comments.forEach(comment => addResult({
+          id: comment.id,
+          type: 'comentário',
+          title: comment.content.substring(0, 60) + '...',
+          subtitle: `${comment.type} • Canvas: ${(comment as any).canvas?.title || 'Sem título'}`,
+          url: `/canvas/${comment.canvas_id}`
+        }));
+      }
+    }
+
+    // 7. Insights
     if (results.length < 10) {
       const { data: insights } = await supabase
         .from('insights')
-        .select('id, title, description, insight_type, priority, company_id, companies(name)')
+        .select('id, title, description, insight_type, priority, companies(name)')
         .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
-        .limit(10 - results.length);
+        .limit(5);
 
       if (insights) {
-        insights.forEach(insight => {
-          results.push({
-            id: insight.id,
-            type: 'insight',
-            title: insight.title,
-            subtitle: `${insight.insight_type} • ${(insight as any).companies?.name || 'Geral'}`,
-            url: `/intelligence-360?insight=${insight.id}`,
-            metadata: { priority: insight.priority }
-          });
-        });
+        insights.forEach(insight => addResult({
+          id: insight.id,
+          type: 'insight',
+          title: insight.title,
+          subtitle: `${insight.insight_type} • ${(insight as any).companies?.name || 'Geral'} • Prioridade: ${insight.priority}`,
+          url: `/intelligence-360?insight=${insight.id}`
+        }));
       }
     }
 
-    // 5. Buscar em Buying Signals
+    // 8. Buying Signals
     if (results.length < 10) {
       const { data: signals } = await supabase
         .from('buying_signals')
-        .select('id, signal_type, description, confidence_score, company_id, companies(name)')
+        .select('id, signal_type, description, confidence_score, companies(name)')
         .or(`signal_type.ilike.${searchTerm},description.ilike.${searchTerm}`)
-        .limit(10 - results.length);
+        .limit(5);
 
       if (signals) {
-        signals.forEach(signal => {
-          results.push({
-            id: signal.id,
-            type: 'sinal',
-            title: `Sinal: ${signal.signal_type}`,
-            subtitle: `${(signal as any).companies?.name || 'Empresa'} • Confiança: ${signal.confidence_score}%`,
-            url: `/intelligence-360?company=${signal.company_id}`,
-            metadata: { description: signal.description }
-          });
-        });
+        signals.forEach(signal => addResult({
+          id: signal.id,
+          type: 'sinal',
+          title: `Sinal: ${signal.signal_type}`,
+          subtitle: `${(signal as any).companies?.name || 'Empresa'} • Confiança: ${signal.confidence_score}%`,
+          url: `/intelligence-360?signal=${signal.id}`
+        }));
       }
     }
 
-    // 6. Buscar termos especiais (fit 100%, análise 360, etc)
-    if (results.length < 10 && query.toLowerCase().includes('fit') && query.match(/\d+/)) {
-      const fitScore = parseInt(query.match(/\d+/)![0]);
-      const { data: fitCompanies } = await supabase
-        .from('companies')
-        .select('id, name, digital_maturity_score')
-        .gte('digital_maturity_score', fitScore - 5)
-        .lte('digital_maturity_score', fitScore + 5)
-        .limit(10 - results.length);
+    // 9. News Mentions
+    if (results.length < 10) {
+      const { data: news } = await supabase
+        .from('news_mentions')
+        .select('id, title, content_summary, source, published_at, companies(name)')
+        .or(`title.ilike.${searchTerm},content_summary.ilike.${searchTerm}`)
+        .limit(5);
 
-      if (fitCompanies) {
-        fitCompanies.forEach(company => {
-          results.push({
-            id: company.id,
-            type: 'fit-totvs',
-            title: `${company.name} - Fit TOTVS`,
-            subtitle: `Score: ${company.digital_maturity_score}% • Alta aderência TOTVS`,
-            url: `/fit-totvs?company=${company.id}`,
-            score: company.digital_maturity_score
-          });
-        });
+      if (news) {
+        news.forEach(item => addResult({
+          id: item.id,
+          type: 'notícia',
+          title: item.title,
+          subtitle: `${item.source} • ${(item as any).companies?.name || 'Empresa'} • ${new Date(item.published_at || '').toLocaleDateString()}`,
+          url: `/digital-presence?news=${item.id}`
+        }));
       }
     }
 
-    // Limitar a 10 resultados totais
-    const limitedResults = results.slice(0, 10);
+    // 10. Risks
+    if (results.length < 10) {
+      const { data: risks } = await supabase
+        .from('risks')
+        .select('id, risk_type, description, severity, status, companies(name)')
+        .or(`risk_type.ilike.${searchTerm},description.ilike.${searchTerm}`)
+        .limit(5);
 
-    console.log(`[Global Search] Query: "${query}" - Found ${limitedResults.length} results`);
+      if (risks) {
+        risks.forEach(risk => addResult({
+          id: risk.id,
+          type: 'risco',
+          title: `Risco: ${risk.risk_type}`,
+          subtitle: `${risk.severity} • ${(risk as any).companies?.name || 'Empresa'} • Status: ${risk.status}`,
+          url: `/intelligence-360?risk=${risk.id}`
+        }));
+      }
+    }
+
+    // 11. Pitches
+    if (results.length < 10) {
+      const { data: pitches } = await supabase
+        .from('pitches')
+        .select('id, pitch_type, content, target_persona, companies(name)')
+        .or(`pitch_type.ilike.${searchTerm},content.ilike.${searchTerm},target_persona.ilike.${searchTerm}`)
+        .limit(5);
+
+      if (pitches) {
+        pitches.forEach(pitch => addResult({
+          id: pitch.id,
+          type: 'pitch',
+          title: `Pitch: ${pitch.pitch_type}`,
+          subtitle: `${pitch.target_persona || 'Persona'} • ${(pitch as any).companies?.name || 'Empresa'}`,
+          url: `/playbooks?pitch=${pitch.id}`
+        }));
+      }
+    }
+
+    // 12. SDR Templates
+    if (results.length < 10) {
+      const { data: templates } = await supabase
+        .from('sdr_templates')
+        .select('id, name, content, channel, subject')
+        .or(`name.ilike.${searchTerm},content.ilike.${searchTerm},subject.ilike.${searchTerm}`)
+        .limit(5);
+
+      if (templates) {
+        templates.forEach(template => addResult({
+          id: template.id,
+          type: 'template',
+          title: template.name,
+          subtitle: `${template.channel} • ${template.subject || 'Sem assunto'}`,
+          url: `/sdr/sequences?template=${template.id}`
+        }));
+      }
+    }
+
+    // 13. Contacts
+    if (results.length < 10) {
+      const { data: contacts } = await supabase
+        .from('contacts')
+        .select('id, name, email, phone, companies(name)')
+        .or(`name.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm}`)
+        .limit(5);
+
+      if (contacts) {
+        contacts.forEach(contact => addResult({
+          id: contact.id,
+          type: 'contato',
+          title: contact.name || contact.email || 'Contato',
+          subtitle: `${contact.email || contact.phone || 'Sem email/telefone'} • ${(contact as any).companies?.name || 'Sem empresa'}`,
+          url: `/sdr/inbox?contact=${contact.id}`
+        }));
+      }
+    }
+
+    console.log(`[Global Search] Query: "${query}" - Found ${results.length} results across all tables`);
 
     return new Response(
-      JSON.stringify({ results: limitedResults }),
+      JSON.stringify({ results: results.slice(0, 10) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
