@@ -156,31 +156,59 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
 
   try {
     if (provider === 'twilio') {
-      const { accountSid, authToken, phoneNumber } = credentials || {};
+      // Accept both classic Auth Token and API Key/Secret
+      const rawAccountSid = credentials?.accountSid as string | undefined;
+      const rawAuthToken = credentials?.authToken as string | undefined;
+      const rawApiKeySid = credentials?.apiKeySid as string | undefined; // e.g. SKxxxxxxxx
+      const rawApiKeySecret = credentials?.apiKeySecret as string | undefined;
+      const phoneNumber = credentials?.phoneNumber as string | undefined;
+      const region = (credentials?.region as string | undefined)?.trim(); // e.g. au1, ie1
 
-      if (!accountSid || !authToken) {
-        throw new Error(`Missing Twilio credentials. accountSid=${!!accountSid}, authToken=${!!authToken}`);
+      const accountSid = typeof rawAccountSid === 'string' ? rawAccountSid.trim() : undefined;
+      const authToken = typeof rawAuthToken === 'string' ? rawAuthToken.trim() : undefined;
+      const apiKeySid = typeof rawApiKeySid === 'string' ? rawApiKeySid.trim() : undefined;
+      const apiKeySecret = typeof rawApiKeySecret === 'string' ? rawApiKeySecret.trim() : undefined;
+
+      if (!accountSid) {
+        throw new Error('Twilio: Account SID ausente.');
       }
-      
-      console.log(`Testing Twilio Account: ${accountSid.substring(0, 10)}...`);
+
+      // Build Basic auth header
+      let authHeader = '';
+      let authMethod = 'auth_token';
+      if (apiKeySid && apiKeySecret) {
+        authHeader = `Basic ${btoa(`${apiKeySid}:${apiKeySecret}`)}`;
+        authMethod = 'api_key';
+      } else {
+        if (!authToken) {
+          throw new Error('Twilio: Auth Token ausente.');
+        }
+        authHeader = `Basic ${btoa(`${accountSid}:${authToken}`)}`;
+      }
+
+      const host = region ? `https://api.${region}.twilio.com` : 'https://api.twilio.com';
+      console.log(`Testing Twilio Account: ${accountSid.substring(0, 10)}..., region=${region || 'default'}, method=${authMethod}`);
 
       const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
-        {
-          headers: {
-            'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-          },
-        }
+        `${host}/2010-04-01/Accounts/${accountSid}.json`,
+        { headers: { 'Authorization': authHeader } }
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Twilio API Response:', response.status, errorText);
-        
-        if (response.status === 401) {
-          throw new Error('Twilio API error: Credenciais inválidas. Verifique o Account SID e Auth Token.');
+        const text = await response.text();
+        console.log('Twilio API Response:', response.status, text);
+        try {
+          const j = JSON.parse(text);
+          if (response.status === 401) {
+            throw new Error(`Twilio 401 (code ${j.code || '20003'}): falha de autenticação. Verifique: Account SID, Auth Token/API Key & Secret, projeto correto e region (se aplicável). more_info: ${j.more_info || 'n/a'}`);
+          }
+          throw new Error(`Twilio API error ${response.status}: ${j.message || text}`);
+        } catch {
+          if (response.status === 401) {
+            throw new Error('Twilio 401: falha de autenticação.');
+          }
+          throw new Error(`Twilio API error ${response.status}: ${text}`);
         }
-        throw new Error(`Twilio API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -188,12 +216,14 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
       return {
         status: data.status === 'active' ? 'healthy' : 'unhealthy',
         message: data.status === 'active' 
-          ? 'Twilio WhatsApp is connected' 
-          : 'Twilio account is not active',
+          ? 'Twilio WhatsApp conectado' 
+          : 'Twilio account não está active',
         details: {
           accountStatus: data.status,
           friendlyName: data.friendly_name,
-          phoneNumber: phoneNumber,
+          phoneNumber,
+          authMethod,
+          region: region || 'default'
         },
         timestamp: new Date().toISOString(),
       };
