@@ -162,17 +162,24 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { open, isMobile } = useSidebar();
+  const { open, isMobile, setOpen } = useSidebar();
   
   return (
-    <Sidebar collapsible="icon" className="group/sidebar hover:w-64 transition-all duration-300">
+    <Sidebar 
+      collapsible="icon" 
+      className="group/sidebar transition-all duration-300"
+      onMouseEnter={() => !isMobile && setOpen(true)}
+      onMouseLeave={() => !isMobile && setOpen(false)}
+    >
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
-          <div className="min-w-0 overflow-hidden">
-            <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate whitespace-nowrap">OLV Intelligence</h1>
-            <p className="text-xs text-sidebar-foreground/70 truncate whitespace-nowrap">Sistema de Prospecção</p>
-          </div>
+          {(open || isMobile) && (
+            <div className="min-w-0">
+              <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
+              <p className="text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+            </div>
+          )}
         </Link>
       </SidebarHeader>
       <SidebarContent>
