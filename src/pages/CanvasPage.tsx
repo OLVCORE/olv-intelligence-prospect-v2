@@ -44,6 +44,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function CanvasPage() {
   const { id } = useParams<{ id: string }>();
@@ -348,26 +354,67 @@ export default function CanvasPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium">Adicionar bloco:</span>
-              <Button variant="outline" size="sm" onClick={() => handleAddBlock('note')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Nota
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleAddBlock('insight')}>
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Insight
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleAddBlock('decision')}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Decisão
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleAddBlock('task')}>
-                <CheckSquare className="h-4 w-4 mr-2" />
-                Tarefa
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleAddBlock('reference')}>
-                <Paperclip className="h-4 w-4 mr-2" />
-                Referência
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => handleAddBlock('note')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Nota
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">Anotações livres em texto ou HTML para documentar informações importantes</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => handleAddBlock('insight')}>
+                      <Lightbulb className="h-4 w-4 mr-2" />
+                      Insight
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">Descobertas e hipóteses estratégicas com evidências que suportam a conclusão</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => handleAddBlock('decision')}>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Decisão
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">Registre decisões estratégicas com motivação, impacto esperado e responsável</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => handleAddBlock('task')}>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Tarefa
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">Tarefas acionáveis com responsável, prazo, prioridade e status de execução</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => handleAddBlock('reference')}>
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Referência
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">Snapshot de dados de outros módulos (maturidade, fit, tech) para contexto histórico</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </CardContent>
         </Card>
