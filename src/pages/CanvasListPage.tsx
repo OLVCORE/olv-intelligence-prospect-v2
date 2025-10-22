@@ -13,6 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
+import { CanvasTutorial } from '@/components/canvas/CanvasTutorial';
+import { CanvasDashboard } from '@/components/canvas/CanvasDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function CanvasListPage() {
   const navigate = useNavigate();
@@ -115,7 +118,7 @@ export default function CanvasListPage() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90">
                 <Sparkles className="h-5 w-5" />
                 Criar Canvas
               </Button>
@@ -207,7 +210,22 @@ export default function CanvasListPage() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <CanvasTutorial />
+
+        <Tabs defaultValue="canvas" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="canvas" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Meus Canvas
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="canvas" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <>
               <Skeleton className="h-48" />
@@ -284,25 +302,34 @@ export default function CanvasListPage() {
               </Card>
             ))
           ) : (
-            <Card className="col-span-full border-2 border-dashed">
+            <Card className="col-span-full border-2 border-dashed bg-gradient-to-br from-primary/5 to-purple-500/5">
               <CardContent className="pt-12 pb-12 text-center">
                 <div className="max-w-md mx-auto space-y-4">
-                  <Zap className="h-16 w-16 mx-auto text-primary" />
+                  <div className="relative">
+                    <div className="absolute inset-0 blur-xl bg-primary/20 rounded-full"></div>
+                    <Zap className="h-20 w-20 mx-auto text-primary relative" />
+                  </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Crie seu primeiro War Room</h3>
+                    <h3 className="text-2xl font-bold mb-2">Crie seu primeiro War Room</h3>
                     <p className="text-muted-foreground">
                       Um workspace colaborativo vivo que conecta contexto, decisões e execução com inteligência artificial
                     </p>
                   </div>
-                  <Button onClick={() => setIsDialogOpen(true)} size="lg">
-                    <Sparkles className="h-5 w-5 mr-2" />
+                  <Button onClick={() => setIsDialogOpen(true)} size="lg" className="gap-2">
+                    <Sparkles className="h-5 w-5" />
                     Criar Primeiro Canvas
                   </Button>
                 </div>
               </CardContent>
             </Card>
           )}
-        </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="dashboard">
+            <CanvasDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
