@@ -43,9 +43,12 @@ export function MessageRenderer({ message, channel }: MessageRendererProps) {
                 {message.direction === 'out' ? 'Você' : 'Cliente'}
               </span>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(message.created_at), { 
-                  addSuffix: true, 
-                  locale: ptBR 
+                {new Date(message.created_at).toLocaleString('pt-BR', { 
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
                 })}
               </span>
             </div>
