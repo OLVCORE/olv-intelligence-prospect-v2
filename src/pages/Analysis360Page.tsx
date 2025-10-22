@@ -13,6 +13,7 @@ import {
   Newspaper, Target, Zap, Users, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Analysis360Page() {
   const [searchParams] = useSearchParams();
@@ -22,6 +23,10 @@ export default function Analysis360Page() {
   const [enriching, setEnriching] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const [enrichmentData, setEnrichmentData] = useState<any>(null);
+  const [lang, setLang] = useState<'pt-BR' | 'en' | 'es'>('pt-BR');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedInsights, setTranslatedInsights] = useState<any[] | null>(null);
+  const [translatedPitch, setTranslatedPitch] = useState<string | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -59,7 +64,7 @@ export default function Analysis360Page() {
         supabase.from('legal_data').select('*').eq('company_id', companyId).maybeSingle(),
         supabase.from('financial_data').select('*').eq('company_id', companyId).maybeSingle(),
         supabase.from('reputation_data').select('*').eq('company_id', companyId).maybeSingle(),
-        supabase.from('insights').select('*').eq('company_id', companyId),
+        supabase.from('insights').select('*').eq('company_id', companyId).eq('generated_by', 'enrichment_360'),
         supabase.from('pitches').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(1)
       ]);
 
@@ -164,6 +169,55 @@ export default function Analysis360Page() {
     return <Badge className="bg-red-500">Crítico</Badge>;
   };
 
+  const handleLanguageChange = async (value: string) => {
+    const nextLang = value as 'pt-BR' | 'en' | 'es';
+    setLang(nextLang);
+
+    if (nextLang === 'pt-BR') {
+      setTranslatedInsights(null);
+      setTranslatedPitch(null);
+      return;
+    }
+
+    if (!enrichmentData) return;
+
+    try {
+      setIsTranslating(true);
+      const insights = enrichmentData?.insights || [];
+      const texts: string[] = [];
+      insights.forEach((i: any) => {
+        texts.push(i.title || '');
+        texts.push(i.description || '');
+      });
+      if (enrichmentData?.pitch?.content) texts.push(enrichmentData.pitch.content);
+
+      const { data, error } = await supabase.functions.invoke('translate', {
+        body: { texts, target: nextLang }
+      });
+      if (error) throw error;
+
+      const translations: string[] = data?.translations || [];
+      let idx = 0;
+      const newInsights = insights.map((i: any) => ({
+        ...i,
+        title: translations[idx++] || i.title,
+        description: translations[idx++] || i.description,
+      }));
+      let newPitch = enrichmentData?.pitch?.content || null;
+      if (enrichmentData?.pitch?.content) {
+        newPitch = translations[idx] || newPitch;
+      }
+      setTranslatedInsights(newInsights);
+      setTranslatedPitch(newPitch);
+    } catch (e) {
+      console.error('Translation error', e);
+      toast.error('Falha ao traduzir conteúdo');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+  const insightsList = lang === 'pt-BR' ? (enrichmentData?.insights || []) : (translatedInsights || enrichmentData?.insights || []);
+  const pitchContent = lang === 'pt-BR' ? enrichmentData?.pitch?.content : (translatedPitch ?? enrichmentData?.pitch?.content);
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -172,24 +226,36 @@ export default function Analysis360Page() {
           <h1 className="text-3xl font-bold mb-2">Análise 360° Completa</h1>
           <p className="text-muted-foreground">{company.name}</p>
         </div>
-        <Button 
-          onClick={runEnrichment} 
-          disabled={enriching}
-          size="lg"
-          className="gap-2"
-        >
-          {enriching ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Executando Análise...
-            </>
-          ) : (
-            <>
-              <Zap className="w-4 h-4" />
-              Executar Análise 360°
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={lang} onValueChange={handleLanguageChange}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Idioma" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pt-BR">Português</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="es">Español</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={runEnrichment} 
+            disabled={enriching || isTranslating}
+            size="lg"
+            className="gap-2"
+          >
+            {enriching ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Executando Análise...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                Executar Análise 360°
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {!hasEnrichmentData ? (
