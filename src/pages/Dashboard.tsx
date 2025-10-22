@@ -39,22 +39,30 @@ import {
   MessageSquare,
   BarChart3,
   Sparkles,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const NEON_COLORS = ['hsl(var(--neon-cyan))', 'hsl(var(--neon-blue))', 'hsl(var(--neon-green))', 'hsl(var(--neon-yellow))', 'hsl(var(--neon-purple))'];
+const CHART_COLORS = {
+  primary: 'hsl(var(--chart-1))',
+  secondary: 'hsl(var(--chart-2))',
+  tertiary: 'hsl(var(--chart-3))',
+  quaternary: 'hsl(var(--chart-4))',
+  quinary: 'hsl(var(--chart-5))',
+};
 
 export default function Dashboard() {
   const { data, isLoading } = useDashboardExecutive();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-glass-bg p-8">
-        <div className="space-y-8">
-          <Skeleton className="h-48 w-full rounded-2xl" />
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="min-h-screen p-8 bg-background">
+        <div className="space-y-6">
+          <Skeleton className="h-32 w-full" />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-40" />
+              <Skeleton key={i} className="h-32" />
             ))}
           </div>
         </div>
@@ -63,370 +71,409 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-glass-bg">
-      <div className="container mx-auto p-6 space-y-8">
-        {/* Header with Futuristic Design */}
-        <div className="relative overflow-hidden rounded-2xl border border-glass-border bg-gradient-to-r from-glass-bg/50 to-glass-bg/30 backdrop-blur-xl p-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-neon-cyan/10 via-neon-blue/10 to-neon-purple/10" />
-          <div className="relative flex items-center justify-between">
-            <div>
-              <Badge className="mb-4 bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50">
-                INTELIGÊNCIA ARTIFICIAL 360°
-              </Badge>
-              <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-purple bg-clip-text text-transparent">
-                Dashboard Executivo
-              </h1>
-              <p className="text-muted-foreground mt-3 text-lg">
-                Análises preditivas e insights estratégicos em tempo real
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-4">
-              <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-glass-bg/50 border border-glass-border backdrop-blur-sm">
-                <Sparkles className="h-6 w-6 text-neon-yellow animate-pulse" />
-                <span className="text-sm font-medium">OLV Intelligence</span>
-              </div>
-              <BulkUploadDialog />
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold tracking-tight">Dashboard Executivo</h1>
+            <p className="text-muted-foreground text-lg">
+              Visão estratégica completa • Análise em tempo real
+            </p>
           </div>
+          <BulkUploadDialog />
         </div>
 
-        {/* KPIs Row with Glassmorphism */}
+        {/* KPIs principais */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <KPICard
-            title="Empresas no Pipeline"
-            value={data.totalCompanies}
+          <MetricCard
+            title="Total de Empresas"
+            value={data.totalCompanies.toString()}
             change={15.5}
+            trend="up"
             icon={Building2}
-            loading={isLoading}
-            glowColor="cyan"
+            color="blue"
           />
-          <KPICard
-            title="Decisores Mapeados"
-            value={data.totalDecisors}
-            change={12.5}
+          <MetricCard
+            title="Decisores Identificados"
+            value={data.totalDecisors.toString()}
+            change={12.3}
+            trend="up"
             icon={Users}
-            loading={isLoading}
-            glowColor="blue"
+            color="green"
           />
-          <KPICard
-            title="Pipeline Value"
+          <MetricCard
+            title="Pipeline Total"
             value={`R$ ${(data.pipelineValue / 1000000).toFixed(1)}M`}
             change={data.conversionRate}
+            trend="up"
             icon={DollarSign}
-            loading={isLoading}
-            glowColor="green"
+            color="cyan"
           />
-          <KPICard
+          <MetricCard
             title="Taxa de Conversão"
             value={`${data.conversionRate.toFixed(1)}%`}
-            change={data.conversionRate - 15}
+            change={8.2}
+            trend="up"
             icon={Target}
-            loading={isLoading}
-            glowColor="purple"
+            color="purple"
           />
         </div>
 
-        {/* Main Content Tabs with Futuristic Style */}
-        <Tabs defaultValue="mercado" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto bg-glass-bg/30 backdrop-blur-xl border border-glass-border p-1">
-            <TabsTrigger 
-              value="mercado" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-cyan/20 data-[state=active]:to-neon-blue/20 data-[state=active]:text-neon-cyan data-[state=active]:border data-[state=active]:border-neon-cyan/50"
-            >
-              <Globe className="h-4 w-4" />
+        {/* Tabs principais */}
+        <Tabs defaultValue="mercado" className="space-y-4">
+          <TabsList className="bg-muted p-1">
+            <TabsTrigger value="mercado">
+              <Globe className="mr-2 h-4 w-4" />
               Mercado
             </TabsTrigger>
-            <TabsTrigger 
-              value="fit" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-green/20 data-[state=active]:to-neon-cyan/20 data-[state=active]:text-neon-green data-[state=active]:border data-[state=active]:border-neon-green/50"
-            >
-              <Target className="h-4 w-4" />
+            <TabsTrigger value="fit">
+              <Award className="mr-2 h-4 w-4" />
               Fit TOTVS
             </TabsTrigger>
-            <TabsTrigger 
-              value="tech" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-blue/20 data-[state=active]:to-neon-purple/20 data-[state=active]:text-neon-blue data-[state=active]:border data-[state=active]:border-neon-blue/50"
-            >
-              <Zap className="h-4 w-4" />
-              Tech
+            <TabsTrigger value="tech">
+              <Zap className="mr-2 h-4 w-4" />
+              Tecnologia
             </TabsTrigger>
-            <TabsTrigger 
-              value="saude" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-green/20 data-[state=active]:to-neon-yellow/20 data-[state=active]:text-neon-green data-[state=active]:border data-[state=active]:border-neon-green/50"
-            >
-              <Shield className="h-4 w-4" />
+            <TabsTrigger value="saude">
+              <Shield className="mr-2 h-4 w-4" />
               Saúde
             </TabsTrigger>
-            <TabsTrigger 
-              value="pipeline" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-purple/20 data-[state=active]:to-neon-cyan/20 data-[state=active]:text-neon-purple data-[state=active]:border data-[state=active]:border-neon-purple/50"
-            >
-              <Briefcase className="h-4 w-4" />
+            <TabsTrigger value="pipeline">
+              <Briefcase className="mr-2 h-4 w-4" />
               Pipeline
             </TabsTrigger>
-            <TabsTrigger 
-              value="preditiva" 
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-neon-yellow/20 data-[state=active]:to-neon-purple/20 data-[state=active]:text-neon-yellow data-[state=active]:border data-[state=active]:border-neon-yellow/50"
-            >
-              <Sparkles className="h-4 w-4" />
+            <TabsTrigger value="preditiva">
+              <Sparkles className="mr-2 h-4 w-4" />
               IA Preditiva
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab Content */}
+          {/* Tab: Mercado */}
           <TabsContent value="mercado" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <GlassCard title="Distribuição Geográfica" icon={Globe} description="Empresas por região e estado">
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={data.companiesByRegion}>
-                    <defs>
-                      <linearGradient id="colorRegion" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--neon-cyan))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--neon-cyan))" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis dataKey="region" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--glass-bg))', 
-                        border: '1px solid hsl(var(--glass-border))',
-                        borderRadius: '0.5rem',
-                        backdropFilter: 'blur(10px)'
-                      }} 
-                    />
-                    <Legend />
-                    <Bar dataKey="count" fill="url(#colorRegion)" name="Empresas" radius={[8, 8, 0, 0]} />
-                    <Line type="monotone" dataKey="avgMaturity" stroke="hsl(var(--neon-yellow))" name="Maturidade Média" strokeWidth={2} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </GlassCard>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-primary" />
+                    Distribuição Geográfica
+                  </CardTitle>
+                  <CardDescription>Empresas por região</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={data.companiesByRegion}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="region" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '0.5rem',
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="count" fill={CHART_COLORS.primary} name="Empresas" radius={[4, 4, 0, 0]} />
+                      <Line type="monotone" dataKey="avgMaturity" stroke={CHART_COLORS.tertiary} name="Maturidade Média" strokeWidth={2} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-              <GlassCard title="Segmentação por Indústria" icon={BarChart3} description="Top segmentos por volume">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis dataKey="industry" type="category" width={150} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--glass-bg))', 
-                        border: '1px solid hsl(var(--glass-border))',
-                        borderRadius: '0.5rem'
-                      }} 
-                    />
-                    <Bar dataKey="count" fill="hsl(var(--neon-blue))" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </GlassCard>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Top Segmentos
+                  </CardTitle>
+                  <CardDescription>Principais indústrias</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis type="number" className="text-xs" />
+                      <YAxis dataKey="industry" type="category" width={120} className="text-xs" />
+                      <Tooltip />
+                      <Bar dataKey="count" fill={CHART_COLORS.secondary} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
+          {/* Tab: Fit TOTVS */}
           <TabsContent value="fit" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <GlassCard title="Fit por Produto TOTVS" icon={Award} description="Análise de compatibilidade">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.fitByProduct}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis dataKey="product" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--glass-bg))', 
-                        border: '1px solid hsl(var(--glass-border))',
-                        borderRadius: '0.5rem'
-                      }} 
-                    />
-                    <Legend />
-                    <Bar dataKey="companies" fill="hsl(var(--neon-green))" name="Empresas" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </GlassCard>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Fit por Produto
+                  </CardTitle>
+                  <CardDescription>Compatibilidade TOTVS</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data.fitByProduct}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="product" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip />
+                      <Bar dataKey="companies" fill={CHART_COLORS.secondary} name="Empresas" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-              <GlassCard title="Top 10 Empresas - Fit Score" icon={Target} description="Maiores oportunidades">
-                <div className="space-y-3">
-                  {data.topFitCompanies.slice(0, 5).map((company, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-glass-bg/30 border border-glass-border hover:border-neon-green/50 transition-colors">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{company.name}</p>
-                        <p className="text-xs text-muted-foreground">{company.recommendedProducts[0] || 'N/A'}</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    Top Empresas - Fit Score
+                  </CardTitle>
+                  <CardDescription>Maiores oportunidades</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {data.topFitCompanies.slice(0, 5).map((company, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{company.name}</p>
+                          <p className="text-xs text-muted-foreground">{company.recommendedProducts[0] || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <Progress value={company.fitScore} className="w-20" />
+                          <Badge variant="secondary">{company.fitScore}%</Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Progress value={company.fitScore} className="w-24" />
-                        <Badge variant="outline" className="bg-neon-green/10 text-neon-green border-neon-green/30">
-                          {company.fitScore}%
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
+          {/* Tab: Tecnologia */}
           <TabsContent value="tech" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <GlassCard title="Tecnologias Dominantes" icon={Zap} description="Stack tecnológico do mercado">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.topTechnologies.slice(0, 10)}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis dataKey="technology" angle={-45} textAnchor="end" height={100} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--glass-bg))', 
-                        border: '1px solid hsl(var(--glass-border))',
-                        borderRadius: '0.5rem'
-                      }} 
-                    />
-                    <Bar dataKey="count" fill="hsl(var(--neon-purple))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </GlassCard>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Stack Tecnológico
+                  </CardTitle>
+                  <CardDescription>Tecnologias mais usadas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data.topTechnologies.slice(0, 10)}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="technology" angle={-45} textAnchor="end" height={100} className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip />
+                      <Bar dataKey="count" fill={CHART_COLORS.quaternary} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-              <GlassCard title="Maturidade Digital" icon={BarChart3} description="Distribuição por nível">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={data.maturityDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ level, percentage }) => `${level} (${percentage.toFixed(0)}%)`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="count"
-                    >
-                      {data.maturityDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={NEON_COLORS[index % NEON_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </GlassCard>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Maturidade Digital
+                  </CardTitle>
+                  <CardDescription>Distribuição por nível</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={data.maturityDistribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ level, percentage }) => `${level} (${percentage.toFixed(0)}%)`}
+                        outerRadius={100}
+                        dataKey="count"
+                      >
+                        {data.maturityDistribution.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={Object.values(CHART_COLORS)[index % 5]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
+          {/* Tab: Saúde */}
           <TabsContent value="saude" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-4">
               {data.healthDistribution.map((health, i) => (
-                <GlassCard key={i} title={health.category} icon={Shield} compact>
-                  <div className="space-y-3">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-neon-green to-neon-cyan bg-clip-text text-transparent">
-                      {health.score.toFixed(1)}
-                    </div>
-                    <Progress value={health.score} className="h-2" />
-                  </div>
-                </GlassCard>
+                <Card key={i}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      {health.category}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{health.score.toFixed(1)}</div>
+                    <Progress value={health.score} className="mt-2 h-2" />
+                  </CardContent>
+                </Card>
               ))}
             </div>
 
-            <GlassCard title="Empresas em Risco" icon={AlertTriangle} description="Monitoramento prioritário">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 rounded-lg border-l-4 border-l-destructive bg-destructive/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    <h4 className="font-semibold">Alto Risco</h4>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Empresas Críticas
+                </CardTitle>
+                <CardDescription>Requerem atenção imediata</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="p-4 rounded-lg border-l-4 border-l-destructive bg-destructive/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <h4 className="font-semibold">Alto Risco</h4>
+                    </div>
+                    <p className="text-3xl font-bold">{data.companiesAtRisk}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Empresas com scores críticos</p>
                   </div>
-                  <p className="text-2xl font-bold">{data.companiesAtRisk}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Empresas com scores críticos
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg border-l-4 border-l-neon-yellow bg-neon-yellow/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="h-5 w-5 text-neon-yellow" />
-                    <h4 className="font-semibold">Atenção</h4>
+                  <div className="p-4 rounded-lg border-l-4 border-l-orange-500 bg-orange-500/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-5 w-5 text-orange-600" />
+                      <h4 className="font-semibold">Monitoramento</h4>
+                    </div>
+                    <p className="text-3xl font-bold">{Math.round(data.totalCompanies * 0.15)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Empresas para acompanhar</p>
                   </div>
-                  <p className="text-2xl font-bold">
-                    {Math.round(data.totalCompanies * 0.15)}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Empresas para monitorar
-                  </p>
                 </div>
-              </div>
-            </GlassCard>
+              </CardContent>
+            </Card>
           </TabsContent>
 
+          {/* Tab: Pipeline */}
           <TabsContent value="pipeline" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
-              <GlassCard title="Pipeline Total" icon={DollarSign} compact>
-                <div className="text-3xl font-bold bg-gradient-to-r from-neon-cyan to-neon-blue bg-clip-text text-transparent">
-                  R$ {(data.pipelineValue / 1000000).toFixed(1)}M
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Valor total em negociação
-                </p>
-              </GlassCard>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Pipeline Total
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">R$ {(data.pipelineValue / 1000000).toFixed(1)}M</div>
+                  <p className="text-sm text-muted-foreground mt-1">Valor em negociação</p>
+                </CardContent>
+              </Card>
 
-              <GlassCard title="Taxa de Conversão" icon={Target} compact>
-                <div className="text-3xl font-bold text-neon-green">
-                  {data.conversionRate.toFixed(1)}%
-                </div>
-                <Progress value={data.conversionRate} className="mt-2" />
-              </GlassCard>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Taxa de Conversão
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{data.conversionRate.toFixed(1)}%</div>
+                  <Progress value={data.conversionRate} className="mt-2" />
+                </CardContent>
+              </Card>
 
-              <GlassCard title="Ticket Médio" icon={DollarSign} compact>
-                <div className="text-3xl font-bold text-neon-purple">
-                  R$ {(data.avgDealSize / 1000).toFixed(0)}K
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Por oportunidade
-                </p>
-              </GlassCard>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Ticket Médio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">R$ {(data.avgDealSize / 1000).toFixed(0)}K</div>
+                  <p className="text-sm text-muted-foreground mt-1">Por oportunidade</p>
+                </CardContent>
+              </Card>
             </div>
 
-            <GlassCard title="Conversas Ativas" icon={MessageSquare} description="Engajamento em tempo real">
-              <div className="text-center py-8">
-                <div className="text-5xl font-bold bg-gradient-to-r from-neon-cyan to-neon-blue bg-clip-text text-transparent">
-                  {data.totalConversations}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Conversas Ativas
+                </CardTitle>
+                <CardDescription>Engajamento com prospects</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="text-5xl font-bold text-primary">{data.totalConversations}</div>
+                  <p className="text-muted-foreground mt-2">Conversas em andamento</p>
                 </div>
-                <p className="text-muted-foreground mt-2">Conversas em andamento</p>
-              </div>
-            </GlassCard>
+              </CardContent>
+            </Card>
           </TabsContent>
 
+          {/* Tab: IA Preditiva */}
           <TabsContent value="preditiva" className="space-y-4">
-            <GlassCard title="Oportunidades Emergentes" icon={Sparkles} description="IA identifica potencial de crescimento">
-              <div className="space-y-3">
-                {data.emergingOpportunities.slice(0, 5).map((opp, i) => (
-                  <div key={i} className="p-4 rounded-lg bg-gradient-to-r from-glass-bg/50 to-glass-bg/30 border border-glass-border hover:border-neon-cyan/50 transition-all">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{opp.type}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{opp.description}</p>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Oportunidades Emergentes
+                </CardTitle>
+                <CardDescription>Identificadas por IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.emergingOpportunities.slice(0, 5).map((opp, i) => (
+                    <div key={i} className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold">{opp.type}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{opp.description}</p>
+                        </div>
+                        <Badge>{opp.companies} empresas</Badge>
                       </div>
-                      <Badge className="bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50">
-                        {opp.companies} empresas
-                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-2">{opp.potential}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">{opp.potential}</p>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-            <GlassCard title="Tendências de Mercado" icon={TrendingUp} description="Análise preditiva baseada em IA">
-              <div className="grid gap-4 md:grid-cols-2">
-                {data.marketTrends.map((trend, i) => (
-                  <div key={i} className="p-4 rounded-lg bg-glass-bg/30 border border-glass-border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="h-5 w-5 text-neon-yellow" />
-                      <h4 className="font-semibold">{trend.trend}</h4>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Tendências de Mercado
+                </CardTitle>
+                <CardDescription>Análise preditiva</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {data.marketTrends.map((trend, i) => (
+                    <div key={i} className="p-4 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">{trend.trend}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{trend.impact}</p>
+                      <p className="text-2xl font-bold text-primary">{trend.companies}</p>
+                      <p className="text-xs text-muted-foreground">empresas impactadas</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {trend.impact}
-                    </p>
-                    <p className="text-lg font-bold text-neon-cyan">
-                      {trend.companies} empresas impactadas
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -434,109 +481,50 @@ export default function Dashboard() {
   );
 }
 
-// Componente de Card com Glassmorphism
-function GlassCard({ 
-  title, 
-  description, 
-  icon: Icon, 
-  children, 
-  compact = false 
-}: { 
-  title: string; 
-  description?: string; 
-  icon: any; 
-  children: React.ReactNode;
-  compact?: boolean;
-}) {
-  return (
-    <Card className="relative overflow-hidden bg-glass-bg/30 backdrop-blur-xl border-glass-border hover:border-glass-border/60 transition-all duration-300">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-3xl" />
-      <CardHeader className={compact ? "pb-3" : ""}>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="h-5 w-5 text-neon-cyan" />
-          {title}
-        </CardTitle>
-        {description && (
-          <CardDescription className="text-xs">{description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        {children}
-      </CardContent>
-    </Card>
-  );
-}
-
-// KPI Card Component
-function KPICard({
+// Componente de Métrica
+function MetricCard({
   title,
   value,
   change,
+  trend,
   icon: Icon,
-  loading,
-  glowColor = "cyan",
+  color,
 }: {
   title: string;
-  value: string | number;
-  change?: number;
+  value: string;
+  change: number;
+  trend: 'up' | 'down';
   icon: any;
-  loading: boolean;
-  glowColor?: "cyan" | "blue" | "green" | "purple";
+  color: 'blue' | 'green' | 'cyan' | 'purple';
 }) {
-  const glowColors = {
-    cyan: "shadow-neon-cyan/20",
-    blue: "shadow-neon-blue/20",
-    green: "shadow-neon-green/20",
-    purple: "shadow-neon-purple/20",
+  const colorClasses = {
+    blue: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20',
+    green: 'text-green-600 bg-green-50 dark:bg-green-950/20',
+    cyan: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/20',
+    purple: 'text-purple-600 bg-purple-50 dark:bg-purple-950/20',
   };
-
-  const borderColors = {
-    cyan: "border-neon-cyan/30",
-    blue: "border-neon-blue/30",
-    green: "border-neon-green/30",
-    purple: "border-neon-purple/30",
-  };
-
-  const iconColors = {
-    cyan: "text-neon-cyan",
-    blue: "text-neon-blue",
-    green: "text-neon-green",
-    purple: "text-neon-purple",
-  };
-
-  if (loading) {
-    return (
-      <Card className="bg-glass-bg/30 backdrop-blur-xl border-glass-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-4 rounded" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-32 mb-2" />
-          <Skeleton className="h-3 w-20" />
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <Card className={`relative overflow-hidden bg-glass-bg/30 backdrop-blur-xl border ${borderColors[glowColor]} ${glowColors[glowColor]} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105`}>
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className={`h-5 w-5 ${iconColors[glowColor]}`} />
+        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="h-4 w-4" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text">
-          {value}
+        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+          {trend === 'up' ? (
+            <ArrowUp className="h-3 w-3 text-green-600" />
+          ) : (
+            <ArrowDown className="h-3 w-3 text-red-600" />
+          )}
+          <span className={trend === 'up' ? 'text-green-600' : 'text-red-600'}>
+            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+          </span>
+          <span>vs. período anterior</span>
         </div>
-        {change !== undefined && (
-          <p className={`text-xs mt-2 flex items-center gap-1 ${change > 0 ? 'text-neon-green' : 'text-destructive'}`}>
-            <TrendingUp className={`h-3 w-3 ${change < 0 ? 'rotate-180' : ''}`} />
-            {change > 0 ? "+" : ""}
-            {change.toFixed(1)}% vs. período anterior
-          </p>
-        )}
       </CardContent>
     </Card>
   );

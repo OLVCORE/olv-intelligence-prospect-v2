@@ -8,113 +8,92 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 15% 10%;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 10%;
-
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 10%;
-
+    --popover-foreground: 222.2 84% 4.9%;
     --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 15% 95%;
-    --secondary-foreground: 220 15% 10%;
-
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 45%;
-
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
-
     --radius: 0.75rem;
+    
+    /* Professional accent colors */
+    --accent-cyan: 188 85% 40%;
+    --accent-blue: 217 91% 60%;
+    --accent-green: 142 71% 45%;
+    --accent-purple: 262 83% 58%;
+    --accent-orange: 25 95% 53%;
 
-    /* Futuristic Colors */
-    --neon-cyan: 188 100% 50%;
-    --neon-blue: 217 91% 60%;
-    --neon-green: 142 71% 45%;
-    --neon-yellow: 45 93% 58%;
-    --neon-purple: 271 91% 65%;
-    --glass-bg: 220 27% 18%;
-    --glass-border: 220 27% 35%;
-
-    --sidebar-background: 220 25% 8%;
-    --sidebar-foreground: 220 15% 85%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 12%;
-    --sidebar-accent-foreground: 217 91% 60%;
-    --sidebar-border: 220 20% 15%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 217 91% 60%;
 
     --chart-1: 217 91% 60%;
-    --chart-2: 220 70% 50%;
-    --chart-3: 220 80% 40%;
-    --chart-4: 220 90% 30%;
-    --chart-5: 220 100% 20%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 25 95% 53%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 188 85% 40%;
   }
 
   .dark {
-    --background: 220 27% 8%;
-    --foreground: 220 15% 92%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 217.2 32.6% 17.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217 91% 60%;
+    
+    /* Professional accent colors */
+    --accent-cyan: 188 85% 50%;
+    --accent-blue: 217 91% 60%;
+    --accent-green: 142 71% 45%;
+    --accent-purple: 262 83% 58%;
+    --accent-orange: 25 95% 53%;
 
-    --card: 220 20% 12%;
-    --card-foreground: 220 15% 92%;
-
-    --popover: 220 20% 10%;
-    --popover-foreground: 220 15% 92%;
-
-    --primary: 188 100% 50%;
-    --primary-foreground: 220 27% 8%;
-
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 220 15% 92%;
-
-    --muted: 220 20% 18%;
-    --muted-foreground: 220 15% 60%;
-
-    --accent: 188 100% 50%;
-    --accent-foreground: 220 27% 8%;
-
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 220 15% 92%;
-
-    --border: 220 20% 25%;
-    --input: 220 20% 18%;
-    --ring: 188 100% 50%;
-
-    /* Futuristic Colors - same for dark */
-    --neon-cyan: 188 100% 50%;
-    --neon-blue: 217 91% 60%;
-    --neon-green: 142 71% 45%;
-    --neon-yellow: 45 93% 58%;
-    --neon-purple: 271 91% 65%;
-    --glass-bg: 220 27% 18%;
-    --glass-border: 220 27% 35%;
-
-    --sidebar-background: 220 25% 8%;
-    --sidebar-foreground: 220 15% 85%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 12%;
-    --sidebar-accent-foreground: 217 91% 60%;
-    --sidebar-border: 220 20% 15%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 217 91% 60%;
 
-    --chart-1: 188 100% 50%;
+    --chart-1: 217 91% 60%;
     --chart-2: 142 71% 45%;
-    --chart-3: 45 93% 58%;
-    --chart-4: 271 91% 65%;
-    --chart-5: 217 91% 60%;
+    --chart-3: 25 95% 53%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 188 85% 50%;
   }
 }
 

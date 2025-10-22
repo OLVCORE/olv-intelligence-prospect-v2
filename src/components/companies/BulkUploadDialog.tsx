@@ -108,14 +108,14 @@ export function BulkUploadDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50">
+        <Button className="gap-2">
           <Upload className="h-4 w-4" />
           Upload em Massa
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] bg-card/95 backdrop-blur-xl border-glass-border">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-neon-cyan to-neon-blue bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold">
             Upload em Massa de Leads
           </DialogTitle>
           <DialogDescription>
@@ -128,7 +128,7 @@ export function BulkUploadDialog() {
             <Button
               variant="outline"
               onClick={downloadTemplate}
-              className="gap-2 border-neon-blue/50 hover:bg-neon-blue/10"
+              className="gap-2"
             >
               <Download className="h-4 w-4" />
               Baixar Template CSV
@@ -136,7 +136,7 @@ export function BulkUploadDialog() {
           </div>
 
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-glass-border rounded-lg p-8 text-center hover:border-neon-cyan/50 transition-colors">
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
               <input
                 type="file"
                 accept=".csv"
@@ -148,7 +148,7 @@ export function BulkUploadDialog() {
                 <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 {file ? (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-neon-cyan">{file.name}</p>
+                    <p className="text-sm font-medium text-primary">{file.name}</p>
                     <p className="text-xs text-muted-foreground">
                       Clique para selecionar outro arquivo
                     </p>
@@ -168,7 +168,7 @@ export function BulkUploadDialog() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Processando...</span>
-                  <span className="text-neon-cyan font-medium">{progress}%</span>
+                  <span className="text-primary font-medium">{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
@@ -177,9 +177,9 @@ export function BulkUploadDialog() {
             {result && (
               <div className="space-y-3">
                 {result.success > 0 && (
-                  <Alert className="border-neon-green/50 bg-neon-green/10">
-                    <CheckCircle2 className="h-4 w-4 text-neon-green" />
-                    <AlertDescription className="text-neon-green">
+                  <Alert className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-600">
                       {result.success} empresas importadas com sucesso
                     </AlertDescription>
                   </Alert>
@@ -216,7 +216,7 @@ export function BulkUploadDialog() {
             <Button
               onClick={handleUpload}
               disabled={!file || isUploading}
-              className="gap-2 bg-gradient-to-r from-neon-cyan to-neon-blue hover:opacity-90"
+              className="gap-2"
             >
               {isUploading ? (
                 <>
