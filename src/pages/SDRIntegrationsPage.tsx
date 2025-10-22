@@ -14,6 +14,7 @@ import {
   Mail, MessageSquare, Phone, Send, 
   Check, X, Loader2, RefreshCw, Settings, Zap
 } from 'lucide-react';
+import { ChannelIcon } from '@/components/inbox/ChannelIcon';
 import {
   Dialog,
   DialogContent,
@@ -130,20 +131,6 @@ export default function SDRIntegrationsPage() {
     }
   };
 
-  const getChannelIcon = (channel: string) => {
-    switch (channel) {
-      case 'email': return <Mail className="h-5 w-5" />;
-      case 'whatsapp': return <MessageSquare className="h-5 w-5" />;
-      case 'sms': return <Phone className="h-5 w-5" />;
-      case 'telegram': return <Send className="h-5 w-5" />;
-      case 'linkedin': return <Send className="h-5 w-5" />;
-      case 'instagram': return <MessageSquare className="h-5 w-5" />;
-      case 'x': return <Send className="h-5 w-5" />;
-      case 'facebook': return <MessageSquare className="h-5 w-5" />;
-      default: return <Zap className="h-5 w-5" />;
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -225,7 +212,11 @@ export default function SDRIntegrationsPage() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          {getChannelIcon(integration.channel)}
+                          <ChannelIcon 
+                            channel={integration.channel} 
+                            provider={integration.provider}
+                            size="md"
+                          />
                           <div>
                             <CardTitle className="capitalize">{integration.channel}</CardTitle>
                             <CardDescription className="capitalize">

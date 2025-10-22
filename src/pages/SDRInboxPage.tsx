@@ -14,11 +14,14 @@ import { useRealtimeInbox } from '@/hooks/useRealtimeInbox';
 import { 
   Search, Mail, MessageSquare, Clock, User, 
   Tag, Send, Paperclip, MoreVertical, Star,
-  Archive, UserPlus, AlertCircle, CheckCircle2, Building2, Link2
+  Archive, UserPlus, AlertCircle, CheckCircle2, Building2, Link2,
+  Instagram, Facebook, Linkedin, Twitter, Phone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ChannelIcon } from '@/components/inbox/ChannelIcon';
+import { MessageRenderer } from '@/components/inbox/MessageRenderer';
 
 interface Contact {
   id: string;
@@ -29,7 +32,7 @@ interface Contact {
 
 interface Conversation {
   id: string;
-  channel: 'whatsapp' | 'email';
+  channel: 'whatsapp' | 'email' | 'instagram' | 'facebook' | 'linkedin' | 'twitter' | 'sms';
   status: 'open' | 'pending' | 'closed' | 'archived';
   priority: 'high' | 'medium' | 'low';
   tags: string[];
@@ -39,6 +42,7 @@ interface Conversation {
   contact?: Contact;
   company?: { id: string; name: string };
   _lastMessagePreview?: string;
+  _provider?: string;
 }
 
 interface Message {
@@ -48,6 +52,7 @@ interface Message {
   created_at: string;
   status?: string;
   attachments?: any[];
+  channel: string;
 }
 
 export default function SDRInboxPage() {
@@ -59,6 +64,7 @@ export default function SDRInboxPage() {
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [view, setView] = useState<'all' | 'my' | 'unassigned' | 'urgent'>('all');
+  const [channelFilter, setChannelFilter] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -294,6 +300,12 @@ export default function SDRInboxPage() {
   };
 
   const filteredConversations = conversations.filter(conv => {
+    // Filter by channel
+    if (channelFilter !== 'all' && conv.channel !== channelFilter) {
+      return false;
+    }
+
+    // Filter by search query
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -303,6 +315,18 @@ export default function SDRInboxPage() {
       conv.company?.name?.toLowerCase().includes(query)
     );
   });
+
+  // Count conversations by channel
+  const channelCounts = {
+    all: conversations.length,
+    email: conversations.filter(c => c.channel === 'email').length,
+    whatsapp: conversations.filter(c => c.channel === 'whatsapp').length,
+    instagram: conversations.filter(c => c.channel === 'instagram').length,
+    facebook: conversations.filter(c => c.channel === 'facebook').length,
+    linkedin: conversations.filter(c => c.channel === 'linkedin').length,
+    twitter: conversations.filter(c => c.channel === 'twitter').length,
+    sms: conversations.filter(c => c.channel === 'sms').length,
+  };
 
   return (
     <AppLayout>
@@ -355,6 +379,62 @@ export default function SDRInboxPage() {
                 <TabsTrigger value="urgent">Urgente</TabsTrigger>
               </TabsList>
             </Tabs>
+
+            {/* Channel Filter */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={channelFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setChannelFilter('all')}
+                className="flex-1"
+              >
+                Todos ({channelCounts.all})
+              </Button>
+              {channelCounts.email > 0 && (
+                <Button
+                  variant={channelFilter === 'email' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChannelFilter('email')}
+                  className="gap-1"
+                >
+                  <ChannelIcon channel="email" size="sm" />
+                  <span className="text-xs">({channelCounts.email})</span>
+                </Button>
+              )}
+              {channelCounts.whatsapp > 0 && (
+                <Button
+                  variant={channelFilter === 'whatsapp' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChannelFilter('whatsapp')}
+                  className="gap-1"
+                >
+                  <ChannelIcon channel="whatsapp" size="sm" />
+                  <span className="text-xs">({channelCounts.whatsapp})</span>
+                </Button>
+              )}
+              {channelCounts.instagram > 0 && (
+                <Button
+                  variant={channelFilter === 'instagram' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChannelFilter('instagram')}
+                  className="gap-1"
+                >
+                  <ChannelIcon channel="instagram" size="sm" />
+                  <span className="text-xs">({channelCounts.instagram})</span>
+                </Button>
+              )}
+              {channelCounts.facebook > 0 && (
+                <Button
+                  variant={channelFilter === 'facebook' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChannelFilter('facebook')}
+                  className="gap-1"
+                >
+                  <ChannelIcon channel="facebook" size="sm" />
+                  <span className="text-xs">({channelCounts.facebook})</span>
+                </Button>
+              )}
+            </div>
           </div>
 
           <ScrollArea className="flex-1">
@@ -380,11 +460,11 @@ export default function SDRInboxPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className="mt-1">
-                          {conv.channel === 'whatsapp' ? (
-                            <MessageSquare className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <Mail className="h-5 w-5 text-blue-600" />
-                          )}
+                          <ChannelIcon 
+                            channel={conv.channel} 
+                            provider={conv._provider}
+                            size="md"
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-1">
@@ -438,11 +518,11 @@ export default function SDRInboxPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div>
-                      {selectedConv.channel === 'whatsapp' ? (
-                        <MessageSquare className="h-6 w-6 text-green-600" />
-                      ) : (
-                        <Mail className="h-6 w-6 text-blue-600" />
-                      )}
+                      <ChannelIcon 
+                        channel={selectedConv.channel} 
+                        provider={selectedConv._provider}
+                        size="lg"
+                      />
                     </div>
                     <div>
                       <h3 className="font-semibold">
@@ -507,41 +587,13 @@ export default function SDRInboxPage() {
 
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+                <div className={selectedConv.channel === 'email' ? '' : 'space-y-1'}>
                   {messages.map((msg) => (
-                    <div
+                    <MessageRenderer
                       key={msg.id}
-                      className={cn(
-                        "flex",
-                        msg.direction === 'out' ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "max-w-[70%] rounded-lg p-3",
-                          msg.direction === 'out'
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        <p className="whitespace-pre-wrap break-words">{msg.body}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs opacity-70">
-                            {formatDistanceToNow(new Date(msg.created_at), { 
-                              addSuffix: true, 
-                              locale: ptBR 
-                            })}
-                          </span>
-                          {msg.direction === 'out' && msg.status && (
-                            <span className="text-xs opacity-70">
-                              {msg.status === 'sent' && '✓'}
-                              {msg.status === 'delivered' && '✓✓'}
-                              {msg.status === 'read' && '✓✓'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      message={{ ...msg, channel: selectedConv.channel }}
+                      channel={selectedConv.channel}
+                    />
                   ))}
                 </div>
               </ScrollArea>
