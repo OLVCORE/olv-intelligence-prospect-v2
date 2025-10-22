@@ -3,6 +3,12 @@ project_id = "ioaxzpwlurpduanzkfrt"
 [functions.api-health]
 verify_jwt = false
 
+[functions.canvas-create]
+verify_jwt = true
+
+[functions.canvas-export]
+verify_jwt = true
+
 [functions.google-search]
 verify_jwt = true
 

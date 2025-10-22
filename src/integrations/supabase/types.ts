@@ -67,7 +67,11 @@ export type Database = {
           id: string
           is_template: boolean | null
           last_edited_by: string | null
+          owners: string[] | null
+          purpose: string | null
+          status: string | null
           tags: string[] | null
+          template: string | null
           title: string
           updated_at: string
         }
@@ -79,7 +83,11 @@ export type Database = {
           id?: string
           is_template?: boolean | null
           last_edited_by?: string | null
+          owners?: string[] | null
+          purpose?: string | null
+          status?: string | null
           tags?: string[] | null
+          template?: string | null
           title?: string
           updated_at?: string
         }
@@ -91,7 +99,11 @@ export type Database = {
           id?: string
           is_template?: boolean | null
           last_edited_by?: string | null
+          owners?: string[] | null
+          purpose?: string | null
+          status?: string | null
           tags?: string[] | null
+          template?: string | null
           title?: string
           updated_at?: string
         }
@@ -101,6 +113,95 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_activity: {
+        Row: {
+          action_type: string
+          block_id: string | null
+          canvas_id: string
+          created_at: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          block_id?: string | null
+          canvas_id: string
+          created_at?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          block_id?: string | null
+          canvas_id?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_activity_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_activity_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_blocks: {
+        Row: {
+          canvas_id: string
+          content: Json
+          created_at: string | null
+          created_by: string | null
+          id: string
+          order_index: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          canvas_id: string
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          order_index?: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          canvas_id?: string
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          order_index?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_blocks_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
             referencedColumns: ["id"]
           },
         ]
@@ -145,6 +246,76 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "canvas_comments_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_links: {
+        Row: {
+          canvas_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          canvas_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          canvas_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_links_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_permissions: {
+        Row: {
+          canvas_id: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          canvas_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          canvas_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_permissions_canvas_id_fkey"
             columns: ["canvas_id"]
             isOneToOne: false
             referencedRelation: "canvas"
@@ -1337,12 +1508,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_canvas_version: {
+        Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      promote_canvas_decision: {
+        Args: { p_block_id: string; p_target_type: string }
+        Returns: string
       }
     }
     Enums: {

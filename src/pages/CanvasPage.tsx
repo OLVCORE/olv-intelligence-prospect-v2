@@ -1,26 +1,35 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
 import { useCanvasIntelligence } from '@/hooks/useCanvasIntelligence';
+import { useCanvasBlocks } from '@/hooks/useCanvasBlocks';
 import { CompanyDataPanel } from '@/components/canvas/CompanyDataPanel';
 import { InsightsPanel } from '@/components/canvas/InsightsPanel';
-import { CanvasBlock } from '@/hooks/useCanvasRealtime';
-import { 
-  ArrowLeft, 
-  Save, 
-  Sparkles, 
-  Plus, 
+import { TimelinePanel } from '@/components/canvas/TimelinePanel';
+import { DecisionBlock } from '@/components/canvas/blocks/DecisionBlock';
+import { InsightBlock } from '@/components/canvas/blocks/InsightBlock';
+import { TaskBlock } from '@/components/canvas/blocks/TaskBlock';
+import { NoteBlock } from '@/components/canvas/blocks/NoteBlock';
+import { ReferenceBlock } from '@/components/canvas/blocks/ReferenceBlock';
+import {
+  ArrowLeft,
+  Save,
+  Sparkles,
+  Plus,
   Trash2,
   GripVertical,
   FileText,
-  Heading1,
-  List,
+  Lightbulb,
+  CheckCircle2,
+  CheckSquare,
+  Paperclip,
+  GitBranch,
+  Download,
   Zap
 } from 'lucide-react';
 import {
@@ -30,52 +39,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CanvasPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const companyId = new URLSearchParams(window.location.search).get('company_id') || undefined;
+  const { toast } = useToast();
   
   const {
     canvas,
-    isLoading,
+    isLoading: isLoadingCanvas,
     isSaving,
     isExecutingAI,
-    updateContent,
     executeAICommand,
     companyData,
     digitalMaturity,
     buyingSignals,
     comments,
-    isLoadingData,
     addComment,
     updateCommentStatus,
     deleteComment,
     executeProactiveAI
   } = useCanvasIntelligence(id!, companyId);
+
+  const {
+    blocks,
+    activities,
+    links,
+    isLoading: isLoadingBlocks,
+    addBlock,
+    updateBlock,
+    deleteBlock,
+    promoteDecisionToTask,
+    createVersion
+  } = useCanvasBlocks(id!);
   
   const [aiCommand, setAiCommand] = useState('');
+  const [versionTag, setVersionTag] = useState('');
+  const [versionDescription, setVersionDescription] = useState('');
+  const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
-  const handleAddBlock = (type: CanvasBlock['type']) => {
-    const newBlock: CanvasBlock = {
-      id: crypto.randomUUID(),
-      type,
-      content: '',
-      position: (canvas?.content.blocks.length || 0) + 1,
+  const handleAddBlock = async (type: 'note' | 'insight' | 'decision' | 'task' | 'reference') => {
+    const defaultContent = {
+      note: { html: '', text: '' },
+      insight: { title: '', hypothesis: '', evidence: '', status: 'open' },
+      decision: { title: '', why: '', impact: '', status: 'pending' },
+      task: { title: '', description: '', status: 'todo', priority: 'medium' },
+      reference: { source: 'maturity', snapshot_at: new Date().toISOString(), data: {} }
     };
-    updateContent([...(canvas?.content.blocks || []), newBlock]);
-  };
 
-  const handleUpdateBlock = (blockId: string, content: string) => {
-    const updatedBlocks = canvas?.content.blocks.map(block =>
-      block.id === blockId ? { ...block, content } : block
-    ) || [];
-    updateContent(updatedBlocks);
-  };
-
-  const handleDeleteBlock = (blockId: string) => {
-    const updatedBlocks = canvas?.content.blocks.filter(block => block.id !== blockId) || [];
-    updateContent(updatedBlocks);
+    await addBlock(type, defaultContent[type]);
   };
 
   const handleAICommand = async () => {
@@ -84,59 +102,73 @@ export default function CanvasPage() {
     setAiCommand('');
   };
 
-  const renderBlock = (block: CanvasBlock) => {
-    const commonClasses = "w-full p-3 border rounded-md bg-background";
-    
-    switch (block.type) {
-      case 'heading':
-        return (
-          <Input
-            value={block.content}
-            onChange={(e) => handleUpdateBlock(block.id, e.target.value)}
-            placeholder="Digite um título..."
-            className={`${commonClasses} text-2xl font-bold`}
-          />
-        );
-      case 'list':
-        return (
-          <Textarea
-            value={block.content}
-            onChange={(e) => handleUpdateBlock(block.id, e.target.value)}
-            placeholder="Digite uma lista (uma linha por item)..."
-            className={commonClasses}
-            rows={5}
-          />
-        );
-      case 'ai-response':
-        return (
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="h-5 w-5 text-primary mt-1" />
-                <Badge variant="secondary">Resposta da IA</Badge>
-              </div>
-              <div className="prose prose-sm max-w-none">
-                {block.content.split('\n').map((line, i) => (
-                  <p key={i}>{line}</p>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      default:
-        return (
-          <Textarea
-            value={block.content}
-            onChange={(e) => handleUpdateBlock(block.id, e.target.value)}
-            placeholder="Digite seu texto..."
-            className={commonClasses}
-            rows={4}
-          />
-        );
+  const handleCreateVersion = async () => {
+    setIsCreatingVersion(true);
+    await createVersion(versionTag, versionDescription);
+    setIsCreatingVersion(false);
+    setVersionTag('');
+    setVersionDescription('');
+  };
+
+  const handleExport = async (format: 'json' | 'html') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('canvas-export', {
+        body: { canvasId: id, format }
+      });
+
+      if (error) throw error;
+
+      // Criar download
+      const blob = new Blob([format === 'json' ? JSON.stringify(data, null, 2) : data], {
+        type: format === 'json' ? 'application/json' : 'text/html'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `canvas-${id}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Exportado com sucesso',
+        description: `Canvas exportado em formato ${format.toUpperCase()}.`
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast({
+        title: 'Erro ao exportar',
+        description: 'Não foi possível exportar o canvas.',
+        variant: 'destructive'
+      });
     }
   };
 
-  if (isLoading) {
+  const renderBlock = (block: any) => {
+    switch (block.type) {
+      case 'decision':
+        return (
+          <DecisionBlock
+            block={block}
+            onUpdate={updateBlock}
+            onPromote={promoteDecisionToTask}
+          />
+        );
+      case 'insight':
+        return <InsightBlock block={block} onUpdate={updateBlock} />;
+      case 'task':
+        return <TaskBlock block={block} onUpdate={updateBlock} />;
+      case 'note':
+        return <NoteBlock block={block} onUpdate={updateBlock} />;
+      case 'reference':
+        return <ReferenceBlock block={block} />;
+      default:
+        return null;
+    }
+  };
+
+  if (isLoadingCanvas || isLoadingBlocks) {
     return (
       <AppLayout>
         <div className="container mx-auto p-6 space-y-6">
@@ -155,8 +187,8 @@ export default function CanvasPage() {
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">Canvas não encontrado</p>
               <div className="flex justify-center mt-4">
-                <Button onClick={() => navigate('/dashboard')}>
-                  Voltar ao Dashboard
+                <Button onClick={() => navigate('/canvas')}>
+                  Voltar à Lista
                 </Button>
               </div>
             </CardContent>
@@ -175,7 +207,7 @@ export default function CanvasPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/canvas')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -192,6 +224,62 @@ export default function CanvasPage() {
           </div>
           <div className="flex items-center gap-2">
             {isSaving && <Badge variant="secondary">Salvando...</Badge>}
+            
+            {/* Criar Versão */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  Criar Versão
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Snapshot de Versão</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    value={versionTag}
+                    onChange={(e) => setVersionTag(e.target.value)}
+                    placeholder="Tag (ex: v1.0, Pré-reunião...)"
+                  />
+                  <Textarea
+                    value={versionDescription}
+                    onChange={(e) => setVersionDescription(e.target.value)}
+                    placeholder="Descrição opcional..."
+                    rows={3}
+                  />
+                  <Button onClick={handleCreateVersion} disabled={isCreatingVersion} className="w-full">
+                    <GitBranch className="h-4 w-4 mr-2" />
+                    {isCreatingVersion ? 'Criando...' : 'Criar Versão'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Exportar */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Exportar Canvas</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2">
+                  <Button onClick={() => handleExport('json')} className="w-full">
+                    JSON
+                  </Button>
+                  <Button onClick={() => handleExport('html')} className="w-full" variant="outline">
+                    HTML
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Button
               variant="outline"
               size="sm"
@@ -220,18 +308,12 @@ export default function CanvasPage() {
 
         {/* AI Command Bar */}
         <Card className="border-primary/50 bg-gradient-to-r from-primary/5 to-primary/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Comandos de IA
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="flex gap-2">
               <Input
                 value={aiCommand}
                 onChange={(e) => setAiCommand(e.target.value)}
-                placeholder="Ex: 'Crie uma estratégia de abordagem para esta empresa' ou 'Sugira 3 pain points desta empresa'"
+                placeholder="Ex: 'Crie uma estratégia de abordagem' ou 'Sugira 3 pain points'"
                 className="flex-1"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -258,9 +340,6 @@ export default function CanvasPage() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              A IA analisará todo o contexto do canvas para gerar respostas personalizadas
-            </p>
           </CardContent>
         </Card>
 
@@ -269,82 +348,116 @@ export default function CanvasPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium">Adicionar bloco:</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAddBlock('heading')}
-              >
-                <Heading1 className="h-4 w-4 mr-2" />
-                Título
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAddBlock('text')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleAddBlock('note')}>
                 <FileText className="h-4 w-4 mr-2" />
-                Texto
+                Nota
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAddBlock('list')}
-              >
-                <List className="h-4 w-4 mr-2" />
-                Lista
+              <Button variant="outline" size="sm" onClick={() => handleAddBlock('insight')}>
+                <Lightbulb className="h-4 w-4 mr-2" />
+                Insight
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleAddBlock('decision')}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Decisão
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleAddBlock('task')}>
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Tarefa
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleAddBlock('reference')}>
+                <Paperclip className="h-4 w-4 mr-2" />
+                Referência
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Main Grid: Insights + Canvas */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Insights Panel (1/3) */}
-          <div className="lg:col-span-1">
-            <InsightsPanel
-              comments={comments}
-              onAddComment={addComment}
-              onUpdateStatus={updateCommentStatus}
-              onDelete={deleteComment}
-            />
-          </div>
+        {/* Main Content: Tabs */}
+        <Tabs defaultValue="canvas" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="canvas">📋 Canvas ({blocks.length})</TabsTrigger>
+            <TabsTrigger value="timeline">⏰ Timeline ({activities.length})</TabsTrigger>
+            <TabsTrigger value="links">🔗 Links ({links.length})</TabsTrigger>
+          </TabsList>
 
-          {/* Canvas Blocks (2/3) */}
-          <div className="lg:col-span-2 space-y-4">
-          {canvas.content.blocks.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  Nenhum bloco ainda. Use os botões acima para adicionar conteúdo ou execute um comando de IA.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            canvas.content.blocks.map((block) => (
-              <Card key={block.id} className="group relative">
-                <CardContent className="pt-6">
-                  <div className="flex gap-3">
-                    <div className="flex flex-col items-center gap-2 pt-2">
-                      <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDeleteBlock(block.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex-1">
+          <TabsContent value="canvas" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Insights Panel (1/3) */}
+              <div className="lg:col-span-1">
+                <InsightsPanel
+                  comments={comments}
+                  onAddComment={addComment}
+                  onUpdateStatus={updateCommentStatus}
+                  onDelete={deleteComment}
+                />
+              </div>
+
+              {/* Canvas Blocks (2/3) */}
+              <div className="lg:col-span-2 space-y-4">
+                {blocks.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-center text-muted-foreground">
+                        Nenhum bloco ainda. Use os botões acima para adicionar conteúdo ou execute um comando de IA.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  blocks.map((block) => (
+                    <div key={block.id} className="group relative">
+                      <div className="absolute -left-10 top-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-col gap-2">
+                          <div className="cursor-move">
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => deleteBlock(block.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                       {renderBlock(block)}
                     </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <TimelinePanel activities={activities} />
+          </TabsContent>
+
+          <TabsContent value="links">
+            <Card>
+              <CardContent className="pt-6">
+                {links.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Nenhum link com outros módulos ainda
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {links.map((link) => (
+                      <div key={link.id} className="flex items-center justify-between p-3 border rounded-md">
+                        <div>
+                          <Badge variant="outline">{link.target_type}</Badge>
+                          <p className="text-sm mt-1">ID: {link.target_id}</p>
+                        </div>
+                        <Button size="sm" variant="ghost">
+                          Ver →
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-          </div>
-        </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Collaborators indicator */}
         <Card className="border-dashed bg-gradient-to-r from-primary/5 to-transparent">
