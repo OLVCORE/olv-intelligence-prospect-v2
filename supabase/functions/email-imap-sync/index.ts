@@ -67,10 +67,32 @@ serve(async (req) => {
       {
         from: 'marcos@olvinternacional.com.br',
         to: imapConfig.user,
-        subject: 'Test Email',
-        body: 'This is a test email sent to check integration',
+        subject: 'Email de Teste - OLV Intelligence',
+        body: `<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+          <h2 style="color: #2563eb;">Bem-vindo ao OLV Intelligence! 🚀</h2>
+          <p>Este é um email de teste para demonstrar o sistema de inbox integrado.</p>
+          
+          <h3 style="color: #475569; margin-top: 20px;">Recursos disponíveis:</h3>
+          <ul style="color: #64748b; line-height: 1.8;">
+            <li>📧 <strong>Suporte a múltiplos canais</strong> - Email, WhatsApp, Instagram, LinkedIn e mais</li>
+            <li>🎯 <strong>Gestão unificada</strong> - Todas as conversas em um só lugar</li>
+            <li>🔗 <strong>Vinculação a empresas</strong> - Contexto completo de cada interação</li>
+            <li>⚡ <strong>Respostas em tempo real</strong> - Sistema de notificações instantâneas</li>
+          </ul>
+          
+          <p style="margin-top: 20px; color: #64748b;">
+            Para começar, vincule esta conversa a uma empresa e teste o envio de respostas!
+          </p>
+          
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
+          
+          <p style="color: #94a3b8; font-size: 12px;">
+            Este é um email automático enviado pelo sistema OLV Intelligence.<br>
+            Data: ${new Date().toLocaleString('pt-BR')}
+          </p>
+        </div>`,
         date: new Date().toISOString(),
-        messageId: `mock-${Date.now()}@email.com`,
+        messageId: `test-${Date.now()}@olv-intelligence.com`,
       }
     ];
 
@@ -136,7 +158,7 @@ serve(async (req) => {
         .insert({
           conversation_id: conversation.id,
           channel: 'email',
-          direction: 'inbound',
+          direction: 'in',
           from_id: email.from,
           to_id: email.to,
           body: email.body,
