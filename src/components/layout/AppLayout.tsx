@@ -4,8 +4,9 @@ import { AppSidebar } from "./AppSidebar";
 import { ModeToggle } from "@/components/ModeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
-import { FloatingInsightsButton } from "@/components/insights/FloatingInsightsButton";
 import { InsightsDock } from "@/components/insights/InsightsDock";
+import { Button } from "@/components/ui/button";
+import { Brain } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
           <div className="flex items-center gap-2 md:gap-3 flex-1 max-w-2xl mx-2 md:mx-4">
             <GlobalSearch />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setInsightsOpen(true)}
+              className="relative"
+            >
+              <Brain className="h-4 w-4" />
+              <span className="absolute -top-1 -right-1 h-2 w-2 bg-purple-500 rounded-full animate-pulse" />
+            </Button>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <NotificationBell />
@@ -42,7 +52,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           </main>
         </div>
 
-        <FloatingInsightsButton onClick={() => setInsightsOpen(true)} />
         <InsightsDock open={insightsOpen} onOpenChange={setInsightsOpen} />
       </div>
     </SidebarProvider>
