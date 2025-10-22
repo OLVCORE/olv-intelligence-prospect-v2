@@ -75,7 +75,7 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="right" 
-        className="w-full sm:w-[540px] lg:w-[640px] p-0 flex flex-col"
+        className="w-full sm:w-[600px] md:w-[700px] lg:w-[800px] p-0 flex flex-col border-l-2"
       >
         <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
           <div className="flex items-center justify-between">
@@ -108,10 +108,10 @@ export function InsightsDock({ open, onOpenChange }: InsightsDockProps) {
                 <div className="mt-6 space-y-2 text-left">
                   <p className="text-xs font-semibold text-foreground/70">Exemplos de perguntas:</p>
                   <div className="space-y-1 text-xs">
-                    <p className="p-2 bg-muted/50 rounded">• Quais empresas têm maior potencial de venda?</p>
-                    <p className="p-2 bg-muted/50 rounded">• Quais empresas precisam de consultoria urgente?</p>
-                    <p className="p-2 bg-muted/50 rounded">• Mostre empresas com baixa maturidade digital</p>
-                    <p className="p-2 bg-muted/50 rounded">• Quais decisores devo contatar esta semana?</p>
+                    <p className="p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors">• Quais empresas têm maior potencial de venda?</p>
+                    <p className="p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors">• Quais empresas precisam de consultoria urgente?</p>
+                    <p className="p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors">• Mostre empresas com baixa maturidade digital</p>
+                    <p className="p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors">• Quais decisores devo contatar esta semana?</p>
                   </div>
                 </div>
               </div>
