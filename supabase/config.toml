@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.email-imap-poll]
 verify_jwt = false
+
+[functions.save-company]
+verify_jwt = true

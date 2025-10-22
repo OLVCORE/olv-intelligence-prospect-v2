@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, TrendingUp, Target, Zap, Award, Briefcase, Mail, Phone, MessageSquare, BarChart3, PieChart, TrendingDown, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 import { 
   BarChart, 
   Bar, 
@@ -91,6 +92,43 @@ function useDashboardStats() {
   });
 }
 
+// Hook para realtime updates
+function useRealtimeUpdates() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Subscribe to companies changes
+    const companiesChannel = supabase
+      .channel('companies-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      })
+      .subscribe();
+
+    // Subscribe to conversations changes
+    const conversationsChannel = supabase
+      .channel('conversations-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      })
+      .subscribe();
+
+    // Subscribe to messages changes
+    const messagesChannel = supabase
+      .channel('messages-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(companiesChannel);
+      supabase.removeChannel(conversationsChannel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [queryClient]);
+}
+
 // Componente de KPI Card
 function KPICard({ 
   title, 
@@ -137,6 +175,9 @@ function KPICard({
 export default function Dashboard() {
   const navigate = useNavigate();
   const { data: stats, isLoading } = useDashboardStats();
+  
+  // Enable realtime updates
+  useRealtimeUpdates();
 
   if (isLoading) {
     return (
