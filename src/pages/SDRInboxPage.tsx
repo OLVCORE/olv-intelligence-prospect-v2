@@ -356,23 +356,35 @@ export default function SDRInboxPage() {
     sms: conversations.filter(c => c.channel === 'sms').length,
   };
 
-  // Get available channels from active integrations
-  const availableChannels = [
-    { key: 'all', label: 'Todos', count: channelCounts.all, icon: null, provider: undefined },
-    ...activeIntegrations.map(int => ({
-      key: int.channel,
-      label: int.channel === 'email' ? 'Email' :
-             int.channel === 'whatsapp' ? 'WhatsApp' :
-             int.channel === 'instagram' ? 'Instagram' :
-             int.channel === 'facebook' ? 'Facebook' :
-             int.channel === 'linkedin' ? 'LinkedIn' :
-             int.channel === 'twitter' ? 'Twitter' :
-             int.channel === 'sms' ? 'SMS' : int.channel,
-      count: channelCounts[int.channel as keyof typeof channelCounts] || 0,
-      provider: int.provider,
-      icon: int.channel
-    }))
-  ].filter((ch, idx, arr) => arr.findIndex(c => c.key === ch.key) === idx);
+  // Define all possible channels
+  const allChannels = [
+    { key: 'all', label: 'Todos', icon: null, provider: undefined },
+    { key: 'email', label: 'Email', icon: 'email', provider: undefined },
+    { key: 'whatsapp', label: 'WhatsApp', icon: 'whatsapp', provider: undefined },
+    { key: 'instagram', label: 'Instagram', icon: 'instagram', provider: undefined },
+    { key: 'facebook', label: 'Facebook', icon: 'facebook', provider: undefined },
+    { key: 'linkedin', label: 'LinkedIn', icon: 'linkedin', provider: undefined },
+    { key: 'twitter', label: 'Twitter', icon: 'twitter', provider: undefined },
+    { key: 'sms', label: 'SMS', icon: 'sms', provider: undefined },
+    { key: 'telegram', label: 'Telegram', icon: 'telegram', provider: undefined },
+  ];
+
+  // Get available channels with active integrations data
+  const availableChannels = allChannels.map(ch => {
+    if (ch.key === 'all') {
+      return { ...ch, count: channelCounts.all, isActive: true };
+    }
+    
+    const integration = activeIntegrations.find(int => int.channel === ch.key);
+    const count = channelCounts[ch.key as keyof typeof channelCounts] || 0;
+    
+    return {
+      ...ch,
+      count,
+      provider: integration?.provider,
+      isActive: !!integration,
+    };
+  });
 
   return (
     <AppLayout>
@@ -426,54 +438,62 @@ export default function SDRInboxPage() {
               </TabsList>
             </Tabs>
 
-            {/* Channel Filter Tabs - Modern Style */}
-            {activeIntegrations.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">FILTRAR POR CANAL</p>
-                <Tabs value={channelFilter} onValueChange={setChannelFilter} className="w-full">
-                  <TabsList className="w-full h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
-                    {availableChannels.map((channel) => (
-                      <TabsTrigger
-                        key={channel.key}
-                        value={channel.key}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm"
-                      >
-                        {channel.icon && (
-                          <ChannelIcon 
-                            channel={channel.icon} 
-                            provider={channel.provider}
-                            size="sm" 
-                          />
-                        )}
-                        <span className="text-xs font-semibold">{channel.label}</span>
-                        {channel.count > 0 && (
-                          <Badge 
-                            variant="secondary" 
-                            className="ml-1 h-5 px-2 text-[10px] font-bold data-[state=active]:bg-primary-foreground/20"
-                          >
-                            {channel.count}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </div>
-            ) : (
-              <Card className="p-6 border-dashed">
-                <div className="text-center text-sm text-muted-foreground">
-                  <Settings className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium mb-1">Nenhuma integração configurada</p>
-                  <p className="text-xs mb-3">Configure canais para começar a receber mensagens</p>
-                  <Button size="sm" asChild>
-                    <Link to="/sdr/integrations">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Configurar Integrações
-                    </Link>
-                  </Button>
-                </div>
-              </Card>
-            )}
+            {/* Channel Filter Tabs - All Channels Always Visible */}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">FILTRAR POR CANAL</p>
+              <Tabs value={channelFilter} onValueChange={setChannelFilter} className="w-full">
+                <TabsList className="w-full h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+                  {availableChannels.map((channel) => (
+                    <TabsTrigger
+                      key={channel.key}
+                      value={channel.key}
+                      disabled={!channel.isActive && channel.key !== 'all'}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-lg border bg-card shadow-sm transition-all",
+                        "hover:bg-accent hover:border-primary/50",
+                        "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-md",
+                        "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:border-border"
+                      )}
+                    >
+                      {channel.icon && (
+                        <ChannelIcon 
+                          channel={channel.icon} 
+                          provider={channel.provider}
+                          size="sm" 
+                        />
+                      )}
+                      <span className="text-xs font-semibold">{channel.label}</span>
+                      {channel.count > 0 && (
+                        <Badge 
+                          variant="secondary" 
+                          className="ml-1 h-5 px-2 text-[10px] font-bold"
+                        >
+                          {channel.count}
+                        </Badge>
+                      )}
+                      {!channel.isActive && channel.key !== 'all' && (
+                        <span className="ml-1 text-[10px] opacity-60">(inativo)</span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              
+              {activeIntegrations.length === 0 && (
+                <Card className="p-4 border-dashed bg-muted/30">
+                  <div className="text-center text-xs text-muted-foreground">
+                    <Settings className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                    <p className="font-medium mb-1">Configure integrações para ativar canais</p>
+                    <Button size="sm" variant="outline" asChild className="mt-2">
+                      <Link to="/sdr/integrations">
+                        <Settings className="h-3 w-3 mr-1" />
+                        Integrações
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+              )}
+            </div>
           </div>
 
           <ScrollArea className="flex-1">
