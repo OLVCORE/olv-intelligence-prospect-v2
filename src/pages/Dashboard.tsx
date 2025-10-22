@@ -197,19 +197,27 @@ export default function Dashboard() {
 
   if (!stats) return null;
 
+  // Garantir que todos os dados sejam arrays
+  const companies = Array.isArray(stats.companies) ? stats.companies : [];
+  const decisors = Array.isArray(stats.decisors) ? stats.decisors : [];
+  const conversations = Array.isArray(stats.conversations) ? stats.conversations : [];
+  const signals = Array.isArray(stats.signals) ? stats.signals : [];
+  const maturity = Array.isArray(stats.maturity) ? stats.maturity : [];
+  const messages = Array.isArray(stats.messages) ? stats.messages : [];
+
   // Calcular métricas
-  const totalCompanies = stats.companies.length;
-  const totalDecisors = stats.decisors.length;
-  const totalConversations = stats.conversations.length;
-  const totalSignals = stats.signals.length;
+  const totalCompanies = companies.length;
+  const totalDecisors = decisors.length;
+  const totalConversations = conversations.length;
+  const totalSignals = signals.length;
   
   // Pipeline por estágio
   const pipelineByStage = {
-    new: stats.conversations.filter(c => c.status === 'open').length,
-    contacted: stats.conversations.filter(c => c.status === 'open' && c.priority === 'high').length,
-    qualified: stats.conversations.filter(c => c.status === 'pending').length,
-    proposal: stats.conversations.filter(c => c.status === 'pending' && c.priority === 'high').length,
-    won: stats.conversations.filter(c => c.status === 'closed').length,
+    new: conversations.filter(c => c.status === 'open').length,
+    contacted: conversations.filter(c => c.status === 'open' && c.priority === 'high').length,
+    qualified: conversations.filter(c => c.status === 'pending').length,
+    proposal: conversations.filter(c => c.status === 'pending' && c.priority === 'high').length,
+    won: conversations.filter(c => c.status === 'closed').length,
   };
 
   // Ticket médio estimado por prioridade
@@ -220,7 +228,7 @@ export default function Dashboard() {
   };
 
   // Calcular valor total do pipeline
-  const pipelineValue = stats.conversations.reduce((total, conv) => {
+  const pipelineValue = conversations.reduce((total, conv) => {
     const ticket = ticketMedio[conv.priority as keyof typeof ticketMedio] || ticketMedio.medium;
     return total + ticket;
   }, 0);
@@ -241,21 +249,21 @@ export default function Dashboard() {
 
   // Distribuição de maturidade
   const maturityDistribution = [
-    { level: 'Básico (0-4)', count: stats.maturity.filter(m => (m.overall_score || 0) <= 4).length },
-    { level: 'Intermediário (5-6)', count: stats.maturity.filter(m => (m.overall_score || 0) > 4 && (m.overall_score || 0) <= 6).length },
-    { level: 'Avançado (7-8)', count: stats.maturity.filter(m => (m.overall_score || 0) > 6 && (m.overall_score || 0) <= 8).length },
-    { level: 'Líder Digital (9-10)', count: stats.maturity.filter(m => (m.overall_score || 0) > 8).length },
+    { level: 'Básico (0-4)', count: maturity.filter(m => (m.overall_score || 0) <= 4).length },
+    { level: 'Intermediário (5-6)', count: maturity.filter(m => (m.overall_score || 0) > 4 && (m.overall_score || 0) <= 6).length },
+    { level: 'Avançado (7-8)', count: maturity.filter(m => (m.overall_score || 0) > 6 && (m.overall_score || 0) <= 8).length },
+    { level: 'Líder Digital (9-10)', count: maturity.filter(m => (m.overall_score || 0) > 8).length },
   ];
 
   // Atividades SDR por canal
   const messagesByChannel = {
-    email: stats.messages.filter(m => m.channel === 'email').length,
-    whatsapp: stats.messages.filter(m => m.channel === 'whatsapp').length,
-    phone: stats.messages.filter(m => m.channel === 'phone').length,
+    email: messages.filter(m => m.channel === 'email').length,
+    whatsapp: messages.filter(m => m.channel === 'whatsapp').length,
+    phone: messages.filter(m => m.channel === 'phone').length,
   };
 
   // Sinais de compra mais comuns
-  const signalTypes = stats.signals.reduce((acc, signal) => {
+  const signalTypes = signals.reduce((acc, signal) => {
     acc[signal.signal_type] = (acc[signal.signal_type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -266,7 +274,7 @@ export default function Dashboard() {
     .map(([type, count]) => ({ type, count }));
 
   // Empresas por setor
-  const companiesByIndustry = stats.companies.reduce((acc, company) => {
+  const companiesByIndustry = companies.reduce((acc, company) => {
     const industry = company.industry || 'Não especificado';
     acc[industry] = (acc[industry] || 0) + 1;
     return acc;
@@ -412,9 +420,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.companies.slice(0, 5).map((company) => {
-                  const companyDecisors = stats.decisors.filter(d => d.company_id === company.id);
-                  const companyConv = stats.conversations.find(c => c.company_id === company.id);
+                {companies.slice(0, 5).map((company) => {
+                  const companyDecisors = decisors.filter(d => d.company_id === company.id);
+                  const companyConv = conversations.find(c => c.company_id === company.id);
                   
                   return (
                     <div 
@@ -461,11 +469,11 @@ export default function Dashboard() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={[
-                    { dimension: 'Tech Stack', coverage: (stats.companies.filter(c => c.technologies && c.technologies.length > 0).length / Math.max(stats.companies.length, 1)) * 100, benchmark: 70 },
-                    { dimension: 'Maturidade', coverage: (stats.maturity.length / Math.max(stats.companies.length, 1)) * 100, benchmark: 75 },
-                    { dimension: 'Decisores', coverage: (stats.decisors.length / Math.max(stats.companies.length, 1)) * 100 / 3, benchmark: 60 },
-                    { dimension: 'Financeiro', coverage: (stats.companies.filter(c => c.revenue).length / Math.max(stats.companies.length, 1)) * 100, benchmark: 55 },
-                    { dimension: 'Sinais', coverage: (stats.signals.length / Math.max(stats.companies.length, 1)) * 100 / 2, benchmark: 65 },
+                    { dimension: 'Tech Stack', coverage: (companies.filter(c => c.technologies && c.technologies.length > 0).length / Math.max(companies.length, 1)) * 100, benchmark: 70 },
+                    { dimension: 'Maturidade', coverage: (maturity.length / Math.max(companies.length, 1)) * 100, benchmark: 75 },
+                    { dimension: 'Decisores', coverage: (decisors.length / Math.max(companies.length, 1)) * 100 / 3, benchmark: 60 },
+                    { dimension: 'Financeiro', coverage: (companies.filter(c => c.revenue).length / Math.max(companies.length, 1)) * 100, benchmark: 55 },
+                    { dimension: 'Sinais', coverage: (signals.length / Math.max(companies.length, 1)) * 100 / 2, benchmark: 65 },
                   ]}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="dimension" />
@@ -572,23 +580,23 @@ export default function Dashboard() {
                   <BarChart data={[
                     { 
                       dimension: 'Infraestrutura', 
-                      score: stats.maturity.reduce((sum, m) => sum + (m.infrastructure_score || 0), 0) / Math.max(stats.maturity.length, 1)
+                      score: maturity.reduce((sum, m) => sum + (m.infrastructure_score || 0), 0) / Math.max(maturity.length, 1)
                     },
                     { 
                       dimension: 'Sistemas', 
-                      score: stats.maturity.reduce((sum, m) => sum + (m.systems_score || 0), 0) / Math.max(stats.maturity.length, 1)
+                      score: maturity.reduce((sum, m) => sum + (m.systems_score || 0), 0) / Math.max(maturity.length, 1)
                     },
                     { 
                       dimension: 'Processos', 
-                      score: stats.maturity.reduce((sum, m) => sum + (m.processes_score || 0), 0) / Math.max(stats.maturity.length, 1)
+                      score: maturity.reduce((sum, m) => sum + (m.processes_score || 0), 0) / Math.max(maturity.length, 1)
                     },
                     { 
                       dimension: 'Segurança', 
-                      score: stats.maturity.reduce((sum, m) => sum + (m.security_score || 0), 0) / Math.max(stats.maturity.length, 1)
+                      score: maturity.reduce((sum, m) => sum + (m.security_score || 0), 0) / Math.max(maturity.length, 1)
                     },
                     { 
                       dimension: 'Inovação', 
-                      score: stats.maturity.reduce((sum, m) => sum + (m.innovation_score || 0), 0) / Math.max(stats.maturity.length, 1)
+                      score: maturity.reduce((sum, m) => sum + (m.innovation_score || 0), 0) / Math.max(maturity.length, 1)
                     },
                   ]}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -655,7 +663,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={
                   // Agrupar mensagens por dia
-                  stats.messages.reduce((acc, msg) => {
+                  messages.reduce((acc, msg) => {
                     const date = new Date(msg.created_at).toLocaleDateString('pt-BR');
                     const existing = acc.find(d => d.date === date);
                     if (existing) {

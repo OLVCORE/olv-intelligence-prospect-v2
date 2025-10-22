@@ -46,11 +46,14 @@ export function useRealtimeInbox() {
         console.log('WebSocket connected');
         setConnected(true);
         
-        // Authenticate
-        ws.current?.send(JSON.stringify({
-          type: 'auth',
-          token: session.access_token,
-        }));
+        // Wait for WebSocket to be fully open before sending
+        if (ws.current?.readyState === WebSocket.OPEN) {
+          // Authenticate
+          ws.current.send(JSON.stringify({
+            type: 'auth',
+            token: session.access_token,
+          }));
+        }
       };
 
       ws.current.onmessage = (event) => {
