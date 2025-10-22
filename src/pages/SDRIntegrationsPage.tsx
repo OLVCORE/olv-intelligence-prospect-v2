@@ -430,6 +430,18 @@ function IntegrationForm({
         ? { ...integration.credentials, ...newCredentials }
         : newCredentials;
 
+      // Regras específicas para WhatsApp/Twilio
+      if (channel === 'whatsapp' && provider === 'twilio') {
+        const hasAuth = !!mergedCredentials.authToken;
+        const hasApiKeys = !!mergedCredentials.apiKeySid && !!mergedCredentials.apiKeySecret;
+        if (!hasAuth && !hasApiKeys) {
+          throw new Error('Twilio: informe Auth Token ou API Key SID e Secret.');
+        }
+        if (mergedCredentials.phoneNumber) {
+          const pn = String(mergedCredentials.phoneNumber).replace(/\s+/g, '');
+          mergedCredentials.phoneNumber = pn.startsWith('+') ? pn : `+${pn}`;
+        }
+      }
 
       const data = {
         channel,
@@ -639,13 +651,41 @@ function IntegrationForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="twilio-token">Auth Token</Label>
+            <Label htmlFor="twilio-token">Auth Token (opcional se usar API Key)</Label>
             <Input 
               id="twilio-token" 
               name="cred.authToken" 
               type="password" 
-              required={!integration}
               placeholder={integration ? "Deixe vazio para manter o atual" : ""}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="twilio-api-sid">API Key SID (opcional)</Label>
+              <Input 
+                id="twilio-api-sid" 
+                name="cred.apiKeySid" 
+                placeholder="SKxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                defaultValue={String(integration?.credentials?.apiKeySid ?? '')} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilio-api-secret">API Key Secret (opcional)</Label>
+              <Input 
+                id="twilio-api-secret" 
+                name="cred.apiKeySecret" 
+                type="password" 
+                placeholder={integration ? "Deixe vazio para manter o atual" : ""}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="twilio-region">Region (opcional, ex.: au1, ie1)</Label>
+            <Input 
+              id="twilio-region" 
+              name="cred.region" 
+              placeholder="deixe em branco se não souber"
+              defaultValue={String(integration?.credentials?.region ?? '')} 
             />
           </div>
           <div className="space-y-2">
