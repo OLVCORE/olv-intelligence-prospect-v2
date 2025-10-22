@@ -158,7 +158,18 @@ export default function SDRInboxPage() {
         })
       );
 
-      setConversations(conversationsWithPreviews as Conversation[]);
+      // Fetch active integrations to decorate provider per channel
+      const { data: activeInts } = await supabase
+        .from('integration_configs')
+        .select('channel, provider, status')
+        .eq('status', 'active');
+
+      const withProvider = (conversationsWithPreviews as any[]).map((conv) => ({
+        ...conv,
+        _provider: activeInts?.find((i: any) => i.channel === conv.channel)?.provider,
+      }));
+
+      setConversations(withProvider as Conversation[]);
     } catch (error: any) {
       console.error('Error loading conversations:', error);
       toast({
