@@ -308,8 +308,35 @@ export default function SDRInboxPage() {
     <AppLayout>
       <div className="h-[calc(100vh-4rem)] flex">
         {/* Left Panel - Lists */}
-        <div className="w-80 border-r flex flex-col bg-card">
+         <div className="w-80 border-r flex flex-col bg-card">
           <div className="p-4 border-b space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Conversas</h2>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('email-imap-sync');
+                    if (error) throw error;
+                    toast({
+                      title: 'Emails sincronizados',
+                      description: `${data.emailsProcessed || 0} emails processados`,
+                    });
+                    loadConversations();
+                  } catch (error: any) {
+                    toast({
+                      title: 'Erro na sincronização',
+                      description: error.message,
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+            </div>
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

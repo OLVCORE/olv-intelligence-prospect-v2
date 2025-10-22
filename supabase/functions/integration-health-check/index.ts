@@ -174,10 +174,13 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Twilio API Response:', response.status, errorText);
+        
         if (response.status === 401) {
-          throw new Error('Twilio API error: Unauthorized (check Account SID and Auth Token)');
+          throw new Error('Twilio API error: Credenciais inválidas. Verifique o Account SID e Auth Token.');
         }
-        throw new Error(`Twilio API error: ${response.statusText}`);
+        throw new Error(`Twilio API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();

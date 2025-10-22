@@ -109,6 +109,26 @@ export default function SDRIntegrationsPage() {
     }
   };
 
+  const syncEmails = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('email-imap-sync');
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Sincronização concluída',
+        description: `${data.emailsProcessed || 0} emails processados`,
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: 'Erro na sincronização',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'email': return <Mail className="h-5 w-5" />;
@@ -169,23 +189,32 @@ export default function SDRIntegrationsPage() {
                   <Settings className="h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Nenhuma integração configurada</h3>
                   <p className="text-muted-foreground mb-4">Adicione canais para começar</p>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Zap className="h-4 w-4 mr-2" />
-                        Adicionar Integração
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Nova Integração</DialogTitle>
-                        <DialogDescription>
-                          Configure um novo canal de comunicação
-                        </DialogDescription>
-                      </DialogHeader>
-                      <IntegrationForm onSuccess={loadIntegrations} />
-                    </DialogContent>
-                  </Dialog>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={syncEmails}
+                      variant="outline"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Sincronizar Emails
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Adicionar Integração
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Nova Integração</DialogTitle>
+                          <DialogDescription>
+                            Configure um novo canal de comunicação
+                          </DialogDescription>
+                        </DialogHeader>
+                        <IntegrationForm onSuccess={loadIntegrations} />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
