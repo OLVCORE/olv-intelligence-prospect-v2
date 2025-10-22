@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.realtime-inbox]
 verify_jwt = false
+
+[functions.email-imap-poll]
+verify_jwt = false

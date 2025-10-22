@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -370,25 +371,42 @@ async function sendEmail(to: string, subject: string, body: string, userId: stri
 
     console.log(`[Email] Sending via SMTP: ${smtpConfig.host}:${smtpConfig.port}`);
 
-    // Create SMTP connection using nodemailer-like approach
-    const messageId = `${Date.now()}@olv-intelligence.com`;
-    
-    // For now, simulate sending (in production, use a proper SMTP library)
-    // This is a placeholder - in a real implementation, you'd use an SMTP library
-    // like https://deno.land/x/smtp or similar
-    
-    console.log('[Email] SMTP Config:', {
-      host: smtpConfig.host,
-      port: smtpConfig.port,
-      user: smtpConfig.user,
-      from: smtpConfig.from,
-      to,
-      subject,
-    });
+    // Send via SMTP
+    const client = new SmtpClient();
+    const useTls = smtpConfig.port === 465;
 
-    // TODO: Implement actual SMTP sending using a Deno SMTP library
-    // For now, returning success to test the flow
-    
+    try {
+      if (useTls) {
+        await client.connectTLS({
+          hostname: smtpConfig.host,
+          port: smtpConfig.port,
+          username: smtpConfig.user,
+          password: smtpConfig.password,
+        });
+      } else {
+        await client.connect({
+          hostname: smtpConfig.host,
+          port: smtpConfig.port,
+          username: smtpConfig.user,
+          password: smtpConfig.password,
+        });
+      }
+
+      await client.send({
+        from: smtpConfig.from,
+        to,
+        subject,
+        content: body,
+      });
+
+      await client.close();
+    } catch (e) {
+      try { await client.close(); } catch {}
+      throw e;
+    }
+
+    const messageId = `${Date.now()}@olv-intelligence.com`;
+
     return { 
       success: true, 
       providerMessageId: messageId,
