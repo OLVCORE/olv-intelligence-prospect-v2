@@ -16,7 +16,7 @@ import {
   Search, Mail, MessageSquare, Clock, User, 
   Tag, Send, Paperclip, MoreVertical, Star,
   Archive, UserPlus, AlertCircle, CheckCircle2, Building2, Link2,
-  Instagram, Facebook, Linkedin, Twitter, Phone, Settings
+  Instagram, Facebook, Linkedin, Twitter, Phone, Settings, RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -392,11 +392,12 @@ export default function SDRInboxPage() {
         {/* Left Panel - Lists */}
          <div className="w-80 border-r flex flex-col bg-card">
           <div className="p-4 border-b space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold">Conversas</h2>
               <Button 
-                variant="outline" 
+                variant="default" 
                 size="sm"
+                className="gap-2"
                 onClick={async () => {
                   try {
                     const { data, error } = await supabase.functions.invoke('email-imap-sync');
@@ -415,7 +416,8 @@ export default function SDRInboxPage() {
                   }
                 }}
               >
-                <Mail className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4" />
+                Sincronizar
               </Button>
             </div>
             
@@ -492,6 +494,35 @@ export default function SDRInboxPage() {
                     </Button>
                   </div>
                 </Card>
+              )}
+              
+              {/* Email Sync Button - Only show when email filter is active */}
+              {channelFilter === 'email' && activeIntegrations.some(int => int.channel === 'email') && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary"
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('email-imap-sync');
+                      if (error) throw error;
+                      toast({
+                        title: '✅ Emails sincronizados',
+                        description: `${data.emailsProcessed || 0} emails processados com sucesso`,
+                      });
+                      loadConversations();
+                    } catch (error: any) {
+                      toast({
+                        title: 'Erro na sincronização',
+                        description: error.message,
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <Mail className="h-4 w-4" />
+                  Buscar Novos Emails
+                </Button>
               )}
             </div>
           </div>
