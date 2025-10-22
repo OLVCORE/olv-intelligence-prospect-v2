@@ -49,12 +49,14 @@ ${companyData?.technologies?.join(', ') || 'Não detectado'}
 
 Sua função é analisar os dados da empresa e gerar insights ACIONÁVEIS e ESPECÍFICOS.
 
+IMPORTANTE: Responda SEMPRE em português brasileiro.
+
 Retorne EXATAMENTE 3-5 sugestões no seguinte formato JSON:
 {
   "suggestions": [
     {
       "type": "insight" | "risk" | "hypothesis" | "task",
-      "content": "Texto da sugestão (máximo 200 caracteres)"
+      "content": "Texto da sugestão em português (máximo 200 caracteres)"
     }
   ]
 }
@@ -65,7 +67,7 @@ REGRAS:
 - Hipóteses: suposições que precisam validação
 - Tasks: ações específicas recomendadas
 
-Seja direto, objetivo e focado em VENDAS B2B.`;
+Seja direto, objetivo e focado em VENDAS B2B. SEMPRE em português.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -103,7 +105,7 @@ Seja direto, objetivo e focado em VENDAS B2B.`;
       // Fallback: criar sugestão genérica
       suggestions = [{
         type: 'insight',
-        content: 'Análise em andamento. Dados insuficientes para sugestões específicas.'
+        content: 'Análise em andamento. Aguarde mais dados para sugestões específicas.'
       }];
     }
 
@@ -121,7 +123,7 @@ Seja direto, objetivo e focado em VENDAS B2B.`;
     console.error('Canvas AI Proactive error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

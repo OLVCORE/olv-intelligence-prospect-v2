@@ -275,7 +275,7 @@ Provide insights in this JSON format:
 
   } catch (error) {
     console.error('Fatal error in auto-enrich-company:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { 

@@ -151,7 +151,7 @@ serve(async (req) => {
 
       } catch (error) {
         console.error(`Error processing row ${i + 2}:`, error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
         results.errors.push(`Linha ${i + 2}: ${errorMessage}`);
       }
     }
@@ -165,7 +165,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Fatal error in bulk-upload-companies:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { 

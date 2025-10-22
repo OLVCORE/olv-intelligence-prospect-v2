@@ -369,13 +369,15 @@ Analise a empresa e gere 2-3 insights acionáveis focados em:
 2. Pontos de dor e necessidades
 3. Momento ideal de abordagem
 
+IMPORTANTE: Responda SEMPRE em português brasileiro.
+
 Retorne APENAS um JSON válido no formato:
 {
   "insights": [
     {
       "type": "opportunity" ou "tech_debt" ou "risk",
-      "title": "Título curto",
-      "description": "Descrição de 1-2 linhas",
+      "title": "Título curto em português",
+      "description": "Descrição de 1-2 linhas em português",
       "priority": "high" ou "medium" ou "low",
       "confidence": 0.0 a 1.0
     }
@@ -451,6 +453,8 @@ Crie um pitch executivo focado em:
 - Benefícios mensuráveis
 - Call to action
 
+IMPORTANTE: Escreva SEMPRE em português brasileiro, de forma profissional e executiva.
+
 Seja conciso, direto e focado em ROI. Máximo 200 palavras.`
             },
             {
@@ -516,7 +520,7 @@ Seja conciso, direto e focado em ROI. Máximo 200 palavras.`
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
       }),
       {
         status: 500,

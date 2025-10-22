@@ -75,7 +75,7 @@ Responda de forma direta, estruturada e acionável. Use markdown para formataç�
     console.error('Canvas AI Command error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
