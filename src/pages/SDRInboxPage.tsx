@@ -415,43 +415,48 @@ export default function SDRInboxPage() {
               </TabsList>
             </Tabs>
 
-            {/* Channel Filter Tabs */}
+            {/* Channel Filter Tabs - Modern Style */}
             {activeIntegrations.length > 0 ? (
-              <Tabs value={channelFilter} onValueChange={setChannelFilter} className="w-full">
-                <TabsList className="w-full h-auto flex-wrap justify-start gap-1">
-                  {availableChannels.map((channel) => (
-                    <TabsTrigger
-                      key={channel.key}
-                      value={channel.key}
-                      className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      {channel.icon && (
-                        <ChannelIcon 
-                          channel={channel.icon} 
-                          provider={channel.provider}
-                          size="sm" 
-                        />
-                      )}
-                      <span className="font-medium">{channel.label}</span>
-                      {channel.count > 0 && (
-                        <Badge 
-                          variant="secondary" 
-                          className="ml-1 h-5 px-1.5 text-xs data-[state=active]:bg-primary-foreground data-[state=active]:text-primary"
-                        >
-                          {channel.count}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">FILTRAR POR CANAL</p>
+                <Tabs value={channelFilter} onValueChange={setChannelFilter} className="w-full">
+                  <TabsList className="w-full h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+                    {availableChannels.map((channel) => (
+                      <TabsTrigger
+                        key={channel.key}
+                        value={channel.key}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary shadow-sm"
+                      >
+                        {channel.icon && (
+                          <ChannelIcon 
+                            channel={channel.icon} 
+                            provider={channel.provider}
+                            size="sm" 
+                          />
+                        )}
+                        <span className="text-xs font-semibold">{channel.label}</span>
+                        {channel.count > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-1 h-5 px-2 text-[10px] font-bold data-[state=active]:bg-primary-foreground/20"
+                          >
+                            {channel.count}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
             ) : (
-              <Card className="p-4">
+              <Card className="p-6 border-dashed">
                 <div className="text-center text-sm text-muted-foreground">
-                  <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="mb-2">Nenhuma integração ativa</p>
-                  <Button size="sm" asChild variant="outline">
+                  <Settings className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium mb-1">Nenhuma integração configurada</p>
+                  <p className="text-xs mb-3">Configure canais para começar a receber mensagens</p>
+                  <Button size="sm" asChild>
                     <Link to="/sdr/integrations">
+                      <Settings className="h-4 w-4 mr-2" />
                       Configurar Integrações
                     </Link>
                   </Button>

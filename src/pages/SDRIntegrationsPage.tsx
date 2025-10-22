@@ -14,7 +14,7 @@ import {
   Mail, MessageSquare, Phone, Send, 
   Check, X, Loader2, RefreshCw, Settings, Zap
 } from 'lucide-react';
-import { ChannelIcon } from '@/components/inbox/ChannelIcon';
+import { PlatformLogo } from '@/components/inbox/PlatformLogo';
 import {
   Dialog,
   DialogContent,
@@ -212,11 +212,13 @@ export default function SDRIntegrationsPage() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <ChannelIcon 
-                            channel={integration.channel} 
-                            provider={integration.provider}
-                            size="md"
-                          />
+                          <div className="p-2 rounded-lg bg-card border">
+                            <PlatformLogo 
+                              platform={integration.channel} 
+                              provider={integration.provider}
+                              size="lg"
+                            />
+                          </div>
                           <div>
                             <CardTitle className="capitalize">{integration.channel}</CardTitle>
                             <CardDescription className="capitalize">
@@ -286,21 +288,21 @@ export default function SDRIntegrationsPage() {
         {/* Quick Add Buttons */}
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { channel: 'email', label: 'Email (IMAP/SMTP)', icon: Mail },
-            { channel: 'whatsapp', label: 'WhatsApp (Meta)', icon: MessageSquare },
-            { channel: 'sms', label: 'SMS', icon: Phone },
-            { channel: 'telegram', label: 'Telegram', icon: Send },
-            { channel: 'linkedin', label: 'LinkedIn', icon: Send },
-            { channel: 'instagram', label: 'Instagram', icon: MessageSquare },
-            { channel: 'x', label: 'X (Twitter)', icon: Send },
-            { channel: 'facebook', label: 'Facebook', icon: MessageSquare },
+            { channel: 'email', label: 'Email (IMAP/SMTP)' },
+            { channel: 'whatsapp', label: 'WhatsApp' },
+            { channel: 'sms', label: 'SMS' },
+            { channel: 'telegram', label: 'Telegram' },
+            { channel: 'linkedin', label: 'LinkedIn' },
+            { channel: 'instagram', label: 'Instagram' },
+            { channel: 'twitter', label: 'Twitter/X' },
+            { channel: 'facebook', label: 'Facebook' },
           ].map((item) => (
             <Dialog key={item.channel}>
               <DialogTrigger asChild>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="flex flex-col items-center justify-center py-6">
-                    <item.icon className="h-8 w-8 mb-2 text-primary" />
-                    <p className="text-sm font-medium">{item.label}</p>
+                <Card className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer">
+                  <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
+                    <PlatformLogo platform={item.channel} size="lg" />
+                    <p className="text-sm font-medium text-center">{item.label}</p>
                   </CardContent>
                 </Card>
               </DialogTrigger>
