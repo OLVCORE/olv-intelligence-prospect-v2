@@ -73,7 +73,8 @@ export function useEnrichmentStatus(companyId?: string) {
       return status;
     },
     enabled: !!companyId,
-    refetchInterval: 5000, // Atualiza a cada 5 segundos
+    refetchInterval: false, // Desabilitado - use manual refetch quando necessário
+    staleTime: 60000, // Considera dados válidos por 1 minuto
   });
 }
 
@@ -133,6 +134,7 @@ export function useAllEnrichmentStatus() {
 
       return statusList;
     },
-    refetchInterval: 10000, // Atualiza a cada 10 segundos
+    refetchInterval: false, // Desabilitado - use manual refetch quando necessário
+    staleTime: 30000, // Considera dados válidos por 30 segundos
   });
 }

@@ -399,7 +399,7 @@ export function useDashboardExecutive() {
         topPerformingChannels
       };
     },
-    refetchInterval: 60000, // 1 minuto
-    staleTime: 30000
+    refetchInterval: false, // Desabilitado - use manual refetch quando necessário
+    staleTime: 300000 // Dados válidos por 5 minutos
   });
 }

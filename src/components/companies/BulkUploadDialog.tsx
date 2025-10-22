@@ -17,13 +17,13 @@ export function BulkUploadDialog() {
   const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
 
   const downloadTemplate = () => {
-    const csvContent = `CNPJ,Razao Social,Nome Fantasia,Prioridade (1-5),Instagram,LinkedIn,Facebook,YouTube,X/Twitter,Website,Observacoes
-00000000000191,,Nome Fantasia Exemplo,3,exemploempresa,exemploempresa,exemploempresa,exemploempresa,exemploempresa,https://www.exemplo.com.br,Observações opcionais sobre a empresa`;
+    const csvContent = `CNPJ,Nome da Empresa,Website,Instagram,LinkedIn,Produto/Categoria,Marca,Link Produto/Marketplace,CEP,Estado,Pais,Municipio,Bairro,Logradouro,Numero
+00.000.000/0000-00,Empresa Exemplo LTDA,https://exemplo.com.br,@exemploempresa,linkedin.com/company/exemplo,ERP,Marca Exemplo,mercadolivre.com.br/produto,01310-100,SP,Brasil,São Paulo,Centro,Avenida Paulista,1578`;
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'template-empresas.csv';
+    link.download = 'template-importacao-empresas.csv';
     link.click();
     toast.success("Template baixado com sucesso!");
   };
@@ -54,7 +54,7 @@ export function BulkUploadDialog() {
       });
       
       return row;
-    }).filter(row => row.CNPJ || row['Razao Social'] || row['Nome Fantasia']);
+    }).filter(row => row.CNPJ || row['Nome da Empresa'] || row.Website || row.Instagram || row.LinkedIn);
   };
 
   const handleUpload = async () => {

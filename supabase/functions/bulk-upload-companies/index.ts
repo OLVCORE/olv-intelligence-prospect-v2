@@ -8,16 +8,20 @@ const corsHeaders = {
 
 interface CompanyCSVRow {
   CNPJ?: string;
-  'Razao Social'?: string;
-  'Nome Fantasia'?: string;
-  'Prioridade (1-5)'?: string;
+  'Nome da Empresa'?: string;
+  Website?: string;
   Instagram?: string;
   LinkedIn?: string;
-  Facebook?: string;
-  YouTube?: string;
-  'X/Twitter'?: string;
-  Website?: string;
-  Observacoes?: string;
+  'Produto/Categoria'?: string;
+  Marca?: string;
+  'Link Produto/Marketplace'?: string;
+  CEP?: string;
+  Estado?: string;
+  Pais?: string;
+  Municipio?: string;
+  Bairro?: string;
+  Logradouro?: string;
+  Numero?: string;
 }
 
 serve(async (req) => {
@@ -48,8 +52,8 @@ serve(async (req) => {
       const row = companies[i];
       
       try {
-        // Validação básica
-        if (!row.CNPJ && !row['Razao Social'] && !row['Nome Fantasia']) {
+        // Validação básica - pelo menos um campo deve estar preenchido
+        if (!row.CNPJ && !row['Nome da Empresa'] && !row.Website && !row.Instagram && !row.LinkedIn) {
           results.errors.push(`Linha ${i + 2}: Nenhum identificador fornecido`);
           continue;
         }
@@ -65,21 +69,17 @@ serve(async (req) => {
 
         // Prepara dados da empresa
         const companyData: any = {
-          name: row['Razao Social'] || row['Nome Fantasia'] || 'Empresa Importada',
+          name: row['Nome da Empresa'] || 'Empresa Importada',
           cnpj: cnpj,
           raw_data: {
             imported_at: new Date().toISOString(),
             csv_row: i + 2,
-            razao_social: row['Razao Social'],
-            nome_fantasia: row['Nome Fantasia'],
-            prioridade: row['Prioridade (1-5)'] || '3',
-            observacoes: row.Observacoes,
+            produto_categoria: row['Produto/Categoria'],
+            marca: row['Marca'],
+            link_produto: row['Link Produto/Marketplace'],
             social_media: {
-              instagram: row.Instagram ? `https://instagram.com/${row.Instagram.replace('@', '')}` : null,
+              instagram: row.Instagram ? (row.Instagram.startsWith('http') ? row.Instagram : `https://instagram.com/${row.Instagram.replace('@', '')}`) : null,
               linkedin: row.LinkedIn ? (row.LinkedIn.startsWith('http') ? row.LinkedIn : `https://linkedin.com/company/${row.LinkedIn}`) : null,
-              facebook: row.Facebook ? (row.Facebook.startsWith('http') ? row.Facebook : `https://facebook.com/${row.Facebook}`) : null,
-              youtube: row.YouTube ? (row.YouTube.startsWith('http') ? row.YouTube : `https://youtube.com/@${row.YouTube}`) : null,
-              twitter: row['X/Twitter'] ? (row['X/Twitter'].startsWith('http') ? row['X/Twitter'] : `https://x.com/${row['X/Twitter'].replace('@', '')}`) : null,
             }
           }
         };
@@ -100,6 +100,19 @@ serve(async (req) => {
         // Adiciona LinkedIn URL se fornecido
         if (companyData.raw_data.social_media.linkedin) {
           companyData.linkedin_url = companyData.raw_data.social_media.linkedin;
+        }
+
+        // Adiciona localização se fornecida
+        if (row.CEP || row.Logradouro || row.Municipio || row.Estado) {
+          companyData.location = {
+            cep: row.CEP,
+            logradouro: row.Logradouro,
+            numero: row.Numero,
+            bairro: row.Bairro,
+            municipio: row.Municipio,
+            estado: row.Estado,
+            pais: row.Pais || 'Brasil'
+          };
         }
 
         // Insere ou atualiza empresa

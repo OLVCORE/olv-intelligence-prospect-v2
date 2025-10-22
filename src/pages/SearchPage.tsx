@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBrazilianAddressAutocomplete } from "@/hooks/useGooglePlacesAutocomplete";
 import LocationMap from "@/components/map/LocationMap";
+import { BulkUploadDialog } from "@/components/companies/BulkUploadDialog";
 import {
   Dialog,
   DialogContent,
@@ -334,11 +335,14 @@ export default function SearchPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Buscar Empresas</h1>
-        <p className="text-muted-foreground">
-          Busque empresas por CNPJ ou nome e obtenha dados reais da web e fontes públicas
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Buscar Empresas</h1>
+          <p className="text-muted-foreground">
+            Busque empresas por CNPJ ou nome e obtenha dados reais da web e fontes públicas
+          </p>
+        </div>
+        <BulkUploadDialog />
       </div>
 
       <div className="grid gap-6">

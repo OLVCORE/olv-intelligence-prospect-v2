@@ -21,7 +21,8 @@ export function SystemHealthPanel() {
       
       return data as { apis: APIHealth[] };
     },
-    refetchInterval: 30000, // A cada 30 segundos
+    refetchInterval: 300000, // A cada 5 minutos
+    staleTime: 240000, // Dados válidos por 4 minutos
   });
 
   if (isLoading) {

@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { BulkUploadDialog } from "@/components/companies/BulkUploadDialog";
 import { BatchEnrichmentButton } from "@/components/admin/BatchEnrichmentButton";
 import { EnrichmentMonitor } from "@/components/admin/EnrichmentMonitor";
 import { SystemHealthPanel } from "@/components/admin/SystemHealthPanel";
@@ -98,7 +97,6 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex flex-col gap-3">
-              <BulkUploadDialog />
               <BatchEnrichmentButton />
             </div>
           </div>
