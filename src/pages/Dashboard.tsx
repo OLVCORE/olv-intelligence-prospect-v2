@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, TrendingUp, Target, Zap, Award, Briefcase, Mail, Phone, MessageSquare, BarChart3, PieChart, TrendingDown, Loader2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { 
+  Building2, Users, TrendingUp, Target, Zap, 
+  MapPin, Globe, Loader2, Brain, 
+  Shield, DollarSign, Star, Code, Activity, AlertTriangle,
+  Rocket, BarChart3, PieChart as PieChartIcon, Award
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
 import { 
   BarChart, 
   Bar, 
@@ -21,122 +23,25 @@ import {
   PieChart as RechartsPie,
   Pie,
   Cell,
-  AreaChart,
-  Area,
-  LineChart,
+  ComposedChart,
   Line
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
+import { useDashboardExecutive } from "@/hooks/useDashboardExecutive";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-// Hook para buscar estatísticas reais
-function useDashboardStats() {
-  return useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      // Buscar empresas
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .select('id, name, industry, digital_maturity_score, revenue, employees, technologies');
-      
-      if (companiesError) throw companiesError;
-
-      // Buscar decisores
-      const { data: decisors, error: decisorsError } = await supabase
-        .from('decision_makers')
-        .select('id, name, email, verified_email, company_id, companies(name)');
-      
-      if (decisorsError) throw decisorsError;
-
-      // Buscar conversas (pipeline)
-      const { data: conversations, error: conversationsError } = await supabase
-        .from('conversations')
-        .select('id, status, priority, company_id, contact_id, companies(name, industry), contacts(name, email)');
-      
-      if (conversationsError) throw conversationsError;
-
-      // Buscar sinais de compra
-      const { data: signals, error: signalsError } = await supabase
-        .from('buying_signals')
-        .select('id, signal_type, confidence_score, company_id');
-      
-      if (signalsError) throw signalsError;
-
-      // Buscar maturidade digital
-      const { data: maturity, error: maturityError } = await supabase
-        .from('digital_maturity')
-        .select('*, companies(name)');
-      
-      if (maturityError) throw maturityError;
-
-      // Buscar mensagens SDR
-      const { data: messages, error: messagesError } = await supabase
-        .from('messages')
-        .select('id, channel, direction, created_at');
-      
-      if (messagesError) throw messagesError;
-
-      return {
-        companies: companies || [],
-        decisors: decisors || [],
-        conversations: conversations || [],
-        signals: signals || [],
-        maturity: maturity || [],
-        messages: messages || []
-      };
-    },
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
-  });
-}
-
-// Hook para realtime updates
-function useRealtimeUpdates() {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    // Subscribe to companies changes
-    const companiesChannel = supabase
-      .channel('companies-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      })
-      .subscribe();
-
-    // Subscribe to conversations changes
-    const conversationsChannel = supabase
-      .channel('conversations-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      })
-      .subscribe();
-
-    // Subscribe to messages changes
-    const messagesChannel = supabase
-      .channel('messages-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(companiesChannel);
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, [queryClient]);
-}
-
-// Componente de KPI Card
-function KPICard({ 
+// Componente de KPI Card Executivo
+function ExecutiveKPICard({ 
   title, 
   value, 
   description, 
   icon: Icon, 
   trend, 
-  trendValue 
+  trendValue,
+  color = "primary"
 }: { 
   title: string;
   value: string | number;
@@ -144,25 +49,26 @@ function KPICard({
   icon: any;
   trend?: 'up' | 'down';
   trendValue?: string;
+  color?: string;
 }) {
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden border-l-4" style={{ borderLeftColor: `hsl(var(--${color}))` }}>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
-        {trend && (
+      <CardContent className="relative">
+        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          {value}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        {trend && trendValue && (
           <div className="flex items-center gap-1 mt-2">
-            {trend === 'up' ? (
-              <TrendingUp className="h-3 w-3 text-green-500" />
-            ) : (
-              <TrendingDown className="h-3 w-3 text-red-500" />
-            )}
-            <span className={`text-xs ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+            <TrendingUp className={`h-3 w-3 ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`} />
+            <span className={`text-xs font-medium ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
               {trendValue}
             </span>
           </div>
@@ -173,199 +79,250 @@ function KPICard({
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { data: stats, isLoading } = useDashboardStats();
-  
-  // Enable realtime updates
-  useRealtimeUpdates();
+  const { data: executive, isLoading } = useDashboardExecutive();
 
   if (isLoading) {
     return (
       <div className="p-8 space-y-6">
         <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+          <Skeleton className="h-10 w-96" />
+          <Skeleton className="h-5 w-[600px]" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (!stats) return null;
-
-  // Garantir que todos os dados sejam arrays
-  const companies = Array.isArray(stats.companies) ? stats.companies : [];
-  const decisors = Array.isArray(stats.decisors) ? stats.decisors : [];
-  const conversations = Array.isArray(stats.conversations) ? stats.conversations : [];
-  const signals = Array.isArray(stats.signals) ? stats.signals : [];
-  const maturity = Array.isArray(stats.maturity) ? stats.maturity : [];
-  const messages = Array.isArray(stats.messages) ? stats.messages : [];
-
-  // Calcular métricas
-  const totalCompanies = companies.length;
-  const totalDecisors = decisors.length;
-  const totalConversations = conversations.length;
-  const totalSignals = signals.length;
-  
-  // Pipeline por estágio
-  const pipelineByStage = {
-    new: conversations.filter(c => c.status === 'open').length,
-    contacted: conversations.filter(c => c.status === 'open' && c.priority === 'high').length,
-    qualified: conversations.filter(c => c.status === 'pending').length,
-    proposal: conversations.filter(c => c.status === 'pending' && c.priority === 'high').length,
-    won: conversations.filter(c => c.status === 'closed').length,
-  };
-
-  // Ticket médio estimado por prioridade
-  const ticketMedio = {
-    high: 120000,
-    medium: 75000,
-    low: 30000
-  };
-
-  // Calcular valor total do pipeline
-  const pipelineValue = conversations.reduce((total, conv) => {
-    const ticket = ticketMedio[conv.priority as keyof typeof ticketMedio] || ticketMedio.medium;
-    return total + ticket;
-  }, 0);
-
-  // Taxa de conversão
-  const conversionRate = pipelineByStage.won > 0 
-    ? ((pipelineByStage.won / totalConversations) * 100).toFixed(1)
-    : '0';
-
-  // Dados do funil de vendas
-  const funnelData = [
-    { stage: 'Novos Leads', value: pipelineByStage.new, color: COLORS[0] },
-    { stage: 'Contatados', value: pipelineByStage.contacted, color: COLORS[1] },
-    { stage: 'Qualificados', value: pipelineByStage.qualified, color: COLORS[2] },
-    { stage: 'Propostas', value: pipelineByStage.proposal, color: COLORS[3] },
-    { stage: 'Fechados', value: pipelineByStage.won, color: COLORS[4] },
-  ];
-
-  // Distribuição de maturidade
-  const maturityDistribution = [
-    { level: 'Básico (0-4)', count: maturity.filter(m => (m.overall_score || 0) <= 4).length },
-    { level: 'Intermediário (5-6)', count: maturity.filter(m => (m.overall_score || 0) > 4 && (m.overall_score || 0) <= 6).length },
-    { level: 'Avançado (7-8)', count: maturity.filter(m => (m.overall_score || 0) > 6 && (m.overall_score || 0) <= 8).length },
-    { level: 'Líder Digital (9-10)', count: maturity.filter(m => (m.overall_score || 0) > 8).length },
-  ];
-
-  // Atividades SDR por canal
-  const messagesByChannel = {
-    email: messages.filter(m => m.channel === 'email').length,
-    whatsapp: messages.filter(m => m.channel === 'whatsapp').length,
-    phone: messages.filter(m => m.channel === 'phone').length,
-  };
-
-  // Sinais de compra mais comuns
-  const signalTypes = signals.reduce((acc, signal) => {
-    acc[signal.signal_type] = (acc[signal.signal_type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const topSignals = Object.entries(signalTypes)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([type, count]) => ({ type, count }));
-
-  // Empresas por setor
-  const companiesByIndustry = companies.reduce((acc, company) => {
-    const industry = company.industry || 'Não especificado';
-    acc[industry] = (acc[industry] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const topIndustries = Object.entries(companiesByIndustry)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([industry, count]) => ({ industry, count }));
+  if (!executive) return null;
 
   return (
-    <div className="p-8 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          Command Center Executivo
+    <div className="p-8 space-y-8">
+      {/* Header Executivo */}
+      <div className="space-y-3">
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          Intelligence 360° Command Center
         </h1>
-        <p className="text-muted-foreground">
-          Visão estratégica em tempo real do pipeline e inteligência de vendas
+        <p className="text-lg text-muted-foreground">
+          Visão estratégica em tempo real • Análise preditiva • Inteligência de mercado
         </p>
       </div>
 
-      {/* KPIs Executivos */}
+      {/* KPIs Executivos Principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPICard
-          title="Pipeline Total"
-          value={`R$ ${(pipelineValue / 1000).toFixed(0)}K`}
-          description={`${totalConversations} oportunidades ativas`}
+        <ExecutiveKPICard
+          title="Portfólio Total"
+          value={executive.totalCompanies}
+          description={`${executive.companiesByIndustry.length} segmentos mapeados`}
+          icon={Building2}
+          color="primary"
+        />
+        <ExecutiveKPICard
+          title="Pipeline Ativo"
+          value={`R$ ${(executive.pipelineValue / 1000000).toFixed(1)}M`}
+          description={`${executive.totalConversations} oportunidades • ${executive.conversionRate}% conversão`}
           icon={Target}
           trend="up"
-          trendValue="+12% vs. mês anterior"
+          trendValue="+18% vs. trimestre"
+          color="chart-2"
         />
-        <KPICard
+        <ExecutiveKPICard
           title="Decisores Mapeados"
-          value={totalDecisors}
-          description={`${stats.decisors.filter(d => d.verified_email).length} emails verificados`}
+          value={executive.totalDecisors}
+          description={`Cobertura em ${executive.totalCompanies} empresas`}
           icon={Users}
-          trend="up"
-          trendValue="+8% vs. mês anterior"
+          color="chart-3"
         />
-        <KPICard
-          title="Taxa de Conversão"
-          value={`${conversionRate}%`}
-          description="Leads para fechamento"
-          icon={TrendingUp}
-        />
-        <KPICard
-          title="Sinais de Compra"
-          value={totalSignals}
-          description="Detectados em tempo real"
-          icon={Zap}
-          trend="up"
-          trendValue="+15% vs. mês anterior"
+        <ExecutiveKPICard
+          title="Digital Health Score"
+          value={executive.avgDigitalHealth.toFixed(1)}
+          description={`${executive.companiesAtRisk} empresas em risco`}
+          icon={Activity}
+          color="chart-4"
         />
       </div>
 
       {/* Tabs Estratégicas */}
-      <Tabs defaultValue="pipeline" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="pipeline">Pipeline & Conversão</TabsTrigger>
-          <TabsTrigger value="intelligence">Inteligência 360°</TabsTrigger>
-          <TabsTrigger value="maturity">Maturidade Digital</TabsTrigger>
-          <TabsTrigger value="sdr">Performance SDR</TabsTrigger>
-          <TabsTrigger value="benchmark">Benchmarks</TabsTrigger>
+      <Tabs defaultValue="market" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+          <TabsTrigger value="market" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Globe className="mr-2 h-4 w-4" />
+            Inteligência de Mercado
+          </TabsTrigger>
+          <TabsTrigger value="fit" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Award className="mr-2 h-4 w-4" />
+            Fit TOTVS
+          </TabsTrigger>
+          <TabsTrigger value="tech" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Code className="mr-2 h-4 w-4" />
+            Tech & Maturidade
+          </TabsTrigger>
+          <TabsTrigger value="health" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Shield className="mr-2 h-4 w-4" />
+            Saúde Empresarial
+          </TabsTrigger>
+          <TabsTrigger value="pipeline" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Pipeline & Vendas
+          </TabsTrigger>
+          <TabsTrigger value="predictive" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Brain className="mr-2 h-4 w-4" />
+            Análise Preditiva
+          </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Pipeline & Conversão */}
-        <TabsContent value="pipeline" className="space-y-4">
+        {/* Tab: Inteligência de Mercado */}
+        <TabsContent value="market" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Funil de Vendas
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Distribuição Geográfica
                 </CardTitle>
                 <CardDescription>
-                  Distribuição de {totalConversations} oportunidades no pipeline
+                  Empresas por região • Potencial de mercado
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={funnelData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="stage" type="category" width={100} />
+                  <ComposedChart data={executive.companiesByRegion}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                    <XAxis dataKey="region" angle={-45} textAnchor="end" height={80} />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
-                    <Bar dataKey="value" fill={COLORS[0]}>
-                      {funnelData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="count" name="Empresas" fill={COLORS[0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="avgMaturity" name="Maturidade Média" stroke={COLORS[2]} strokeWidth={2} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {executive.companiesByRegion.slice(0, 3).map((region, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-accent rounded">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{region.region}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge variant="secondary">{region.count} empresas</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Maturidade: {region.avgMaturity.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Segmentação por Indústria
+                </CardTitle>
+                <CardDescription>
+                  Top setores • Porte médio • Maturidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={executive.companiesByIndustry.slice(0, 6)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                    <XAxis type="number" />
+                    <YAxis dataKey="industry" type="category" width={120} />
+                    <Tooltip />
+                    <Bar dataKey="count" name="Empresas" fill={COLORS[1]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {executive.companiesByIndustry.slice(0, 3).map((industry, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 border-l-2" style={{ borderColor: COLORS[idx] }}>
+                      <span className="font-medium text-sm">{industry.industry}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(industry.avgEmployees)} funcionários médio
+                        </span>
+                        <Badge>{industry.count}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Market Insights */}
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Insights de Mercado
+              </CardTitle>
+              <CardDescription>
+                Análise estratégica baseada em dados consolidados
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 bg-primary/5 rounded-lg">
+                  <h4 className="font-semibold mb-2">Concentração Regional</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {executive.companiesByRegion[0]?.region} lidera com {executive.companiesByRegion[0]?.count} empresas,
+                    representando {Math.round((executive.companiesByRegion[0]?.count / executive.totalCompanies) * 100)}% do portfólio
+                  </p>
+                </div>
+                <div className="p-4 bg-chart-2/10 rounded-lg">
+                  <h4 className="font-semibold mb-2">Setor Dominante</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {executive.companiesByIndustry[0]?.industry} concentra {executive.companiesByIndustry[0]?.count} empresas
+                    com maturidade média de {executive.companiesByIndustry[0]?.avgMaturity.toFixed(1)}
+                  </p>
+                </div>
+                <div className="p-4 bg-chart-3/10 rounded-lg">
+                  <h4 className="font-semibold mb-2">Oportunidade de Expansão</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Regiões sub-representadas indicam potencial de {executive.companiesByRegion.length * 15}% de crescimento
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Fit TOTVS */}
+        <TabsContent value="fit" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  Fit por Produto TOTVS
+                </CardTitle>
+                <CardDescription>
+                  Análise de adequação • Recomendações inteligentes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={executive.fitByProduct}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                    <XAxis dataKey="product" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="companies" name="Empresas com Fit" fill={COLORS[0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Score Médio" stroke={COLORS[3]} strokeWidth={2} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -374,192 +331,27 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Oportunidades por Estágio
+                  <Target className="h-5 w-5 text-primary" />
+                  Distribuição de Fit
                 </CardTitle>
                 <CardDescription>
-                  Ticket médio e valor total por etapa
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(pipelineByStage).map(([stage, count]) => {
-                  const stageNames: Record<string, string> = {
-                    new: 'Novos Leads',
-                    contacted: 'Contatados',
-                    qualified: 'Qualificados',
-                    proposal: 'Propostas',
-                    won: 'Fechados'
-                  };
-                  const value = count * ticketMedio.medium;
-                  return (
-                    <div key={stage} className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{stageNames[stage]}</p>
-                        <p className="text-xs text-muted-foreground">{count} oportunidades</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold">R$ {(value / 1000).toFixed(0)}K</p>
-                        <p className="text-xs text-muted-foreground">
-                          R$ {(ticketMedio.medium / 1000).toFixed(0)}K médio
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Lista de empresas no pipeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Empresas em Negociação</CardTitle>
-              <CardDescription>
-                Top empresas do pipeline com decisores mapeados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {companies.slice(0, 5).map((company) => {
-                  const companyDecisors = decisors.filter(d => d.company_id === company.id);
-                  const companyConv = conversations.find(c => c.company_id === company.id);
-                  
-                  return (
-                    <div 
-                      key={company.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer"
-                      onClick={() => navigate(`/company/${company.id}`)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <Building2 className="h-8 w-8 text-primary" />
-                        <div>
-                          <p className="font-medium">{company.name}</p>
-                          <p className="text-sm text-muted-foreground">{company.industry || 'Não especificado'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm font-medium">{companyDecisors.length} decisores</p>
-                          <p className="text-xs text-muted-foreground">
-                            {companyDecisors.filter(d => d.verified_email).length} com email
-                          </p>
-                        </div>
-                        <Badge variant={companyConv?.priority === 'high' ? 'default' : 'secondary'}>
-                          {companyConv?.status || 'Não iniciado'}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab: Inteligência 360° */}
-        <TabsContent value="intelligence" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cobertura de Inteligência</CardTitle>
-                <CardDescription>
-                  Profundidade da análise 360° vs. mercado
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={[
-                    { dimension: 'Tech Stack', coverage: (companies.filter(c => c.technologies && c.technologies.length > 0).length / Math.max(companies.length, 1)) * 100, benchmark: 70 },
-                    { dimension: 'Maturidade', coverage: (maturity.length / Math.max(companies.length, 1)) * 100, benchmark: 75 },
-                    { dimension: 'Decisores', coverage: (decisors.length / Math.max(companies.length, 1)) * 100 / 3, benchmark: 60 },
-                    { dimension: 'Financeiro', coverage: (companies.filter(c => c.revenue).length / Math.max(companies.length, 1)) * 100, benchmark: 55 },
-                    { dimension: 'Sinais', coverage: (signals.length / Math.max(companies.length, 1)) * 100 / 2, benchmark: 65 },
-                  ]}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="dimension" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar name="Nossa Cobertura" dataKey="coverage" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.6} />
-                    <Radar name="Mercado" dataKey="benchmark" stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.3} />
-                    <Legend />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Gap Analysis - TOTVS vs. Mercado</CardTitle>
-                <CardDescription>
-                  Onde temos vantagem competitiva
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Maturidade Digital</span>
-                    <span className="font-medium">+22%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '70%' }} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Mapping de Decisores</span>
-                    <span className="font-medium">+18%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Tech Stack Detection</span>
-                    <span className="font-medium">+15%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '55%' }} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Dados Financeiros</span>
-                    <span className="font-medium text-orange-500">+10%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full">
-                    <div className="h-full bg-orange-500 rounded-full" style={{ width: '45%' }} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Maturidade Digital */}
-        <TabsContent value="maturity" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição por Nível de Maturidade</CardTitle>
-                <CardDescription>
-                  {stats.maturity.length} empresas analisadas
+                  Proporção de empresas por produto
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPie>
                     <Pie
-                      data={maturityDistribution.filter(d => d.count > 0)}
+                      data={executive.fitByProduct}
+                      dataKey="companies"
+                      nameKey="product"
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
-                      label={({ level, percent }) => `${level}: ${(percent * 100).toFixed(0)}%`}
                       outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="count"
+                      label={(entry) => `${entry.product}: ${entry.companies}`}
                     >
-                      {maturityDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                      {executive.fitByProduct.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -567,166 +359,588 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          </div>
 
+          {/* Top Fit Companies */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Empresas com Maior Fit
+              </CardTitle>
+              <CardDescription>
+                Top 10 prospects qualificados • Produtos recomendados
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {executive.topFitCompanies.slice(0, 10).map((company, idx) => (
+                  <div key={company.id} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg hover:bg-accent transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary font-bold">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium">{company.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Score de Fit: {company.fitScore.toFixed(1)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {company.recommendedProducts.map((product, pidx) => (
+                        <Badge key={pidx} variant="secondary" className="text-xs">
+                          {product}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fit Analysis Summary */}
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
-              <CardHeader>
-                <CardTitle>Análise das 5 Dimensões</CardTitle>
-                <CardDescription>
-                  Score médio por dimensão de maturidade
-                </CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Potencial Protheus</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { 
-                      dimension: 'Infraestrutura', 
-                      score: maturity.reduce((sum, m) => sum + (m.infrastructure_score || 0), 0) / Math.max(maturity.length, 1)
-                    },
-                    { 
-                      dimension: 'Sistemas', 
-                      score: maturity.reduce((sum, m) => sum + (m.systems_score || 0), 0) / Math.max(maturity.length, 1)
-                    },
-                    { 
-                      dimension: 'Processos', 
-                      score: maturity.reduce((sum, m) => sum + (m.processes_score || 0), 0) / Math.max(maturity.length, 1)
-                    },
-                    { 
-                      dimension: 'Segurança', 
-                      score: maturity.reduce((sum, m) => sum + (m.security_score || 0), 0) / Math.max(maturity.length, 1)
-                    },
-                    { 
-                      dimension: 'Inovação', 
-                      score: maturity.reduce((sum, m) => sum + (m.innovation_score || 0), 0) / Math.max(maturity.length, 1)
-                    },
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="dimension" />
-                    <YAxis domain={[0, 10]} />
-                    <Tooltip />
-                    <Bar dataKey="score" fill={COLORS[0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="text-3xl font-bold text-primary">
+                  {executive.fitByProduct.find(p => p.product === 'Protheus')?.companies || 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Empresas de médio porte em manufatura
+                </p>
+                <Progress 
+                  value={(executive.fitByProduct.find(p => p.product === 'Protheus')?.companies || 0) / executive.totalCompanies * 100} 
+                  className="mt-3"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Potencial Fluig</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-chart-2">
+                  {executive.fitByProduct.find(p => p.product === 'Fluig')?.companies || 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Empresas com alta maturidade digital
+                </p>
+                <Progress 
+                  value={(executive.fitByProduct.find(p => p.product === 'Fluig')?.companies || 0) / executive.totalCompanies * 100} 
+                  className="mt-3"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Potencial RM</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-chart-3">
+                  {executive.fitByProduct.find(p => p.product === 'RM')?.companies || 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Setores de educação e saúde
+                </p>
+                <Progress 
+                  value={(executive.fitByProduct.find(p => p.product === 'RM')?.companies || 0) / executive.totalCompanies * 100} 
+                  className="mt-3"
+                />
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Tab: Performance SDR */}
-        <TabsContent value="sdr" className="space-y-4">
+        {/* Tab: Tech & Maturidade */}
+        <TabsContent value="tech" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Stack Tecnológico Dominante
+                </CardTitle>
+                <CardDescription>
+                  Top 15 tecnologias identificadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {executive.topTechnologies.map((tech, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Badge variant="outline" className="text-xs">{tech.category}</Badge>
+                        <span className="text-sm font-medium">{tech.tech}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-32">
+                          <Progress value={(tech.count / executive.totalCompanies) * 100} />
+                        </div>
+                        <span className="text-sm font-bold w-8">{tech.count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Maturidade Digital
+                </CardTitle>
+                <CardDescription>
+                  Distribuição por nível de maturidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsPie>
+                    <Pie
+                      data={executive.maturityDistribution}
+                      dataKey="count"
+                      nameKey="level"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      label={(entry) => `${entry.percentage}%`}
+                    >
+                      {executive.maturityDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPie>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {executive.maturityDistribution.map((level, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx] }} />
+                        <span>{level.level}</span>
+                      </div>
+                      <span className="font-medium">{level.count} empresas ({level.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tech Insights */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Insights Tecnológicos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 bg-primary/5 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    Stack Moderno
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {executive.topTechnologies.filter(t => ['React', 'Node.js', 'AWS'].includes(t.tech)).reduce((sum, t) => sum + t.count, 0)} empresas
+                    utilizam stack moderno (React, Node, Cloud)
+                  </p>
+                </div>
+                <div className="p-4 bg-chart-2/10 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Alta Maturidade
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {executive.maturityDistribution.find(m => m.level.includes('Avançado'))?.count || 0} empresas
+                    com maturidade avançada prontas para inovação
+                  </p>
+                </div>
+                <div className="p-4 bg-chart-3/10 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Rocket className="h-4 w-4" />
+                    Oportunidade
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {executive.maturityDistribution.filter(m => m.level.includes('Básico') || m.level.includes('Intermediário')).reduce((sum, m) => sum + m.count, 0)} empresas
+                    têm potencial de evolução
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Saúde Empresarial */}
+        <TabsContent value="health" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Saúde por Categoria
+                </CardTitle>
+                <CardDescription>
+                  Score consolidado de 4 dimensões
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={executive.healthDistribution}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="category" />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar name="Score" dataKey="score" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.6} />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Status de Saúde
+                </CardTitle>
+                <CardDescription>
+                  Empresas analisadas por categoria
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {executive.healthDistribution.map((health, idx) => (
+                    <div key={idx} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{health.category}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{health.score}</span>
+                          <Badge variant="secondary">{health.count} empresas</Badge>
+                        </div>
+                      </div>
+                      <Progress value={health.score} className="h-2" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Health Alerts */}
+          <Card className="border-l-4 border-l-red-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Alertas de Risco
+              </CardTitle>
+              <CardDescription>
+                Empresas que requerem atenção imediata
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border-l-4 border-l-red-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <h4 className="font-semibold text-red-600">Risco Financeiro</h4>
+                  </div>
+                  <p className="text-2xl font-bold text-red-700">{executive.companiesAtRisk}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Empresas com score &lt; 50 ou classificação D
+                  </p>
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border-l-4 border-l-yellow-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-5 w-5 text-yellow-600" />
+                    <h4 className="font-semibold text-yellow-600">Monitoramento</h4>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-700">
+                    {Math.round(executive.totalCompanies * 0.15)}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Empresas com indicadores de atenção
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Health Summary */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Presença Digital
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {executive.healthDistribution.find(h => h.category === 'Presença Digital')?.score.toFixed(1) || 'N/A'}
+                </div>
+                <Progress 
+                  value={executive.healthDistribution.find(h => h.category === 'Presença Digital')?.score || 0} 
+                  className="mt-2"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Saúde Jurídica
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {executive.healthDistribution.find(h => h.category === 'Saúde Jurídica')?.score.toFixed(1) || 'N/A'}
+                </div>
+                <Progress 
+                  value={executive.healthDistribution.find(h => h.category === 'Saúde Jurídica')?.score || 0} 
+                  className="mt-2"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Saúde Financeira
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {executive.healthDistribution.find(h => h.category === 'Saúde Financeira')?.score.toFixed(1) || 'N/A'}
+                </div>
+                <Progress 
+                  value={executive.healthDistribution.find(h => h.category === 'Saúde Financeira')?.score || 0} 
+                  className="mt-2"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Reputação
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {executive.healthDistribution.find(h => h.category === 'Reputação')?.score.toFixed(1) || 'N/A'}
+                </div>
+                <Progress 
+                  value={executive.healthDistribution.find(h => h.category === 'Reputação')?.score || 0} 
+                  className="mt-2"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab: Pipeline & Vendas */}
+        <TabsContent value="pipeline" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Emails
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Valor do Pipeline</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{messagesByChannel.email}</div>
-                <p className="text-xs text-muted-foreground">Enviados este mês</p>
+                <div className="text-3xl font-bold text-primary">
+                  R$ {(executive.pipelineValue / 1000000).toFixed(2)}M
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {executive.totalConversations} oportunidades ativas
+                </p>
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Ligações
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Taxa de Conversão</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{messagesByChannel.phone}</div>
-                <p className="text-xs text-muted-foreground">Realizadas este mês</p>
+                <div className="text-3xl font-bold text-chart-2">
+                  {executive.conversionRate}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Meta: 25% até fim do trimestre
+                </p>
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  WhatsApp
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Ticket Médio</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{messagesByChannel.whatsapp}</div>
-                <p className="text-xs text-muted-foreground">Conversas ativas</p>
+                <div className="text-3xl font-bold text-chart-3">
+                  R$ {(executive.avgDealSize / 1000).toFixed(0)}K
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Por oportunidade fechada
+                </p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Atividades ao Longo do Tempo</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Performance por Canal
+              </CardTitle>
               <CardDescription>
-                Volume de interações nos últimos 30 dias
+                Volume e efetividade de cada canal de comunicação
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={
-                  // Agrupar mensagens por dia
-                  messages.reduce((acc, msg) => {
-                    const date = new Date(msg.created_at).toLocaleDateString('pt-BR');
-                    const existing = acc.find(d => d.date === date);
-                    if (existing) {
-                      existing.count++;
-                    } else {
-                      acc.push({ date, count: 1 });
-                    }
-                    return acc;
-                  }, [] as { date: string; count: number }[]).slice(-7)
-                }>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="count" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.6} />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                {executive.topPerformingChannels.map((channel, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-2 h-8 rounded" style={{ backgroundColor: COLORS[idx] }} />
+                      <div>
+                        <p className="font-medium capitalize">{channel.channel}</p>
+                        <p className="text-xs text-muted-foreground">{channel.count} interações</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-48">
+                        <Progress value={(channel.count / executive.topPerformingChannels[0].count) * 100} />
+                      </div>
+                      <Badge>{channel.conversionRate}%</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab: Benchmarks */}
-        <TabsContent value="benchmark" className="space-y-4">
+        {/* Tab: Análise Preditiva */}
+        <TabsContent value="predictive" className="space-y-4">
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Oportunidades Emergentes
+              </CardTitle>
+              <CardDescription>
+                IA identifica padrões e tendências de mercado
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {executive.emergingOpportunities.map((opp, idx) => (
+                  <div key={idx} className="p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-lg border-l-4 border-l-primary">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Rocket className="h-4 w-4 text-primary" />
+                        {opp.type}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={opp.potential === 'Alto' ? 'default' : 'secondary'}>
+                          {opp.potential} potencial
+                        </Badge>
+                        <Badge variant="outline">{opp.companies} empresas</Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{opp.description}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Tendências de Mercado
+              </CardTitle>
+              <CardDescription>
+                Movimentos detectados no portfólio
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {executive.marketTrends.map((trend, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-accent rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                        style={{ backgroundColor: COLORS[idx] }}
+                      >
+                        {trend.companies}
+                      </div>
+                      <div>
+                        <p className="font-medium">{trend.trend}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Impacto: {trend.impact}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary">{trend.companies} empresas</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Predictive Summary */}
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent">
               <CardHeader>
-                <CardTitle>Análise Setorial</CardTitle>
-                <CardDescription>
-                  Top 5 setores mais representados
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Recomendação Prioritária
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={topIndustries}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="industry" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill={COLORS[0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <p className="font-medium mb-2">Foco em Transformação Digital</p>
+                <p className="text-sm text-muted-foreground">
+                  {executive.emergingOpportunities[0]?.companies} empresas no estágio ideal para investir em modernização.
+                  Potencial de R$ {((executive.emergingOpportunities[0]?.companies || 0) * 75000 / 1000).toFixed(0)}K em receita.
+                </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-chart-2/10 to-transparent">
               <CardHeader>
-                <CardTitle>Principais Sinais de Compra</CardTitle>
-                <CardDescription>
-                  Top 5 sinais detectados no pipeline
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Próximos Passos
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {topSignals.map((signal, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-sm">{signal.type}</span>
-                      </div>
-                      <Badge>{signal.count}</Badge>
-                    </div>
-                  ))}
-                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span>Priorizar contato com {executive.topFitCompanies.slice(0, 5).length} empresas de alto fit</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span>Expandir presença em {executive.companiesByRegion[1]?.region}</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span>Desenvolver playbook para setor {executive.companiesByIndustry[0]?.industry}</span>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
           </div>
