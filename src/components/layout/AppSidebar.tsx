@@ -33,6 +33,7 @@ import {
   SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link, useLocation } from "react-router-dom";
@@ -161,16 +162,19 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { open, isMobile } = useSidebar();
   
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon" className="group/sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <Building2 className="h-8 w-8 text-sidebar-primary" />
-          <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">OLV Intelligence</h1>
-            <p className="text-xs text-sidebar-foreground/70">Sistema de Prospecção</p>
-          </div>
+          <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary" />
+          {(open || isMobile) && (
+            <div className="min-w-0">
+              <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
+              <p className="text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+            </div>
+          )}
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -270,21 +274,32 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-sidebar-foreground/70">
-            <User className="h-4 w-4" />
-            <span className="truncate">{user?.email}</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start"
-            onClick={signOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+          {(open || isMobile) && (
+            <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70">
+              <User className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{user?.email}</span>
+            </div>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={signOut}
+              >
+                <LogOut className="h-4 w-4" />
+                {(open || isMobile) && <span className="ml-2">Sair</span>}
+              </Button>
+            </TooltipTrigger>
+            {!open && !isMobile && (
+              <TooltipContent side="right">
+                <p>Sair</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
         </div>
       </SidebarFooter>
     </Sidebar>
