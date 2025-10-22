@@ -1,97 +1,100 @@
 project_id = "ioaxzpwlurpduanzkfrt"
-
-[functions.api-health]
-verify_jwt = false
-
-[functions.insights-chat]
-verify_jwt = false
-
-[functions.canvas-create]
-verify_jwt = true
-
-[functions.canvas-export]
-verify_jwt = true
-
-[functions.google-search]
-verify_jwt = true
-
-[functions.search-companies]
-verify_jwt = true
-
-[functions.enrich-email]
-verify_jwt = true
-
-[functions.linkedin-scrape]
-verify_jwt = true
-
-[functions.analyze-totvs-fit]
-verify_jwt = true
-
-[functions.canvas-ai-command]
-verify_jwt = false
-
-[functions.canvas-ai-proactive]
-verify_jwt = false
-
-[functions.generate-company-report]
-verify_jwt = true
-
-[functions.calculate-maturity-score]
-verify_jwt = true
-
-[functions.enrich-company-360]
-verify_jwt = true
-
-[functions.ai-contextual-analysis]
-verify_jwt = false
-
-[functions.ai-fit-analysis]
-verify_jwt = false
-
-[functions.enrich-apollo]
-verify_jwt = true
-
-[functions.enrich-receitaws]
-verify_jwt = true
-
-[functions.mapbox-token]
-verify_jwt = false
-
-[functions.sdr-whatsapp-webhook]
-verify_jwt = false
-
-[functions.sdr-send-message]
-verify_jwt = true
-
-[functions.sdr-sequence-runner]
-verify_jwt = false
-
-[functions.integration-health-check]
-verify_jwt = true
-
-[functions.email-imap-receiver]
-verify_jwt = false
-
-[functions.realtime-inbox]
-verify_jwt = false
-
-[functions.email-imap-poll]
-verify_jwt = false
-
-[functions.save-company]
-verify_jwt = true
-
-[functions.totvs-integration]
-verify_jwt = false
-
-[functions.bulk-upload-companies]
-verify_jwt = true
-
-[functions.auto-enrich-company]
-verify_jwt = false
-
-[functions.trigger-batch-enrichment]
-verify_jwt = true
-
-[functions.global-search]
-verify_jwt = false
+ 
+ [functions.api-health]
+ verify_jwt = false
+ 
+ [functions.insights-chat]
+ verify_jwt = false
+ 
+ [functions.canvas-create]
+ verify_jwt = true
+ 
+ [functions.canvas-export]
+ verify_jwt = true
+ 
+ [functions.google-search]
+ verify_jwt = true
+ 
+ [functions.search-companies]
+ verify_jwt = true
+ 
+ [functions.enrich-email]
+ verify_jwt = true
+ 
+ [functions.linkedin-scrape]
+ verify_jwt = true
+ 
+ [functions.analyze-totvs-fit]
+ verify_jwt = true
+ 
+ [functions.canvas-ai-command]
+ verify_jwt = false
+ 
+ [functions.canvas-ai-proactive]
+ verify_jwt = false
+ 
+ [functions.generate-company-report]
+ verify_jwt = true
+ 
+ [functions.calculate-maturity-score]
+ verify_jwt = true
+ 
+ [functions.enrich-company-360]
+ verify_jwt = true
+ 
+ [functions.ai-contextual-analysis]
+ verify_jwt = false
+ 
+ [functions.ai-fit-analysis]
+ verify_jwt = false
+ 
+ [functions.enrich-apollo]
+ verify_jwt = true
+ 
+ [functions.enrich-receitaws]
+ verify_jwt = true
+ 
+ [functions.mapbox-token]
+ verify_jwt = false
+ 
+ [functions.sdr-whatsapp-webhook]
+ verify_jwt = false
+ 
+ [functions.sdr-send-message]
+ verify_jwt = true
+ 
+ [functions.sdr-sequence-runner]
+ verify_jwt = false
+ 
+ [functions.integration-health-check]
+ verify_jwt = true
+ 
+ [functions.email-imap-receiver]
+ verify_jwt = false
+ 
+ [functions.realtime-inbox]
+ verify_jwt = false
+ 
+ [functions.email-imap-poll]
+ verify_jwt = false
+ 
+ [functions.save-company]
+ verify_jwt = true
+ 
+ [functions.totvs-integration]
+ verify_jwt = false
+ 
+ [functions.bulk-upload-companies]
+ verify_jwt = true
+ 
+ [functions.auto-enrich-company]
+ verify_jwt = false
+ 
+ [functions.trigger-batch-enrichment]
+ verify_jwt = true
+ 
+ [functions.global-search]
+ verify_jwt = false
+ 
+ [functions.email-inbound-webhook]
+ verify_jwt = false
