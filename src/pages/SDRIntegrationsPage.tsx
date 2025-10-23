@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Mail, MessageSquare, Phone, Send, 
   Check, X, Loader2, RefreshCw, Settings, Zap,
-  Copy, ExternalLink, AlertCircle
+  Copy, ExternalLink, AlertCircle, Building2, Users, BotIcon
 } from 'lucide-react';
 import { PlatformLogo } from '@/components/inbox/PlatformLogo';
 import {
@@ -37,6 +37,118 @@ interface Integration {
   config: any;
   credentials: any;
 }
+
+// Configurações pré-definidas para provedores de email
+const EMAIL_PROVIDERS = {
+  gmail: {
+    name: 'Gmail',
+    imap: { host: 'imap.gmail.com', port: 993, secure: true },
+    smtp: { host: 'smtp.gmail.com', port: 587, secure: true },
+    instructions: 'Use uma senha de app. Acesse: myaccount.google.com/apppasswords'
+  },
+  outlook: {
+    name: 'Outlook / Hotmail',
+    imap: { host: 'outlook.office365.com', port: 993, secure: true },
+    smtp: { host: 'smtp.office365.com', port: 587, secure: true },
+    instructions: 'Use sua senha normal do Outlook'
+  },
+  yahoo: {
+    name: 'Yahoo Mail',
+    imap: { host: 'imap.mail.yahoo.com', port: 993, secure: true },
+    smtp: { host: 'smtp.mail.yahoo.com', port: 587, secure: true },
+    instructions: 'Gere uma senha de app em: account.yahoo.com/security'
+  },
+  icloud: {
+    name: 'iCloud Mail',
+    imap: { host: 'imap.mail.me.com', port: 993, secure: true },
+    smtp: { host: 'smtp.mail.me.com', port: 587, secure: true },
+    instructions: 'Use uma senha específica de app'
+  },
+  zoho: {
+    name: 'Zoho Mail',
+    imap: { host: 'imap.zoho.com', port: 993, secure: true },
+    smtp: { host: 'smtp.zoho.com', port: 587, secure: true },
+    instructions: 'Use sua senha normal do Zoho'
+  },
+  custom: {
+    name: 'Outro (Customizado)',
+    imap: { host: '', port: 993, secure: true },
+    smtp: { host: '', port: 587, secure: true },
+    instructions: 'Configure manualmente os servidores IMAP e SMTP'
+  }
+};
+
+// Categorias de integrações
+const INTEGRATION_CATEGORIES = {
+  email: {
+    title: 'E-mail',
+    icon: Mail,
+    items: [
+      { channel: 'email', provider: 'gmail', label: 'Gmail' },
+      { channel: 'email', provider: 'outlook', label: 'Outlook' },
+      { channel: 'email', provider: 'yahoo', label: 'Yahoo' },
+      { channel: 'email', provider: 'icloud', label: 'iCloud' },
+      { channel: 'email', provider: 'zoho', label: 'Zoho' },
+      { channel: 'email', provider: 'custom', label: 'Outro Email' },
+    ]
+  },
+  social: {
+    title: 'Redes Sociais',
+    icon: MessageSquare,
+    items: [
+      { channel: 'whatsapp', label: 'WhatsApp' },
+      { channel: 'telegram', label: 'Telegram' },
+      { channel: 'linkedin', label: 'LinkedIn' },
+      { channel: 'instagram', label: 'Instagram' },
+      { channel: 'facebook', label: 'Facebook' },
+      { channel: 'twitter', label: 'Twitter/X' },
+    ]
+  },
+  crm: {
+    title: 'CRMs',
+    icon: Building2,
+    items: [
+      { channel: 'crm', provider: 'kommo', label: 'Kommo' },
+      { channel: 'crm', provider: 'bitrix24', label: 'Bitrix24' },
+      { channel: 'crm', provider: 'hubspot', label: 'HubSpot' },
+      { channel: 'crm', provider: 'pipedrive', label: 'Pipedrive' },
+      { channel: 'crm', provider: 'salesforce', label: 'Salesforce' },
+      { channel: 'crm', provider: 'zoho_crm', label: 'Zoho CRM' },
+      { channel: 'crm', provider: 'rd_station', label: 'RD Station' },
+      { channel: 'crm', provider: 'activecampaign', label: 'ActiveCampaign' },
+      { channel: 'crm', provider: 'agendor', label: 'Agendor' },
+    ]
+  },
+  communication: {
+    title: 'Comunicação',
+    icon: Phone,
+    items: [
+      { channel: 'sms', label: 'SMS (Twilio)' },
+      { channel: 'voice', label: 'Telefone/VoIP' },
+      { channel: 'slack', label: 'Slack' },
+      { channel: 'teams', label: 'Microsoft Teams' },
+    ]
+  },
+  automation: {
+    title: 'Automação',
+    icon: Zap,
+    items: [
+      { channel: 'automation', provider: 'zapier', label: 'Zapier' },
+      { channel: 'automation', provider: 'make', label: 'Make (Integromat)' },
+      { channel: 'automation', provider: 'n8n', label: 'n8n' },
+    ]
+  },
+  support: {
+    title: 'Atendimento',
+    icon: Users,
+    items: [
+      { channel: 'support', provider: 'intercom', label: 'Intercom' },
+      { channel: 'support', provider: 'zendesk', label: 'Zendesk' },
+      { channel: 'support', provider: 'freshdesk', label: 'Freshdesk' },
+      { channel: 'support', provider: 'drift', label: 'Drift' },
+    ]
+  }
+};
 
 function WebhookSetupInstructions() {
   const { toast } = useToast();
@@ -230,7 +342,6 @@ export default function SDRIntegrationsPage() {
 
       if (error) throw error;
 
-      // Update integration health status
       await supabase
         .from('integration_configs')
         .update({
@@ -298,7 +409,7 @@ export default function SDRIntegrationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Integrações</h1>
-            <p className="text-muted-foreground">Configure canais de comunicação</p>
+            <p className="text-muted-foreground">Configure canais de comunicação e ferramentas</p>
           </div>
           <Button onClick={loadIntegrations}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -306,54 +417,14 @@ export default function SDRIntegrationsPage() {
           </Button>
         </div>
 
-        <Tabs defaultValue="all">
-          <TabsList>
-            <TabsTrigger value="all">Todas</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            <TabsTrigger value="sms">SMS</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="space-y-4 mt-6">
-            {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              </div>
-            ) : integrations.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Settings className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Nenhuma integração configurada</h3>
-                  <p className="text-muted-foreground mb-4">Adicione canais para começar</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={syncEmails}
-                      variant="outline"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Sincronizar Emails
-                    </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Zap className="h-4 w-4 mr-2" />
-                          Adicionar Integração
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Nova Integração</DialogTitle>
-                          <DialogDescription>
-                            Configure um novo canal de comunicação
-                          </DialogDescription>
-                        </DialogHeader>
-                        <IntegrationForm onSuccess={loadIntegrations} />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
+        {/* Integrações Ativas */}
+        {!loading && integrations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Integrações Ativas</CardTitle>
+              <CardDescription>Suas conexões configuradas</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 {integrations.map((integration) => (
                   <Card key={integration.id}>
@@ -408,16 +479,16 @@ export default function SDRIntegrationsPage() {
                           Testar Conexão
                         </Button>
                         <Dialog>
-                           <DialogTrigger asChild>
+                          <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
                               <Settings className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Configurar Integração</DialogTitle>
-                            <DialogDescription>Edite ou substitua as credenciais desta integração</DialogDescription>
-                          </DialogHeader>
+                            <DialogHeader>
+                              <DialogTitle>Configurar Integração</DialogTitle>
+                              <DialogDescription>Edite ou substitua as credenciais desta integração</DialogDescription>
+                            </DialogHeader>
                             <IntegrationForm 
                               integration={integration} 
                               onSuccess={loadIntegrations} 
@@ -429,45 +500,62 @@ export default function SDRIntegrationsPage() {
                   </Card>
                 ))}
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Quick Add Buttons */}
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { channel: 'email', label: 'Email (IMAP/SMTP)' },
-            { channel: 'whatsapp', label: 'WhatsApp' },
-            { channel: 'sms', label: 'SMS' },
-            { channel: 'telegram', label: 'Telegram' },
-            { channel: 'linkedin', label: 'LinkedIn' },
-            { channel: 'instagram', label: 'Instagram' },
-            { channel: 'twitter', label: 'Twitter/X' },
-            { channel: 'facebook', label: 'Facebook' },
-          ].map((item) => (
-            <Dialog key={item.channel}>
-              <DialogTrigger asChild>
-                <Card className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer">
-                  <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
-                    <PlatformLogo platform={item.channel} size="lg" />
-                    <p className="text-sm font-medium text-center">{item.label}</p>
-                  </CardContent>
-                </Card>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Configurar {item.label}</DialogTitle>
-                  <DialogDescription>
-                    Conecte seu canal {item.label}
-                  </DialogDescription>
-                </DialogHeader>
-                <IntegrationForm 
-                  defaultChannel={item.channel} 
-                  onSuccess={loadIntegrations} 
-                />
-              </DialogContent>
-            </Dialog>
-          ))}
+        {/* Categorias de Integrações */}
+        <div className="space-y-6">
+          {Object.entries(INTEGRATION_CATEGORIES).map(([key, category]) => {
+            const Icon = category.icon;
+            return (
+              <Card key={key}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5" />
+                    <CardTitle>{category.title}</CardTitle>
+                  </div>
+                  <CardDescription>
+                    {key === 'email' && 'Configure contas de email para envio e recebimento'}
+                    {key === 'social' && 'Conecte suas redes sociais e mensageiros'}
+                    {key === 'crm' && 'Integre com seu sistema de CRM'}
+                    {key === 'communication' && 'Canais de comunicação adicionais'}
+                    {key === 'automation' && 'Ferramentas de automação de processos'}
+                    {key === 'support' && 'Plataformas de atendimento ao cliente'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+                    {category.items.map((item) => (
+                      <Dialog key={`${item.channel}-${item.provider || item.label}`}>
+                        <DialogTrigger asChild>
+                          <Card className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer">
+                            <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
+                              <PlatformLogo platform={item.channel} provider={item.provider} size="lg" />
+                              <p className="text-sm font-medium text-center">{item.label}</p>
+                            </CardContent>
+                          </Card>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Configurar {item.label}</DialogTitle>
+                            <DialogDescription>
+                              Conecte seu canal {item.label}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <IntegrationForm 
+                            defaultChannel={item.channel}
+                            defaultProvider={item.provider}
+                            onSuccess={loadIntegrations} 
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </AppLayout>
@@ -477,16 +565,21 @@ export default function SDRIntegrationsPage() {
 function IntegrationForm({ 
   integration, 
   defaultChannel,
+  defaultProvider,
   onSuccess 
 }: { 
   integration?: Integration;
   defaultChannel?: string;
+  defaultProvider?: string;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [channel, setChannel] = useState(integration?.channel || defaultChannel || 'email');
-  const [provider, setProvider] = useState(integration?.provider || 'imap_smtp');
+  const [provider, setProvider] = useState(integration?.provider || defaultProvider || 'gmail');
+  const [emailProvider, setEmailProvider] = useState<keyof typeof EMAIL_PROVIDERS>(
+    (integration?.provider && integration.provider in EMAIL_PROVIDERS) ? integration.provider as keyof typeof EMAIL_PROVIDERS : 'gmail'
+  );
   const [profile, setProfile] = useState<any>(null);
   const [useProfileData, setUseProfileData] = useState(true);
   const [resetCreds, setResetCreds] = useState(!!integration);
@@ -512,23 +605,12 @@ function IntegrationForm({
     }
   };
 
-  // Ajusta o provedor padrão de acordo com o canal selecionado (evita salvar sem credenciais)
+  // Ajusta o provedor padrão quando o canal de email é selecionado
   useEffect(() => {
-    if (!integration) {
-      const map: Record<string, string> = {
-        email: 'imap_smtp',
-        whatsapp: 'meta_cloud',
-        sms: 'twilio',
-        telegram: 'bot',
-        linkedin: 'api',
-        instagram: 'graph_api',
-        x: 'api',
-        facebook: 'graph_api',
-      };
-      const expected = map[channel];
-      if (expected && provider !== expected) setProvider(expected);
+    if (channel === 'email' && !integration) {
+      setProvider(emailProvider);
     }
-  }, [channel, integration, provider]);
+  }, [channel, emailProvider, integration]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -545,7 +627,7 @@ function IntegrationForm({
       const config: any = {};
       const newCredentials: any = {};
 
-      // Coletar dados do formulário - salva em formato PLANO (sem aninhamento)
+      // Coletar dados do formulário
       for (const [key, value] of formData.entries()) {
         if (key.startsWith('config.')) {
           config[key.replace('config.', '')] = value;
@@ -553,30 +635,26 @@ function IntegrationForm({
           const path = key.replace('cred.', '');
           const val = String(value).trim();
           
-          // Se estiver editando e o campo sensível vier vazio, preserva o valor atual
           const isSecret = path.includes('password') || path.includes('authToken') || path.includes('apiKey') || path.includes('apiSecret') || path.includes('accessToken');
           
           if (integration && !resetCreds && isSecret && !val) {
-            // Mantém valor existente quando não estamos limpando credenciais
             const existing = integration.credentials?.[path];
             if (existing) {
               newCredentials[path] = existing;
             }
           } else if (val) {
-            // Salva novo valor
             newCredentials[path] = val;
           }
         }
       }
 
-      // Se estiver editando, decide entre mesclar ou substituir credenciais
       const mergedCredentials = integration 
         ? (resetCreds
             ? Object.fromEntries(Object.entries(newCredentials).filter(([, v]) => v !== '' && v !== undefined && v !== null))
             : { ...integration.credentials, ...newCredentials })
         : newCredentials;
 
-      // Regras específicas para WhatsApp/Twilio
+      // Validações específicas
       if (channel === 'whatsapp' && provider === 'twilio') {
         const hasAuth = !!mergedCredentials.authToken;
         const hasApiKeys = !!mergedCredentials.apiKeySid && !!mergedCredentials.apiKeySecret;
@@ -591,27 +669,12 @@ function IntegrationForm({
 
       const data = {
         channel,
-        provider,
+        provider: channel === 'email' ? emailProvider : provider,
         config,
         credentials: mergedCredentials,
         status: 'active',
         user_id: user.id,
       };
-
-      console.log('Salvando integração:', { 
-        channel, 
-        provider, 
-        credentialKeys: Object.keys(mergedCredentials),
-        hasAccountSid: !!mergedCredentials.accountSid,
-        hasAuthToken: !!mergedCredentials.authToken,
-        hasApiKeys: !!(mergedCredentials.apiKeySid && mergedCredentials.apiKeySecret),
-        resetCreds
-      });
-
-      // Validação extra para evitar salvar sem provedor correto
-      if (channel === 'whatsapp' && !['meta_cloud', 'twilio'].includes(provider)) {
-        throw new Error('Selecione um provedor válido para WhatsApp (Meta Cloud ou Twilio).');
-      }
 
       if (integration) {
         const { error } = await supabase
@@ -645,6 +708,8 @@ function IntegrationForm({
       setLoading(false);
     }
   };
+
+  const currentEmailProvider = EMAIL_PROVIDERS[emailProvider];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -684,29 +749,30 @@ function IntegrationForm({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="provider">Provedor</Label>
-        <Select value={provider} onValueChange={setProvider}>
-          <SelectTrigger id="provider">
-            <SelectValue placeholder="Selecione um provedor" />
-          </SelectTrigger>
-          <SelectContent>
-            {channel === 'email' && <SelectItem value="imap_smtp">IMAP/SMTP</SelectItem>}
-            {channel === 'whatsapp' && (
-              <>
-                <SelectItem value="meta_cloud">Meta Cloud API</SelectItem>
-                <SelectItem value="twilio">Twilio WhatsApp</SelectItem>
-              </>
-            )}
-            {channel === 'sms' && <SelectItem value="twilio">Twilio</SelectItem>}
-            {channel === 'telegram' && <SelectItem value="bot">Bot API</SelectItem>}
-            {channel === 'linkedin' && <SelectItem value="api">LinkedIn API</SelectItem>}
-            {channel === 'instagram' && <SelectItem value="graph_api">Instagram Graph API</SelectItem>}
-            {channel === 'x' && <SelectItem value="api">X API v2</SelectItem>}
-            {channel === 'facebook' && <SelectItem value="graph_api">Facebook Graph API</SelectItem>}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Email Provider Selector */}
+      {channel === 'email' && (
+        <div className="space-y-2">
+          <Label htmlFor="email-provider">Provedor de Email</Label>
+          <Select value={emailProvider} onValueChange={(v) => setEmailProvider(v as keyof typeof EMAIL_PROVIDERS)}>
+            <SelectTrigger id="email-provider">
+              <SelectValue placeholder="Selecione seu provedor de email" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(EMAIL_PROVIDERS).map(([key, prov]) => (
+                <SelectItem key={key} value={key}>{prov.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {currentEmailProvider && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                {currentEmailProvider.instructions}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
 
       {integration && (
         <div className="flex items-center space-x-2">
@@ -715,20 +781,45 @@ function IntegrationForm({
         </div>
       )}
 
-      {channel === 'email' && provider === 'imap_smtp' && (
+      {/* Email Configuration */}
+      {channel === 'email' && (
         <>
           <div className="space-y-2">
             <Label htmlFor="imap-host">Servidor IMAP</Label>
-            <Input id="imap-host" name="cred.imap.host" placeholder="imap.gmail.com" required={!integration} defaultValue={String((integration?.credentials?.['imap.host'] ?? integration?.credentials?.imap?.host) ?? '')} />
+            <Input 
+              id="imap-host" 
+              name="cred.imap.host" 
+              placeholder="imap.example.com" 
+              required={!integration}
+              defaultValue={currentEmailProvider?.imap.host || String((integration?.credentials?.['imap.host'] ?? integration?.credentials?.imap?.host) ?? '')} 
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="imap-port">Porta IMAP</Label>
-              <Input id="imap-port" name="cred.imap.port" type="number" placeholder="993" required={!integration} defaultValue={String((integration?.credentials?.['imap.port'] ?? integration?.credentials?.imap?.port) ?? '')} />
+              <Input 
+                id="imap-port" 
+                name="cred.imap.port" 
+                type="number" 
+                placeholder="993" 
+                required={!integration}
+                defaultValue={currentEmailProvider?.imap.port || String((integration?.credentials?.['imap.port'] ?? integration?.credentials?.imap?.port) ?? '')} 
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="imap-secure">SSL/TLS</Label>
-              <Input id="imap-secure" name="config.imap.secure" defaultValue={String(integration?.config?.['imap.secure'] ?? 'true')} />
+              <Select 
+                name="config.imap.secure" 
+                defaultValue={String(currentEmailProvider?.imap.secure ?? integration?.config?.['imap.secure'] ?? 'true')}
+              >
+                <SelectTrigger id="imap-secure">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Sim (Recomendado)</SelectItem>
+                  <SelectItem value="false">Não</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">
@@ -743,20 +834,50 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="imap-pass">Senha/App Password</Label>
-            <Input id="imap-pass" name="cred.imap.password" type="password" required={!integration} />
+            <Input 
+              id="imap-pass" 
+              name="cred.imap.password" 
+              type="password" 
+              required={!integration}
+              placeholder={integration ? "Deixe vazio para manter a senha atual" : ""}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-host">Servidor SMTP</Label>
-            <Input id="smtp-host" name="cred.smtp.host" placeholder="smtp.gmail.com" required={!integration} defaultValue={String((integration?.credentials?.['smtp.host'] ?? integration?.credentials?.smtp?.host) ?? '')} />
+            <Input 
+              id="smtp-host" 
+              name="cred.smtp.host" 
+              placeholder="smtp.example.com" 
+              required={!integration}
+              defaultValue={currentEmailProvider?.smtp.host || String((integration?.credentials?.['smtp.host'] ?? integration?.credentials?.smtp?.host) ?? '')} 
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="smtp-port">Porta SMTP</Label>
-              <Input id="smtp-port" name="cred.smtp.port" type="number" placeholder="587" required={!integration} defaultValue={String((integration?.credentials?.['smtp.port'] ?? integration?.credentials?.smtp?.port) ?? '')} />
+              <Input 
+                id="smtp-port" 
+                name="cred.smtp.port" 
+                type="number" 
+                placeholder="587" 
+                required={!integration}
+                defaultValue={currentEmailProvider?.smtp.port || String((integration?.credentials?.['smtp.port'] ?? integration?.credentials?.smtp?.port) ?? '')} 
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="smtp-secure">SSL/TLS</Label>
-              <Input id="smtp-secure" name="config.smtp.secure" defaultValue={String(integration?.config?.['smtp.secure'] ?? 'true')} />
+              <Select 
+                name="config.smtp.secure" 
+                defaultValue={String(currentEmailProvider?.smtp.secure ?? integration?.config?.['smtp.secure'] ?? 'true')}
+              >
+                <SelectTrigger id="smtp-secure">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Sim (Recomendado)</SelectItem>
+                  <SelectItem value="false">Não</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">
@@ -771,157 +892,144 @@ function IntegrationForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="smtp-pass">Senha SMTP</Label>
-            <Input id="smtp-pass" name="cred.smtp.password" type="password" required={!integration} />
+            <Input 
+              id="smtp-pass" 
+              name="cred.smtp.password" 
+              type="password" 
+              required={!integration}
+              placeholder={integration ? "Deixe vazio para manter a senha atual" : ""}
+            />
           </div>
 
-          {/* Webhook Setup Instructions */}
           <WebhookSetupInstructions />
         </>
       )}
 
-      {channel === 'whatsapp' && provider === 'meta_cloud' && (
+      {/* WhatsApp Configuration */}
+      {channel === 'whatsapp' && (
         <>
           <div className="space-y-2">
-            <Label htmlFor="meta-token">Access Token</Label>
-            <Input id="meta-token" name="cred.accessToken" type="password" required />
+            <Label htmlFor="whatsapp-provider">Provedor WhatsApp</Label>
+            <Select value={provider} onValueChange={setProvider}>
+              <SelectTrigger id="whatsapp-provider">
+                <SelectValue placeholder="Selecione o provedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="meta_cloud">Meta Cloud API</SelectItem>
+                <SelectItem value="twilio">Twilio WhatsApp</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="meta-phone-id">Phone Number ID</Label>
-            <Input id="meta-phone-id" name="cred.phoneNumberId" required defaultValue={String(integration?.credentials?.phoneNumberId ?? '')} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="meta-business-id">WhatsApp Business Account ID</Label>
-            <Input id="meta-business-id" name="cred.businessAccountId" required defaultValue={String(integration?.credentials?.businessAccountId ?? '')} />
-          </div>
+
+          {provider === 'meta_cloud' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="meta-token">Access Token</Label>
+                <Input id="meta-token" name="cred.accessToken" type="password" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="meta-phone-id">Phone Number ID</Label>
+                <Input id="meta-phone-id" name="cred.phoneNumberId" required defaultValue={String(integration?.credentials?.phoneNumberId ?? '')} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="meta-business-id">WhatsApp Business Account ID</Label>
+                <Input id="meta-business-id" name="cred.businessAccountId" required defaultValue={String(integration?.credentials?.businessAccountId ?? '')} />
+              </div>
+            </>
+          )}
+
+          {provider === 'twilio' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="twilio-sid">Account SID</Label>
+                <Input 
+                  id="twilio-sid" 
+                  name="cred.accountSid" 
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  required 
+                  defaultValue={String(integration?.credentials?.accountSid ?? '')} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio-token">Auth Token</Label>
+                <Input 
+                  id="twilio-token" 
+                  name="cred.authToken" 
+                  type="password" 
+                  placeholder={integration ? "Deixe vazio para manter o atual" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio-phone">WhatsApp Number</Label>
+                <Input 
+                  id="twilio-phone" 
+                  name="cred.phoneNumber" 
+                  placeholder="+5511999999999" 
+                  required 
+                  defaultValue={useProfileData && profile?.whatsapp ? profile.whatsapp : String(integration?.credentials?.phoneNumber ?? '')} 
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {channel === 'whatsapp' && provider === 'twilio' && (
+      {/* CRM Configurations */}
+      {channel === 'crm' && (
         <>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Consulte a documentação do {provider} para obter suas credenciais de API
+            </AlertDescription>
+          </Alert>
+          
           <div className="space-y-2">
-            <Label htmlFor="twilio-sid">Account SID</Label>
+            <Label htmlFor="crm-api-key">API Key / Token</Label>
             <Input 
-              id="twilio-sid" 
-              name="cred.accountSid" 
-              placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              required 
-              defaultValue={String(integration?.credentials?.accountSid ?? '')} 
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="twilio-token">Auth Token (opcional se usar API Key)</Label>
-            <Input 
-              id="twilio-token" 
-              name="cred.authToken" 
+              id="crm-api-key" 
+              name="cred.apiKey" 
               type="password" 
-              placeholder={integration ? "Deixe vazio para manter o atual" : ""}
+              required={!integration}
+              placeholder={integration ? "Deixe vazio para manter o atual" : "Cole sua API Key aqui"}
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {['hubspot', 'salesforce', 'pipedrive'].includes(provider) && (
             <div className="space-y-2">
-              <Label htmlFor="twilio-api-sid">API Key SID (opcional)</Label>
+              <Label htmlFor="crm-domain">Domínio / URL</Label>
               <Input 
-                id="twilio-api-sid" 
-                name="cred.apiKeySid" 
-                placeholder="SKxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                defaultValue={String(integration?.credentials?.apiKeySid ?? '')} 
+                id="crm-domain" 
+                name="cred.domain" 
+                placeholder="sua-empresa.hubspot.com"
+                defaultValue={String(integration?.credentials?.domain ?? '')}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="twilio-api-secret">API Key Secret (opcional)</Label>
-              <Input 
-                id="twilio-api-secret" 
-                name="cred.apiKeySecret" 
-                type="password" 
-                placeholder={integration ? "Deixe vazio para manter o atual" : ""}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="twilio-region">Region (opcional, ex.: au1, ie1)</Label>
-            <Input 
-              id="twilio-region" 
-              name="cred.region" 
-              placeholder="deixe em branco se não souber"
-              defaultValue={String(integration?.credentials?.region ?? '')} 
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="twilio-phone">WhatsApp Number</Label>
-            <Input 
-              id="twilio-phone" 
-              name="cred.phoneNumber" 
-              placeholder="+5511999999999" 
-              required 
-              defaultValue={useProfileData && profile?.whatsapp ? profile.whatsapp : String(integration?.credentials?.phoneNumber ?? '')} 
-            />
-          </div>
+          )}
         </>
       )}
 
-      {channel === 'linkedin' && provider === 'api' && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="linkedin-token">Access Token</Label>
-            <Input id="linkedin-token" name="cred.accessToken" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="linkedin-org">Organization ID</Label>
-            <Input id="linkedin-org" name="cred.organizationId" defaultValue={String(integration?.credentials?.organizationId ?? '')} />
-          </div>
-        </>
+      {/* Other Channels */}
+      {!['email', 'whatsapp', 'crm'].includes(channel) && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Esta integração está em desenvolvimento. Em breve você poderá configurá-la.
+          </AlertDescription>
+        </Alert>
       )}
 
-      {channel === 'instagram' && provider === 'graph_api' && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="ig-token">Access Token</Label>
-            <Input id="ig-token" name="cred.accessToken" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ig-account">Instagram Account ID</Label>
-            <Input id="ig-account" name="cred.instagramAccountId" required defaultValue={String(integration?.credentials?.instagramAccountId ?? '')} />
-          </div>
-        </>
-      )}
-
-      {channel === 'x' && provider === 'api' && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="x-api-key">API Key</Label>
-            <Input id="x-api-key" name="cred.apiKey" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="x-api-secret">API Secret</Label>
-            <Input id="x-api-secret" name="cred.apiSecret" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="x-access-token">Access Token</Label>
-            <Input id="x-access-token" name="cred.accessToken" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="x-access-secret">Access Token Secret</Label>
-            <Input id="x-access-secret" name="cred.accessTokenSecret" type="password" required />
-          </div>
-        </>
-      )}
-
-      {channel === 'facebook' && provider === 'graph_api' && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="fb-token">Access Token</Label>
-            <Input id="fb-token" name="cred.accessToken" type="password" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fb-page">Page ID</Label>
-            <Input id="fb-page" name="cred.pageId" required defaultValue={String(integration?.credentials?.pageId ?? '')} />
-          </div>
-        </>
-      )}
-
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        {integration ? 'Atualizar' : 'Adicionar'} Integração
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Salvando...
+          </>
+        ) : (
+          <>
+            {integration ? 'Atualizar' : 'Adicionar'} Integração
+          </>
+        )}
       </Button>
     </form>
   );
