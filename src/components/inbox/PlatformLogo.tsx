@@ -118,10 +118,109 @@ export function PlatformLogo({ platform, provider, size = 'md', className }: Pla
     );
   }
 
+  // Yahoo Mail
+  if (platform === 'email' && provider === 'yahoo') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M12.004 0C5.377 0 0 5.377 0 12.004 0 18.628 5.377 24 12.004 24 18.628 24 24 18.628 24 12.004 24 5.377 18.628 0 12.004 0zm-1.907 6.798h3.073l-3.92 7.856v4.652H6.868v-4.652L2.95 6.798h3.073l2.537 5.335 2.537-5.335z" fill="#6001D2"/>
+      </svg>
+    );
+  }
+
+  // Zoho Mail
+  if (platform === 'email' && provider === 'zoho') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.341H6.106V6.659h11.788v10.682z" fill="#C8202F"/>
+      </svg>
+    );
+  }
+
+  // iCloud Mail
+  if (platform === 'email' && provider === 'icloud') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M13.762 4.29a6.51 6.51 0 0 0-5.669 3.332 3.571 3.571 0 0 0-1.558-.36 3.571 3.571 0 0 0-3.516 3A4.918 4.918 0 0 0 0 14.796a4.918 4.918 0 0 0 4.92 4.914 4.93 4.93 0 0 0 .617-.045h14.42c2.305-.272 4.041-2.258 4.043-4.589v-1.924a4.543 4.543 0 0 0-3.67-4.465 6.514 6.514 0 0 0-6.568-4.392z" fill="#3693F3"/>
+      </svg>
+    );
+  }
+
+  // CRM - HubSpot
+  if (platform === 'crm' && provider === 'hubspot') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M18.164 7.93V5.084a2.198 2.198 0 10-1.02 0v2.845A4.102 4.102 0 0014.332 12l-4.328-3.382a2.198 2.198 0 10-.844.654L13.488 12.7a4.102 4.102 0 105.51-4.273l-.834-.497zm-.666 8.18a2.58 2.58 0 110-5.16 2.58 2.58 0 010 5.16z" fill="#FF7A59"/>
+      </svg>
+    );
+  }
+
+  // CRM - Salesforce
+  if (platform === 'crm' && provider === 'salesforce') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M10.006 5.415a3.807 3.807 0 013.223-1.82c1.567 0 2.939.961 3.519 2.327a4.2 4.2 0 011.608-.32c2.218 0 4.016 1.797 4.016 4.016 0 .344-.043.678-.124.998a3.465 3.465 0 011.857 3.063c0 1.92-1.558 3.478-3.478 3.478h-1.043v.124c0 1.92-1.558 3.478-3.478 3.478a3.484 3.484 0 01-2.668-1.247 4.015 4.015 0 01-2.954 1.302c-1.814 0-3.338-1.202-3.831-2.852a3.465 3.465 0 01-2.06-3.169c0-1.488.94-2.755 2.259-3.256a4.015 4.015 0 01-.196-1.23c0-2.218 1.797-4.015 4.015-4.015.589 0 1.147.128 1.651.356.215-.092.443-.16.684-.212z" fill="#00A1E0"/>
+      </svg>
+    );
+  }
+
+  // CRM - Pipedrive
+  if (platform === 'crm' && provider === 'pipedrive') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M17.429 0c-1.68 0-3.22.797-4.191 2.044a5.488 5.488 0 00-1.81-.305c-3.037 0-5.5 2.463-5.5 5.5 0 .478.061.942.176 1.383A4.73 4.73 0 002.857 13.5 4.73 4.73 0 007.714 18h9.715c2.618 0 4.714-2.096 4.714-4.714 0-2.172-1.467-3.993-3.476-4.548a5.488 5.488 0 00-1.238-8.738z" fill="#1B1B1B"/>
+      </svg>
+    );
+  }
+
+  // CRM - Bitrix24
+  if (platform === 'crm' && provider === 'bitrix24') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M14.901 5.613l-3.81 3.81-3.811-3.81L0 12.896l7.28 7.281 3.811-3.81 3.81 3.81L24 12.896l-9.099-7.283zM7.28 15.705l-3.81-3.81 3.81-3.81 3.81 3.81-3.81 3.81zm9.62 0l-3.81-3.81 3.81-3.81 3.81 3.81-3.81 3.81z" fill="#2FC7F7"/>
+      </svg>
+    );
+  }
+
+  // Automation - Zapier
+  if (platform === 'automation' && provider === 'zapier') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.515 14.47l-2.018 2.019-3.497-3.497-3.497 3.497-2.018-2.018 3.497-3.498L6.485 7.476l2.018-2.018 3.497 3.497 3.497-3.497 2.018 2.018-3.497 3.497 3.497 3.498z" fill="#FF4A00"/>
+      </svg>
+    );
+  }
+
+  // Automation - Make (Integromat)
+  if (platform === 'automation' && provider === 'make') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M8.042 5.308a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM15.958 5.308a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM8.042 13.5a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM12 13.5a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM15.958 13.5a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM8.042 21.962a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27zM15.958 21.962a1.635 1.635 0 100-3.27 1.635 1.635 0 000 3.27z" fill="#6D00CC"/>
+      </svg>
+    );
+  }
+
+  // Support - Intercom
+  if (platform === 'support' && provider === 'intercom') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M4.5 0A4.5 4.5 0 000 4.5v15A4.5 4.5 0 004.5 24h15a4.5 4.5 0 004.5-4.5v-15A4.5 4.5 0 0019.5 0h-15zM6 8.25A.75.75 0 016.75 7.5h1.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-7.5zm4.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-7.5zm4.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-7.5z" fill="#0062FF"/>
+      </svg>
+    );
+  }
+
+  // Support - Zendesk
+  if (platform === 'support' && provider === 'zendesk') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M12.914 2.904V16.29L24 2.904H12.914zM0 16.29h11.086V2.904L0 16.29zm13.096 2.002c0 .996-.807 1.804-1.803 1.804H1.804A1.804 1.804 0 010 18.292V7.805L13.096 21.1v-2.808z" fill="#03363D"/>
+      </svg>
+    );
+  }
+
   // Default fallback
   return (
     <div className={cn(sizeClass, 'bg-muted rounded flex items-center justify-center', className)}>
-      <span className="text-xs font-medium">{platform[0].toUpperCase()}</span>
+      <span className="text-xs font-medium">{platform[0]?.toUpperCase() || '?'}</span>
     </div>
   );
 }

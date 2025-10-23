@@ -525,32 +525,41 @@ export default function SDRIntegrationsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                    {category.items.map((item) => (
-                      <Dialog key={`${item.channel}-${item.provider || item.label}`}>
-                        <DialogTrigger asChild>
-                          <Card className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer">
-                            <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
-                              <PlatformLogo platform={item.channel} provider={item.provider} size="lg" />
-                              <p className="text-sm font-medium text-center">{item.label}</p>
-                            </CardContent>
-                          </Card>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Configurar {item.label}</DialogTitle>
-                            <DialogDescription>
-                              Conecte seu canal {item.label}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <IntegrationForm 
-                            defaultChannel={item.channel}
-                            defaultProvider={item.provider}
-                            onSuccess={loadIntegrations} 
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    ))}
+                  <div className="grid gap-2 md:grid-cols-4 lg:grid-cols-6">
+                    {category.items.map((item) => {
+                      const isEmailIntegration = item.channel === 'email';
+                      
+                      return (
+                        <Dialog key={`${item.channel}-${item.provider || item.label}`}>
+                          <DialogTrigger asChild>
+                            <Card className={`group relative hover:shadow-md transition-all ${isEmailIntegration ? 'cursor-pointer hover:border-primary/50' : 'cursor-not-allowed opacity-60'}`}>
+                              <CardContent className="flex flex-col items-center justify-center py-4 gap-2">
+                                <PlatformLogo platform={item.channel} provider={item.provider} size="md" />
+                                <p className="text-xs font-medium text-center">{item.label}</p>
+                                {!isEmailIntegration && (
+                                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5">Em breve</Badge>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </DialogTrigger>
+                          {isEmailIntegration && (
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Configurar {item.label}</DialogTitle>
+                                <DialogDescription>
+                                  Conecte seu canal {item.label}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <IntegrationForm 
+                                defaultChannel={item.channel}
+                                defaultProvider={item.provider}
+                                onSuccess={loadIntegrations} 
+                              />
+                            </DialogContent>
+                          )}
+                        </Dialog>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
