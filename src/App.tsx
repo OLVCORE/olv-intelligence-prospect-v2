@@ -45,6 +45,7 @@ const SDRIntegrationsPage = lazy(() => import("./pages/SDRIntegrationsPage"));
 const SDRAnalyticsPage = lazy(() => import("./pages/SDRAnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
+const GeographicAnalysisPage = lazy(() => import("./pages/GeographicAnalysisPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -234,6 +235,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Analysis360Page />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/geographic-analysis"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <GeographicAnalysisPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

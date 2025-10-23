@@ -17,7 +17,8 @@ import {
   MessageSquare,
   ChevronRight,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from "lucide-react";
 import {
   Sidebar,
@@ -144,6 +145,12 @@ const menuItems = [
     icon: Target,
     url: "/analysis-360",
     description: "Visão completa e consolidada de todos os dados e inteligências disponíveis sobre uma empresa"
+  },
+  {
+    title: "Distribuição Geográfica",
+    icon: Globe,
+    url: "/geographic-analysis",
+    description: "Mapa interativo e análises de distribuição territorial das empresas com geocodificação automática"
   },
   {
     title: "Canvas",

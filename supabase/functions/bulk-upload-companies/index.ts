@@ -102,7 +102,7 @@ serve(async (req) => {
           companyData.linkedin_url = companyData.raw_data.social_media.linkedin;
         }
 
-        // Adiciona localização se fornecida
+        // Adiciona localização se fornecida E geocodifica automaticamente
         if (row.CEP || row.Logradouro || row.Municipio || row.Estado) {
           companyData.location = {
             cep: row.CEP,
@@ -113,6 +113,38 @@ serve(async (req) => {
             estado: row.Estado,
             pais: row.Pais || 'Brasil'
           };
+
+          // 🗺️ Geocodificar endereço automaticamente
+          try {
+            const hasNumero = row.Numero && row.Numero.trim().length > 0;
+            const hasCep = row.CEP && row.CEP.replace(/\D/g, '').length === 8;
+            
+            let searchText = '';
+            if (hasNumero && row.Logradouro) {
+              searchText = `${row.Logradouro}, ${row.Numero}, ${row.Municipio}, ${row.Estado}, Brasil`;
+            } else if (hasCep) {
+              searchText = `${row.CEP}, Brasil`;
+            } else if (row.Logradouro && row.Municipio) {
+              searchText = `${row.Logradouro}, ${row.Municipio}, ${row.Estado}, Brasil`;
+            } else if (row.Municipio && row.Estado) {
+              searchText = `${row.Municipio}, ${row.Estado}, Brasil`;
+            }
+
+            if (searchText) {
+              const geocodeResponse = await supabaseClient.functions.invoke('mapbox-geocode', {
+                body: { searchText, zoom: 16 }
+              });
+
+              if (geocodeResponse.data?.success && geocodeResponse.data.location) {
+                companyData.location.lat = geocodeResponse.data.location.lat;
+                companyData.location.lng = geocodeResponse.data.location.lng;
+                console.log(`✅ Geocodificado: ${companyData.name} -> ${geocodeResponse.data.location.lat}, ${geocodeResponse.data.location.lng}`);
+              }
+            }
+          } catch (geocodeError) {
+            console.warn(`⚠️ Erro ao geocodificar empresa ${i + 2}:`, geocodeError);
+            // Continua sem geocodificação - não é erro fatal
+          }
         }
 
         // Insere ou atualiza empresa
