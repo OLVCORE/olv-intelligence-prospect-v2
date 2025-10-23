@@ -367,6 +367,22 @@ export default function SDRIntegrationsPage() {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
+            {/* Quick Email Setup Banner */}
+            <Alert className="mb-6 border-primary/50 bg-primary/5">
+              <Mail className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <div>
+                  <strong>Novo:</strong> Configure seu email em 3 passos simples com nosso assistente visual
+                </div>
+                <Link to="/email-settings">
+                  <Button size="sm" variant="default">
+                    <Settings className="h-3.5 w-3.5 mr-2" />
+                    Configurar Email
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+
             {/* Active Integrations */}
             {integrations.length > 0 && (
               <div className="mb-6">
