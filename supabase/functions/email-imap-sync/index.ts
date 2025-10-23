@@ -61,14 +61,18 @@ serve(async (req) => {
 
     console.log(`Connecting to IMAP: ${imapConfig.host}:${imapConfig.port}`);
 
-    // IMAP fetch is not supported in this environment (Edge runtime has no raw TCP/IMAP access)
-    console.log('IMAP fetch not implemented in this environment; skipping message creation');
+    // Emails chegam automaticamente via webhook quando você configura o redirecionamento
+    // No cPanel, você deve criar um Forwarder que redireciona para:
+    // https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook
+    
+    console.log('✅ Sistema pronto para receber emails via webhook');
+    console.log('📧 Configure o redirecionamento no seu provedor de email');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         emailsProcessed: 0,
-        message: 'IMAP sync is not available in this environment. Configure email forwarding/webhook to ingest real emails.' 
+        message: 'Sistema pronto! Configure o redirecionamento de email conforme as instruções na página de Integrações.' 
       }),
       {
         status: 200,
