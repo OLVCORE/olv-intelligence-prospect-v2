@@ -390,8 +390,8 @@ export default function SDRIntegrationsPage() {
                         <Dialog key={item.id}>
                           <DialogTrigger asChild>
                             <Card className={`group hover:shadow-sm transition-all ${item.available ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed opacity-60'}`}>
-                              <CardContent className="p-1 flex flex-col items-center gap-0.5 bg-muted/30 h-[60px]">
-                                <div className="w-full flex items-center justify-center flex-shrink-0 h-8">
+                              <CardContent className="p-1.5 flex flex-col items-center gap-1 bg-muted/30 h-[85px]">
+                                <div className="w-full flex items-center justify-center flex-shrink-0 h-10">
                                   <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
                                 </div>
                                 <div className="text-center w-full px-0.5 flex-1 flex flex-col justify-center">
