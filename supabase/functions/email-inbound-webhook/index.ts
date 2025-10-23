@@ -175,7 +175,7 @@ serve(async (req) => {
         from_id: fromAddress,
         to_id: toAddresses[0],
         body,
-        status: 'received',
+        status: 'delivered',
         provider_message_id: payload.messageId || undefined,
         metadata: { subject: payload.subject || '' },
       })
