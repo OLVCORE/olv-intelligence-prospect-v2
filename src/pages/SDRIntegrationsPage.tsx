@@ -340,7 +340,7 @@ export default function SDRIntegrationsPage() {
                           Adicionar Integração
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Nova Integração</DialogTitle>
                           <DialogDescription>
@@ -408,12 +408,12 @@ export default function SDRIntegrationsPage() {
                           Testar Conexão
                         </Button>
                         <Dialog>
-                          <DialogTrigger asChild>
+                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
                               <Settings className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Configurar Integração</DialogTitle>
                             <DialogDescription>Edite ou substitua as credenciais desta integração</DialogDescription>
@@ -454,7 +454,7 @@ export default function SDRIntegrationsPage() {
                   </CardContent>
                 </Card>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Configurar {item.label}</DialogTitle>
                   <DialogDescription>
