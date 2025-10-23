@@ -199,14 +199,27 @@ export function AppSidebar() {
                         <TooltipTrigger asChild>
                           <div>
                             <Collapsible className="group/collapsible">
-                              <SidebarMenuButton asChild>
+                              <SidebarMenuButton 
+                                asChild
+                                className={cn(
+                                  (item as any).special && "relative overflow-hidden bg-gradient-to-r from-purple-600/15 via-pink-600/15 to-indigo-600/15 border-l-4 border-purple-600 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-300"
+                                )}
+                              >
                                 <CollapsibleTrigger className="w-full">
                                   <div className="flex items-center gap-2 py-1">
                                     <div className="relative">
-                                      <item.icon className="h-5 w-5" />
-                                      <div className="absolute -top-1 -right-1 h-2 w-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" />
+                                      <item.icon className={cn(
+                                        "h-5 w-5",
+                                        (item as any).special && "text-purple-600 dark:text-purple-400"
+                                      )} />
+                                      {(item as any).special && (
+                                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-purple-500/50" />
+                                      )}
                                     </div>
-                                    <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    <span className={cn(
+                                      "font-semibold",
+                                      (item as any).special && "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-indigo-400"
+                                    )}>
                                       {item.title}
                                     </span>
                                   </div>
@@ -256,8 +269,7 @@ export function AppSidebar() {
                             asChild 
                             isActive={isActive}
                             className={cn(
-                              (item as any).highlighted && "font-semibold bg-primary/5 border-l-2 border-primary",
-                              (item as any).special && "bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-l-2 border-purple-500 font-bold"
+                              (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
                             )}
                           >
                             <Link to={item.url}>
