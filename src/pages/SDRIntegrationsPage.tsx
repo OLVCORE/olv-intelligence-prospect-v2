@@ -504,40 +504,32 @@ export default function SDRIntegrationsPage() {
           </Card>
         )}
 
-        {/* Categorias de Integrações */}
-        <div className="space-y-6">
+        {/* Categorias de Integrações em 2 Colunas */}
+        <div className="grid gap-4 md:grid-cols-2">
           {Object.entries(INTEGRATION_CATEGORIES).map(([key, category]) => {
             const Icon = category.icon;
             return (
-              <Card key={key}>
-                <CardHeader>
+              <Card key={key} className="h-fit">
+                <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5" />
-                    <CardTitle>{category.title}</CardTitle>
+                    <Icon className="h-4 w-4" />
+                    <CardTitle className="text-base">{category.title}</CardTitle>
                   </div>
-                  <CardDescription>
-                    {key === 'email' && 'Configure contas de email para envio e recebimento'}
-                    {key === 'social' && 'Conecte suas redes sociais e mensageiros'}
-                    {key === 'crm' && 'Integre com seu sistema de CRM'}
-                    {key === 'communication' && 'Canais de comunicação adicionais'}
-                    {key === 'automation' && 'Ferramentas de automação de processos'}
-                    {key === 'support' && 'Plataformas de atendimento ao cliente'}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2">
+                <CardContent className="pt-0">
+                  <div className="grid gap-2 grid-cols-2">
                     {category.items.map((item) => {
                       const isEmailIntegration = item.channel === 'email';
                       
                       return (
                         <Dialog key={`${item.channel}-${item.provider || item.label}`}>
                           <DialogTrigger asChild>
-                            <Card className={`group relative hover:shadow-md transition-all ${isEmailIntegration ? 'cursor-pointer hover:border-primary/50' : 'cursor-not-allowed opacity-60'}`}>
-                              <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
-                                <PlatformLogo platform={item.channel} provider={item.provider} size="lg" />
-                                <p className="text-sm font-medium text-center">{item.label}</p>
+                            <Card className={`group relative hover:shadow-sm transition-all ${isEmailIntegration ? 'cursor-pointer hover:border-primary/50' : 'cursor-not-allowed opacity-50'}`}>
+                              <CardContent className="flex flex-col items-center justify-center py-3 gap-1.5 px-2">
+                                <PlatformLogo platform={item.channel} provider={item.provider} size="md" />
+                                <p className="text-[10px] font-medium text-center leading-tight">{item.label}</p>
                                 {!isEmailIntegration && (
-                                  <Badge variant="secondary" className="text-xs py-0.5 px-2">Em breve</Badge>
+                                  <Badge variant="secondary" className="text-[8px] py-0 px-1 h-3.5">Breve</Badge>
                                 )}
                               </CardContent>
                             </Card>

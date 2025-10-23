@@ -9,9 +9,9 @@ interface PlatformLogoProps {
 
 export function PlatformLogo({ platform, provider, size = 'md', className }: PlatformLogoProps) {
   const sizeClasses = {
-    sm: 'w-5 h-5',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-10 h-10',
   };
 
   const sizeClass = sizeClasses[size];
