@@ -405,14 +405,14 @@ export default function SDRIntegrationsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Integrações</h1>
-            <p className="text-muted-foreground">Configure canais de comunicação e ferramentas</p>
+            <h1 className="text-2xl font-bold">Integrações</h1>
+            <p className="text-sm text-muted-foreground">Configure canais de comunicação e ferramentas</p>
           </div>
-          <Button onClick={loadIntegrations}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button onClick={loadIntegrations} size="sm">
+            <RefreshCw className="h-3.5 w-3.5 mr-2" />
             Atualizar
           </Button>
         </div>
@@ -420,11 +420,11 @@ export default function SDRIntegrationsPage() {
         {/* Integrações Ativas */}
         {!loading && integrations.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Integrações Ativas</CardTitle>
-              <CardDescription>Suas conexões configuradas</CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Integrações Ativas</CardTitle>
+              <CardDescription className="text-xs">Suas conexões configuradas</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-3">
               <div className="grid gap-4 md:grid-cols-2">
                 {integrations.map((integration) => (
                   <Card key={integration.id}>
