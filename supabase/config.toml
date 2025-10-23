@@ -2,6 +2,9 @@ project_id = "ioaxzpwlurpduanzkfrt"
  
  [functions.api-health]
  verify_jwt = false
+
+ [functions.batch-enrich-receitaws]
+ verify_jwt = true
  
  [functions.insights-chat]
  verify_jwt = false

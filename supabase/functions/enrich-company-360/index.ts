@@ -136,6 +136,55 @@ serve(async (req) => {
         });
         receitaData = receitaResponse;
         console.log('✅ ReceitaWS data retrieved');
+        
+        // 💾 SALVAR dados da ReceitaWS na tabela companies
+        if (receitaData) {
+          const updateData: any = {};
+          
+          if (receitaData.nome && !company.name) {
+            updateData.name = receitaData.nome;
+          }
+          
+          if (receitaData.fantasia) {
+            updateData.name = receitaData.fantasia; // Prefere nome fantasia
+          }
+          
+          if (receitaData.atividade_principal?.[0]?.text) {
+            updateData.industry = receitaData.atividade_principal[0].text;
+          }
+          
+          if (receitaData.email) {
+            updateData.raw_data = {
+              ...company.raw_data,
+              receitaws: receitaData
+            };
+          }
+          
+          // Construir endereço completo
+          if (receitaData.municipio && receitaData.uf) {
+            updateData.location = {
+              city: receitaData.municipio,
+              state: receitaData.uf,
+              country: 'Brasil',
+              address: [
+                receitaData.logradouro,
+                receitaData.numero,
+                receitaData.complemento,
+                receitaData.bairro,
+                receitaData.cep
+              ].filter(Boolean).join(', ')
+            };
+          }
+          
+          if (Object.keys(updateData).length > 0) {
+            await supabase
+              .from('companies')
+              .update(updateData)
+              .eq('id', company_id);
+            
+            console.log('✅ ReceitaWS data saved to companies table');
+          }
+        }
       } catch (error) {
         console.error('❌ ReceitaWS error:', error);
       }

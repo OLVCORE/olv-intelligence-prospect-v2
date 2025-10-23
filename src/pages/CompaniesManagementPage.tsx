@@ -40,6 +40,7 @@ export default function CompaniesManagementPage() {
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBatchEnriching, setIsBatchEnriching] = useState(false);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -118,6 +119,35 @@ export default function CompaniesManagementPage() {
     }
   };
 
+  const handleBatchEnrichReceitaWS = async () => {
+    try {
+      setIsBatchEnriching(true);
+      toast.info('Iniciando enriquecimento em lote com Receita Federal...');
+
+      const { data, error } = await supabase.functions.invoke('batch-enrich-receitaws', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      const summary = data?.summary;
+      if (summary) {
+        toast.success(
+          `Enriquecimento concluído! ${summary.enriched} empresas atualizadas, ${summary.skipped} já tinham dados, ${summary.errors} erros.`
+        );
+      } else {
+        toast.success('Enriquecimento em lote concluído!');
+      }
+
+      refetch(); // Recarrega para ver os dados atualizados
+    } catch (error) {
+      console.error('Error batch enriching:', error);
+      toast.error('Erro ao executar enriquecimento em lote');
+    } finally {
+      setIsBatchEnriching(false);
+    }
+  };
+
   const filteredCompanies = companies.filter(company =>
     company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj?.includes(searchTerm) ||
@@ -146,6 +176,18 @@ export default function CompaniesManagementPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleBatchEnrichReceitaWS}
+              disabled={isBatchEnriching}
+            >
+              {isBatchEnriching ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Building2 className="h-4 w-4 mr-2" />
+              )}
+              Enriquecer com Receita Federal
+            </Button>
             {selectedCompanies.length > 0 && (
               <Button 
                 variant="destructive" 
