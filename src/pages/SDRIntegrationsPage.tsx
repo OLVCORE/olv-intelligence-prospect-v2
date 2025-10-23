@@ -481,6 +481,17 @@ function IntegrationForm({
         }
       }
 
+      // Se for email, copiar senha IMAP para SMTP se SMTP não tiver senha
+      if (channel === 'email') {
+        if (newCredentials['imap.password'] && !newCredentials['smtp.password']) {
+          newCredentials['smtp.password'] = newCredentials['imap.password'];
+        }
+        // Copiar usuário IMAP para SMTP se SMTP não tiver usuário
+        if (newCredentials['imap.user'] && !newCredentials['smtp.user']) {
+          newCredentials['smtp.user'] = newCredentials['imap.user'];
+        }
+      }
+
       const mergedCredentials = integration 
         ? (resetCreds ? newCredentials : { ...integration.credentials, ...newCredentials })
         : newCredentials;
@@ -574,114 +585,88 @@ function IntegrationForm({
             </div>
           )}
 
-          <div className="grid gap-3">
-            <div className="space-y-2">
-              <Label>Servidor IMAP</Label>
-              <Input 
-                name="cred.imap.host" 
-                placeholder="imap.example.com" 
-                required={!integration}
-                defaultValue={currentEmailProvider?.imap.host || String(integration?.credentials?.['imap.host'] ?? '')} 
-              />
+          {/* Configuração Automática Banner */}
+          <Alert className="bg-primary/5 border-primary/20">
+            <Check className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-xs">
+              <strong>Configuração automática ativa!</strong> Servidores, portas e SSL já estão configurados para {currentEmailProvider.name}.
+            </AlertDescription>
+          </Alert>
+
+          {/* Campos Ocultos (Automáticos) */}
+          <input type="hidden" name="cred.imap.host" value={currentEmailProvider?.imap.host || ''} />
+          <input type="hidden" name="cred.imap.port" value={currentEmailProvider?.imap.port || 993} />
+          <input type="hidden" name="config.imap.secure" value={String(currentEmailProvider?.imap.secure ?? true)} />
+          <input type="hidden" name="cred.smtp.host" value={currentEmailProvider?.smtp.host || ''} />
+          <input type="hidden" name="cred.smtp.port" value={currentEmailProvider?.smtp.port || 587} />
+          <input type="hidden" name="config.smtp.secure" value={String(currentEmailProvider?.smtp.secure ?? true)} />
+
+          {/* Campos que o Usuário Precisa Preencher */}
+          <div className="space-y-3 p-4 border rounded-lg bg-background">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              <h3 className="font-semibold text-sm">Informações necessárias</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Porta IMAP</Label>
-                <Input 
-                  name="cred.imap.port" 
-                  type="number" 
-                  required={!integration}
-                  defaultValue={currentEmailProvider?.imap.port || String(integration?.credentials?.['imap.port'] ?? '')} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SSL/TLS</Label>
-                <Select 
-                  name="config.imap.secure" 
-                  defaultValue={String(currentEmailProvider?.imap.secure ?? integration?.config?.['imap.secure'] ?? 'true')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">
+                Seu Email {profile?.email && <span className="text-xs text-muted-foreground">(do perfil)</span>}
+              </Label>
               <Input 
+                id="email"
                 name="cred.imap.user" 
                 type="email" 
                 required={!integration}
-                defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['imap.user'] ?? '')} 
+                defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['imap.user'] ?? '')}
+                className="h-10"
               />
+              <input type="hidden" name="cred.smtp.user" defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['smtp.user'] ?? '')} />
             </div>
+
             <div className="space-y-2">
-              <Label>Senha/App Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">
+                Senha de App / Senha da Conta
+              </Label>
               <Input 
+                id="password"
                 name="cred.imap.password" 
                 type="password" 
                 required={!integration}
-                placeholder={integration ? "Deixe vazio para manter" : ""}
+                placeholder={integration ? "Deixe vazio para manter a senha atual" : "Digite sua senha ou senha de app"}
+                className="h-10"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Servidor SMTP</Label>
-              <Input 
-                name="cred.smtp.host" 
-                placeholder="smtp.example.com" 
-                required={!integration}
-                defaultValue={currentEmailProvider?.smtp.host || String(integration?.credentials?.['smtp.host'] ?? '')} 
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Porta SMTP</Label>
-                <Input 
-                  name="cred.smtp.port" 
-                  type="number" 
-                  required={!integration}
-                  defaultValue={currentEmailProvider?.smtp.port || String(integration?.credentials?.['smtp.port'] ?? '')} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SSL/TLS</Label>
-                <Select 
-                  name="config.smtp.secure" 
-                  defaultValue={String(currentEmailProvider?.smtp.secure ?? integration?.config?.['smtp.secure'] ?? 'true')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Email SMTP</Label>
-              <Input 
-                name="cred.smtp.user" 
-                type="email" 
-                required={!integration}
-                defaultValue={useProfileData && profile?.email ? profile.email : String(integration?.credentials?.['smtp.user'] ?? '')} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Senha SMTP</Label>
-              <Input 
-                name="cred.smtp.password" 
-                type="password" 
-                required={!integration}
-                placeholder={integration ? "Deixe vazio para manter" : ""}
-              />
+              <p className="text-xs text-muted-foreground">
+                {emailProvider === 'gmail' && '💡 Para Gmail, use uma senha de app. '}
+                {emailProvider === 'yahoo' && '💡 Para Yahoo, use uma senha de app. '}
+                {emailProvider === 'outlook' && '💡 Para Outlook, use sua senha normal. '}
+                A mesma senha será usada para IMAP e SMTP.
+              </p>
             </div>
           </div>
+
+          {/* Detalhes Técnicos (Opcional) */}
+          <details className="group">
+            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground flex items-center gap-2">
+              <span>Ver configurações técnicas</span>
+              <span className="group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="mt-3 p-3 bg-muted/30 rounded-lg space-y-2 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="font-medium">Servidor IMAP:</p>
+                  <p className="text-muted-foreground">{currentEmailProvider.imap.host}:{currentEmailProvider.imap.port}</p>
+                </div>
+                <div>
+                  <p className="font-medium">Servidor SMTP:</p>
+                  <p className="text-muted-foreground">{currentEmailProvider.smtp.host}:{currentEmailProvider.smtp.port}</p>
+                </div>
+              </div>
+              <div>
+                <p className="font-medium">SSL/TLS:</p>
+                <p className="text-muted-foreground">Habilitado para IMAP e SMTP</p>
+              </div>
+            </div>
+          </details>
 
           <WebhookSetupInstructions />
         </>
