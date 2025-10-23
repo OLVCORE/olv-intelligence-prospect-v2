@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Integration {
   id: string;
@@ -35,6 +36,152 @@ interface Integration {
   last_health_check?: string;
   config: any;
   credentials: any;
+}
+
+function WebhookSetupInstructions() {
+  const { toast } = useToast();
+  const webhookUrl = "https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook";
+
+  const copyWebhookUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({ title: 'URL copiada!' });
+  };
+
+  const copyScript = () => {
+    const script = `#!/bin/bash
+cat | curl -X POST \\
+  -H "Content-Type: application/json" \\
+  -d @- \\
+  ${webhookUrl}`;
+    navigator.clipboard.writeText(script);
+    toast({ title: 'Script copiado!' });
+  };
+
+  const testWebhook = async () => {
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'teste@example.com',
+          to: 'consultores@olvinternacional.com.br',
+          subject: 'Teste de Webhook',
+          body: 'Este é um email de teste do webhook',
+          html: '<p>Este é um email de teste do webhook</p>',
+          messageId: `test-${Date.now()}@example.com`,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast({ 
+          title: '✅ Webhook funcionando!',
+          description: 'O webhook está recebendo emails corretamente.'
+        });
+      } else {
+        throw new Error(data.error || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      toast({
+        title: '❌ Erro no teste',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <div className="mt-6 p-4 border-2 border-primary/20 rounded-lg bg-primary/5 space-y-4">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+        <div className="flex-1 space-y-3">
+          <h4 className="font-semibold text-sm">⚙️ Configuração do Webhook de Emails</h4>
+          <p className="text-xs text-muted-foreground">
+            Para receber emails automaticamente na plataforma, você precisa configurar um <strong>forward/redirecionamento</strong> no seu servidor de email para enviar os emails recebidos para nosso webhook.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold">URL do Webhook</Label>
+        <div className="flex gap-2">
+          <Input 
+            readOnly 
+            value={webhookUrl}
+            className="text-xs font-mono"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={copyWebhookUrl}>
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Button type="button" variant="outline" size="sm" className="w-full" onClick={testWebhook}>
+        <Zap className="h-4 w-4 mr-2" />
+        Testar Webhook Agora
+      </Button>
+
+      <div className="space-y-3 pt-3 border-t">
+        <h5 className="font-semibold text-xs flex items-center gap-2">
+          📋 Opção 1: Configurar no cPanel (Recomendado)
+        </h5>
+        <ol className="text-xs space-y-2 text-muted-foreground list-decimal list-inside">
+          <li>Acesse o <strong>cPanel</strong> do seu servidor de email</li>
+          <li>Vá em <strong>Email → Forwarders</strong> (ou "Redirecionadores")</li>
+          <li>Clique em <strong>"Add Forwarder"</strong></li>
+          <li>Configure:
+            <ul className="ml-6 mt-1 space-y-1 list-disc">
+              <li>Email de origem: <code className="bg-muted px-1 rounded">consultores@olvinternacional.com.br</code></li>
+              <li>Destino: Selecione <strong>"Pipe to a Program"</strong></li>
+            </ul>
+          </li>
+          <li>Cole o script abaixo no campo de comando</li>
+        </ol>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold">Script para cPanel (copie e cole)</Label>
+          <div className="relative">
+            <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto font-mono">
+{`#!/bin/bash
+cat | curl -X POST \\
+  -H "Content-Type: application/json" \\
+  -d @- \\
+  ${webhookUrl}`}
+            </pre>
+            <Button type="button" variant="ghost" size="sm" className="absolute top-2 right-2" onClick={copyScript}>
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2 pt-3 border-t">
+        <h5 className="font-semibold text-xs">📮 Opção 2: Serviços de Email Profissionais</h5>
+        <p className="text-xs text-muted-foreground">
+          Use serviços como <strong>Mailgun</strong>, <strong>SendGrid</strong> ou <strong>Postmark</strong> que têm suporte nativo a webhooks.
+        </p>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" asChild>
+            <a href="https://documentation.mailgun.com/en/latest/user_manual.html#receiving-messages" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Mailgun Docs
+            </a>
+          </Button>
+          <Button type="button" variant="outline" size="sm" asChild>
+            <a href="https://docs.sendgrid.com/for-developers/parsing-email/setting-up-the-inbound-parse-webhook" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3 w-3 mr-1" />
+              SendGrid Docs
+            </a>
+          </Button>
+        </div>
+      </div>
+
+      <div className="pt-3 border-t">
+        <p className="text-xs text-muted-foreground">
+          📚 Mais detalhes: <code className="bg-muted px-1 rounded text-xs">docs/EMAIL_SETUP.md</code>
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function SDRIntegrationsPage() {
@@ -628,171 +775,7 @@ function IntegrationForm({
           </div>
 
           {/* Webhook Setup Instructions */}
-          <div className="mt-6 p-4 border-2 border-primary/20 rounded-lg bg-primary/5 space-y-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <div className="flex-1 space-y-3">
-                <h4 className="font-semibold text-sm">⚙️ Configuração do Webhook de Emails</h4>
-                <p className="text-xs text-muted-foreground">
-                  Para receber emails automaticamente na plataforma, você precisa configurar um <strong>forward/redirecionamento</strong> no seu servidor de email para enviar os emails recebidos para nosso webhook.
-                </p>
-              </div>
-            </div>
-
-            {/* Webhook URL */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">URL do Webhook</Label>
-              <div className="flex gap-2">
-                <Input 
-                  readOnly 
-                  value="https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook"
-                  className="text-xs font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText('https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook');
-                    toast({ title: 'URL copiada!' });
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Test Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={async () => {
-                try {
-                  const response = await fetch('https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      from: 'teste@example.com',
-                      to: 'consultores@olvinternacional.com.br',
-                      subject: 'Teste de Webhook',
-                      body: 'Este é um email de teste do webhook',
-                      html: '<p>Este é um email de teste do webhook</p>',
-                      messageId: `test-${Date.now()}@example.com`,
-                    }),
-                  });
-                  const data = await response.json();
-                  if (response.ok) {
-                    toast({ 
-                      title: '✅ Webhook funcionando!',
-                      description: 'O webhook está recebendo emails corretamente.'
-                    });
-                  } else {
-                    throw new Error(data.error || 'Erro desconhecido');
-                  }
-                } catch (error: any) {
-                  toast({
-                    title: '❌ Erro no teste',
-                    description: error.message,
-                    variant: 'destructive',
-                  });
-                }
-              }}
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Testar Webhook Agora
-            </Button>
-
-            {/* cPanel Instructions */}
-            <div className="space-y-3 pt-3 border-t">
-              <h5 className="font-semibold text-xs flex items-center gap-2">
-                📋 Opção 1: Configurar no cPanel (Recomendado)
-              </h5>
-              <ol className="text-xs space-y-2 text-muted-foreground list-decimal list-inside">
-                <li>Acesse o <strong>cPanel</strong> do seu servidor de email</li>
-                <li>Vá em <strong>Email → Forwarders</strong> (ou "Redirecionadores")</li>
-                <li>Clique em <strong>"Add Forwarder"</strong></li>
-                <li>Configure:
-                  <ul className="ml-6 mt-1 space-y-1 list-disc">
-                    <li>Email de origem: <code className="bg-muted px-1 rounded">consultores@olvinternacional.com.br</code></li>
-                    <li>Destino: Selecione <strong>"Pipe to a Program"</strong></li>
-                  </ul>
-                </li>
-                <li>Cole o script abaixo no campo de comando</li>
-              </ol>
-
-              {/* Script para copiar */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Script para cPanel (copie e cole)</Label>
-                <div className="relative">
-                  <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto font-mono">
-{`#!/bin/bash
-cat | curl -X POST \\
-  -H "Content-Type: application/json" \\
-  -d @- \\
-  https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook`}
-                  </pre>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      const script = `#!/bin/bash
-cat | curl -X POST \\
-  -H "Content-Type: application/json" \\
-  -d @- \\
-  https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook`;
-                      navigator.clipboard.writeText(script);
-                      toast({ title: 'Script copiado!' });
-                    }}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Alternative Options */}
-            <div className="space-y-2 pt-3 border-t">
-              <h5 className="font-semibold text-xs">📮 Opção 2: Serviços de Email Profissionais</h5>
-              <p className="text-xs text-muted-foreground">
-                Use serviços como <strong>Mailgun</strong>, <strong>SendGrid</strong> ou <strong>Postmark</strong> que têm suporte nativo a webhooks. Configure o webhook URL acima nas configurações de "Inbound Webhooks" do serviço.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <a href="https://documentation.mailgun.com/en/latest/user_manual.html#receiving-messages" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Mailgun Docs
-                  </a>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <a href="https://docs.sendgrid.com/for-developers/parsing-email/setting-up-the-inbound-parse-webhook" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    SendGrid Docs
-                  </a>
-                </Button>
-              </div>
-            </div>
-
-            {/* Help Link */}
-            <div className="pt-3 border-t">
-              <p className="text-xs text-muted-foreground">
-                📚 Mais detalhes na documentação: <code className="bg-muted px-1 rounded text-xs">docs/EMAIL_SETUP.md</code>
-              </p>
-            </div>
-          </div>
+          <WebhookSetupInstructions />
         </>
       )}
 
