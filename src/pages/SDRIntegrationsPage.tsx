@@ -38,6 +38,15 @@ interface Integration {
   credentials: any;
 }
 
+interface IntegrationItem {
+  id: string;
+  name: string;
+  category: string;
+  provider?: string;
+  available: boolean;
+  description?: string;
+}
+
 const EMAIL_PROVIDERS = {
   gmail: {
     name: 'Gmail',
@@ -79,48 +88,48 @@ const EMAIL_PROVIDERS = {
 
 const ALL_INTEGRATIONS = [
   // Email
-  { id: 'gmail', name: 'Gmail', category: 'email', provider: 'gmail', available: true },
-  { id: 'outlook', name: 'Outlook', category: 'email', provider: 'outlook', available: true },
-  { id: 'yahoo', name: 'Yahoo', category: 'email', provider: 'yahoo', available: true },
-  { id: 'icloud', name: 'iCloud', category: 'email', provider: 'icloud', available: true },
-  { id: 'zoho', name: 'Zoho', category: 'email', provider: 'zoho', available: true },
-  { id: 'custom', name: 'Outro Email', category: 'email', provider: 'custom', available: true },
+  { id: 'gmail', name: 'Gmail', category: 'email', provider: 'gmail', available: true, description: 'Integração com email Google' },
+  { id: 'outlook', name: 'Outlook', category: 'email', provider: 'outlook', available: true, description: 'Microsoft Outlook/Hotmail' },
+  { id: 'yahoo', name: 'Yahoo', category: 'email', provider: 'yahoo', available: true, description: 'Yahoo Mail' },
+  { id: 'icloud', name: 'iCloud', category: 'email', provider: 'icloud', available: true, description: 'Apple iCloud Mail' },
+  { id: 'zoho', name: 'Zoho', category: 'email', provider: 'zoho', available: true, description: 'Zoho Mail' },
+  { id: 'custom', name: 'Outro Email', category: 'email', provider: 'custom', available: true, description: 'Servidor customizado' },
   
   // Social
-  { id: 'whatsapp', name: 'WhatsApp', category: 'social', provider: 'whatsapp', available: false },
-  { id: 'telegram', name: 'Telegram', category: 'social', provider: 'telegram', available: false },
-  { id: 'linkedin', name: 'LinkedIn', category: 'social', provider: 'linkedin', available: false },
-  { id: 'instagram', name: 'Instagram', category: 'social', provider: 'instagram', available: false },
-  { id: 'facebook', name: 'Facebook', category: 'social', provider: 'facebook', available: false },
-  { id: 'twitter', name: 'Twitter/X', category: 'social', provider: 'twitter', available: false },
+  { id: 'whatsapp', name: 'WhatsApp', category: 'social', provider: 'whatsapp', available: false, description: 'Mensagens WhatsApp' },
+  { id: 'telegram', name: 'Telegram', category: 'social', provider: 'telegram', available: false, description: 'Mensagens Telegram' },
+  { id: 'linkedin', name: 'LinkedIn', category: 'social', provider: 'linkedin', available: false, description: 'Rede profissional' },
+  { id: 'instagram', name: 'Instagram', category: 'social', provider: 'instagram', available: false, description: 'Direct Messages' },
+  { id: 'facebook', name: 'Facebook', category: 'social', provider: 'facebook', available: false, description: 'Messenger' },
+  { id: 'twitter', name: 'Twitter/X', category: 'social', provider: 'twitter', available: false, description: 'Direct Messages' },
   
   // CRM
-  { id: 'kommo', name: 'Kommo', category: 'crm', provider: 'kommo', available: false },
-  { id: 'bitrix24', name: 'Bitrix24', category: 'crm', provider: 'bitrix24', available: false },
-  { id: 'hubspot', name: 'HubSpot', category: 'crm', provider: 'hubspot', available: false },
-  { id: 'pipedrive', name: 'Pipedrive', category: 'crm', provider: 'pipedrive', available: false },
-  { id: 'salesforce', name: 'Salesforce', category: 'crm', provider: 'salesforce', available: false },
-  { id: 'zoho_crm', name: 'Zoho CRM', category: 'crm', provider: 'zoho_crm', available: false },
-  { id: 'rd_station', name: 'RD Station', category: 'crm', provider: 'rd_station', available: false },
-  { id: 'activecampaign', name: 'ActiveCampaign', category: 'crm', provider: 'activecampaign', available: false },
-  { id: 'agendor', name: 'Agendor', category: 'crm', provider: 'agendor', available: false },
+  { id: 'kommo', name: 'Kommo', category: 'crm', provider: 'kommo', available: false, description: 'CRM e vendas' },
+  { id: 'bitrix24', name: 'Bitrix24', category: 'crm', provider: 'bitrix24', available: false, description: 'CRM completo' },
+  { id: 'hubspot', name: 'HubSpot', category: 'crm', provider: 'hubspot', available: false, description: 'Marketing & Vendas' },
+  { id: 'pipedrive', name: 'Pipedrive', category: 'crm', provider: 'pipedrive', available: false, description: 'Pipeline de vendas' },
+  { id: 'salesforce', name: 'Salesforce', category: 'crm', provider: 'salesforce', available: false, description: 'CRM Enterprise' },
+  { id: 'zoho_crm', name: 'Zoho CRM', category: 'crm', provider: 'zoho_crm', available: false, description: 'CRM Zoho' },
+  { id: 'rd_station', name: 'RD Station', category: 'crm', provider: 'rd_station', available: false, description: 'Marketing Digital' },
+  { id: 'activecampaign', name: 'ActiveCampaign', category: 'crm', provider: 'activecampaign', available: false, description: 'Email Marketing' },
+  { id: 'agendor', name: 'Agendor', category: 'crm', provider: 'agendor', available: false, description: 'CRM Brasil' },
   
   // Communication
-  { id: 'sms', name: 'SMS', category: 'communication', provider: 'sms', available: false },
-  { id: 'voice', name: 'Telefone', category: 'communication', provider: 'voice', available: false },
-  { id: 'slack', name: 'Slack', category: 'communication', provider: 'slack', available: false },
-  { id: 'teams', name: 'Teams', category: 'communication', provider: 'teams', available: false },
+  { id: 'sms', name: 'SMS', category: 'communication', provider: 'sms', available: false, description: 'Mensagens SMS' },
+  { id: 'voice', name: 'Telefone', category: 'communication', provider: 'voice', available: false, description: 'Chamadas VoIP' },
+  { id: 'slack', name: 'Slack', category: 'communication', provider: 'slack', available: false, description: 'Chat corporativo' },
+  { id: 'teams', name: 'Teams', category: 'communication', provider: 'teams', available: false, description: 'Microsoft Teams' },
   
   // Automation
-  { id: 'zapier', name: 'Zapier', category: 'automation', provider: 'zapier', available: false },
-  { id: 'make', name: 'Make', category: 'automation', provider: 'make', available: false },
-  { id: 'n8n', name: 'n8n', category: 'automation', provider: 'n8n', available: false },
+  { id: 'zapier', name: 'Zapier', category: 'automation', provider: 'zapier', available: false, description: 'Automação de fluxos' },
+  { id: 'make', name: 'Make', category: 'automation', provider: 'make', available: false, description: 'Integração visual' },
+  { id: 'n8n', name: 'n8n', category: 'automation', provider: 'n8n', available: false, description: 'Automação open-source' },
   
   // Support
-  { id: 'intercom', name: 'Intercom', category: 'support', provider: 'intercom', available: false },
-  { id: 'zendesk', name: 'Zendesk', category: 'support', provider: 'zendesk', available: false },
-  { id: 'freshdesk', name: 'Freshdesk', category: 'support', provider: 'freshdesk', available: false },
-  { id: 'drift', name: 'Drift', category: 'support', provider: 'drift', available: false },
+  { id: 'intercom', name: 'Intercom', category: 'support', provider: 'intercom', available: false, description: 'Chat & Suporte' },
+  { id: 'zendesk', name: 'Zendesk', category: 'support', provider: 'zendesk', available: false, description: 'Help Desk' },
+  { id: 'freshdesk', name: 'Freshdesk', category: 'support', provider: 'freshdesk', available: false, description: 'Suporte ao cliente' },
+  { id: 'drift', name: 'Drift', category: 'support', provider: 'drift', available: false, description: 'Conversational AI' },
 ];
 
 function WebhookSetupInstructions() {
@@ -377,18 +386,21 @@ export default function SDRIntegrationsPage() {
                       {categoryNames[category]} ({categoryItems.length})
                     </h2>
                     <div className="grid gap-1.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-                      {categoryItems.map((item) => (
+                      {categoryItems.map((item: IntegrationItem) => (
                         <Dialog key={item.id}>
                           <DialogTrigger asChild>
                             <Card className={`group hover:shadow-sm transition-all ${item.available ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed opacity-60'}`}>
-                              <CardContent className="p-1.5 flex flex-col items-center gap-1 bg-muted/30">
-                                <div className="w-full aspect-square flex items-center justify-center">
+                              <CardContent className="p-1 flex flex-col items-center gap-0.5 bg-muted/30 h-[60px]">
+                                <div className="w-full flex items-center justify-center flex-shrink-0 h-8">
                                   <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
                                 </div>
-                                <div className="text-center w-full px-0.5">
-                                  <p className="text-[9px] font-medium truncate leading-tight">{item.name}</p>
+                                <div className="text-center w-full px-0.5 flex-1 flex flex-col justify-center">
+                                  <p className="text-sm font-semibold leading-tight line-clamp-1">{item.name}</p>
+                                  {item.description && (
+                                    <p className="text-[9px] text-muted-foreground leading-tight line-clamp-1">{item.description}</p>
+                                  )}
                                   {!item.available && (
-                                    <Badge variant="secondary" className="text-[7px] h-3 mt-0.5 px-1">Breve</Badge>
+                                    <Badge variant="secondary" className="text-[7px] h-3 mt-0.5 px-1 mx-auto">Breve</Badge>
                                   )}
                                 </div>
                               </CardContent>

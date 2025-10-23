@@ -145,6 +145,17 @@ export function PlatformLogo({ platform, provider, size = 'md', className }: Pla
     );
   }
 
+  // Custom Email
+  if (platform === 'email' && provider === 'custom') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#5F6368"/>
+        <circle cx="18" cy="6" r="3" fill="#4CAF50"/>
+        <path d="M18 4.5v3M16.5 6h3" stroke="white" strokeWidth="0.8" strokeLinecap="round"/>
+      </svg>
+    );
+  }
+
   // CRM - HubSpot
   if (platform === 'crm' && provider === 'hubspot') {
     return (
