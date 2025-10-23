@@ -1,3 +1,4 @@
+// Dashboard Executivo - Command Center
 import { useDashboardExecutive } from "@/hooks/useDashboardExecutive";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
