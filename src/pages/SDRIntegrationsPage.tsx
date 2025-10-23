@@ -153,127 +153,31 @@ function WebhookSetupInstructions() {
         </AlertDescription>
       </Alert>
 
-      {/* Como funciona - SIMPLIFICADO */}
-      <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/30 space-y-3">
-        <div className="flex items-start gap-2">
-          <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+      {/* Instruções ULTRA simplificadas */}
+      <div className="p-6 border-2 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+            ✓
+          </div>
           <div className="flex-1 space-y-3">
-            <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-100">📬 Solução Mais Simples (5 minutos)</h4>
-            <div className="text-xs space-y-2">
-              <p className="font-medium">Use seu email atual: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded">consultores@olvinternacional.com.br</code></p>
-              <ol className="list-decimal list-inside space-y-1 ml-2 text-muted-foreground">
-                <li>Configure seu email no cPanel para encaminhar para um Gmail</li>
-                <li>No Gmail, crie um script automático (veja instruções abaixo)</li>
-                <li>Pronto! Os emails aparecerão aqui automaticamente</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* URL do Webhook */}
-      <div className="p-4 border rounded-lg bg-primary/5 border-primary/20 space-y-3">
-        <div className="space-y-2">
-          <Label className="text-xs font-semibold flex items-center gap-2">
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">1</span>
-            Copie esta URL do Webhook
-          </Label>
-          <div className="flex gap-2">
-            <Input 
-              readOnly 
-              value={webhookUrl}
-              className="text-xs font-mono bg-background"
-            />
-            <Button type="button" variant="outline" size="sm" onClick={copyWebhookUrl}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Guia Passo a Passo por Provedor */}
-      <div className="p-4 border rounded-lg bg-background space-y-4">
-        <h4 className="font-semibold text-sm flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">2</span>
-          Configure o Redirecionamento
-        </h4>
-
-        <Tabs defaultValue="cpanel" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="cpanel" className="text-xs">cPanel</TabsTrigger>
-            <TabsTrigger value="gmail" className="text-xs">Gmail</TabsTrigger>
-            <TabsTrigger value="zapier" className="text-xs">Zapier/Make</TabsTrigger>
-          </TabsList>
-
-          {/* cPanel - SUPER SIMPLIFICADO */}
-          <TabsContent value="cpanel" className="space-y-3 text-xs mt-4">
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                <strong>✅ Solução Simples:</strong> Use seu email <code>consultores@olvinternacional.com.br</code>
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+            <h4 className="font-bold text-base">📧 Configure em 3 minutos</h4>
+            <p className="text-sm font-medium">Use: <code className="bg-background px-2 py-1 rounded border">consultores@olvinternacional.com.br</code></p>
+            
+            <div className="space-y-3 text-sm">
               <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">1</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs">1</span>
+                <div>
+                  <p className="font-semibold">cPanel: Forwarder</p>
+                  <p className="text-muted-foreground text-xs">De: consultores@olvinternacional.com.br → Para: um-gmail-seu@gmail.com</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs">2</span>
                 <div className="space-y-2">
-                  <p className="font-semibold">No cPanel, crie um Forwarder</p>
-                  <div className="ml-2 p-3 bg-background rounded border space-y-1">
-                    <p><strong>De:</strong> <code>consultores@olvinternacional.com.br</code></p>
-                    <p><strong>Para:</strong> <code className="text-primary">uma-conta-gmail-sua@gmail.com</code></p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">2</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Configure o Gmail (veja aba "Gmail" →)</p>
-                  <p className="text-muted-foreground">Script automático que pega emails e envia para cá</p>
-                </div>
-              </div>
-            </div>
-
-            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800 dark:text-blue-200">
-                💡 <strong>Leva 3 minutos!</strong> O cPanel não suporta webhook direto, então passamos pelo Gmail primeiro.
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
-
-          {/* Gmail - Método mais fácil */}
-          <TabsContent value="gmail" className="space-y-3 text-xs mt-4">
-            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
-              <CheckCircle2 className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800 dark:text-blue-200">
-                <strong>✨ Método Mais Fácil!</strong> Configure em 5 minutos.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">1</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Configure cPanel → Gmail (se tiver domínio próprio)</p>
-                  <p className="text-muted-foreground">No cPanel, crie um Forwarder do seu email para uma conta Gmail</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">2</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Crie um App Script no Gmail</p>
-                  <p className="text-muted-foreground">Vá em: <a href="https://script.google.com" target="_blank" rel="noopener" className="text-primary underline">script.google.com</a></p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">3</span>
-                <div className="space-y-2">
-                  <p className="font-semibold">Cole este código:</p>
-                  <pre className="p-3 bg-background rounded border text-[10px] overflow-x-auto">
+                  <p className="font-semibold">Gmail: Apps Script</p>
+                  <p className="text-muted-foreground text-xs">Abra <a href="https://script.google.com" target="_blank" rel="noopener" className="text-primary underline font-medium">script.google.com</a> → Novo projeto → Cole:</p>
+                  <pre className="p-3 bg-background rounded border text-[10px] overflow-x-auto font-mono">
 {`function encaminharParaWebhook() {
   var threads = GmailApp.getInboxThreads(0, 10);
   var webhook = "${webhookUrl}";
@@ -292,8 +196,8 @@ function WebhookSetupInstructions() {
       };
       
       UrlFetchApp.fetch(webhook, {
-        method: 'post',
-        contentType: 'application/json',
+        method: "post",
+        contentType: "application/json",
         payload: JSON.stringify(payload)
       });
       
@@ -304,60 +208,26 @@ function WebhookSetupInstructions() {
                   </pre>
                 </div>
               </div>
-
+              
               <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">4</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Configure para rodar automaticamente</p>
-                  <p className="text-muted-foreground">Clique em ⏰ (Gatilhos) → "Add Trigger" → Execute a cada 1 minuto</p>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs">3</span>
+                <div>
+                  <p className="font-semibold">Ativar Trigger</p>
+                  <p className="text-muted-foreground text-xs">No Apps Script: Relógio (⏰) → Add Trigger → Time-driven → Every minute</p>
                 </div>
               </div>
             </div>
 
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800">
+            <Alert className="bg-green-500/10 border-green-500/20">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                <strong>Pronto!</strong> Seus emails começarão a aparecer aqui automaticamente.
+              <AlertDescription className="text-sm">
+                <strong>✅ Pronto!</strong> Emails recebidos aparecerão aqui automaticamente.
               </AlertDescription>
             </Alert>
-          </TabsContent>
-
-          {/* Zapier/Make - Para quem já usa */}
-          <TabsContent value="zapier" className="space-y-3 text-xs mt-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Para usuários avançados:</strong> Se você já usa Zapier ou Make.com
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-2">
-                <p className="font-semibold">Configure um Zap/Scenario:</p>
-                <ol className="list-decimal list-inside space-y-2 ml-2">
-                  <li><strong>Trigger:</strong> "New Email" no seu provedor de email</li>
-                  <li><strong>Action:</strong> "Webhooks by Zapier" → "POST"</li>
-                  <li><strong>URL:</strong> Cole a URL do webhook (copiada acima)</li>
-                  <li><strong>Payload:</strong> Mapeie os campos do email</li>
-                </ol>
-              </div>
-
-              <div className="p-3 bg-background rounded border space-y-1">
-                <p className="font-semibold text-[10px]">Exemplo de Payload JSON:</p>
-                <pre className="text-[10px] overflow-x-auto">
-{`{
-  "from": "{{From}}",
-  "to": "{{To}}",
-  "subject": "{{Subject}}",
-  "html": "{{BodyHtml}}",
-  "text": "{{BodyPlain}}"
-}`}
-                </pre>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
+
 
       {/* Teste */}
       <Alert>
