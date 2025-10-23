@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -354,62 +353,57 @@ async function sendEmail(to: string, subject: string, body: string, userId: stri
     }
 
     const credentials = integration.credentials;
-    const smtpConfig = {
-      host: credentials['smtp.host'],
-      port: parseInt(credentials['smtp.port']) || 587,
-      user: credentials['smtp.user'],
-      password: credentials['smtp.password'],
-      from: credentials['smtp.user'], // Use SMTP user as sender
-    };
+    const fromEmail = credentials['smtp.user'];
 
-    if (!smtpConfig.host || !smtpConfig.user || !smtpConfig.password) {
+    if (!fromEmail) {
       return { 
         success: false, 
-        error: 'Credenciais SMTP incompletas. Verifique host, usuário e senha.' 
+        error: 'Email remetente não configurado.' 
       };
     }
 
-    console.log(`[Email] Sending via SMTP: ${smtpConfig.host}:${smtpConfig.port}`);
+    console.log(`[Email] Sending via Resend from: ${fromEmail}`);
 
-    // Send via SMTP
-    const client = new SmtpClient();
-    const useTls = smtpConfig.port === 465;
-
-    try {
-      if (useTls) {
-        await client.connectTLS({
-          hostname: smtpConfig.host,
-          port: smtpConfig.port,
-          username: smtpConfig.user,
-          password: smtpConfig.password,
-        });
-      } else {
-        await client.connect({
-          hostname: smtpConfig.host,
-          port: smtpConfig.port,
-          username: smtpConfig.user,
-          password: smtpConfig.password,
-        });
-      }
-
-      await client.send({
-        from: smtpConfig.from,
-        to,
-        subject,
-        content: body,
-      });
-
-      await client.close();
-    } catch (e) {
-      try { await client.close(); } catch {}
-      throw e;
+    // Check if Resend API key is configured
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('[Email] RESEND_API_KEY not configured');
+      return { 
+        success: false, 
+        error: 'Serviço de email não configurado no servidor. Entre em contato com o suporte.' 
+      };
     }
 
-    const messageId = `${Date.now()}@olv-intelligence.com`;
+    // Send via Resend API directly
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `OLV Intelligence <${fromEmail}>`,
+        to: [to],
+        subject: subject,
+        html: body.replace(/\n/g, '<br>'),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Email] Resend API error:', errorData);
+      return { 
+        success: false, 
+        error: `Erro ao enviar email: ${errorData.message || response.statusText}` 
+      };
+    }
+
+    const data = await response.json();
+    console.log('[Email] Sent successfully via Resend:', data.id);
 
     return { 
       success: true, 
-      providerMessageId: messageId,
+      providerMessageId: data.id || `${Date.now()}@resend.dev`,
     };
 
   } catch (error: any) {

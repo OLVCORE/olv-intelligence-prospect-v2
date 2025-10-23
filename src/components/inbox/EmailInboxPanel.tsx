@@ -226,13 +226,20 @@ export function EmailInboxPanel({
               size="sm" 
               onClick={async () => {
                 try {
-                  // First trigger IMAP sync
-                  await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/email-imap-sync`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                  });
+                  // Get current session
+                  const { data: { session } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getSession());
+                  
+                  if (session?.access_token) {
+                    // First trigger IMAP sync
+                    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/email-imap-sync`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                      },
+                    });
+                  }
                   // Then refresh the list
                   onRefresh();
                 } catch (error) {
