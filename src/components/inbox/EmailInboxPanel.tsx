@@ -625,8 +625,13 @@ export function EmailInboxPanel({
                           className="prose prose-sm max-w-none dark:prose-invert"
                           dangerouslySetInnerHTML={{
                             __html: DOMPurify.sanitize(msg.body, {
-                              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote'],
-                              ALLOWED_ATTR: ['href', 'target', 'rel']
+                              ALLOWED_TAGS: [
+                                'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote',
+                                'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                                'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                                'img', 'b', 'i', 's', 'pre', 'code'
+                              ],
+                              ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'title', 'class', 'style', 'width', 'height']
                             })
                           }}
                         />
