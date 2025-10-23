@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
@@ -42,6 +42,8 @@ export default function CompaniesManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBatchEnriching, setIsBatchEnriching] = useState(false);
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'location'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -84,10 +86,10 @@ export default function CompaniesManagementPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedCompanies.length === filteredCompanies.length) {
+    if (selectedCompanies.length === filteredAndSortedCompanies.length) {
       setSelectedCompanies([]);
     } else {
-      setSelectedCompanies(filteredCompanies.map(c => c.id));
+      setSelectedCompanies(filteredAndSortedCompanies.map(c => c.id));
     }
   };
 
@@ -173,11 +175,48 @@ export default function CompaniesManagementPage() {
     }
   };
 
-  const filteredCompanies = companies.filter(company =>
-    company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.cnpj?.includes(searchTerm) ||
-    company.domain?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'location') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const filteredAndSortedCompanies = companies
+    .filter(company =>
+      company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.cnpj?.includes(searchTerm) ||
+      company.domain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (company.location as any)?.state?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name || '';
+          bValue = b.name || '';
+          break;
+        case 'cnpj':
+          aValue = a.cnpj || '';
+          bValue = b.cnpj || '';
+          break;
+        case 'industry':
+          aValue = a.industry || '';
+          bValue = b.industry || '';
+          break;
+        case 'location':
+          aValue = (a.location as any)?.state || '';
+          bValue = (b.location as any)?.state || '';
+          break;
+      }
+
+      const comparison = aValue.localeCompare(bValue);
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   if (loading) {
     return (
@@ -270,7 +309,7 @@ export default function CompaniesManagementPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {filteredCompanies.length === 0 ? (
+            {filteredAndSortedCompanies.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Building2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
                 <p className="text-muted-foreground">
@@ -291,20 +330,61 @@ export default function CompaniesManagementPage() {
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
-                        checked={selectedCompanies.length === filteredCompanies.length && filteredCompanies.length > 0}
+                        checked={selectedCompanies.length === filteredAndSortedCompanies.length && filteredAndSortedCompanies.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>CNPJ</TableHead>
-                    <TableHead>Setor</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('name')}
+                        className="h-8 flex items-center gap-1"
+                      >
+                        Empresa
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('cnpj')}
+                        className="h-8 flex items-center gap-1"
+                      >
+                        CNPJ
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('industry')}
+                        className="h-8 flex items-center gap-1"
+                      >
+                        Setor
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('location')}
+                        className="h-8 flex items-center gap-1"
+                      >
+                        UF/Região
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead>Status Análise</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCompanies.map((company) => (
+                  {filteredAndSortedCompanies.map((company) => (
                     <TableRow key={company.id}>
                       <TableCell>
                         <Checkbox
@@ -332,6 +412,13 @@ export default function CompaniesManagementPage() {
                       </TableCell>
                       <TableCell>
                         {company.industry || <span className="text-xs text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell>
+                        {(company.location as any)?.state ? (
+                          <Badge variant="secondary">{(company.location as any).state}</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <EnrichmentStatusBadge companyId={company.id} showProgress />

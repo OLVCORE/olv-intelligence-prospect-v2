@@ -54,13 +54,9 @@ serve(async (req) => {
       try {
         console.log(`🚀 Enriching: ${company.name}`);
         
-        const { error: enrichError } = await supabaseClient.functions.invoke('auto-enrich-company', {
+        const { data, error: enrichError } = await supabaseClient.functions.invoke('enrich-company-360', {
           body: {
-            companyId: company.id,
-            cnpj: company.cnpj,
-            name: company.name,
-            website: company.website,
-            linkedin_url: company.linkedin_url
+            company_id: company.id
           }
         });
 
