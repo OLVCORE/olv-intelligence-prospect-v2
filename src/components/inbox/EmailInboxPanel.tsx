@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailComposer } from './EmailComposer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
