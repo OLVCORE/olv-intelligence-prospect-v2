@@ -37,6 +37,11 @@ export default function SearchPage() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Busca múltipla
+  const [multipleResults, setMultipleResults] = useState<any[]>([]);
+  const [showMultipleResults, setShowMultipleResults] = useState(false);
+  
   const { toast } = useToast();
   
   // Autocomplete states
@@ -223,10 +228,21 @@ export default function SearchPage() {
       return;
     }
 
+    // Se busca por NOME sem CNPJ -> busca múltipla
+    const isCnpjSearch = searchType === 'cnpj' && searchQuery.replace(/\D/g, '').length === 14;
+    
+    if (searchType === 'query' && hasSearchQuery && !isCnpjSearch) {
+      await handleMultipleSearch();
+      return;
+    }
+
+    // Busca única (com CNPJ ou refinamentos)
     setIsSearching(true);
     setPreviewData(null);
     setResult(null);
     setShowSuggestions(false);
+    setMultipleResults([]);
+    setShowMultipleResults(false);
 
     try {
       const searchBody: any = {};
@@ -281,6 +297,76 @@ export default function SearchPage() {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleMultipleSearch = async () => {
+    setIsSearching(true);
+    setMultipleResults([]);
+    setShowMultipleResults(false);
+    setShowSuggestions(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('search-companies-multiple', {
+        body: { 
+          query: searchQuery,
+          limit: 30
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.success || !data.companies || data.companies.length === 0) {
+        toast({
+          title: "Nenhuma empresa encontrada",
+          description: "Tente refinar sua busca com mais informações",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMultipleResults(data.companies);
+      setShowMultipleResults(true);
+      
+      toast({
+        title: `${data.total} empresas encontradas`,
+        description: "Selecione a empresa desejada para continuar",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na busca múltipla",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectCompany = async (company: any) => {
+    setShowMultipleResults(false);
+    
+    // Se tiver CNPJ, buscar dados completos
+    if (company.cnpj) {
+      setSearchQuery(company.cnpj);
+      setSearchType('cnpj');
+      
+      // Preencher campos de refinamento
+      if (company.website) setWebsite(company.website);
+      if (company.linkedin_url) setLinkedin(company.linkedin_url);
+      
+      // Aguardar um momento e executar busca
+      setTimeout(() => handleSearch(), 100);
+    } else {
+      // Sem CNPJ, preencher o que temos e avisar
+      setSearchQuery(company.name);
+      if (company.website) setWebsite(company.website);
+      if (company.linkedin_url) setLinkedin(company.linkedin_url);
+      
+      toast({
+        title: "CNPJ não encontrado",
+        description: "Preencha o CNPJ manualmente para busca completa ou clique em Buscar",
+      });
     }
   };
 
@@ -1012,6 +1098,87 @@ export default function SearchPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Multiple Results Dialog */}
+        <Dialog open={showMultipleResults} onOpenChange={setShowMultipleResults}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Empresas Encontradas ({multipleResults.length})</DialogTitle>
+              <DialogDescription>
+                Selecione a empresa correta para continuar com a busca detalhada
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-2 mt-4">
+              {multipleResults.map((company, idx) => (
+                <Card 
+                  key={idx}
+                  className="cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => handleSelectCompany(company)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold text-lg">{company.name}</h3>
+                          {company.cnpj && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                              CNPJ: {company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {company.domain && (
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4" />
+                              <span>{company.domain}</span>
+                            </div>
+                          )}
+                          
+                          {company.industry && (
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              <span>{company.industry}</span>
+                            </div>
+                          )}
+                          
+                          {company.location && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              <span>{company.location}</span>
+                            </div>
+                          )}
+                          
+                          {company.employees && (
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <span>{company.employees} funcionários</span>
+                            </div>
+                          )}
+                          
+                          {company.snippet && (
+                            <p className="text-xs mt-2 line-clamp-2">{company.snippet}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 items-end">
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {company.source}
+                        </span>
+                        <Button size="sm" variant="outline">
+                          Selecionar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

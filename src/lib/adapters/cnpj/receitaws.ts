@@ -1,22 +1,55 @@
-// ✅ Adapter ReceitaWS - Dados cadastrais BR
+// ✅ Adapter ReceitaWS - Dados cadastrais BR (COMPLETO)
 export interface ReceitaWSCompanyData {
+  status: string;
+  ultima_atualizacao?: string;
   cnpj: string;
+  tipo?: string; // MATRIZ, FILIAL
+  porte?: string;
   nome: string;
   fantasia?: string;
-  email?: string;
-  telefone?: string;
+  abertura?: string;
   atividade_principal?: Array<{ code: string; text: string }>;
-  situacao: string;
-  data_situacao: string;
-  municipio?: string;
-  uf?: string;
-  cep?: string;
+  atividades_secundarias?: Array<{ code: string; text: string }>;
+  natureza_juridica?: string;
   logradouro?: string;
   numero?: string;
   complemento?: string;
+  cep?: string;
   bairro?: string;
+  municipio?: string;
+  uf?: string;
+  email?: string;
+  telefone?: string;
+  efr?: string;
+  situacao: string;
+  data_situacao: string;
+  motivo_situacao?: string;
+  situacao_especial?: string;
+  data_situacao_especial?: string;
   capital_social?: string;
-  qsa?: Array<{ nome: string; qual: string }>;
+  qsa?: Array<{ 
+    nome: string; 
+    qual: string;
+    pais_origem?: string;
+    nome_rep_legal?: string;
+    qual_rep_legal?: string;
+  }>;
+  simples?: {
+    optante: boolean;
+    data_opcao?: string;
+    data_exclusao?: string;
+    ultima_atualizacao?: string;
+  };
+  simei?: {
+    optante: boolean;
+    data_opcao?: string;
+    data_exclusao?: string;
+    ultima_atualizacao?: string;
+  };
+  billing?: {
+    free: boolean;
+    database: boolean;
+  };
 }
 
 export interface ReceitaWSAdapter {
