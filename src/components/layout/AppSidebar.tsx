@@ -171,8 +171,8 @@ export function AppSidebar() {
       onMouseEnter={() => !isMobile && setOpen(true)}
       onMouseLeave={() => !isMobile && setOpen(false)}
     >
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <SidebarHeader className="border-b border-sidebar-border p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:justify-center">
           <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
           {(open || isMobile) && (
             <div className="min-w-0">
@@ -184,7 +184,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Módulos Inteligentes</SidebarGroupLabel>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Módulos Inteligentes</SidebarGroupLabel>
           <SidebarGroupContent>
             <TooltipProvider delayDuration={200}>
               <SidebarMenu>
@@ -206,7 +206,7 @@ export function AppSidebar() {
                                 )}
                               >
                                 <CollapsibleTrigger className="w-full">
-                                  <div className="flex items-center gap-2 py-1">
+                                  <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
                                     <div className="relative">
                                       <item.icon className={cn(
                                         "h-5 w-5",
@@ -216,14 +216,18 @@ export function AppSidebar() {
                                         <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-purple-500/50" />
                                       )}
                                     </div>
-                                    <span className={cn(
-                                      "font-semibold",
-                                      (item as any).special && "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-indigo-400"
-                                    )}>
-                                      {item.title}
-                                    </span>
+                                    {(open || isMobile) && (
+                                      <span className={cn(
+                                        "font-semibold",
+                                        (item as any).special && "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-indigo-400"
+                                      )}>
+                                        {item.title}
+                                      </span>
+                                    )}
                                   </div>
-                                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                  {(open || isMobile) && (
+                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                  )}
                                 </CollapsibleTrigger>
                               </SidebarMenuButton>
                               <CollapsibleContent>
@@ -272,9 +276,9 @@ export function AppSidebar() {
                               (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
                             )}
                           >
-                            <Link to={item.url}>
+                            <Link to={item.url} className="flex items-center gap-2">
                               <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
+                              {(open || isMobile) && <span>{item.title}</span>}
                             </Link>
                           </SidebarMenuButton>
                         </div>
@@ -291,22 +295,22 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4 group-data-[collapsible=icon]:p-2">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden">
+          <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
             <User className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate whitespace-nowrap">{user?.email}</span>
+            {(open || isMobile) && <span className="truncate whitespace-nowrap">{user?.email}</span>}
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start"
+                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
                 onClick={signOut}
               >
                 <LogOut className="h-4 w-4 flex-shrink-0" />
-                <span className="ml-2 whitespace-nowrap">Sair</span>
+                {(open || isMobile) && <span className="ml-2 whitespace-nowrap">Sair</span>}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
