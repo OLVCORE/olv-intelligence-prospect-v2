@@ -36,6 +36,7 @@ export const companySearchSchema = z.object({
   
   // Localização
   logradouro: z.string().trim().max(200).optional(),
+  numero: z.string().trim().max(10).optional(),
   bairro: z.string().trim().max(100).optional(),
   municipio: z.string().trim().max(100).optional(),
   estado: z.string().trim().max(2).optional(),
@@ -45,7 +46,7 @@ export const companySearchSchema = z.object({
   // Permitir busca com QUALQUER campo preenchido
   return data.query || data.cnpj || data.website || data.instagram || data.linkedin ||
          data.produto || data.marca || data.linkProduto || 
-         data.logradouro || data.bairro || data.municipio || data.estado || data.cep;
+         data.logradouro || data.numero || data.bairro || data.municipio || data.estado || data.cep;
 }, {
   message: 'Preencha pelo menos um campo para buscar'
 });

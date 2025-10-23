@@ -17,10 +17,14 @@ export function BulkUploadDialog() {
   const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
 
   const downloadTemplate = () => {
-    const csvContent = `CNPJ,Nome da Empresa,Website,Instagram,LinkedIn,Produto/Categoria,Marca,Link Produto/Marketplace,CEP,Estado,Pais,Municipio,Bairro,Logradouro,Numero
-00.000.000/0000-00,Empresa Exemplo LTDA,https://exemplo.com.br,@exemploempresa,linkedin.com/company/exemplo,ERP,Marca Exemplo,mercadolivre.com.br/produto,01310-100,SP,Brasil,São Paulo,Centro,Avenida Paulista,1578`;
+    // UTF-8 BOM para Excel reconhecer corretamente
+    const BOM = '\uFEFF';
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = `CNPJ,Nome da Empresa,Website,Instagram,LinkedIn,Produto/Categoria,Marca,Link Produto/Marketplace,CEP,Estado,Pais,Municipio,Bairro,Logradouro,Numero
+00.000.000/0000-00,Empresa Exemplo LTDA,https://exemplo.com.br,@exemploempresa,linkedin.com/company/exemplo,ERP,Marca Exemplo,mercadolivre.com.br/produto,01310-100,SP,Brasil,São Paulo,Centro,Avenida Paulista,1578
+53.113.791/0001-22,TOTVS SA,https://www.totvs.com,@totvs,linkedin.com/company/totvs,Software ERP,TOTVS,,04711-904,SP,Brasil,São Paulo,Brooklin,Avenida Braz Leme,1000`;
+    
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'template-importacao-empresas.csv';
@@ -41,20 +45,84 @@ export function BulkUploadDialog() {
   };
 
   const parseCSV = (text: string): any[] => {
-    const lines = text.split('\n').filter(line => line.trim());
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    // Remove BOM se existir
+    text = text.replace(/^\uFEFF/, '');
     
-    return lines.slice(1).map(line => {
-      const values = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g) || [];
-      const row: any = {};
+    // Split por linhas, preservando quebras dentro de aspas
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      throw new Error('Arquivo CSV vazio ou sem dados');
+    }
+    
+    // Parse do cabeçalho
+    const headerLine = lines[0];
+    const headers = parseCSVLine(headerLine);
+    
+    console.log('📋 Cabeçalhos detectados:', headers);
+    
+    // Parse das linhas de dados
+    const rows: any[] = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
       
-      headers.forEach((header, index) => {
-        const value = values[index]?.replace(/^"|"$/g, '').trim() || '';
-        row[header] = value;
-      });
+      try {
+        const values = parseCSVLine(line);
+        const row: any = {};
+        
+        headers.forEach((header, index) => {
+          const value = values[index]?.trim() || '';
+          row[header] = value;
+        });
+        
+        // Só adiciona se tiver pelo menos um identificador
+        if (row.CNPJ || row['Nome da Empresa'] || row.Website || row.Instagram || row.LinkedIn) {
+          rows.push(row);
+        }
+      } catch (error) {
+        console.warn(`Erro ao processar linha ${i + 1}:`, error);
+      }
+    }
+    
+    console.log(`✅ ${rows.length} empresas válidas detectadas`);
+    return rows;
+  };
+  
+  // Parser robusto de linha CSV que lida com vírgulas dentro de aspas
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
       
-      return row;
-    }).filter(row => row.CNPJ || row['Nome da Empresa'] || row.Website || row.Instagram || row.LinkedIn);
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Aspas duplas escapadas
+          current += '"';
+          i++; // Pula próxima aspa
+        } else {
+          // Toggle estado de aspas
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // Vírgula fora de aspas = separador
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    // Adiciona último campo
+    result.push(current);
+    
+    // Remove aspas dos valores
+    return result.map(v => v.replace(/^"|"$/g, '').trim());
   };
 
   const handleUpload = async () => {
