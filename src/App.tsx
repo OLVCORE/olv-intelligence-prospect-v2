@@ -13,13 +13,14 @@ import { Loader2 } from "lucide-react";
 // Eager load only critical pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 
 // Lazy load auth pages
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // Lazy load all dashboard pages for code splitting
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+// Dashboard eagerly loaded via direct import above
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const IntelligencePage = lazy(() => import("./pages/IntelligencePage"));
 const Intelligence360Page = lazy(() => import("./pages/Intelligence360Page"));
