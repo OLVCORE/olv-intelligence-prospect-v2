@@ -21,13 +21,20 @@ O sistema está configurado para **enviar emails via SMTP** (porta 465) e **rece
 
 ## 🔧 Configuração Necessária
 
-Para receber emails automaticamente, você precisa configurar um **encaminhamento de email** do seu servidor para o webhook.
+### Email Oficial
+O sistema está configurado para usar: **consultores@olvinternacional.com.br**
 
-### URL do Webhook
+### Passos para Configuração Completa
 
-```
-https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook
-```
+1. **Verificar domínio no Resend** (para ENVIO):
+   - Acesse: https://resend.com/domains
+   - Adicione o domínio: `olvinternacional.com.br`
+   - Configure os registros DNS que o Resend fornecer
+   - Após verificação, os emails serão enviados de `consultores@olvinternacional.com.br`
+
+2. **Configurar webhook** (para RECEBIMENTO):
+   - URL do webhook: `https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook`
+   - Configure redirecionamento de `consultores@olvinternacional.com.br` para esta URL
 
 ## 📋 Opções de Configuração
 
@@ -39,7 +46,7 @@ Se seu servidor de email usa cPanel:
 2. Vá em **Email** → **Forwarders** (Encaminhadores)
 3. Clique em **Add Forwarder** (Adicionar Encaminhador)
 4. Configure:
-   - **Email Address**: `marcos.oliveira@olvinternacional.com.br`
+   - **Email Address**: `consultores@olvinternacional.com.br`
    - **Forward to**: Escolha "Pipe to a Program" ou "Advanced"
    - Cole este script:
 
@@ -57,7 +64,7 @@ curl -X POST https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound
 Se o cPanel permite filtros:
 
 1. Vá em **Email Filters** no cPanel
-2. Crie um novo filtro para `marcos.oliveira@olvinternacional.com.br`
+2. Crie um novo filtro para `consultores@olvinternacional.com.br`
 3. Configure a regra:
    - **Condition**: "Any header" contains "@" (para capturar todos)
    - **Action**: "Pipe to a Program"
@@ -79,7 +86,7 @@ Recomendamos usar um serviço especializado que oferece webhook nativo:
    TXT    @                                 v=spf1 include:mailgun.org ~all
    ```
 4. Em **Receiving** → **Routes**, crie uma rota:
-   - **Expression**: `match_recipient("marcos.oliveira@olvinternacional.com.br")`
+   - **Expression**: `match_recipient("consultores@olvinternacional.com.br")`
    - **Actions**: 
      - Forward: `https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook`
      - Store: Yes (opcional, para backup)
@@ -111,7 +118,7 @@ EMAIL_CONTENT=$(cat)
 curl -X POST https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook \
   -H "Content-Type: application/json" \
   -d "{
-    \"to\": \"marcos.oliveira@olvinternacional.com.br\",
+    \"to\": \"consultores@olvinternacional.com.br\",
     \"from\": \"$(echo "$EMAIL_CONTENT" | grep -i '^From:' | cut -d' ' -f2-)\",
     \"subject\": \"$(echo "$EMAIL_CONTENT" | grep -i '^Subject:' | cut -d' ' -f2-)\",
     \"text\": \"$(echo "$EMAIL_CONTENT" | sed -n '/^$/,/^--/p')\"
@@ -127,7 +134,7 @@ chmod +x /etc/postfix/forward_to_webhook.sh
 
 3. Configure no Postfix em `/etc/aliases`:
 ```
-marcos.oliveira: "|/etc/postfix/forward_to_webhook.sh"
+consultores: "|/etc/postfix/forward_to_webhook.sh"
 ```
 
 4. Execute:
@@ -144,7 +151,7 @@ Você pode testar manualmente enviando uma requisição:
 curl -X POST https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/email-inbound-webhook \
   -H "Content-Type: application/json" \
   -d '{
-    "to": "marcos.oliveira@olvinternacional.com.br",
+    "to": "consultores@olvinternacional.com.br",
     "from": "teste@example.com",
     "subject": "Email de Teste",
     "text": "Este é um email de teste para validar o webhook.",
@@ -178,7 +185,7 @@ O webhook aceita os seguintes formatos:
 ### JSON (Preferido)
 ```json
 {
-  "to": "marcos.oliveira@olvinternacional.com.br",
+  "to": "consultores@olvinternacional.com.br",
   "from": "sender@example.com",
   "subject": "Assunto do Email",
   "text": "Corpo em texto puro",
@@ -189,7 +196,7 @@ O webhook aceita os seguintes formatos:
 
 ### Form Data (Mailgun, SendGrid)
 ```
-to=marcos.oliveira@olvinternacional.com.br
+to=consultores@olvinternacional.com.br
 from=sender@example.com
 subject=Assunto do Email
 text=Corpo em texto puro
@@ -217,8 +224,9 @@ Quando um email é recebido via webhook:
 
 ## 🚀 Próximos Passos
 
-1. ✅ Configure o encaminhamento usando uma das opções acima
-2. ✅ Teste enviando um email real para `marcos.oliveira@olvinternacional.com.br`
+1. ✅ Verifique seu domínio no Resend (https://resend.com/domains)
+2. ✅ Configure o encaminhamento usando uma das opções acima
+3. ✅ Teste enviando um email real para `consultores@olvinternacional.com.br`
 3. ✅ Verifique se aparece na interface do Inbox
 4. ✅ Configure alertas e notificações se desejar
 
