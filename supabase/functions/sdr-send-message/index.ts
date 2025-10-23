@@ -382,7 +382,7 @@ async function sendEmail(to: string, subject: string, body: string, userId: stri
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Consultores OLV <consultores@olvinternacional.com.br>',
+        from: 'OLV Consultores <contato@consultores.olvinternacional.com.br>',
         to: [to],
         subject: subject,
         html: body.replace(/\n/g, '<br>'),
