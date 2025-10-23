@@ -84,68 +84,68 @@ const INTEGRATION_CATEGORIES = {
     title: 'E-mail',
     icon: Mail,
     items: [
-      { channel: 'email', provider: 'gmail', label: 'Gmail' },
-      { channel: 'email', provider: 'outlook', label: 'Outlook' },
-      { channel: 'email', provider: 'yahoo', label: 'Yahoo' },
-      { channel: 'email', provider: 'icloud', label: 'iCloud' },
-      { channel: 'email', provider: 'zoho', label: 'Zoho' },
-      { channel: 'email', provider: 'custom', label: 'Outro Email' },
+      { channel: 'email', provider: 'gmail', label: 'Gmail', desc: 'Envio e recebimento' },
+      { channel: 'email', provider: 'outlook', label: 'Outlook', desc: 'Microsoft 365' },
+      { channel: 'email', provider: 'yahoo', label: 'Yahoo', desc: 'Yahoo Mail' },
+      { channel: 'email', provider: 'icloud', label: 'iCloud', desc: 'Apple iCloud' },
+      { channel: 'email', provider: 'zoho', label: 'Zoho', desc: 'Zoho Mail' },
+      { channel: 'email', provider: 'custom', label: 'Outro Email', desc: 'IMAP/SMTP customizado' },
     ]
   },
   social: {
     title: 'Redes Sociais',
     icon: MessageSquare,
     items: [
-      { channel: 'whatsapp', label: 'WhatsApp' },
-      { channel: 'telegram', label: 'Telegram' },
-      { channel: 'linkedin', label: 'LinkedIn' },
-      { channel: 'instagram', label: 'Instagram' },
-      { channel: 'facebook', label: 'Facebook' },
-      { channel: 'twitter', label: 'Twitter/X' },
+      { channel: 'whatsapp', label: 'WhatsApp', desc: 'Mensagens instantâneas' },
+      { channel: 'telegram', label: 'Telegram', desc: 'Bot API' },
+      { channel: 'linkedin', label: 'LinkedIn', desc: 'Rede profissional' },
+      { channel: 'instagram', label: 'Instagram', desc: 'Direct Messages' },
+      { channel: 'facebook', label: 'Facebook', desc: 'Messenger' },
+      { channel: 'twitter', label: 'Twitter/X', desc: 'Direct Messages' },
     ]
   },
   crm: {
     title: 'CRMs',
     icon: Building2,
     items: [
-      { channel: 'crm', provider: 'kommo', label: 'Kommo' },
-      { channel: 'crm', provider: 'bitrix24', label: 'Bitrix24' },
-      { channel: 'crm', provider: 'hubspot', label: 'HubSpot' },
-      { channel: 'crm', provider: 'pipedrive', label: 'Pipedrive' },
-      { channel: 'crm', provider: 'salesforce', label: 'Salesforce' },
-      { channel: 'crm', provider: 'zoho_crm', label: 'Zoho CRM' },
-      { channel: 'crm', provider: 'rd_station', label: 'RD Station' },
-      { channel: 'crm', provider: 'activecampaign', label: 'ActiveCampaign' },
-      { channel: 'crm', provider: 'agendor', label: 'Agendor' },
+      { channel: 'crm', provider: 'kommo', label: 'Kommo', desc: 'CRM conversacional' },
+      { channel: 'crm', provider: 'bitrix24', label: 'Bitrix24', desc: 'CRM completo' },
+      { channel: 'crm', provider: 'hubspot', label: 'HubSpot', desc: 'Marketing & vendas' },
+      { channel: 'crm', provider: 'pipedrive', label: 'Pipedrive', desc: 'Pipeline de vendas' },
+      { channel: 'crm', provider: 'salesforce', label: 'Salesforce', desc: 'CRM empresarial' },
+      { channel: 'crm', provider: 'zoho_crm', label: 'Zoho CRM', desc: 'Suite empresarial' },
+      { channel: 'crm', provider: 'rd_station', label: 'RD Station', desc: 'Marketing digital' },
+      { channel: 'crm', provider: 'activecampaign', label: 'ActiveCampaign', desc: 'Automação de marketing' },
+      { channel: 'crm', provider: 'agendor', label: 'Agendor', desc: 'Gestão de vendas' },
     ]
   },
   communication: {
     title: 'Comunicação',
     icon: Phone,
     items: [
-      { channel: 'sms', label: 'SMS (Twilio)' },
-      { channel: 'voice', label: 'Telefone/VoIP' },
-      { channel: 'slack', label: 'Slack' },
-      { channel: 'teams', label: 'Microsoft Teams' },
+      { channel: 'sms', label: 'SMS (Twilio)', desc: 'Mensagens SMS' },
+      { channel: 'voice', label: 'Telefone/VoIP', desc: 'Chamadas de voz' },
+      { channel: 'slack', label: 'Slack', desc: 'Comunicação em equipe' },
+      { channel: 'teams', label: 'Microsoft Teams', desc: 'Colaboração Microsoft' },
     ]
   },
   automation: {
     title: 'Automação',
     icon: Zap,
     items: [
-      { channel: 'automation', provider: 'zapier', label: 'Zapier' },
-      { channel: 'automation', provider: 'make', label: 'Make (Integromat)' },
-      { channel: 'automation', provider: 'n8n', label: 'n8n' },
+      { channel: 'automation', provider: 'zapier', label: 'Zapier', desc: 'Automação no-code' },
+      { channel: 'automation', provider: 'make', label: 'Make', desc: 'Automação visual' },
+      { channel: 'automation', provider: 'n8n', label: 'n8n', desc: 'Automação open-source' },
     ]
   },
   support: {
     title: 'Atendimento',
     icon: Users,
     items: [
-      { channel: 'support', provider: 'intercom', label: 'Intercom' },
-      { channel: 'support', provider: 'zendesk', label: 'Zendesk' },
-      { channel: 'support', provider: 'freshdesk', label: 'Freshdesk' },
-      { channel: 'support', provider: 'drift', label: 'Drift' },
+      { channel: 'support', provider: 'intercom', label: 'Intercom', desc: 'Chat ao vivo' },
+      { channel: 'support', provider: 'zendesk', label: 'Zendesk', desc: 'Help desk' },
+      { channel: 'support', provider: 'freshdesk', label: 'Freshdesk', desc: 'Suporte ao cliente' },
+      { channel: 'support', provider: 'drift', label: 'Drift', desc: 'Conversational marketing' },
     ]
   }
 };
@@ -524,12 +524,15 @@ export default function SDRIntegrationsPage() {
                       return (
                         <Dialog key={`${item.channel}-${item.provider || item.label}`}>
                           <DialogTrigger asChild>
-                            <Card className={`group relative hover:shadow-sm transition-all ${isEmailIntegration ? 'cursor-pointer hover:border-primary/50' : 'cursor-not-allowed opacity-50'}`}>
-                              <CardContent className="flex flex-col items-center justify-center py-3 gap-1.5 px-2">
+                            <Card className={`group relative transition-all border-border/50 ${isEmailIntegration ? 'cursor-pointer hover:border-primary/50 hover:shadow-md hover:bg-accent/5' : 'cursor-not-allowed opacity-60'}`}>
+                              <CardContent className="flex flex-col items-center justify-center py-4 gap-2 px-3">
                                 <PlatformLogo platform={item.channel} provider={item.provider} size="md" />
-                                <p className="text-[10px] font-medium text-center leading-tight">{item.label}</p>
+                                <div className="text-center space-y-0.5">
+                                  <p className="text-xs font-semibold leading-none">{item.label}</p>
+                                  <p className="text-[10px] text-muted-foreground leading-tight">{item.desc}</p>
+                                </div>
                                 {!isEmailIntegration && (
-                                  <Badge variant="secondary" className="text-[8px] py-0 px-1 h-3.5">Breve</Badge>
+                                  <Badge variant="secondary" className="text-[9px] py-0.5 px-1.5 font-medium">Em breve</Badge>
                                 )}
                               </CardContent>
                             </Card>

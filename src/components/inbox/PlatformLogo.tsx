@@ -217,6 +217,119 @@ export function PlatformLogo({ platform, provider, size = 'md', className }: Pla
     );
   }
 
+  // CRM - Kommo
+  if (platform === 'crm' && provider === 'kommo') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#29CC6A"/>
+        <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="white"/>
+      </svg>
+    );
+  }
+
+  // CRM - RD Station
+  if (platform === 'crm' && provider === 'rd_station') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="4" fill="#1B1464"/>
+        <path d="M8 7h4c2.21 0 4 1.79 4 4s-1.79 4-4 4h-1v2H8V7zm3 6h1c1.1 0 2-.9 2-2s-.9-2-2-2h-1v4z" fill="#00D563"/>
+      </svg>
+    );
+  }
+
+  // CRM - Agendor
+  if (platform === 'crm' && provider === 'agendor') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="5" fill="#1AA3FF"/>
+        <path d="M12 6l6 4.5v7.5H6v-7.5L12 6z" fill="white"/>
+        <circle cx="12" cy="14" r="2" fill="#1AA3FF"/>
+      </svg>
+    );
+  }
+
+  // CRM - ActiveCampaign
+  if (platform === 'crm' && provider === 'activecampaign') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" fill="#356AE6"/>
+        <path d="M16 8l-4 8-4-8h2l2 4 2-4z" fill="white" stroke="white" strokeWidth="1.5"/>
+      </svg>
+    );
+  }
+
+  // Communication - Slack
+  if (platform === 'slack') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z" fill="#E01E5A"/>
+      </svg>
+    );
+  }
+
+  // Communication - Microsoft Teams
+  if (platform === 'teams') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect x="0" y="0" width="24" height="24" rx="2" fill="#5059C9"/>
+        <path d="M15.186 10.53h3.6v8.26h-3.6v-8.26z" fill="white"/>
+        <path d="M12.12 7.565V6.306A2.053 2.053 0 0114.174 4.252h0a2.053 2.053 0 012.054 2.054v1.259a2.053 2.053 0 01-2.054 2.054h0a2.053 2.053 0 01-2.054-2.054z" fill="white"/>
+        <path d="M5.36 7.565h6.76v11.223H5.36V7.565z" fill="white" fillOpacity=".7"/>
+        <text x="8.5" y="15" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="bold" fill="#5059C9" textAnchor="middle">T</text>
+      </svg>
+    );
+  }
+
+  // Communication - VoIP/Voice
+  if (platform === 'voice') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" fill="#4CAF50"/>
+      </svg>
+    );
+  }
+
+  // Support - Drift
+  if (platform === 'support' && provider === 'drift') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" fill="#2D2E6E"/>
+        <path d="M17 10c0-2.76-2.24-5-5-5S7 7.24 7 10v7h10v-7zm-5 9c-1.1 0-2-.9-2-2h4c0 1.1-.9 2-2 2z" fill="#01D5C3"/>
+      </svg>
+    );
+  }
+
+  // Support - Freshdesk
+  if (platform === 'support' && provider === 'freshdesk') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="5" fill="#28BB87"/>
+        <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="white"/>
+        <circle cx="12" cy="12" r="2" fill="white"/>
+      </svg>
+    );
+  }
+
+  // Automation - n8n
+  if (platform === 'automation' && provider === 'n8n') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="4" fill="#FF6D5A"/>
+        <path d="M8 8h3v8H8V8zm5 0h3v8h-3V8z" fill="white"/>
+      </svg>
+    );
+  }
+
+  // CRM - Zoho CRM (specific icon)
+  if (platform === 'crm' && provider === 'zoho_crm') {
+    return (
+      <svg className={cn(sizeClass, className)} viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="4" fill="#E42527"/>
+        <path d="M6 8h12v2H6V8zm0 4h12v2H6v-2zm0 4h8v2H6v-2z" fill="white"/>
+      </svg>
+    );
+  }
+
   // Default fallback
   return (
     <div className={cn(sizeClass, 'bg-muted rounded flex items-center justify-center', className)}>
