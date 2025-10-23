@@ -87,12 +87,12 @@ const ALL_INTEGRATIONS = [
   { id: 'custom', name: 'Outro Email', category: 'email', provider: 'custom', available: true },
   
   // Social
-  { id: 'whatsapp', name: 'WhatsApp', category: 'social', available: false },
-  { id: 'telegram', name: 'Telegram', category: 'social', available: false },
-  { id: 'linkedin', name: 'LinkedIn', category: 'social', available: false },
-  { id: 'instagram', name: 'Instagram', category: 'social', available: false },
-  { id: 'facebook', name: 'Facebook', category: 'social', available: false },
-  { id: 'twitter', name: 'Twitter/X', category: 'social', available: false },
+  { id: 'whatsapp', name: 'WhatsApp', category: 'social', provider: 'whatsapp', available: false },
+  { id: 'telegram', name: 'Telegram', category: 'social', provider: 'telegram', available: false },
+  { id: 'linkedin', name: 'LinkedIn', category: 'social', provider: 'linkedin', available: false },
+  { id: 'instagram', name: 'Instagram', category: 'social', provider: 'instagram', available: false },
+  { id: 'facebook', name: 'Facebook', category: 'social', provider: 'facebook', available: false },
+  { id: 'twitter', name: 'Twitter/X', category: 'social', provider: 'twitter', available: false },
   
   // CRM
   { id: 'kommo', name: 'Kommo', category: 'crm', provider: 'kommo', available: false },
@@ -106,10 +106,10 @@ const ALL_INTEGRATIONS = [
   { id: 'agendor', name: 'Agendor', category: 'crm', provider: 'agendor', available: false },
   
   // Communication
-  { id: 'sms', name: 'SMS', category: 'communication', available: false },
-  { id: 'voice', name: 'Telefone', category: 'communication', available: false },
-  { id: 'slack', name: 'Slack', category: 'communication', available: false },
-  { id: 'teams', name: 'Teams', category: 'communication', available: false },
+  { id: 'sms', name: 'SMS', category: 'communication', provider: 'sms', available: false },
+  { id: 'voice', name: 'Telefone', category: 'communication', provider: 'voice', available: false },
+  { id: 'slack', name: 'Slack', category: 'communication', provider: 'slack', available: false },
+  { id: 'teams', name: 'Teams', category: 'communication', provider: 'teams', available: false },
   
   // Automation
   { id: 'zapier', name: 'Zapier', category: 'automation', provider: 'zapier', available: false },
@@ -356,45 +356,65 @@ export default function SDRIntegrationsPage() {
               </div>
             )}
 
-            {/* Available Integrations */}
-            <div>
-              <h2 className="text-sm font-semibold mb-3">
-                Disponíveis ({filteredIntegrations.length})
-              </h2>
-              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {filteredIntegrations.map((item) => (
-                  <Dialog key={item.id}>
-                    <DialogTrigger asChild>
-                      <Card className={`group hover:shadow-sm transition-all ${item.available ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed opacity-50'}`}>
-                        <CardContent className="p-2 flex flex-col items-center gap-1.5">
-                          <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
-                          <div className="text-center w-full">
-                            <p className="text-[10px] font-medium truncate leading-tight">{item.name}</p>
-                            {!item.available && (
-                              <Badge variant="secondary" className="text-[8px] h-3.5 mt-0.5 px-1">Breve</Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </DialogTrigger>
-                    {item.available && (
-                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Configurar {item.name}</DialogTitle>
-                          <DialogDescription>
-                            Conecte sua conta {item.name}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <IntegrationForm 
-                          defaultChannel={item.category}
-                          defaultProvider={item.provider}
-                          onSuccess={loadIntegrations} 
-                        />
-                      </DialogContent>
-                    )}
-                  </Dialog>
-                ))}
-              </div>
+            {/* Available Integrations por Categoria */}
+            <div className="space-y-6">
+              {['email', 'social', 'crm', 'communication', 'automation', 'support'].map((category) => {
+                const categoryItems = filteredIntegrations.filter(item => item.category === category);
+                if (categoryItems.length === 0) return null;
+                
+                const categoryNames: Record<string, string> = {
+                  email: 'Email',
+                  social: 'Redes Sociais',
+                  crm: 'CRM',
+                  communication: 'Comunicação',
+                  automation: 'Automação',
+                  support: 'Suporte'
+                };
+
+                return (
+                  <div key={category}>
+                    <h2 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
+                      {categoryNames[category]} ({categoryItems.length})
+                    </h2>
+                    <div className="grid gap-1.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                      {categoryItems.map((item) => (
+                        <Dialog key={item.id}>
+                          <DialogTrigger asChild>
+                            <Card className={`group hover:shadow-sm transition-all ${item.available ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed opacity-60'}`}>
+                              <CardContent className="p-1.5 flex flex-col items-center gap-1 bg-muted/30">
+                                <div className="w-full aspect-square flex items-center justify-center">
+                                  <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
+                                </div>
+                                <div className="text-center w-full px-0.5">
+                                  <p className="text-[9px] font-medium truncate leading-tight">{item.name}</p>
+                                  {!item.available && (
+                                    <Badge variant="secondary" className="text-[7px] h-3 mt-0.5 px-1">Breve</Badge>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </DialogTrigger>
+                          {item.available && (
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Configurar {item.name}</DialogTitle>
+                                <DialogDescription>
+                                  Conecte sua conta {item.name}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <IntegrationForm 
+                                defaultChannel={item.category}
+                                defaultProvider={item.provider}
+                                onSuccess={loadIntegrations} 
+                              />
+                            </DialogContent>
+                          )}
+                        </Dialog>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
