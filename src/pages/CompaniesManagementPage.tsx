@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
@@ -41,6 +41,7 @@ export default function CompaniesManagementPage() {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBatchEnriching, setIsBatchEnriching] = useState(false);
+  const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -148,6 +149,30 @@ export default function CompaniesManagementPage() {
     }
   };
 
+  const handleBatchEnrich360 = async () => {
+    try {
+      setIsBatchEnriching360(true);
+      toast.info('Iniciando enriquecimento 360° em todas as empresas...');
+
+      const { data, error } = await supabase.functions.invoke('trigger-batch-enrichment', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      toast.success(
+        `Enriquecimento 360° iniciado! ${data?.processed || 0} empresas sendo processadas.`
+      );
+
+      refetch();
+    } catch (error) {
+      console.error('Error batch enriching 360:', error);
+      toast.error('Erro ao executar enriquecimento 360°');
+    } finally {
+      setIsBatchEnriching360(false);
+    }
+  };
+
   const filteredCompanies = companies.filter(company =>
     company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj?.includes(searchTerm) ||
@@ -187,6 +212,18 @@ export default function CompaniesManagementPage() {
                 <Building2 className="h-4 w-4 mr-2" />
               )}
               Enriquecer com Receita Federal
+            </Button>
+            <Button 
+              variant="default" 
+              onClick={handleBatchEnrich360}
+              disabled={isBatchEnriching360}
+            >
+              {isBatchEnriching360 ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              Enriquecimento 360° Completo
             </Button>
             {selectedCompanies.length > 0 && (
               <Button 
