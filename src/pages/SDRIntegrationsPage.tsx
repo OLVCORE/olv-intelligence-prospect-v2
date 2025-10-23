@@ -142,29 +142,249 @@ function WebhookSetupInstructions() {
   };
 
   return (
-    <div className="mt-4 p-3 border rounded-lg bg-muted/30 space-y-3">
-      <div className="flex items-start gap-2">
-        <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-        <div className="flex-1 space-y-2">
-          <h4 className="font-semibold text-xs">Configuração do Webhook</h4>
-          <p className="text-[11px] text-muted-foreground">
-            Configure um forward no seu servidor de email para enviar emails para o webhook.
-          </p>
+    <div className="mt-4 space-y-4">
+      {/* URL do Webhook */}
+      <div className="p-4 border rounded-lg bg-primary/5 border-primary/20 space-y-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <h4 className="font-semibold text-sm">📧 Recebimento de Emails na Plataforma</h4>
+            <p className="text-xs text-muted-foreground">
+              Para que os emails que você receber apareçam aqui na plataforma, você precisa configurar um encaminhamento automático.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold">URL do Webhook (copie esta URL)</Label>
+          <div className="flex gap-2">
+            <Input 
+              readOnly 
+              value={webhookUrl}
+              className="text-xs font-mono"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={copyWebhookUrl}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-[10px] font-semibold">URL do Webhook</Label>
-        <div className="flex gap-2">
-          <Input 
-            readOnly 
-            value={webhookUrl}
-            className="text-[10px] font-mono h-8"
-          />
-          <Button type="button" variant="outline" size="sm" onClick={copyWebhookUrl} className="h-8">
-            <Copy className="h-3 w-3" />
-          </Button>
-        </div>
+      {/* Guia Passo a Passo */}
+      <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+        <h4 className="font-semibold text-sm flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">1</span>
+          Como Configurar o Encaminhamento
+        </h4>
+
+        <Tabs defaultValue="cpanel" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsTrigger value="cpanel" className="text-xs">cPanel</TabsTrigger>
+            <TabsTrigger value="gmail" className="text-xs">Gmail</TabsTrigger>
+            <TabsTrigger value="outlook" className="text-xs">Outlook</TabsTrigger>
+            <TabsTrigger value="outros" className="text-xs">Outros</TabsTrigger>
+          </TabsList>
+
+          {/* cPanel */}
+          <TabsContent value="cpanel" className="space-y-3 text-xs">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Importante:</strong> O cPanel geralmente NÃO tem a opção "Pipe to a Program" visível. Use o método de Forwarder abaixo.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">1</span>
+                <div>
+                  <p className="font-semibold">Acesse Email Forwarders no cPanel</p>
+                  <p className="text-muted-foreground">Vá em: Email → Forwarders (Encaminhadores)</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">2</span>
+                <div>
+                  <p className="font-semibold">Clique em "Add Forwarder" (Adicionar Encaminhador)</p>
+                  <p className="text-muted-foreground">Botão geralmente no topo da página</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">3</span>
+                <div className="space-y-2">
+                  <p className="font-semibold">Preencha os campos:</p>
+                  <div className="ml-3 space-y-1">
+                    <p><strong>Endereço:</strong> Digite o email que você configurou (ex: consultores@olvinternacional.com.br)</p>
+                    <p><strong>Destino:</strong> Selecione "Forward to email address" e digite um email temporário que você controla</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">4</span>
+                <div>
+                  <p className="font-semibold">Método Alternativo: Usar Gmail/Outlook</p>
+                  <p className="text-muted-foreground">Configure o cPanel para encaminhar para sua conta Gmail ou Outlook, depois configure o filtro lá (veja abas ao lado)</p>
+                </div>
+              </div>
+            </div>
+
+            <Alert className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                <strong>Nota:</strong> A maioria dos provedores de hospedagem não permite encaminhar diretamente para URLs/webhooks por questões de segurança. 
+                Recomendamos usar Gmail ou Outlook como intermediário (veja próximas abas).
+              </AlertDescription>
+            </Alert>
+          </TabsContent>
+
+          {/* Gmail */}
+          <TabsContent value="gmail" className="space-y-3 text-xs">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">1</span>
+                <div>
+                  <p className="font-semibold">Configure seu cPanel para encaminhar emails para uma conta Gmail</p>
+                  <p className="text-muted-foreground">Vá em cPanel → Forwarders → Encaminhe para sua conta @gmail.com</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">2</span>
+                <div>
+                  <p className="font-semibold">No Gmail, clique no ⚙️ (Configurações) → Ver todas as configurações</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">3</span>
+                <div>
+                  <p className="font-semibold">Vá na aba "Encaminhamento e POP/IMAP"</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">4</span>
+                <div className="space-y-2">
+                  <p className="font-semibold">Adicione um endereço de encaminhamento</p>
+                  <p className="text-muted-foreground">Clique em "Adicionar endereço de encaminhamento" e cole: <code className="bg-muted px-1 py-0.5 rounded">inbox@{webhookUrl.split('@')[1]?.split('/')[0] || 'plataforma'}</code></p>
+                  <p className="text-muted-foreground text-[10px] italic">* Email fictício para exemplo - esta funcionalidade será disponibilizada em breve</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">5</span>
+                <div>
+                  <p className="font-semibold">Marque "Encaminhar cópia dos emails recebidos" e selecione o email</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">6</span>
+                <div>
+                  <p className="font-semibold">Salve as alterações</p>
+                  <p className="text-muted-foreground">Os emails começarão a aparecer na plataforma automaticamente</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Outlook */}
+          <TabsContent value="outlook" className="space-y-3 text-xs">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">1</span>
+                <div>
+                  <p className="font-semibold">Configure seu cPanel para encaminhar emails para uma conta Outlook/Hotmail</p>
+                  <p className="text-muted-foreground">Vá em cPanel → Forwarders → Encaminhe para sua conta @outlook.com ou @hotmail.com</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">2</span>
+                <div>
+                  <p className="font-semibold">No Outlook.com, clique em ⚙️ (Configurações) → Ver todas as configurações</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">3</span>
+                <div>
+                  <p className="font-semibold">Vá em Email → Encaminhamento</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">4</span>
+                <div className="space-y-2">
+                  <p className="font-semibold">Ative o encaminhamento</p>
+                  <p className="text-muted-foreground">Marque "Ativar encaminhamento" e adicione um email de destino</p>
+                  <p className="text-muted-foreground text-[10px] italic">* Funcionalidade de email direto será disponibilizada em breve</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold">5</span>
+                <div>
+                  <p className="font-semibold">Salve as configurações</p>
+                  <p className="text-muted-foreground">Pronto! Os emails começarão a chegar na plataforma</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Outros */}
+          <TabsContent value="outros" className="space-y-3 text-xs">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Para outros servidores de email, a configuração varia. Aqui estão os conceitos gerais:
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              <div>
+                <p className="font-semibold mb-2">🔹 Opção 1: Encaminhamento (Mais Simples)</p>
+                <p className="text-muted-foreground">Configure seu servidor de email para encaminhar automaticamente todos os emails para uma conta Gmail ou Outlook, e então configure o Gmail/Outlook conforme as instruções nas outras abas.</p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-2">🔹 Opção 2: Regras/Filtros</p>
+                <p className="text-muted-foreground">Muitos servidores permitem criar regras ou filtros automáticos. Procure por opções como:</p>
+                <ul className="list-disc list-inside ml-3 space-y-1 text-muted-foreground">
+                  <li>Email Rules / Regras de Email</li>
+                  <li>Email Filters / Filtros de Email</li>
+                  <li>Mail Forwarding / Encaminhamento de Email</li>
+                  <li>Auto-forward / Encaminhamento Automático</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-2">🔹 Opção 3: IMAP (Já Configurado)</p>
+                <p className="text-muted-foreground">Você já configurou o IMAP acima, então a plataforma vai buscar os emails automaticamente do seu servidor a cada poucos minutos.</p>
+              </div>
+            </div>
+
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                <strong>💡 Dica:</strong> Se você tem dúvidas sobre seu servidor de email específico, entre em contato com o suporte da sua hospedagem ou provedor de email. Eles podem te ajudar a configurar o encaminhamento.
+              </AlertDescription>
+            </Alert>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Resumo */}
+      <div className="p-4 border rounded-lg bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 space-y-2">
+        <h4 className="font-semibold text-sm text-green-800 dark:text-green-200">✅ Em Resumo</h4>
+        <ul className="text-xs text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
+          <li><strong>Opção Recomendada:</strong> Configure seu cPanel para encaminhar para Gmail/Outlook, depois configure o Gmail/Outlook para encaminhar para a plataforma</li>
+          <li><strong>Já Funciona:</strong> A configuração IMAP que você fez acima já permite que a plataforma busque seus emails automaticamente</li>
+          <li><strong>Suporte:</strong> Se tiver dúvidas, nossa equipe pode te ajudar com a configuração específica do seu servidor</li>
+        </ul>
       </div>
     </div>
   );
