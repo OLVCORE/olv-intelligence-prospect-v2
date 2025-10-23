@@ -10,7 +10,7 @@ import {
   Reply, ReplyAll, Forward, Trash2, Archive, Star, 
   MoreVertical, Paperclip, Send, ChevronLeft, RefreshCw,
   Mail, MailOpen, Download, Flag, Tag, Clock, Search,
-  SortAsc, X, Inbox, AlertCircle, Building2, UserPlus, CheckCircle2
+  SortAsc, X, Inbox, AlertCircle, Building2, UserPlus, CheckCircle2, Edit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
@@ -26,6 +26,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmailComposer } from './EmailComposer';
 
 interface Message {
   id: string;
@@ -86,6 +87,7 @@ export function EmailInboxPanel({
   const [replyMode, setReplyMode] = useState<'reply' | 'reply-all' | 'forward' | null>(null);
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
+  const [composeTo, setComposeTo] = useState('');
   const [sending, setSending] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +179,14 @@ export function EmailInboxPanel({
   const handleSend = async () => {
     if (!composeBody.trim()) return;
     
+    // For new emails (composing without reply mode)
+    if (composing && !replyMode && !selectedConv) {
+      // TODO: Implement sending new emails without existing conversation
+      // This would require creating a new contact and conversation first
+      alert('Envio de novos emails será implementado em breve. Por enquanto, você pode responder emails recebidos.');
+      return;
+    }
+    
     setSending(true);
     try {
       await onSendMessage(composeBody, composeSubject);
@@ -184,6 +194,7 @@ export function EmailInboxPanel({
       setReplyMode(null);
       setComposeBody('');
       setComposeSubject('');
+      setComposeTo('');
     } finally {
       setSending(false);
     }
@@ -210,10 +221,49 @@ export function EmailInboxPanel({
               <Inbox className="h-5 w-5" />
               Caixa de Entrada
             </h2>
-            <Button variant="ghost" size="sm" onClick={onRefresh}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={async () => {
+                try {
+                  // First trigger IMAP sync
+                  await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/email-imap-sync`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  });
+                  // Then refresh the list
+                  onRefresh();
+                } catch (error) {
+                  console.error('Error syncing:', error);
+                  onRefresh(); // Refresh anyway
+                }
+              }}
+            >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Compose Button */}
+          <Button 
+            className="w-full mb-3 gap-2" 
+            onClick={() => {
+              if (conversations.length === 0) {
+                return; // Tooltip will explain why it's disabled
+              }
+              setComposing(true);
+              setReplyMode(null);
+              setComposeSubject('');
+              setComposeBody('');
+              setComposeTo('');
+            }}
+            disabled={conversations.length === 0}
+            title={conversations.length === 0 ? "Aguarde receber emails para poder responder" : "Escrever novo email"}
+          >
+            <Send className="h-4 w-4" />
+            Escrever Email
+          </Button>
           
           {/* Search */}
           <div className="relative mb-3">
@@ -590,73 +640,40 @@ export function EmailInboxPanel({
             {/* Compose Area */}
             {(composing || replyMode) && (
               <div className="p-6 border-t bg-card">
-                <div className="max-w-4xl mx-auto space-y-4">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       {replyMode === 'reply' && <><Reply className="h-4 w-4" />Responder</>}
                       {replyMode === 'reply-all' && <><ReplyAll className="h-4 w-4" />Responder a Todos</>}
                       {replyMode === 'forward' && <><Forward className="h-4 w-4" />Encaminhar</>}
-                      {!replyMode && <>✍️ Nova Mensagem</>}
+                      {!replyMode && composing && <><Edit className="h-4 w-4" />Nova Mensagem</>}
                     </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setComposing(false);
+                        setReplyMode(null);
+                        setComposeBody('');
+                        setComposeSubject('');
+                        setComposeTo('');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <Input
-                    placeholder="Assunto"
-                    value={composeSubject}
-                    onChange={(e) => setComposeSubject(e.target.value)}
-                    className="font-medium"
+                  <EmailComposer
+                    to={composing && !replyMode ? composeTo : (selectedConv?.contact?.email || '')}
+                    onToChange={setComposeTo}
+                    subject={composeSubject}
+                    body={composeBody}
+                    onSubjectChange={setComposeSubject}
+                    onBodyChange={setComposeBody}
+                    onSend={handleSend}
+                    sending={sending}
+                    allowEditTo={composing && !replyMode}
                   />
-                  
-                  <Textarea
-                    placeholder="Escreva sua mensagem..."
-                    value={composeBody}
-                    onChange={(e) => setComposeBody(e.target.value)}
-                    rows={8}
-                    className="resize-none font-sans"
-                  />
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" disabled>
-                        <Paperclip className="h-4 w-4 mr-1" />
-                        Anexar
-                      </Button>
-                      <Button variant="outline" size="sm" disabled>
-                        <Tag className="h-4 w-4 mr-1" />
-                        Tags
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setComposing(false);
-                          setReplyMode(null);
-                          setComposeBody('');
-                          setComposeSubject('');
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={handleSend}
-                        disabled={sending || !composeBody.trim()}
-                      >
-                        {sending ? (
-                          <>
-                            <Clock className="h-4 w-4 mr-2 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4 mr-2" />
-                            Enviar Email
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
