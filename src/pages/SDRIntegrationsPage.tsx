@@ -385,26 +385,24 @@ export default function SDRIntegrationsPage() {
                     <h2 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
                       {categoryNames[category]} ({categoryItems.length})
                     </h2>
-                    <div className="grid gap-1.5 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                    <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
                       {categoryItems.map((item: IntegrationItem) => (
                         <Dialog key={item.id}>
                           <DialogTrigger asChild>
-                            <Card className={`group hover:shadow-sm transition-all ${item.available ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed opacity-60'}`}>
-                              <CardContent className="p-1.5 flex flex-col items-center gap-1 bg-muted/30 h-[85px]">
-                                <div className="w-full flex items-center justify-center flex-shrink-0 h-10">
-                                  <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
-                                </div>
-                                <div className="text-center w-full px-0.5 flex-1 flex flex-col justify-center">
-                                  <p className="text-sm font-semibold leading-tight line-clamp-1">{item.name}</p>
-                                  {item.description && (
-                                    <p className="text-[9px] text-muted-foreground leading-tight line-clamp-1">{item.description}</p>
-                                  )}
-                                  {!item.available && (
-                                    <Badge variant="secondary" className="text-[7px] h-3 mt-0.5 px-1 mx-auto">Breve</Badge>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <button className={`group flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all ${item.available ? 'cursor-pointer hover:bg-muted/50' : 'cursor-not-allowed opacity-60'}`}>
+                              <div className="w-full flex items-center justify-center">
+                                <PlatformLogo platform={item.category} provider={item.provider} size="lg" />
+                              </div>
+                              <div className="text-center w-full">
+                                <p className="text-sm font-semibold leading-tight line-clamp-1">{item.name}</p>
+                                {item.description && (
+                                  <p className="text-[9px] text-muted-foreground leading-tight line-clamp-1">{item.description}</p>
+                                )}
+                                {!item.available && (
+                                  <Badge variant="secondary" className="text-[7px] h-3 mt-0.5 px-1 mx-auto">Breve</Badge>
+                                )}
+                              </div>
+                            </button>
                           </DialogTrigger>
                           {item.available && (
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
