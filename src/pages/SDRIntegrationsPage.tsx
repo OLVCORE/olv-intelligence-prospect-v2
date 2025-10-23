@@ -153,15 +153,20 @@ function WebhookSetupInstructions() {
         </AlertDescription>
       </Alert>
 
-      {/* Como funciona */}
-      <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+      {/* Como funciona - SIMPLIFICADO */}
+      <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/30 space-y-3">
         <div className="flex items-start gap-2">
-          <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">📬 Como Receber Emails Aqui</h4>
-            <p className="text-xs text-muted-foreground">
-              Para que os emails que você receber apareçam nesta plataforma, configure um redirecionamento no seu provedor de email para o nosso webhook.
-            </p>
+          <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 space-y-3">
+            <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-100">📬 Solução Mais Simples (5 minutos)</h4>
+            <div className="text-xs space-y-2">
+              <p className="font-medium">Use seu email atual: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded">consultores@olvinternacional.com.br</code></p>
+              <ol className="list-decimal list-inside space-y-1 ml-2 text-muted-foreground">
+                <li>Configure seu email no cPanel para encaminhar para um Gmail</li>
+                <li>No Gmail, crie um script automático (veja instruções abaixo)</li>
+                <li>Pronto! Os emails aparecerão aqui automaticamente</li>
+              </ol>
+            </div>
           </div>
         </div>
       </div>
@@ -200,50 +205,40 @@ function WebhookSetupInstructions() {
             <TabsTrigger value="zapier" className="text-xs">Zapier/Make</TabsTrigger>
           </TabsList>
 
-          {/* cPanel - Método mais direto */}
+          {/* cPanel - SUPER SIMPLIFICADO */}
           <TabsContent value="cpanel" className="space-y-3 text-xs mt-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Recomendado para:</strong> Quem tem hospedagem com cPanel (Hostgator, Locaweb, etc.)
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                <strong>✅ Solução Simples:</strong> Use seu email <code>consultores@olvinternacional.com.br</code>
               </AlertDescription>
             </Alert>
 
             <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
               <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">A</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Acesse "Forwarders" no cPanel</p>
-                  <p className="text-muted-foreground">Email → Forwarders (Encaminhadores)</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">B</span>
-                <div className="space-y-1">
-                  <p className="font-semibold">Clique em "Add Forwarder"</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">C</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">1</span>
                 <div className="space-y-2">
-                  <p className="font-semibold">Preencha:</p>
-                  <div className="ml-3 space-y-1 p-3 bg-background rounded border">
-                    <p><strong>Endereço:</strong> {'{seu-email@seudominio.com.br}'}</p>
-                    <p><strong>Destino:</strong> Selecione "Forward to email address"</p>
-                    <p className="text-muted-foreground">
-                      ⚠️ <em>Nota:</em> cPanel não aceita webhooks diretamente. Use Gmail (próxima aba) como intermediário.
-                    </p>
+                  <p className="font-semibold">No cPanel, crie um Forwarder</p>
+                  <div className="ml-2 p-3 bg-background rounded border space-y-1">
+                    <p><strong>De:</strong> <code>consultores@olvinternacional.com.br</code></p>
+                    <p><strong>Para:</strong> <code className="text-primary">uma-conta-gmail-sua@gmail.com</code></p>
                   </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">2</span>
+                <div className="space-y-1">
+                  <p className="font-semibold">Configure o Gmail (veja aba "Gmail" →)</p>
+                  <p className="text-muted-foreground">Script automático que pega emails e envia para cá</p>
                 </div>
               </div>
             </div>
 
-            <Alert className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                <strong>Solução Recomendada:</strong> Configure o cPanel para encaminhar para uma conta Gmail, depois configure o Gmail (veja aba "Gmail").
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                💡 <strong>Leva 3 minutos!</strong> O cPanel não suporta webhook direto, então passamos pelo Gmail primeiro.
               </AlertDescription>
             </Alert>
           </TabsContent>
