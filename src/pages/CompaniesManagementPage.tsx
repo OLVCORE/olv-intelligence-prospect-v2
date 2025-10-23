@@ -396,7 +396,12 @@ export default function CompaniesManagementPage() {
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-primary" />
                           <div>
-                            <p className="font-medium">{company.name}</p>
+                            <button
+                              onClick={() => navigate(`/company/${company.id}`)}
+                              className="font-medium hover:text-primary hover:underline text-left"
+                            >
+                              {company.name}
+                            </button>
                             {company.domain && (
                               <p className="text-xs text-muted-foreground">{company.domain}</p>
                             )}
@@ -426,10 +431,11 @@ export default function CompaniesManagementPage() {
                       <TableCell>
                         {company.website ? (
                           <a
-                            href={company.website}
+                            href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {company.website}
                           </a>
