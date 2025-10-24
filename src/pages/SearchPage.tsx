@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { GoogleSheetsSyncConfig } from "@/components/companies/GoogleSheetsSyncConfig";
 
 // Estados brasileiros
 const ESTADOS_BRASIL = [

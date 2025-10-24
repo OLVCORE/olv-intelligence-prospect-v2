@@ -14,16 +14,18 @@ export function useUserRole() {
 
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role, created_at')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return 'user' as AppRole; // Default to 'user' if no role found
+        return 'user' as AppRole; // Default to 'user' if error
       }
 
-      return data?.role as AppRole;
+      const roleRow = Array.isArray(data) ? data[0] : (data as any);
+      return (roleRow?.role as AppRole) || 'user';
     },
     enabled: !!user?.id,
   });

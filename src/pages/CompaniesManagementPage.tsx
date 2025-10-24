@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
 import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
-import { GoogleSheetsSyncConfig } from '@/components/companies/GoogleSheetsSyncConfig';
+import { ManualEnrichmentDialog } from '@/components/companies/ManualEnrichmentDialog';
 import {
   Table,
   TableBody,
@@ -46,6 +46,8 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'location'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [editCompany, setEditCompany] = useState<any | null>(null);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -288,8 +290,7 @@ export default function CompaniesManagementPage() {
           </div>
         </div>
 
-        {/* Google Sheets Sync Config */}
-        <GoogleSheetsSyncConfig />
+        {/* Google Sheets Sync Config removido desta página (agora na tela de Busca) */}
 
         {/* Search */}
         <Card>
@@ -501,6 +502,19 @@ export default function CompaniesManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Diálogo para Complementar Informações */}
+        <ManualEnrichmentDialog
+          open={manualDialogOpen}
+          onOpenChange={setManualDialogOpen}
+          companyId={editCompany?.id}
+          initialData={{
+            website: editCompany?.website || '',
+            linkedin_url: editCompany?.linkedin_url || '',
+            domain: editCompany?.domain || ''
+          }}
+          onSaved={() => { setManualDialogOpen(false); setEditCompany(null); refetch(); }}
+        />
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
