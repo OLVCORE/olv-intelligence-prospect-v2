@@ -14,6 +14,205 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_strategies: {
+        Row: {
+          ai_insights: Json | null
+          ai_recommendations: Json | null
+          annual_value: number | null
+          approach_strategy: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_stage: string | null
+          decision_maker_id: string | null
+          engagement_level: string | null
+          expected_timeline: string | null
+          id: string
+          identified_gaps: Json | null
+          investment_required: number | null
+          last_touchpoint_at: string | null
+          next_action_due: string | null
+          payback_period: string | null
+          persona_id: string | null
+          priority: string | null
+          projected_roi: number | null
+          recommended_products: Json | null
+          relationship_score: number | null
+          stakeholder_map: Json | null
+          status: string | null
+          transformation_roadmap: Json | null
+          updated_at: string | null
+          value_proposition: string | null
+        }
+        Insert: {
+          ai_insights?: Json | null
+          ai_recommendations?: Json | null
+          annual_value?: number | null
+          approach_strategy?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string | null
+          decision_maker_id?: string | null
+          engagement_level?: string | null
+          expected_timeline?: string | null
+          id?: string
+          identified_gaps?: Json | null
+          investment_required?: number | null
+          last_touchpoint_at?: string | null
+          next_action_due?: string | null
+          payback_period?: string | null
+          persona_id?: string | null
+          priority?: string | null
+          projected_roi?: number | null
+          recommended_products?: Json | null
+          relationship_score?: number | null
+          stakeholder_map?: Json | null
+          status?: string | null
+          transformation_roadmap?: Json | null
+          updated_at?: string | null
+          value_proposition?: string | null
+        }
+        Update: {
+          ai_insights?: Json | null
+          ai_recommendations?: Json | null
+          annual_value?: number | null
+          approach_strategy?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string | null
+          decision_maker_id?: string | null
+          engagement_level?: string | null
+          expected_timeline?: string | null
+          id?: string
+          identified_gaps?: Json | null
+          investment_required?: number | null
+          last_touchpoint_at?: string | null
+          next_action_due?: string | null
+          payback_period?: string | null
+          persona_id?: string | null
+          priority?: string | null
+          projected_roi?: number | null
+          recommended_products?: Json | null
+          relationship_score?: number | null
+          stakeholder_map?: Json | null
+          status?: string | null
+          transformation_roadmap?: Json | null
+          updated_at?: string | null
+          value_proposition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_strategies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_strategies_decision_maker_id_fkey"
+            columns: ["decision_maker_id"]
+            isOneToOne: false
+            referencedRelation: "decision_makers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_strategies_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_touchpoints: {
+        Row: {
+          account_strategy_id: string | null
+          attachments: Json | null
+          channel: string | null
+          company_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          meeting_duration_minutes: number | null
+          next_action_due: string | null
+          next_action_owner: string | null
+          next_steps: string | null
+          outcome: string | null
+          related_tasks: Json | null
+          response_received: boolean | null
+          response_time_hours: number | null
+          sentiment: string | null
+          stage: string
+          subject: string | null
+          touchpoint_type: string
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          attachments?: Json | null
+          channel?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meeting_duration_minutes?: number | null
+          next_action_due?: string | null
+          next_action_owner?: string | null
+          next_steps?: string | null
+          outcome?: string | null
+          related_tasks?: Json | null
+          response_received?: boolean | null
+          response_time_hours?: number | null
+          sentiment?: string | null
+          stage: string
+          subject?: string | null
+          touchpoint_type: string
+        }
+        Update: {
+          account_strategy_id?: string | null
+          attachments?: Json | null
+          channel?: string | null
+          company_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meeting_duration_minutes?: number | null
+          next_action_due?: string | null
+          next_action_owner?: string | null
+          next_steps?: string | null
+          outcome?: string | null
+          related_tasks?: Json | null
+          response_received?: boolean | null
+          response_time_hours?: number | null
+          sentiment?: string | null
+          stage?: string
+          subject?: string | null
+          touchpoint_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_touchpoints_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_touchpoints_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_interactions: {
         Row: {
           answer: string
@@ -37,6 +236,177 @@ export type Database = {
           id?: string
           metadata?: Json | null
           question?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      business_cases: {
+        Row: {
+          accepted_at: string | null
+          account_strategy_id: string | null
+          business_impact: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_situation: string | null
+          expected_benefits: Json | null
+          id: string
+          identified_problems: Json | null
+          implementation_phases: Json | null
+          investment_breakdown: Json | null
+          payment_terms: string | null
+          presentation_url: string | null
+          products_included: Json | null
+          proposal_url: string | null
+          proposed_solution: string | null
+          risk_mitigation: Json | null
+          roi_calculation: Json | null
+          sent_at: string | null
+          similar_cases: Json | null
+          status: string | null
+          success_metrics: Json | null
+          testimonials: Json | null
+          updated_at: string | null
+          version: number | null
+          viewed_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_strategy_id?: string | null
+          business_impact?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_situation?: string | null
+          expected_benefits?: Json | null
+          id?: string
+          identified_problems?: Json | null
+          implementation_phases?: Json | null
+          investment_breakdown?: Json | null
+          payment_terms?: string | null
+          presentation_url?: string | null
+          products_included?: Json | null
+          proposal_url?: string | null
+          proposed_solution?: string | null
+          risk_mitigation?: Json | null
+          roi_calculation?: Json | null
+          sent_at?: string | null
+          similar_cases?: Json | null
+          status?: string | null
+          success_metrics?: Json | null
+          testimonials?: Json | null
+          updated_at?: string | null
+          version?: number | null
+          viewed_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          account_strategy_id?: string | null
+          business_impact?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_situation?: string | null
+          expected_benefits?: Json | null
+          id?: string
+          identified_problems?: Json | null
+          implementation_phases?: Json | null
+          investment_breakdown?: Json | null
+          payment_terms?: string | null
+          presentation_url?: string | null
+          products_included?: Json | null
+          proposal_url?: string | null
+          proposed_solution?: string | null
+          risk_mitigation?: Json | null
+          roi_calculation?: Json | null
+          sent_at?: string | null
+          similar_cases?: Json | null
+          status?: string | null
+          success_metrics?: Json | null
+          testimonials?: Json | null
+          updated_at?: string | null
+          version?: number | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_cases_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_cases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buyer_personas: {
+        Row: {
+          best_approach: string | null
+          communication_style: string | null
+          content_preferences: string[] | null
+          created_at: string | null
+          custom_data: Json | null
+          decision_factors: Json | null
+          department: string | null
+          id: string
+          is_default: boolean | null
+          key_messages: Json | null
+          meeting_style: string | null
+          motivators: Json | null
+          name: string
+          objections: Json | null
+          pain_points: Json | null
+          preferred_channels: Json | null
+          role: string
+          seniority: string
+          updated_at: string | null
+        }
+        Insert: {
+          best_approach?: string | null
+          communication_style?: string | null
+          content_preferences?: string[] | null
+          created_at?: string | null
+          custom_data?: Json | null
+          decision_factors?: Json | null
+          department?: string | null
+          id?: string
+          is_default?: boolean | null
+          key_messages?: Json | null
+          meeting_style?: string | null
+          motivators?: Json | null
+          name: string
+          objections?: Json | null
+          pain_points?: Json | null
+          preferred_channels?: Json | null
+          role: string
+          seniority: string
+          updated_at?: string | null
+        }
+        Update: {
+          best_approach?: string | null
+          communication_style?: string | null
+          content_preferences?: string[] | null
+          created_at?: string | null
+          custom_data?: Json | null
+          decision_factors?: Json | null
+          department?: string | null
+          id?: string
+          is_default?: boolean | null
+          key_messages?: Json | null
+          meeting_style?: string | null
+          motivators?: Json | null
+          name?: string
+          objections?: Json | null
+          pain_points?: Json | null
+          preferred_channels?: Json | null
+          role?: string
+          seniority?: string
           updated_at?: string | null
         }
         Relationships: []
