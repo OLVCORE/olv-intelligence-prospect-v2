@@ -20,7 +20,7 @@ interface Deal {
   contact_id: string;
   company_id?: string;
   channel: string;
-  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
   priority: string;
   last_message_at?: string;
   created_at: string;
@@ -39,12 +39,12 @@ interface Deal {
 }
 
 const PIPELINE_STAGES = [
-  { id: 'new', title: 'Novos Leads', color: 'bg-slate-100' },
-  { id: 'contacted', title: 'Contactados', color: 'bg-blue-100' },
-  { id: 'qualified', title: 'Qualificados', color: 'bg-purple-100' },
-  { id: 'proposal', title: 'Proposta', color: 'bg-yellow-100' },
-  { id: 'negotiation', title: 'Negociação', color: 'bg-orange-100' },
-  { id: 'closed_won', title: 'Ganhos', color: 'bg-green-100' },
+  { id: 'new', title: 'Novos Leads', color: 'bg-slate-500/20 dark:bg-slate-700/40' },
+  { id: 'contacted', title: 'Contactados', color: 'bg-blue-500/20 dark:bg-blue-700/40' },
+  { id: 'qualified', title: 'Qualificados', color: 'bg-purple-500/20 dark:bg-purple-700/40' },
+  { id: 'proposal', title: 'Proposta', color: 'bg-yellow-500/20 dark:bg-yellow-700/40' },
+  { id: 'negotiation', title: 'Negociação', color: 'bg-orange-500/20 dark:bg-orange-700/40' },
+  { id: 'won', title: 'Ganhos', color: 'bg-green-500/20 dark:bg-green-700/40' },
 ] as const;
 
 function SortableDealCard({ deal }: { deal: Deal }) {
@@ -69,9 +69,8 @@ export default function SDRPipelinePage() {
 
     const channel = supabase
       .channel('sdr-pipeline')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, loadPipeline)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sdr_opportunities' }, loadPipeline)
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -80,16 +79,21 @@ export default function SDRPipelinePage() {
   const loadPipeline = async () => {
     setLoading(true);
     try {
+      // DADOS REAIS da tabela sdr_opportunities
       const { data, error } = await supabase
-        .from('conversations')
+        .from('sdr_opportunities')
         .select(`
           id,
           contact_id,
           company_id,
-          channel,
-          status,
-          priority,
-          last_message_at,
+          conversation_id,
+          stage,
+          value,
+          probability,
+          next_action,
+          metadata,
+          created_at,
+          updated_at,
           contact:contacts(name, email, phone),
           company:companies(
             name,
@@ -98,40 +102,30 @@ export default function SDRPipelinePage() {
             digital_maturity_score
           )
         `)
-        .order('last_message_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Enriquecer deals com dados estimados e insights
-      const enrichedDeals = (data || []).map((conv: any) => {
-        const estimatedValue = conv.priority === 'high' ? 150000 
-          : conv.priority === 'medium' ? 85000 
-          : 40000;
+      // Mapear para Deal interface (SEM mocks!)
+      const mappedDeals = (data || []).map((opp: any) => ({
+        id: opp.id,
+        contact_id: opp.contact_id,
+        company_id: opp.company_id,
+        channel: opp.metadata?.channel || 'email',
+        status: opp.stage,
+        priority: opp.metadata?.priority || 'medium',
+        last_message_at: opp.updated_at,
+        created_at: opp.created_at,
+        updated_at: opp.updated_at,
+        contact: opp.contact,
+        company: opp.company,
+        estimated_value: Number(opp.value) || 0,
+        win_probability: opp.probability || 0,
+        next_action: opp.next_action || 'Definir próxima ação',
+        ai_insight: opp.metadata?.ai_insight || null,
+      }));
 
-        const winProbability = conv.status === 'new' || conv.status === 'open' ? 25
-          : conv.status === 'contacted' ? 40
-          : conv.status === 'qualified' ? 65
-          : conv.status === 'proposal' ? 75
-          : conv.status === 'negotiation' ? 85
-          : 100;
-
-        const aiInsights = [
-          'Alta maturidade digital - Pronto para soluções enterprise',
-          'Setor em crescimento - Boa oportunidade de expansão',
-          'Decisor mapeado - Momento ideal para contato executivo',
-          'Tecnologia legada - Forte fit para modernização',
-        ];
-
-        return {
-          ...conv,
-          estimated_value: estimatedValue,
-          win_probability: winProbability,
-          next_action: 'Follow-up agendado para amanhã',
-          ai_insight: aiInsights[Math.floor(Math.random() * aiInsights.length)],
-        };
-      });
-
-      setDeals(enrichedDeals);
+      setDeals(mappedDeals);
     } catch (error: any) {
       console.error('Error loading pipeline:', error);
       toast({
@@ -161,9 +155,13 @@ export default function SDRPipelinePage() {
 
     if (PIPELINE_STAGES.some(stage => stage.id === newStatus)) {
       try {
+        // Atualizar tabela REAL sdr_opportunities
         const { error } = await supabase
-          .from('conversations')
-          .update({ status: newStatus })
+          .from('sdr_opportunities')
+          .update({ 
+            stage: newStatus,
+            won_date: newStatus === 'won' ? new Date().toISOString() : null,
+          })
           .eq('id', dealId);
 
         if (error) throw error;
@@ -274,11 +272,11 @@ export default function SDRPipelinePage() {
     return {
       total: filteredDeals.length,
       qualified: filteredDeals.filter(d => ['qualified', 'proposal', 'negotiation'].includes(d.status)).length,
-      won: filteredDeals.filter(d => d.status === 'closed_won').length,
+      won: filteredDeals.filter(d => d.status === 'won').length,
       totalValue,
       avgProbability,
       conversion: deals.length > 0 
-        ? ((deals.filter(d => d.status === 'closed_won').length / deals.length) * 100).toFixed(1)
+        ? ((deals.filter(d => d.status === 'won').length / deals.length) * 100).toFixed(1)
         : 0,
     };
   }, [filteredDeals, deals]);
