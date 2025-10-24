@@ -29,14 +29,14 @@ serve(async (req) => {
     if (companyError) throw companyError;
 
     // 2. Buscar dados relacionados em paralelo
-    const [decisorsRes, maturityRes, signalsRes] = await Promise.all([
+    const [decisorsRes, presenceRes, signalsRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
-      supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle(),
+      supabase.from('digital_presence').select('*').eq('company_id', companyId).maybeSingle(),
       supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false })
     ]);
 
     const decisors = decisorsRes.data || [];
-    const maturity = maturityRes.data;
+    const maturity = presenceRes.data;
     const signals = signalsRes.data || [];
 
     // 3. Calcular métricas
@@ -59,6 +59,17 @@ serve(async (req) => {
       signals,
       generatedAt: new Date().toISOString()
     };
+
+    // 6. Persistir relatório em executive_reports
+    await supabase
+      .from('executive_reports')
+      .upsert({
+        company_id: companyId,
+        report_type: 'company',
+        content: report
+      }, { onConflict: 'company_id,report_type' });
+
+    console.log('[generate-company-report] Relatório persistido no banco');
 
     return new Response(JSON.stringify(report), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

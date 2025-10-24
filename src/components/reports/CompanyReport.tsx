@@ -32,13 +32,27 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
   const { data: report, isLoading } = useQuery({
     queryKey: ['company-report', companyId],
     queryFn: async () => {
+      // Primeiro buscar relatório persistido
+      const { data: existingReport } = await supabase
+        .from('executive_reports')
+        .select('content')
+        .eq('company_id', companyId)
+        .eq('report_type', 'company')
+        .maybeSingle();
+
+      if (existingReport?.content) {
+        return existingReport.content;
+      }
+
+      // Se não existir, gerar novo
       const { data, error } = await supabase.functions.invoke('generate-company-report', {
         body: { companyId }
       });
       
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 300000, // Cache por 5 minutos
   });
 
   const handleDownloadPDF = async () => {

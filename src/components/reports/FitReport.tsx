@@ -24,14 +24,15 @@ export function FitReport({ companyId }: FitReportProps) {
         .from('companies')
         .select(`
           *,
-          digital_maturity(*),
+          digital_presence(*),
           governance_signals(*)
         `)
         .eq('id', companyId)
         .single();
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 300000, // Cache por 5 minutos
   });
 
   const analyzeMutation = useMutation({
@@ -114,12 +115,12 @@ export function FitReport({ companyId }: FitReportProps) {
             </Button>
           </div>
 
-          {company.digital_maturity?.[0] && (
+          {company.digital_presence?.[0] && (
             <div className="border-t pt-6">
               <p className="text-sm text-muted-foreground mb-2">Informações disponíveis:</p>
               <div className="flex gap-4">
                 <Badge variant="outline">
-                  Score Digital: {company.digital_maturity[0].overall_score?.toFixed(1)}
+                  Score Digital: {Number((company.digital_presence?.[0] as any)?.overall_score || 0).toFixed(1)}
                 </Badge>
                 <Badge variant="outline">
                   {company.employees} funcionários

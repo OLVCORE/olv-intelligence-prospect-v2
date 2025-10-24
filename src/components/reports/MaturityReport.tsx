@@ -17,15 +17,16 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, digital_maturity(*)')
+        .select('*, digital_presence(*)')
         .eq('id', companyId)
         .single();
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 300000, // Cache por 5 minutos
   });
 
-  const maturity = company?.digital_maturity?.[0];
+  const maturity = company?.digital_presence?.[0];
 
   if (companyLoading) {
     return (
@@ -50,25 +51,25 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 7) return "text-green-600";
-    if (score >= 5) return "text-yellow-600";
+    if (score >= 70) return "text-green-600";
+    if (score >= 50) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 7) return "Avançado";
-    if (score >= 5) return "Intermediário";
+    if (score >= 70) return "Avançado";
+    if (score >= 50) return "Intermediário";
     return "Iniciante";
   };
 
   const dimensions = [
-    { key: 'infrastructure_score', label: 'Infraestrutura', icon: 'Infra' },
-    { key: 'systems_score', label: 'Sistemas', icon: 'Sistemas' },
-    { key: 'processes_score', label: 'Processos', icon: 'Processos' },
-    { key: 'security_score', label: 'Segurança', icon: 'Segurança' },
-    { key: 'innovation_score', label: 'Inovação', icon: 'Inovação' }
+    { key: 'social_score', label: 'Presença Social', icon: '📱' },
+    { key: 'web_score', label: 'Presença Web', icon: '🌐' },
+    { key: 'engagement_score', label: 'Engajamento', icon: '👥' },
   ];
 
+  const overallScore = Number((maturity as any)?.overall_score || 0);
+  
   return (
     <div className="space-y-6">
       {/* Overall Score */}
@@ -79,27 +80,27 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
             Pontuação Geral de Maturidade Digital
           </CardTitle>
           <CardDescription>
-            Análise baseada em {dimensions.length} dimensões-chave
+            Análise baseada em presença digital e engajamento
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className={`text-6xl font-bold ${getScoreColor(maturity.overall_score || 0)}`}>
-                {maturity.overall_score?.toFixed(1)}
+              <div className={`text-6xl font-bold ${getScoreColor(overallScore)}`}>
+                {overallScore.toFixed(0)}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">de 10.0</p>
+              <p className="text-sm text-muted-foreground mt-2">de 100</p>
             </div>
             <div className="text-right">
               <Badge variant="outline" className="text-lg px-4 py-2">
-                {getScoreLabel(maturity.overall_score || 0)}
+                {getScoreLabel(overallScore)}
               </Badge>
               <p className="text-xs text-muted-foreground mt-2">
                 Nível de maturidade
               </p>
             </div>
           </div>
-          <Progress value={(maturity.overall_score || 0) * 10} className="h-3" />
+          <Progress value={overallScore} className="h-3" />
         </CardContent>
       </Card>
 
@@ -113,7 +114,7 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {dimensions.map((dim) => {
-            const score = maturity[dim.key as keyof typeof maturity] as number || 0;
+            const score = Number((maturity as any)[dim.key] || 0);
             return (
               <div key={dim.key} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -123,12 +124,12 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
-                      {score.toFixed(1)}
+                      {score.toFixed(0)}
                     </span>
                     <Badge variant="outline">{getScoreLabel(score)}</Badge>
                   </div>
                 </div>
-                <Progress value={score * 10} className="h-2" />
+                <Progress value={score} className="h-2" />
               </div>
             );
           })}
@@ -147,19 +148,19 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             {dimensions
-              .filter(dim => (maturity[dim.key as keyof typeof maturity] as number || 0) >= 7)
+              .filter(dim => Number((maturity as any)[dim.key] || 0) >= 70)
               .map(dim => (
                 <div key={dim.key} className="flex items-start gap-2">
                   <span className="text-green-600">✓</span>
                   <div>
                     <p className="font-medium">{dim.label}</p>
                     <p className="text-sm text-muted-foreground">
-                      Nível avançado identificado
+                      Score: {Number((maturity as any)[dim.key] || 0).toFixed(0)} - Nível avançado
                     </p>
                   </div>
                 </div>
               ))}
-            {dimensions.filter(dim => (maturity[dim.key as keyof typeof maturity] as number || 0) >= 7).length === 0 && (
+            {dimensions.filter(dim => Number((maturity as any)[dim.key] || 0) >= 70).length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Nenhum ponto forte identificado. Oportunidade de evolução em todas as áreas.
               </p>
@@ -177,19 +178,19 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             {dimensions
-              .filter(dim => (maturity[dim.key as keyof typeof maturity] as number || 0) < 5)
+              .filter(dim => Number((maturity as any)[dim.key] || 0) < 50)
               .map(dim => (
                 <div key={dim.key} className="flex items-start gap-2">
                   <span className="text-orange-600">⚠️</span>
                   <div>
                     <p className="font-medium">{dim.label}</p>
                     <p className="text-sm text-muted-foreground">
-                      Requer atenção e investimento prioritário
+                      Score: {Number((maturity as any)[dim.key] || 0).toFixed(0)} - Requer atenção
                     </p>
                   </div>
                 </div>
               ))}
-            {dimensions.filter(dim => (maturity[dim.key as keyof typeof maturity] as number || 0) < 5).length === 0 && (
+            {dimensions.filter(dim => Number((maturity as any)[dim.key] || 0) < 50).length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Sem áreas críticas identificadas. Continue evoluindo gradualmente.
               </p>
@@ -199,7 +200,7 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
       </div>
 
       {/* Analysis Metadata */}
-      {maturity.analysis_data && (
+      {(maturity as any).created_at && (
         <Card>
           <CardHeader>
             <CardTitle>Detalhes da Análise</CardTitle>
@@ -209,15 +210,17 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
               <div>
                 <span className="text-muted-foreground">Data da Análise:</span>
                 <p className="font-medium">
-                  {new Date(maturity.created_at).toLocaleDateString('pt-BR')}
+                  {new Date((maturity as any).created_at).toLocaleDateString('pt-BR')}
                 </p>
               </div>
-              <div>
-                <span className="text-muted-foreground">Última Atualização:</span>
-                <p className="font-medium">
-                  {new Date(maturity.updated_at).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
+              {(maturity as any).last_updated && (
+                <div>
+                  <span className="text-muted-foreground">Última Atualização:</span>
+                  <p className="font-medium">
+                    {new Date((maturity as any).last_updated).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

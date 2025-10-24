@@ -1332,6 +1332,33 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_reports: {
+        Row: {
+          company_id: string
+          content: Json
+          generated_at: string
+          id: string
+          report_type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: Json
+          generated_at?: string
+          id?: string
+          report_type: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: Json
+          generated_at?: string
+          id?: string
+          report_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financial_data: {
         Row: {
           company_id: string
