@@ -194,29 +194,29 @@ export function AppSidebar() {
   return (
     <Sidebar 
       collapsible="icon" 
-      className="border-r pt-16"
+      className="border-r pt-12 md:pt-16"
       onMouseEnter={() => !isMobile && setOpen(true)}
       onMouseLeave={() => !isMobile && setOpen(false)}
     >
-      <SidebarHeader className="border-b border-sidebar-border p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:justify-center">
-          <Building2 className="h-6 w-6 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
+      <SidebarHeader className="border-b border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:justify-center touch-manipulation active:scale-95">
+          <Building2 className="h-7 w-7 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
           {(open || isMobile) && (
             <div className="min-w-0">
               <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
-              <p className="text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+              <p className="text-[10px] md:text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
             </div>
           )}
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <TooltipProvider delayDuration={200}>
           {menuGroups.map((group) => (
             <Collapsible key={group.label} defaultOpen className="group/group">
               <SidebarGroup>
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="group-data-[collapsible=icon]:hidden flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer w-full">
-                    <group.icon className="h-4 w-4" />
+                  <CollapsibleTrigger className="group-data-[collapsible=icon]:hidden flex items-center gap-2 text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer w-full touch-manipulation active:scale-95 py-3 md:py-2">
+                    <group.icon className="h-4 w-4 md:h-4 md:w-4" />
                     <span>{group.label}</span>
                     <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/group:rotate-90" />
                   </CollapsibleTrigger>
@@ -234,59 +234,60 @@ export function AppSidebar() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div>
-                                <Collapsible className="group/collapsible" defaultOpen={location.pathname.startsWith(item.url.split('/')[1])}>
-                                  <SidebarMenuButton 
-                                    asChild
-                                    className={cn(
-                                      (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
-                                      (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
-                                    )}
-                                  >
-                                    <CollapsibleTrigger className="w-full">
-                                      <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
-                                        <div className="relative">
-                                          <item.icon className={cn(
-                                            "h-4 w-4",
-                                            (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                          )} />
-                                          {(item as any).special && (
-                                            <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
-                                          )}
-                                        </div>
-                                        {(open || isMobile) && (
-                                          <span className={cn(
-                                            "font-medium",
-                                            (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                          )}>
-                                            {item.title}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {(open || isMobile) && (
-                                        <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                      )}
-                                    </CollapsibleTrigger>
-                                  </SidebarMenuButton>
+                                 <Collapsible className="group/collapsible" defaultOpen={location.pathname.startsWith(item.url.split('/')[1])}>
+                                   <SidebarMenuButton 
+                                     asChild
+                                     className={cn(
+                                       "touch-manipulation active:scale-95 py-3 md:py-2",
+                                       (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
+                                       (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
+                                     )}
+                                   >
+                                     <CollapsibleTrigger className="w-full">
+                                       <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
+                                         <div className="relative">
+                                           <item.icon className={cn(
+                                             "h-5 w-5 md:h-4 md:w-4",
+                                             (item as any).special && "text-[hsl(var(--accent-gold))]"
+                                           )} />
+                                           {(item as any).special && (
+                                             <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
+                                           )}
+                                         </div>
+                                         {(open || isMobile) && (
+                                           <span className={cn(
+                                             "font-medium text-sm md:text-sm",
+                                             (item as any).special && "text-[hsl(var(--accent-gold))]"
+                                           )}>
+                                             {item.title}
+                                           </span>
+                                         )}
+                                       </div>
+                                       {(open || isMobile) && (
+                                         <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                       )}
+                                     </CollapsibleTrigger>
+                                   </SidebarMenuButton>
                                   <CollapsibleContent>
                                     <SidebarMenuSub>
                                       {(item as any).submenu.map((subItem: any) => (
-                                        <SidebarMenuSubItem key={subItem.title}>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <div>
-                                                <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url}>
-                                                  <Link to={subItem.url}>
-                                                    <subItem.icon className="h-3.5 w-3.5" />
-                                                    <span className="text-xs">{subItem.title}</span>
-                                                  </Link>
-                                                </SidebarMenuSubButton>
-                                              </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="right" className="max-w-[250px]">
-                                              <p className="text-xs">{subItem.description}</p>
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </SidebarMenuSubItem>
+                                         <SidebarMenuSubItem key={subItem.title}>
+                                           <Tooltip>
+                                             <TooltipTrigger asChild>
+                                               <div>
+                                                 <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url} className="touch-manipulation active:scale-95 py-2.5 md:py-2">
+                                                   <Link to={subItem.url}>
+                                                     <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                                                     <span className="text-xs md:text-xs">{subItem.title}</span>
+                                                   </Link>
+                                                 </SidebarMenuSubButton>
+                                               </div>
+                                             </TooltipTrigger>
+                                             <TooltipContent side="right" className="max-w-[250px] hidden md:block">
+                                               <p className="text-xs">{subItem.description}</p>
+                                             </TooltipContent>
+                                           </Tooltip>
+                                         </SidebarMenuSubItem>
                                       ))}
                                     </SidebarMenuSub>
                                   </CollapsibleContent>
@@ -310,17 +311,18 @@ export function AppSidebar() {
                                 asChild 
                                 isActive={isActive}
                                 className={cn(
+                                  "touch-manipulation active:scale-95 py-3 md:py-2",
                                   (item as any).highlighted && "font-semibold bg-primary/5 border-l-2 border-primary"
                                 )}
                               >
                                 <Link to={item.url} className="flex items-center gap-2">
-                                  <item.icon className="h-4 w-4" />
-                                  {(open || isMobile) && <span className="text-sm">{item.title}</span>}
+                                  <item.icon className="h-5 w-5 md:h-4 md:w-4" />
+                                  {(open || isMobile) && <span className="text-sm md:text-sm">{item.title}</span>}
                                 </Link>
                               </SidebarMenuButton>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-[280px]">
+                          <TooltipContent side="right" className="max-w-[280px] hidden md:block">
                             <p className="text-xs">{(item as any).description}</p>
                           </TooltipContent>
                         </Tooltip>
@@ -335,25 +337,25 @@ export function AppSidebar() {
           ))}
         </TooltipProvider>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4 group-data-[collapsible=icon]:p-2">
+      <SidebarFooter className="border-t border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-2 py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-            <User className="h-4 w-4 flex-shrink-0" />
-            {(open || isMobile) && <span className="truncate whitespace-nowrap">{user?.email}</span>}
+          <div className="flex items-center gap-2 px-2 py-2 md:py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+            <User className="h-5 w-5 md:h-4 md:w-4 flex-shrink-0" />
+            {(open || isMobile) && <span className="truncate whitespace-nowrap text-xs md:text-sm">{user?.email}</span>}
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 touch-manipulation active:scale-95 h-11 md:h-9"
                 onClick={signOut}
               >
-                <LogOut className="h-4 w-4 flex-shrink-0" />
-                {(open || isMobile) && <span className="ml-2 whitespace-nowrap">Sair</span>}
+                <LogOut className="h-5 w-5 md:h-4 md:w-4 flex-shrink-0" />
+                {(open || isMobile) && <span className="ml-2 whitespace-nowrap text-sm">Sair</span>}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">
+            <TooltipContent side="right" className="hidden md:block">
               <p>Sair da plataforma</p>
             </TooltipContent>
           </Tooltip>

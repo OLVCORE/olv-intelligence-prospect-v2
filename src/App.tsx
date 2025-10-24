@@ -18,6 +18,7 @@ import Dashboard from "./pages/Dashboard";
 // Lazy load auth pages
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PWAInstallPage = lazy(() => import("./pages/PWAInstallPage"));
 
 // Lazy load all dashboard pages for code splitting
 // Dashboard eagerly loaded via direct import above
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/install" element={<PWAInstallPage />} />
               <Route path="/" element={<Index />} />
               <Route
                 path="/dashboard"
