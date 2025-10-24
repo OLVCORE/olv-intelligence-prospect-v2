@@ -18,6 +18,8 @@ import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalcula
 import { QuoteConfigurator } from '@/components/cpq/QuoteConfigurator';
 import { ScenarioComparison } from '@/components/scenarios/ScenarioComparison';
 import { ProposalManager } from '@/components/proposals/ProposalManager';
+import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
+import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
 
 export default function AccountStrategyPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -159,15 +161,17 @@ export default function AccountStrategyPage() {
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="gaps">Gaps & Oportunidades</TabsTrigger>
+              <TabsTrigger value="gaps">Gaps</TabsTrigger>
               <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
-              <TabsTrigger value="roi">ROI Interativo</TabsTrigger>
-              <TabsTrigger value="cpq">Cotação (CPQ)</TabsTrigger>
+              <TabsTrigger value="roi">ROI</TabsTrigger>
+              <TabsTrigger value="cpq">CPQ</TabsTrigger>
               <TabsTrigger value="scenarios">Cenários</TabsTrigger>
+              <TabsTrigger value="competitive">Competitivo</TabsTrigger>
+              <TabsTrigger value="value">Valor</TabsTrigger>
               <TabsTrigger value="financial">Financeiro</TabsTrigger>
-              <TabsTrigger value="actions">Próximas Ações</TabsTrigger>
+              <TabsTrigger value="actions">Ações</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -344,6 +348,22 @@ export default function AccountStrategyPage() {
                 accountStrategyId={activeStrategy.id}
                 baseInvestment={Number(activeStrategy.investment_required) || 50000}
                 baseAnnualBenefit={Number(activeStrategy.annual_value) || 100000}
+              />
+            </TabsContent>
+
+            {/* Competitive Tab */}
+            <TabsContent value="competitive" className="space-y-4">
+              <BattleCardViewer />
+            </TabsContent>
+
+            {/* Value Tracking Tab */}
+            <TabsContent value="value" className="space-y-4">
+              <ValueRealizationDashboard
+                companyId={companyId!}
+                accountStrategyId={activeStrategy.id}
+                promisedROI={Number(activeStrategy.projected_roi) || 0}
+                promisedPayback={Number(activeStrategy.payback_period?.replace(/[^0-9]/g, '')) || 12}
+                promisedSavings={Number(activeStrategy.annual_value) || 0}
               />
             </TabsContent>
 

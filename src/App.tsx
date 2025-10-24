@@ -31,6 +31,7 @@ const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
 const GovernancePage = lazy(() => import("./pages/GovernancePage"));
 const AccountStrategyPage = lazy(() => import("./pages/AccountStrategyPage"));
+const CompetitiveIntelligencePage = lazy(() => import("./pages/CompetitiveIntelligencePage"));
 const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));

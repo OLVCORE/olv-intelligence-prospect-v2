@@ -1,0 +1,194 @@
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
+import { Badge } from "@/components/ui/badge";
+import { Shield, TrendingUp, TrendingDown, Award, BarChart3 } from "lucide-react";
+import { useWinLossAnalysis } from "@/hooks/useCompetitiveIntelligence";
+
+export default function CompetitiveIntelligencePage() {
+  const { data: winLossData } = useWinLossAnalysis();
+
+  const wonDeals = winLossData?.filter(d => d.outcome === 'won').length || 0;
+  const lostDeals = winLossData?.filter(d => d.outcome === 'lost').length || 0;
+  const totalDeals = wonDeals + lostDeals;
+  const winRate = totalDeals > 0 ? (wonDeals / totalDeals) * 100 : 0;
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Shield className="h-8 w-8" />
+            Inteligência Competitiva
+          </h1>
+          <p className="text-muted-foreground">
+            Battle cards, análise de win/loss e estratégias contra competidores
+          </p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Win Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{winRate.toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {wonDeals} vitórias / {totalDeals} deals
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Deals Ganhos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">{wonDeals}</div>
+              <p className="text-xs text-muted-foreground mt-1">Total de vitórias</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Deals Perdidos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-600">{lostDeals}</div>
+              <p className="text-xs text-muted-foreground mt-1">Total de perdas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Em Andamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-yellow-600">
+                {winLossData?.filter(d => d.outcome === 'ongoing').length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Deals ativos</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="battle-cards" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="battle-cards">
+              <Shield className="mr-2 h-4 w-4" />
+              Battle Cards
+            </TabsTrigger>
+            <TabsTrigger value="win-loss">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Win/Loss Analysis
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="battle-cards" className="space-y-4">
+            <BattleCardViewer />
+          </TabsContent>
+
+          <TabsContent value="win-loss" className="space-y-4">
+            {winLossData && winLossData.length > 0 ? (
+              <div className="grid gap-4">
+                {winLossData.map((analysis) => (
+                  <Card key={analysis.id}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">
+                          Deal #{analysis.id.slice(0, 8)}
+                        </CardTitle>
+                        <Badge variant={
+                          analysis.outcome === 'won' ? 'default' :
+                          analysis.outcome === 'lost' ? 'destructive' : 'secondary'
+                        }>
+                          {analysis.outcome === 'won' ? 'Ganho' :
+                           analysis.outcome === 'lost' ? 'Perdido' : 'Em Andamento'}
+                        </Badge>
+                      </div>
+                      <CardDescription>
+                        Valor: {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(analysis.deal_value || 0)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm font-semibold mb-2">Competidores Enfrentados</p>
+                        <div className="flex flex-wrap gap-2">
+                          {analysis.competitors_faced?.map((comp, idx) => (
+                            <Badge key={idx} variant="outline">{comp}</Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {analysis.win_reasons && analysis.win_reasons.length > 0 && (
+                        <div>
+                          <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-600">
+                            <TrendingUp className="h-4 w-4" />
+                            Razões de Vitória
+                          </p>
+                          <ul className="space-y-1">
+                            {analysis.win_reasons.map((reason, idx) => (
+                              <li key={idx} className="text-sm flex items-start">
+                                <span className="mr-2">✓</span>
+                                <span>{reason}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {analysis.loss_reasons && analysis.loss_reasons.length > 0 && (
+                        <div>
+                          <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-red-600">
+                            <TrendingDown className="h-4 w-4" />
+                            Razões de Perda
+                          </p>
+                          <ul className="space-y-1">
+                            {analysis.loss_reasons.map((reason, idx) => (
+                              <li key={idx} className="text-sm flex items-start">
+                                <span className="mr-2">•</span>
+                                <span>{reason}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {analysis.key_differentiators && analysis.key_differentiators.length > 0 && (
+                        <div>
+                          <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                            <Award className="h-4 w-4" />
+                            Diferenciais-Chave
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {analysis.key_differentiators.map((diff, idx) => (
+                              <Badge key={idx}>{diff}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Nenhuma análise Win/Loss registrada ainda</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
+  );
+}

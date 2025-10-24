@@ -2495,6 +2495,167 @@ export type Database = {
         }
         Relationships: []
       }
+      value_milestones: {
+        Row: {
+          actual_value: number | null
+          blockers: Json | null
+          completed_date: string | null
+          completion_percentage: number | null
+          created_at: string | null
+          description: string | null
+          expected_value: number | null
+          id: string
+          milestone_name: string
+          notes: string | null
+          owner_id: string | null
+          status: string | null
+          target_date: string
+          updated_at: string | null
+          value_tracking_id: string
+        }
+        Insert: {
+          actual_value?: number | null
+          blockers?: Json | null
+          completed_date?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          expected_value?: number | null
+          id?: string
+          milestone_name: string
+          notes?: string | null
+          owner_id?: string | null
+          status?: string | null
+          target_date: string
+          updated_at?: string | null
+          value_tracking_id: string
+        }
+        Update: {
+          actual_value?: number | null
+          blockers?: Json | null
+          completed_date?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          expected_value?: number | null
+          id?: string
+          milestone_name?: string
+          notes?: string | null
+          owner_id?: string | null
+          status?: string | null
+          target_date?: string
+          updated_at?: string | null
+          value_tracking_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "value_milestones_value_tracking_id_fkey"
+            columns: ["value_tracking_id"]
+            isOneToOne: false
+            referencedRelation: "value_tracking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      value_tracking: {
+        Row: {
+          account_strategy_id: string | null
+          baseline_date: string
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          health_score: number | null
+          id: string
+          last_measured_at: string | null
+          milestones: Json | null
+          next_review_date: string | null
+          promised_annual_savings: number
+          promised_efficiency_gain: number | null
+          promised_payback_months: number
+          promised_revenue_growth: number | null
+          promised_roi: number
+          realized_annual_savings: number | null
+          realized_efficiency_gain: number | null
+          realized_payback_months: number | null
+          realized_revenue_growth: number | null
+          realized_roi: number | null
+          review_frequency: string | null
+          risk_flags: Json | null
+          tracking_status: string | null
+          updated_at: string | null
+          variance_analysis: Json | null
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          baseline_date?: string
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          health_score?: number | null
+          id?: string
+          last_measured_at?: string | null
+          milestones?: Json | null
+          next_review_date?: string | null
+          promised_annual_savings: number
+          promised_efficiency_gain?: number | null
+          promised_payback_months: number
+          promised_revenue_growth?: number | null
+          promised_roi: number
+          realized_annual_savings?: number | null
+          realized_efficiency_gain?: number | null
+          realized_payback_months?: number | null
+          realized_revenue_growth?: number | null
+          realized_roi?: number | null
+          review_frequency?: string | null
+          risk_flags?: Json | null
+          tracking_status?: string | null
+          updated_at?: string | null
+          variance_analysis?: Json | null
+        }
+        Update: {
+          account_strategy_id?: string | null
+          baseline_date?: string
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          health_score?: number | null
+          id?: string
+          last_measured_at?: string | null
+          milestones?: Json | null
+          next_review_date?: string | null
+          promised_annual_savings?: number
+          promised_efficiency_gain?: number | null
+          promised_payback_months?: number
+          promised_revenue_growth?: number | null
+          promised_roi?: number
+          realized_annual_savings?: number | null
+          realized_efficiency_gain?: number | null
+          realized_payback_months?: number | null
+          realized_revenue_growth?: number | null
+          realized_roi?: number | null
+          review_frequency?: string | null
+          risk_flags?: Json | null
+          tracking_status?: string | null
+          updated_at?: string | null
+          variance_analysis?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "value_tracking_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "value_tracking_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visual_proposals: {
         Row: {
           account_strategy_id: string | null
@@ -2652,6 +2813,100 @@ export type Database = {
           provider?: string
         }
         Relationships: []
+      }
+      win_loss_analysis: {
+        Row: {
+          account_strategy_id: string | null
+          action_items: Json | null
+          closed_at: string | null
+          company_id: string
+          competitive_intensity: string | null
+          competitors_faced: string[] | null
+          created_at: string | null
+          created_by: string | null
+          customer_feedback: string | null
+          deal_stage_lost: string | null
+          deal_value: number | null
+          id: string
+          internal_notes: string | null
+          key_differentiators: Json | null
+          lessons_learned: Json | null
+          loss_reasons: Json | null
+          outcome: string
+          primary_competitor: string | null
+          quote_id: string | null
+          updated_at: string | null
+          win_reasons: Json | null
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          action_items?: Json | null
+          closed_at?: string | null
+          company_id: string
+          competitive_intensity?: string | null
+          competitors_faced?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_feedback?: string | null
+          deal_stage_lost?: string | null
+          deal_value?: number | null
+          id?: string
+          internal_notes?: string | null
+          key_differentiators?: Json | null
+          lessons_learned?: Json | null
+          loss_reasons?: Json | null
+          outcome: string
+          primary_competitor?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+          win_reasons?: Json | null
+        }
+        Update: {
+          account_strategy_id?: string | null
+          action_items?: Json | null
+          closed_at?: string | null
+          company_id?: string
+          competitive_intensity?: string | null
+          competitors_faced?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_feedback?: string | null
+          deal_stage_lost?: string | null
+          deal_value?: number | null
+          id?: string
+          internal_notes?: string | null
+          key_differentiators?: Json | null
+          lessons_learned?: Json | null
+          loss_reasons?: Json | null
+          outcome?: string
+          primary_competitor?: string | null
+          quote_id?: string | null
+          updated_at?: string | null
+          win_reasons?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "win_loss_analysis_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "win_loss_analysis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "win_loss_analysis_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_history"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

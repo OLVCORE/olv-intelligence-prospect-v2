@@ -164,3 +164,6 @@ project_id = "ioaxzpwlurpduanzkfrt"
 
   [functions.generate-visual-proposal]
   verify_jwt = false
+
+  [functions.analyze-competitive-deal]
+  verify_jwt = false
