@@ -31,7 +31,6 @@ export function useEnrichmentStatus(companyId?: string) {
           digital_maturity_score,
           decision_makers (id),
           digital_maturity (id),
-          legal_data (id),
           insights (id)
         `)
         .eq('id', companyId)
@@ -39,15 +38,22 @@ export function useEnrichmentStatus(companyId?: string) {
 
       if (error) throw error;
 
+      // Buscar legal_data separadamente
+      const { data: legalData } = await supabase
+        .from('legal_data')
+        .select('id')
+        .eq('company_id', companyId)
+        .maybeSingle();
+
       const status: EnrichmentStatus = {
         companyId: company.id,
         companyName: company.name,
         hasReceitaWS: !!company.cnpj && !!company.raw_data,
         hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-        hasDigitalPresence: !!company.digital_maturity?.length, // Usa digital_maturity como proxy
+        hasDigitalPresence: !!company.digital_maturity?.length,
         hasMaturityScore: !!company.digital_maturity_score,
-        hasFitScore: false, // TODO: Check fit analysis table
-        hasLegalData: !!company.legal_data?.length,
+        hasFitScore: false,
+        hasLegalData: !!legalData,
         hasInsights: (company.insights?.length || 0) > 0,
         completionPercentage: 0,
         isFullyEnriched: false,
@@ -91,11 +97,18 @@ export function useAllEnrichmentStatus() {
           digital_maturity_score,
           decision_makers (id),
           digital_maturity (id),
-          legal_data (id),
           insights (id)
         `);
 
       if (error) throw error;
+
+      // Buscar legal_data para todas as empresas
+      const { data: legalDataList } = await supabase
+        .from('legal_data')
+        .select('company_id')
+        .in('company_id', companies.map(c => c.id));
+
+      const legalDataMap = new Set(legalDataList?.map(ld => ld.company_id) || []);
 
       const statusList: EnrichmentStatus[] = companies.map(company => {
         const status: EnrichmentStatus = {
@@ -103,10 +116,10 @@ export function useAllEnrichmentStatus() {
           companyName: company.name,
           hasReceitaWS: !!company.cnpj && !!company.raw_data,
           hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-          hasDigitalPresence: !!company.digital_maturity?.length, // Usa digital_maturity como proxy
+          hasDigitalPresence: !!company.digital_maturity?.length,
           hasMaturityScore: !!company.digital_maturity_score,
           hasFitScore: false,
-          hasLegalData: !!company.legal_data?.length,
+          hasLegalData: legalDataMap.has(company.id),
           hasInsights: (company.insights?.length || 0) > 0,
           completionPercentage: 0,
           isFullyEnriched: false,
