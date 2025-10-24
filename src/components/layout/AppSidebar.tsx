@@ -209,7 +209,7 @@ export function AppSidebar() {
                               <SidebarMenuButton 
                                 asChild
                                 className={cn(
-                                  (item as any).special && "relative overflow-hidden bg-gradient-to-r from-purple-600/15 via-pink-600/15 to-indigo-600/15 border-l-4 border-purple-600 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-300"
+                                  (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300"
                                 )}
                               >
                                 <CollapsibleTrigger className="w-full">
@@ -217,16 +217,16 @@ export function AppSidebar() {
                                     <div className="relative">
                                       <item.icon className={cn(
                                         "h-5 w-5",
-                                        (item as any).special && "text-purple-600 dark:text-purple-400"
+                                        (item as any).special && "text-[hsl(var(--accent-gold))]"
                                       )} />
                                       {(item as any).special && (
-                                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-purple-500/50" />
+                                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
                                       )}
                                     </div>
                                     {(open || isMobile) && (
                                       <span className={cn(
                                         "font-semibold",
-                                        (item as any).special && "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-indigo-400"
+                                        (item as any).special && "text-[hsl(var(--accent-gold))]"
                                       )}>
                                         {item.title}
                                       </span>

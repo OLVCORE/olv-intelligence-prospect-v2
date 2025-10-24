@@ -63,6 +63,7 @@ export default {
           green: "hsl(var(--accent-green))",
           purple: "hsl(var(--accent-purple))",
           orange: "hsl(var(--accent-orange))",
+          gold: "hsl(var(--accent-gold))",
         },
       },
       borderRadius: {
