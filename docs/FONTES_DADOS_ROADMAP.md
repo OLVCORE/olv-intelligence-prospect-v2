@@ -245,27 +245,36 @@ A IA identificou:
 
 ---
 
-### 📌 FASE 2: LINKEDIN REAL (Prioridade MÉDIA)
+### 📌 FASE 2: LINKEDIN REAL (❌ CANCELADA - LIMITAÇÃO TÉCNICA)
 **Custo**: US$ 30-150/mês
 
-- [ ] Ativar PhantomBuster para LinkedIn
-- [ ] Coletar engajamento e posts
-- [ ] Medir presença social real
-- [ ] Extrair followers e crescimento
+- [x] ~~Ativar PhantomBuster para LinkedIn~~ **NÃO POSSÍVEL**
+- [x] PhantomBuster não pode ser utilizado por limitações de API
+- [ ] Alternativa: Continuar usando Google Search + LinkedIn público
+- [ ] Avaliar outras fontes de dados sociais (APIs públicas do LinkedIn)
 
-**Impacto**: Score de presença digital real
+**Status**: Google Search continua sendo usado para detectar presença no LinkedIn
 
 ---
 
-### 📌 FASE 3: DADOS FINANCEIROS REAIS (Prioridade ALTA)
-**Custo**: R$ 50-200 por consulta
+### 📌 FASE 3: DADOS FINANCEIROS REAIS (Prioridade ALTA - MVP)
+**Custo por consulta**:
+- 💰 **Serasa Experian**: R$ 50-200/consulta (recomendado para MVP)
+- 💰 **SCPC/Boa Vista**: R$ 30-150/consulta
 
-- [ ] Integrar Serasa Experian API
-- [ ] Integrar SCPC/Boa Vista
-- [ ] Implementar cache agressivo (evitar reconsultas)
-- [ ] Criar sistema de créditos por consulta
+**Estratégia para MVP**:
+- [ ] Integrar **Serasa Experian API** (mais completa e confiável)
+- [ ] Verificar se existe **trial gratuito** ou créditos iniciais
+- [ ] Implementar **sistema de créditos** para usuário decidir se quer consulta paga
+- [ ] Mostrar **custo estimado por consulta** antes de confirmar
+- [ ] Implementar cache agressivo (evitar reconsultas desnecessárias)
+- [ ] Permitir usuário comprar créditos ou pagar por consulta individual
 
-**Impacto**: Scores financeiros reais, confiabilidade total
+**Trial Gratuito**: 
+- Serasa oferece sandbox de testes (verificar no contato comercial)
+- Alguns planos têm créditos iniciais gratuitos
+
+**Impacto**: Scores financeiros 100% reais, confiabilidade máxima para decisões de crédito
 
 ---
 
@@ -318,24 +327,59 @@ A IA identificou:
 
 ---
 
-## 🎯 **PRÓXIMOS PASSOS IMEDIATOS**
+## 🎯 **PRÓXIMOS PASSOS IMEDIATOS - MVP**
 
-1. ✅ **Ativar CEIS e CNEP** (APIs gratuitas do governo)
-2. ✅ **Ativar PhantomBuster LinkedIn** (US$ 30/mês)
-3. ✅ **Melhorar documentação de scores** (transparência)
-4. ✅ **Criar página de "Fontes de Dados"** no app
-5. ⏳ **Negociar Serasa/JusBrasil** (para produção)
+### Prioridade 1 (Gratuitas)
+1. [ ] **Ativar CEIS e CNEP** (APIs gratuitas do governo)
+2. [ ] **Melhorar scores estimados** (enquanto não tem APIs pagas)
+
+### Prioridade 2 (MVP SaaS)
+3. [ ] **Negociar Serasa Experian** (verificar trial gratuito)
+   - Contato comercial para planos e custos exatos
+   - Verificar sandbox de desenvolvimento
+   - Avaliar créditos iniciais gratuitos
+
+4. [ ] **Sistema de Créditos e Consultas Pagas**
+   - Implementar wallet de créditos do usuário
+   - Mostrar custo antes de cada consulta paga (Serasa, JusBrasil)
+   - Permitir compra de pacotes de créditos
+   - Interface para usuário aprovar consultas pagas
+
+5. [ ] **Negociar JusBrasil** (dados jurídicos reais)
+   - Verificar planos e custos
+   - Avaliar período de testes
+
+### Bloqueadores Técnicos
+- ❌ **PhantomBuster**: Não pode ser usado
+- ⚠️ **LinkedIn direto**: Usar apenas Google Search público
 
 ---
 
 ## 📝 **NOTAS IMPORTANTES**
 
 - ✅ **ReceitaWS**: 100% funcional e gratuito
-- ⚠️ **Dados Financeiros**: Estimados (não são reais ainda)
-- ⚠️ **Dados Jurídicos**: Estimados (não são reais ainda)
+- ⚠️ **Dados Financeiros**: Estimados via heurísticas (não são reais ainda)
+- ⚠️ **Dados Jurídicos**: Estimados via heurísticas (não são reais ainda)
 - ✅ **Apollo**: Funcional (requer API key do usuário)
-- ⚠️ **LinkedIn**: Código existe mas não está ativo
+- ❌ **PhantomBuster**: NÃO pode ser usado (bloqueio técnico)
+- ⚠️ **LinkedIn**: Somente via Google Search (busca pública)
 - ✅ **IA**: 100% funcional via Lovable AI Gateway
+- 💡 **Fit Score TOTVS**: 0-100 indica **aderência aos produtos TOTVS**, NÃO propensão de compra
+
+## 💳 **SISTEMA DE CRÉDITOS PARA CONSULTAS PAGAS (MVP)**
+
+### Como Funcionará:
+1. **Usuário compra créditos** ou paga por consulta
+2. **Antes de enriquecer com API paga**, sistema mostra:
+   - Custo da consulta (ex: "R$ 80 - Serasa Experian")
+   - Créditos disponíveis
+   - Botão "Confirmar Consulta Paga"
+3. **Após confirmação**, consulta é realizada e créditos debitados
+4. **Dados ficam em cache**, evitando reconsultas
+
+### Custos por Tipo de Consulta:
+- 💰 **Serasa Financial**: ~R$ 50-200
+- ⚖️ **JusBrasil Legal**: ~R$ 500-1000/mês (plano)
 
 ---
 

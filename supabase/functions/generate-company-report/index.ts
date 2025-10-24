@@ -181,9 +181,12 @@ async function generateInsightsWithAI(company: any, metrics: any, maturity: any)
             
 Empresa: ${company.name}
 Setor: ${company.industry || 'N/A'}
-Funcionários: ${company.employees || 0}
+Funcionários: ${company.employees || 0} ${!company.employees || company.employees === 0 ? '(ATENÇÃO: Empresa sem funcionários registrados - microempresa ou dado não disponível)' : ''}
 Maturidade Digital: ${maturity?.overall_score || 0}/100
 Score Global: ${metrics.score_global}/100
+
+IMPORTANTE: Se a empresa tem 0 funcionários, mencione isso como ponto de atenção nos riscos.
+Seja preciso e factual nos insights, não exagere ou especule.
 
 Retorne apenas JSON válido com esta estrutura:
 {
