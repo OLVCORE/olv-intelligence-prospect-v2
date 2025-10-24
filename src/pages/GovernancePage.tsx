@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
+import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
 
 export default function GovernancePage() {
   const { toast } = useToast();
@@ -159,6 +160,50 @@ export default function GovernancePage() {
         onConfirm={handleConfirmAnalysis}
         title={selectMode === 'single' ? 'Selecionar Empresa para Análise' : 'Selecionar Empresas para Análise'}
         confirmLabel={selectMode === 'single' ? 'Analisar empresa' : 'Analisar selecionadas'}
+      />
+
+      {/* Card Explicativo */}
+      <ExplainabilityCard
+        title="Critérios da Análise de Governança"
+        description="Entenda como identificamos gaps organizacionais e oportunidades de transformação"
+        analysisType="Governança & Consultoria"
+        dataSources={[
+          {
+            name: "Maturidade Digital",
+            description: "Score de infraestrutura, processos, sistemas, segurança e inovação"
+          },
+          {
+            name: "Presença Digital",
+            description: "Análise de website, redes sociais e engajamento online"
+          },
+          {
+            name: "Tech Stack",
+            description: "Tecnologias utilizadas e compatibilidade com soluções modernas"
+          },
+          {
+            name: "Dados Cadastrais",
+            description: "Porte, setor, localização e perfil organizacional"
+          }
+        ]}
+        criteria={[
+          {
+            name: "Governance Gap Score (0-100)",
+            weight: "40%",
+            description: "Quanto maior, mais gaps críticos identificados. Calculado pela distância entre maturidade atual e nível ideal para o porte/setor da empresa."
+          },
+          {
+            name: "Nível de Maturidade Organizacional",
+            weight: "30%",
+            description: "Classificação em 5 níveis: Inicial (1-2), Estruturando (3-4), Gerenciado (5-6), Otimizado (7-8), Inovador (9-10)."
+          },
+          {
+            name: "Necessidade de Consultoria",
+            weight: "30%",
+            description: "Empresas com gap > 60 e maturidade < 5 são priorizadas para consultoria estratégica de transformação digital."
+          }
+        ]}
+        methodology="A análise usa IA (Gemini 2.5 Flash) para identificar gaps específicos por categoria (processos, sistemas, governança, inovação). Cada gap recebe uma prioridade (CRÍTICO/ALTO/MÉDIO/BAIXO) baseada no impacto operacional e urgência de resolução."
+        interpretation="Gap Score 70-100 = CRÍTICO (necessita transformação urgente). Score 50-69 = ALTO (melhorias prioritárias). Score 30-49 = MÉDIO (otimizações recomendadas). Score 0-29 = BAIXO (empresa bem estruturada)."
       />
 
       <div className="grid gap-6">

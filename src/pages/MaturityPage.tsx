@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
+import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
 
 export default function MaturityPage() {
   const { toast } = useToast();
@@ -124,6 +125,60 @@ export default function MaturityPage() {
         onConfirm={handleConfirmAnalysis}
         title={selectMode === 'single' ? 'Selecionar Empresa para Análise' : 'Selecionar Empresas para Análise'}
         confirmLabel={selectMode === 'single' ? 'Analisar maturidade' : 'Analisar selecionadas'}
+      />
+
+      {/* Card Explicativo */}
+      <ExplainabilityCard
+        title="Critérios da Análise de Maturidade Digital"
+        description="Entenda como calculamos o nível de maturidade digital das empresas"
+        analysisType="Maturidade Digital"
+        dataSources={[
+          {
+            name: "Tech Stack",
+            description: "Tecnologias web, frameworks, ferramentas de analytics, CRM, ERP detectados"
+          },
+          {
+            name: "Presença Digital",
+            description: "Website, redes sociais, marketplace, blog, e-commerce"
+          },
+          {
+            name: "Infraestrutura Web",
+            description: "SSL, CDN, hosting, performance, mobile-friendly"
+          },
+          {
+            name: "Integrações",
+            description: "APIs, webhooks, automações, sistemas conectados"
+          }
+        ]}
+        criteria={[
+          {
+            name: "Infraestrutura (0-10)",
+            weight: "20%",
+            description: "Qualidade técnica: SSL, CDN, cloud hosting, mobile responsivo, velocidade de carregamento."
+          },
+          {
+            name: "Sistemas (0-10)",
+            weight: "25%",
+            description: "Softwares em uso: ERP, CRM, BI, e-commerce, automação de marketing, gestão de projetos."
+          },
+          {
+            name: "Processos (0-10)",
+            weight: "20%",
+            description: "Digitalização: APIs, integrações, automações, workflows digitais, data-driven."
+          },
+          {
+            name: "Segurança (0-10)",
+            weight: "20%",
+            description: "Proteção: HTTPS, firewall, backup, LGPD compliance, autenticação robusta."
+          },
+          {
+            name: "Inovação (0-10)",
+            weight: "15%",
+            description: "Tendências: IA, ML, IoT, blockchain, experiências digitais avançadas."
+          }
+        ]}
+        methodology="O score geral (0-10) é a média ponderada das 5 dimensões. Cada dimensão é avaliada automaticamente por algoritmos que analisam dados técnicos reais (tech stack, headers HTTP, estrutura do site, APIs públicas). Nenhum dado é estimado - apenas tecnologias detectadas são contabilizadas."
+        interpretation="Score 8-10 = Inovador (líder digital). Score 6-8 = Otimizado (bem estruturado). Score 4-6 = Gerenciado (intermediário). Score 2-4 = Estruturando (básico). Score 0-2 = Inicial (precisa digitalizar)."
       />
 
       <div className="grid gap-6 md:grid-cols-3 mb-8">

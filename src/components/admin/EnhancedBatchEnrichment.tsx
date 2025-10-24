@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Clock, ChevronDown, ListChecks } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
+import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,7 +134,72 @@ export function EnhancedBatchEnrichment() {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      {/* Card Explicativo */}
+      <ExplainabilityCard
+        title="Critérios do Enriquecimento 360°"
+        description="Entenda como o sistema enriquece empresas com dados de múltiplas fontes"
+        analysisType="Enriquecimento Automático"
+        dataSources={[
+          {
+            name: "ReceitaWS (CNPJ)",
+            description: "Dados oficiais da Receita Federal: razão social, CNAE, porte, endereço"
+          },
+          {
+            name: "Apollo.io",
+            description: "Decisores B2B: emails corporativos, LinkedIn, cargos, departamentos"
+          },
+          {
+            name: "Hunter.io",
+            description: "Validação de emails e descoberta de contatos adicionais"
+          },
+          {
+            name: "Tech Stack Detection",
+            description: "Análise automática de tecnologias web, frameworks, analytics, CRM"
+          },
+          {
+            name: "Google Search",
+            description: "Presença digital, notícias, menções, marketplace"
+          },
+          {
+            name: "LinkedIn Scraping",
+            description: "Dados da empresa, número de funcionários, descrição, indústria"
+          }
+        ]}
+        criteria={[
+          {
+            name: "Enriquecimento ReceitaWS",
+            description: "Atualiza dados cadastrais oficiais via CNPJ: nome, CNAE, endereço completo, situação cadastral."
+          },
+          {
+            name: "Busca de Decisores (Apollo)",
+            description: "Identifica tomadores de decisão: C-level, diretores, gerentes. Extrai emails verificados e LinkedIn."
+          },
+          {
+            name: "Análise de Presença Digital",
+            description: "Detecta website, redes sociais (LinkedIn, Instagram, Facebook), e-commerce, blog, marketplace."
+          },
+          {
+            name: "Cálculo de Maturidade Digital",
+            description: "Score 0-10 em 5 dimensões: infraestrutura, sistemas, processos, segurança, inovação."
+          },
+          {
+            name: "Score de Fit TOTVS",
+            description: "Compatibilidade com produtos TOTVS baseado em setor, porte, maturidade e necessidades."
+          },
+          {
+            name: "Análise de Saúde Jurídica",
+            description: "Consulta bases públicas (CNEP, CEIS, JusBrasil) para identificar processos e riscos."
+          },
+          {
+            name: "Insights com IA",
+            description: "Gemini 2.5 Flash analisa todos os dados e gera recomendações de abordagem, dores, oportunidades."
+          }
+        ]}
+        methodology="O enriquecimento 360° executa 7 etapas em sequência, cada uma dependendo da anterior. Se o CNPJ for inválido, processo é interrompido. Decisores são buscados apenas se LinkedIn da empresa for encontrado. Análise de IA só roda se houver dados mínimos (website + setor + porte)."
+        interpretation="Empresas totalmente enriquecidas têm 7/7 etapas concluídas. Parcialmente enriquecidas têm 3-6 etapas. Não enriquecidas precisam de dados mínimos (CNPJ ou website). Processo pode levar 3-5 minutos por empresa."
+      />
+
       {/* Indicador de Última Atualização */}
       {lastUpdate?.timestamp && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
