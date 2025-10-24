@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Clock, User, MessageSquare, Save, Phone, Building2 } from 'lucide-react';
+import { CalendarIcon, Clock, User, MessageSquare, Save, Phone, Building2, Video, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Deal } from '@/hooks/useDeals';
@@ -19,7 +19,11 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { CallInterface } from '@/components/sdr/CallInterface';
 import { DealQuickActions } from '@/components/sdr/DealQuickActions';
+import { VideoCallInterface } from '@/components/sdr/VideoCallInterface';
+import { CommunicationTimeline } from '@/components/sdr/CommunicationTimeline';
+import { WhatsAppQuickSend } from '@/components/sdr/WhatsAppQuickSend';
 import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 interface DealDetailsDialogProps {
   deal: Deal | null;
   open: boolean;
@@ -35,6 +39,7 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
   const [note, setNote] = useState('');
   const [primaryContact, setPrimaryContact] = useState<{ id: string; name?: string; email?: string; phone?: string } | null>(null);
   const [loadingContact, setLoadingContact] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   useEffect(() => {
     if (!deal?.company_id) {
@@ -86,12 +91,13 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="details">Detalhes</TabsTrigger>
             <TabsTrigger value="ai">IA Sugestões</TabsTrigger>
+            <TabsTrigger value="comms">Comunicação</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="activity">Atividades</TabsTrigger>
             <TabsTrigger value="notes">Notas</TabsTrigger>
-            <TabsTrigger value="comms">Comunicação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
@@ -258,38 +264,88 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
           </TabsContent>
 
           <TabsContent value="comms" className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-3 p-3 border rounded-lg">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Telefonia
-                </h4>
-                {loadingContact ? (
-                  <p className="text-sm text-muted-foreground">Carregando contato...</p>
-                ) : primaryContact?.phone ? (
-                  <CallInterface
-                    phoneNumber={primaryContact.phone}
-                    contactName={primaryContact.name}
-                    companyName={currentDeal.companies?.name}
-                    companyId={currentDeal.company_id || undefined}
-                    dealId={currentDeal.id}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum telefone encontrado para esta empresa.</p>
-                )}
-              </div>
+            {showVideoCall ? (
+              <VideoCallInterface
+                roomName={`deal-${deal.id}`}
+                displayName="SDR"
+                onCallEnd={() => setShowVideoCall(false)}
+              />
+            ) : (
+              <ScrollArea className="h-[60vh]">
+                <div className="grid gap-4 pr-4">
+                  <Card className="p-4">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Phone className="h-5 w-5 text-blue-600" />
+                      Telefonia
+                    </h3>
+                    {loadingContact ? (
+                      <p className="text-sm text-muted-foreground">Carregando...</p>
+                    ) : primaryContact?.phone ? (
+                      <CallInterface
+                        phoneNumber={primaryContact.phone}
+                        contactName={primaryContact.name}
+                        companyId={currentDeal.company_id}
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Adicione um telefone ao contato principal
+                      </p>
+                    )}
+                  </Card>
 
-              <div className="space-y-3 p-3 border rounded-lg">
-                <h4 className="font-semibold">Ações Rápidas</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => navigate('/sdr/inbox')}>Abrir Inbox</Button>
-                  <Button variant="outline" onClick={() => navigate('/sdr/sequences')}>Ver Sequências</Button>
-                  <Button variant="outline" onClick={() => navigate('/sdr/tasks')}>Abrir Tarefas</Button>
+                  <Card className="p-4">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Video className="h-5 w-5 text-purple-600" />
+                      Videoconferência
+                    </h3>
+                    <Button 
+                      onClick={() => setShowVideoCall(true)}
+                      className="w-full gap-2"
+                    >
+                      <Video className="h-4 w-4" />
+                      Iniciar Videochamada Jitsi
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      📹 Sala segura e criptografada - Compartilhe o link com o cliente
+                    </p>
+                  </Card>
+
+                  <Card className="p-4">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-green-600" />
+                      WhatsApp Business
+                    </h3>
+                    <WhatsAppQuickSend
+                      contactPhone={primaryContact?.phone}
+                      contactName={primaryContact?.name}
+                      companyId={currentDeal.company_id}
+                    />
+                  </Card>
+
+                  <Card className="p-4">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Mail className="h-5 w-5 text-orange-600" />
+                      Email
+                    </h3>
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2"
+                      onClick={() => navigate('/sdr/inbox')}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Abrir Inbox de Email
+                    </Button>
+                  </Card>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Dica: Vincule um contato à empresa para habilitar WhatsApp e Email aqui.
-                </div>
-              </div>
-            </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <CommunicationTimeline 
+              dealId={deal.id} 
+              companyId={currentDeal.company_id} 
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

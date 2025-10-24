@@ -13,6 +13,7 @@ import { EnhancedKanbanBoard } from '@/components/sdr/EnhancedKanbanBoard';
 import { WorkspaceInboxMini } from '@/components/sdr/WorkspaceInboxMini';
 import { WorkspaceTasksMini } from '@/components/sdr/WorkspaceTasksMini';
 import { WorkspaceSequencesMini } from '@/components/sdr/WorkspaceSequencesMini';
+import { AutomationPanel } from '@/components/sdr/AutomationPanel';
 import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSDRAutomations } from '@/hooks/useSDRAutomations';
@@ -132,10 +133,14 @@ export default function SDRWorkspacePage() {
 
         {/* Main Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
             <TabsTrigger value="pipeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="automations" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Automações
             </TabsTrigger>
             <TabsTrigger value="inbox" className="gap-2">
               <Inbox className="h-4 w-4" />
@@ -157,6 +162,10 @@ export default function SDRWorkspacePage() {
 
           <TabsContent value="pipeline" className="flex-1 mt-4">
             <EnhancedKanbanBoard />
+          </TabsContent>
+
+          <TabsContent value="automations" className="flex-1 mt-4">
+            <AutomationPanel />
           </TabsContent>
 
           <TabsContent value="inbox" className="flex-1 mt-4">
