@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
+import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
+import { GoogleSheetsSyncConfig } from '@/components/companies/GoogleSheetsSyncConfig';
 import {
   Table,
   TableBody,
@@ -240,6 +242,7 @@ export default function CompaniesManagementPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <BulkUploadDialog />
             <Button 
               variant="outline" 
               onClick={handleBatchEnrichReceitaWS}
@@ -284,6 +287,9 @@ export default function CompaniesManagementPage() {
             </Button>
           </div>
         </div>
+
+        {/* Google Sheets Sync Config */}
+        <GoogleSheetsSyncConfig />
 
         {/* Search */}
         <Card>

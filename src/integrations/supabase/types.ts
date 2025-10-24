@@ -1317,6 +1317,39 @@ export type Database = {
         }
         Relationships: []
       }
+      google_sheets_sync_config: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          sheet_url: string
+          sync_frequency_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          sheet_url: string
+          sync_frequency_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          sheet_url?: string
+          sync_frequency_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       governance_signals: {
         Row: {
           company_id: string | null
