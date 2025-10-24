@@ -13,6 +13,7 @@ import { Target, TrendingUp, Users, FileText, Lightbulb, Calendar, DollarSign, C
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGenerateAccountStrategy } from '@/hooks/useAccountStrategies';
+import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalculator';
 
 export default function AccountStrategyPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -154,11 +155,12 @@ export default function AccountStrategyPage() {
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps & Oportunidades</TabsTrigger>
               <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
-              <TabsTrigger value="roi">ROI & Financeiro</TabsTrigger>
+              <TabsTrigger value="roi">ROI Interativo</TabsTrigger>
+              <TabsTrigger value="financial">Financeiro</TabsTrigger>
               <TabsTrigger value="actions">Próximas Ações</TabsTrigger>
             </TabsList>
 
@@ -312,8 +314,17 @@ export default function AccountStrategyPage() {
               </Card>
             </TabsContent>
 
-            {/* ROI Tab */}
+            {/* ROI Interativo Tab */}
             <TabsContent value="roi" className="space-y-4">
+              <InteractiveROICalculator
+                companyId={companyId!}
+                accountStrategyId={activeStrategy.id}
+                initialData={activeStrategy.ai_insights as any}
+              />
+            </TabsContent>
+
+            {/* Financial Tab */}
+            <TabsContent value="financial" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>

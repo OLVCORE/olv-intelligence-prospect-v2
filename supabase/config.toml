@@ -124,3 +124,34 @@ project_id = "ioaxzpwlurpduanzkfrt"
   verify_jwt = false
 
   [functions.cleanup-legacy-data]
+  verify_jwt = true
+
+  [functions.delete-company]
+  verify_jwt = true
+
+  [functions.email-imap-sync]
+  verify_jwt = false
+
+  [functions.generate-premium-report]
+  verify_jwt = true
+
+  [functions.google-places-autocomplete]
+  verify_jwt = false
+
+  [functions.legal-check-public]
+  verify_jwt = false
+
+  [functions.mapbox-geocode]
+  verify_jwt = false
+
+  [functions.reveal-api-key]
+  verify_jwt = true
+
+  [functions.search-companies-multiple]
+  verify_jwt = false
+
+  [functions.translate]
+  verify_jwt = false
+  
+  [functions.calculate-advanced-roi]
+  verify_jwt = true
