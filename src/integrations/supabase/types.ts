@@ -213,6 +213,103 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          activity_date: string | null
+          activity_type: string
+          attachments: Json | null
+          company_id: string | null
+          contact_email: string | null
+          contact_id: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          contact_role: string | null
+          created_at: string | null
+          created_by: string | null
+          decision_maker_id: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          metadata: Json | null
+          next_action_date: string | null
+          next_steps: string | null
+          outcome: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          activity_date?: string | null
+          activity_type: string
+          attachments?: Json | null
+          company_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contact_role?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_maker_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          next_action_date?: string | null
+          next_steps?: string | null
+          outcome?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          activity_date?: string | null
+          activity_type?: string
+          attachments?: Json | null
+          company_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contact_role?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_maker_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          next_action_date?: string | null
+          next_steps?: string | null
+          outcome?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_decision_maker_id_fkey"
+            columns: ["decision_maker_id"]
+            isOneToOne: false
+            referencedRelation: "decision_makers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_interactions: {
         Row: {
           answer: string
@@ -1556,6 +1653,66 @@ export type Database = {
           severity?: string
           source?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sales_goals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          product_targets: Json | null
+          progress_percentage: number | null
+          proposals_achieved: number
+          proposals_target: number
+          revenue_achieved: number
+          revenue_target: number
+          sales_achieved: number
+          sales_target: number
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          product_targets?: Json | null
+          progress_percentage?: number | null
+          proposals_achieved?: number
+          proposals_target?: number
+          revenue_achieved?: number
+          revenue_target?: number
+          sales_achieved?: number
+          sales_target?: number
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          product_targets?: Json | null
+          progress_percentage?: number | null
+          proposals_achieved?: number
+          proposals_target?: number
+          revenue_achieved?: number
+          revenue_target?: number
+          sales_achieved?: number
+          sales_target?: number
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
