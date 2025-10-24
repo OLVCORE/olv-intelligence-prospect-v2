@@ -34,9 +34,24 @@ import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
 
 export default function CompaniesManagementPage() {
   const navigate = useNavigate();
-  const { data: companies = [], isLoading: loading, refetch } = useCompanies();
-  const deleteCompany = useDeleteCompany();
+  const [page, setPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'created_at'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  const { data: companiesResult, isLoading: loading, refetch } = useCompanies({
+    page,
+    pageSize: 50,
+    search: searchTerm,
+    sortBy,
+    sortOrder,
+  });
+  
+  const companies = companiesResult?.data || [];
+  const totalCount = companiesResult?.count || 0;
+  const totalPages = companiesResult?.totalPages || 0;
+  
+  const deleteCompany = useDeleteCompany();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<any>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
@@ -44,8 +59,6 @@ export default function CompaniesManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBatchEnriching, setIsBatchEnriching] = useState(false);
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'location'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [enrichingReceitaId, setEnrichingReceitaId] = useState<string | null>(null);
 
   const handleDelete = async () => {
@@ -89,10 +102,10 @@ export default function CompaniesManagementPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedCompanies.length === filteredAndSortedCompanies.length) {
+    if (selectedCompanies.length === companies.length) {
       setSelectedCompanies([]);
     } else {
-      setSelectedCompanies(filteredAndSortedCompanies.map(c => c.id));
+      setSelectedCompanies(companies.map(c => c.id));
     }
   };
 
@@ -198,48 +211,15 @@ export default function CompaniesManagementPage() {
     }
   };
 
-  const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'location') => {
+  const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'created_at') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
       setSortOrder('asc');
     }
+    setPage(0); // Reset to first page when sorting
   };
-
-  const filteredAndSortedCompanies = companies
-    .filter(company =>
-      company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.cnpj?.includes(searchTerm) ||
-      company.domain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (company.location as any)?.state?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      let aValue = '';
-      let bValue = '';
-
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name || '';
-          bValue = b.name || '';
-          break;
-        case 'cnpj':
-          aValue = a.cnpj || '';
-          bValue = b.cnpj || '';
-          break;
-        case 'industry':
-          aValue = a.industry || '';
-          bValue = b.industry || '';
-          break;
-        case 'location':
-          aValue = (a.location as any)?.state || '';
-          bValue = (b.location as any)?.state || '';
-          break;
-      }
-
-      const comparison = aValue.localeCompare(bValue);
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
 
   if (loading) {
     return (
@@ -320,14 +300,17 @@ export default function CompaniesManagementPage() {
               Buscar Empresas
             </CardTitle>
             <CardDescription>
-              {companies.length} {companies.length === 1 ? 'empresa cadastrada' : 'empresas cadastradas'}
+              {totalCount} {totalCount === 1 ? 'empresa cadastrada' : 'empresas cadastradas'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Input
               placeholder="Buscar por nome, CNPJ ou domínio..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(0); // Reset to first page when searching
+              }}
               className="max-w-md"
             />
           </CardContent>
@@ -336,7 +319,7 @@ export default function CompaniesManagementPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {filteredAndSortedCompanies.length === 0 ? (
+            {companies.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Building2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
                 <p className="text-muted-foreground">
@@ -357,7 +340,7 @@ export default function CompaniesManagementPage() {
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
-                        checked={selectedCompanies.length === filteredAndSortedCompanies.length && filteredAndSortedCompanies.length > 0}
+                        checked={selectedCompanies.length === companies.length && companies.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
@@ -394,24 +377,14 @@ export default function CompaniesManagementPage() {
                         <ArrowUpDown className="h-3 w-3" />
                       </Button>
                     </TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSort('location')}
-                        className="h-8 flex items-center gap-1"
-                      >
-                        UF/Região
-                        <ArrowUpDown className="h-3 w-3" />
-                      </Button>
-                    </TableHead>
+                    <TableHead>UF/Região</TableHead>
                     <TableHead>Status Análise</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedCompanies.map((company) => (
+                  {companies.map((company) => (
                     <TableRow key={company.id}>
                       <TableCell>
                         <Checkbox
@@ -532,6 +505,38 @@ export default function CompaniesManagementPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+            
+            {/* Paginação */}
+            {companies.length > 0 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {page * 50 + 1} - {Math.min((page + 1) * 50, totalCount)} de {totalCount}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    Anterior
+                  </Button>
+                  <div className="flex items-center gap-1 px-2">
+                    <span className="text-sm">
+                      Página {page + 1} de {totalPages}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -4,9 +4,56 @@ import type { Company, Inserts } from '@/lib/db';
 
 export const COMPANIES_QUERY_KEY = ['companies'];
 
-export function useCompanies() {
+// Hook otimizado com paginação e filtros
+export function useCompanies(options?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}) {
+  const { page = 0, pageSize = 50, search = '', sortBy = 'created_at', sortOrder = 'desc' } = options || {};
+  
   return useQuery({
-    queryKey: COMPANIES_QUERY_KEY,
+    queryKey: [...COMPANIES_QUERY_KEY, page, pageSize, search, sortBy, sortOrder],
+    queryFn: async () => {
+      let query = supabase
+        .from('companies')
+        .select('*', { count: 'exact' });
+
+      // Filtro de busca
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,cnpj.ilike.%${search}%`);
+      }
+
+      // Ordenação
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+      // Paginação
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      return { 
+        data: data as Company[], 
+        count: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize)
+      };
+    },
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+// Hook para buscar todas as empresas (usar com cuidado)
+export function useAllCompanies() {
+  return useQuery({
+    queryKey: ['companies', 'all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
@@ -16,6 +63,7 @@ export function useCompanies() {
       if (error) throw error;
       return data as Company[];
     },
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 }
 
