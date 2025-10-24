@@ -2,12 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText, Sparkles } from "lucide-react";
+import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText, Sparkles, FileSpreadsheet, Image } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PremiumReportRequest } from "./PremiumReportRequest";
+import { toast } from "sonner";
 
 interface CompanyReportProps {
   companyId: string;
@@ -35,13 +36,22 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
       // Primeiro buscar relatório persistido
       const { data: existingReport } = await supabase
         .from('executive_reports')
-        .select('content')
+        .select('content, data_quality_score, sources_used, run_id, updated_at')
         .eq('company_id', companyId)
         .eq('report_type', 'company')
         .maybeSingle();
 
       if (existingReport?.content) {
-        return existingReport.content;
+        const content = typeof existingReport.content === 'object' ? existingReport.content : {};
+        return {
+          ...(content as any),
+          _metadata: {
+            dataQualityScore: existingReport.data_quality_score,
+            sourcesUsed: existingReport.sources_used,
+            runId: existingReport.run_id,
+            lastUpdated: existingReport.updated_at
+          }
+        };
       }
 
       // Se não existir, gerar novo
@@ -55,9 +65,58 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
     staleTime: 300000, // Cache por 5 minutos
   });
 
-  const handleDownloadPDF = async () => {
-    // TODO: Implementar geração de PDF
-    alert('Exportação PDF será implementada em breve');
+  const handleExportPDF = async () => {
+    toast.info("Gerando PDF...", { description: "Aguarde alguns segundos" });
+    try {
+      // Em produção, você pode usar jsPDF ou chamar uma edge function
+      const element = document.getElementById('company-report-content');
+      if (element) {
+        window.print(); // Fallback simples - usar CSS @media print para formatação
+        toast.success("PDF pronto para impressão");
+      }
+    } catch (error) {
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!report) return;
+    
+    const csvData = [
+      ['Campo', 'Valor'],
+      ['Razão Social', report.identification.razao_social],
+      ['CNPJ', report.identification.cnpj],
+      ['Website', report.identification.website || 'N/A'],
+      ['Cidade', report.location.cidade],
+      ['Estado', report.location.estado],
+      ['Setor', report.activity.setor],
+      ['Funcionários', report.structure.total_funcionarios],
+      ['Score Global', report.metrics.score_global],
+      ['Maturidade Digital', report.metrics.componentes.maturidade_digital],
+      ['Ticket Médio', report.metrics.potencial_negocio.ticket_estimado.medio],
+      ['ROI Esperado', report.metrics.priorizacao.roi_esperado + '%']
+    ];
+
+    const csv = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `relatorio_${report.identification.razao_social.replace(/\s/g, '_')}.csv`;
+    link.click();
+    toast.success("CSV exportado com sucesso");
+  };
+
+  const handleExportXLS = () => {
+    toast.info("Formato XLS disponível em breve", { 
+      description: "Use CSV como alternativa" 
+    });
+  };
+
+  const handleExportPNG = async () => {
+    toast.info("Captura de tela...", { description: "Preparando imagem" });
+    // Você pode usar html2canvas ou similar para gerar PNG
+    // Por ora, mostrar mensagem
+    toast.info("Formato PNG disponível em breve");
   };
 
   if (isLoading) {
@@ -75,7 +134,7 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
   const hasPremiumReport = company?.raw_data && (company.raw_data as any)?.serasa_premium;
 
   return (
-    <div className="space-y-6">
+    <div id="company-report-content" className="space-y-6">
       {/* Premium Report Request */}
       {!hasPremiumReport && company?.cnpj && (
         <PremiumReportRequest
@@ -185,11 +244,40 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
               <CardDescription className="text-base">
                 Relatório Executivo Completo
               </CardDescription>
+              {report.sources && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                  <Badge variant="outline" className="text-xs">
+                    {report.sources.used.length} fontes de dados
+                  </Badge>
+                  {report._metadata?.dataQualityScore && (
+                    <Badge variant={report._metadata.dataQualityScore >= 80 ? 'default' : 'secondary'} className="text-xs">
+                      Qualidade: {report._metadata.dataQualityScore}%
+                    </Badge>
+                  )}
+                  {report._metadata?.lastUpdated && (
+                    <span className="text-xs">
+                      Atualizado em {new Date(report._metadata.lastUpdated).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleDownloadPDF}>
+              <Button variant="outline" size="sm" onClick={handleExportPDF} title="Exportar para PDF">
+                <FileText className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCSV} title="Exportar para CSV">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportXLS} title="Exportar para Excel">
                 <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
+                XLS
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportPNG} title="Exportar como imagem">
+                <Image className="h-4 w-4 mr-2" />
+                PNG
               </Button>
             </div>
           </div>

@@ -13,39 +13,76 @@ serve(async (req) => {
 
   try {
     const { companyId } = await req.json();
+    const startTime = Date.now();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Buscar dados da empresa
+    // 1. Criar analysis_run para rastreabilidade
+    const { data: runData, error: runError } = await supabase
+      .from('analysis_runs')
+      .insert({
+        company_id: companyId,
+        run_type: 'manual',
+        status: 'running',
+        sources_attempted: ['companies', 'decision_makers', 'digital_presence', 'governance_signals', 'ai']
+      })
+      .select()
+      .single();
+
+    if (runError) {
+      console.error('[generate-company-report] Erro ao criar run:', runError);
+      throw runError;
+    }
+
+    const runId = runData.id;
+    const sourcesSucceeded: string[] = [];
+    const sourcesFailed: string[] = [];
+
+    // 2. Buscar dados da empresa
     const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('*')
       .eq('id', companyId)
       .single();
 
-    if (companyError) throw companyError;
+    if (companyError) {
+      sourcesFailed.push('companies');
+      throw companyError;
+    }
+    sourcesSucceeded.push('companies');
 
-    // 2. Buscar dados relacionados em paralelo
+    // 3. Buscar dados relacionados em paralelo
     const [decisorsRes, presenceRes, signalsRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
       supabase.from('digital_presence').select('*').eq('company_id', companyId).maybeSingle(),
       supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false })
     ]);
 
+    if (!decisorsRes.error) sourcesSucceeded.push('decision_makers');
+    else sourcesFailed.push('decision_makers');
+    
+    if (!presenceRes.error) sourcesSucceeded.push('digital_presence');
+    else sourcesFailed.push('digital_presence');
+    
+    if (!signalsRes.error) sourcesSucceeded.push('governance_signals');
+    else sourcesFailed.push('governance_signals');
+
     const decisors = decisorsRes.data || [];
     const maturity = presenceRes.data;
     const signals = signalsRes.data || [];
 
-    // 3. Calcular métricas
+    // 4. Calcular métricas
     const metrics = calculateCompanyMetrics(company, decisors, maturity, signals);
 
-    // 4. Gerar insights com IA
+    // 5. Gerar insights com IA
     const insights = await generateInsightsWithAI(company, metrics, maturity);
+    if (insights) sourcesSucceeded.push('ai');
+    else sourcesFailed.push('ai');
 
-    // 5. Compilar relatório
+    // 6. Compilar relatório
     const report = {
       identification: buildIdentification(company),
       location: buildLocation(company),
@@ -57,19 +94,67 @@ serve(async (req) => {
       insights,
       decisors,
       signals,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      sources: {
+        used: sourcesSucceeded,
+        failed: sourcesFailed
+      }
     };
 
-    // 6. Persistir relatório em executive_reports
-    await supabase
+    // 7. Calcular score de qualidade
+    const dataQualityScore = Math.round((sourcesSucceeded.length / (sourcesSucceeded.length + sourcesFailed.length)) * 100);
+    const fieldsEnriched = Object.keys(report).filter(k => (report as any)[k] && JSON.stringify((report as any)[k]) !== '{}').length;
+    
+    // 8. Persistir relatório em executive_reports
+    const { data: reportData } = await supabase
       .from('executive_reports')
       .upsert({
         company_id: companyId,
         report_type: 'company',
-        content: report
-      }, { onConflict: 'company_id,report_type' });
+        content: report,
+        run_id: runId,
+        data_quality_score: dataQualityScore,
+        sources_used: sourcesSucceeded
+      }, { onConflict: 'company_id,report_type' })
+      .select()
+      .single();
 
-    console.log('[generate-company-report] Relatório persistido no banco');
+    // 9. Atualizar run com sucesso
+    const duration = Date.now() - startTime;
+    await supabase
+      .from('analysis_runs')
+      .update({
+        status: sourcesFailed.length === 0 ? 'completed' : 'partial',
+        completed_at: new Date().toISOString(),
+        duration_ms: duration,
+        sources_succeeded: sourcesSucceeded,
+        sources_failed: sourcesFailed,
+        data_quality_score: dataQualityScore,
+        fields_enriched: fieldsEnriched,
+        fields_total: Object.keys(report).length
+      })
+      .eq('id', runId);
+
+    // 10. Criar versão do relatório
+    if (reportData) {
+      const versionNumber = await supabase.rpc('get_next_report_version', {
+        p_company_id: companyId,
+        p_report_type: 'company'
+      });
+
+      await supabase
+        .from('executive_reports_versions')
+        .insert({
+          report_id: reportData.id,
+          company_id: companyId,
+          run_id: runId,
+          version_number: versionNumber.data || 1,
+          report_type: 'company',
+          content: report
+        });
+    }
+
+    console.log('[generate-company-report] Relatório persistido com rastreabilidade completa');
 
     return new Response(JSON.stringify(report), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -77,6 +162,29 @@ serve(async (req) => {
   } catch (error) {
     console.error('[generate-company-report] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Marcar run como failed se existir runId
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      const body = await req.json();
+      if (body.companyId) {
+        await supabase
+          .from('analysis_runs')
+          .update({
+            status: 'failed',
+            completed_at: new Date().toISOString(),
+            error_log: { message: errorMessage, stack: error instanceof Error ? error.stack : undefined }
+          })
+          .eq('company_id', body.companyId)
+          .eq('status', 'running');
+      }
+    } catch (e) {
+      console.error('[generate-company-report] Failed to update run status:', e);
+    }
+    
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
