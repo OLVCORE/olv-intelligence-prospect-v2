@@ -1,0 +1,255 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash2, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { useProductCatalog, Product } from "@/hooks/useProductCatalog";
+import { useCreateQuote, QuoteProduct } from "@/hooks/useQuotes";
+import { toast } from "sonner";
+
+interface QuoteConfiguratorProps {
+  companyId: string;
+  accountStrategyId?: string;
+  onQuoteCreated?: (quoteId: string) => void;
+}
+
+export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated }: QuoteConfiguratorProps) {
+  const { data: products, isLoading } = useProductCatalog();
+  const createQuote = useCreateQuote();
+  const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
+
+  const addProduct = (product: Product) => {
+    const existing = selectedProducts.find(p => p.sku === product.sku);
+    if (existing) {
+      toast.info('Produto já adicionado. Ajuste a quantidade.');
+      return;
+    }
+
+    const newProduct: QuoteProduct = {
+      id: product.id,
+      sku: product.sku,
+      name: product.name,
+      quantity: product.min_quantity,
+      base_price: product.base_price,
+      discount: 0,
+      final_price: product.base_price * product.min_quantity,
+    };
+
+    setSelectedProducts([...selectedProducts, newProduct]);
+  };
+
+  const removeProduct = (sku: string) => {
+    setSelectedProducts(selectedProducts.filter(p => p.sku !== sku));
+  };
+
+  const updateQuantity = (sku: string, quantity: number) => {
+    setSelectedProducts(selectedProducts.map(p => {
+      if (p.sku === sku) {
+        const newQuantity = Math.max(1, quantity);
+        return {
+          ...p,
+          quantity: newQuantity,
+          final_price: p.base_price * newQuantity * (1 - p.discount / 100),
+        };
+      }
+      return p;
+    }));
+  };
+
+  const totalListPrice = selectedProducts.reduce((sum, p) => sum + (p.base_price * p.quantity), 0);
+  const totalDiscounts = selectedProducts.reduce((sum, p) => sum + (p.base_price * p.quantity * p.discount / 100), 0);
+  const totalFinalPrice = totalListPrice - totalDiscounts;
+
+  const handleGenerateQuote = async () => {
+    if (selectedProducts.length === 0) {
+      toast.error('Adicione pelo menos um produto');
+      return;
+    }
+
+    await createQuote.mutateAsync({
+      company_id: companyId,
+      account_strategy_id: accountStrategyId,
+      products: selectedProducts,
+    });
+
+    if (onQuoteCreated) {
+      onQuoteCreated('new-quote');
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      'BÁSICO': 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+      'INTERMEDIÁRIO': 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+      'AVANÇADO': 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+      'ESPECIALIZADO': 'bg-red-500/10 text-red-700 dark:text-red-300',
+    };
+    return colors[category as keyof typeof colors] || 'bg-gray-500/10 text-gray-700';
+  };
+
+  if (isLoading) {
+    return <div>Carregando catálogo...</div>;
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* Catálogo de Produtos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Catálogo de Produtos TOTVS</CardTitle>
+          <CardDescription>Selecione os produtos para a cotação</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {products?.map(product => (
+              <div
+                key={product.id}
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium">{product.name}</span>
+                    <Badge className={getCategoryColor(product.category)}>
+                      {product.category}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
+                  <p className="text-sm font-semibold text-primary mt-1">
+                    {formatCurrency(product.base_price)}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => addProduct(product)}
+                  disabled={selectedProducts.some(p => p.sku === product.sku)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Produtos Selecionados */}
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Produtos Selecionados</CardTitle>
+            <CardDescription>
+              {selectedProducts.length} produto(s) na cotação
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {selectedProducts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum produto selecionado</p>
+                </div>
+              ) : (
+                selectedProducts.map(product => (
+                  <div key={product.sku} className="space-y-2 p-3 border rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatCurrency(product.base_price)} / unidade
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeProduct(product.sku)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor={`qty-${product.sku}`} className="text-xs">
+                          Quantidade
+                        </Label>
+                        <Input
+                          id={`qty-${product.sku}`}
+                          type="number"
+                          min="1"
+                          value={product.quantity}
+                          onChange={(e) => updateQuantity(product.sku, parseInt(e.target.value) || 1)}
+                          className="h-8"
+                        />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Subtotal</p>
+                        <p className="font-semibold">
+                          {formatCurrency(product.final_price)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resumo Financeiro */}
+        {selectedProducts.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Resumo Financeiro
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Preço de Lista</span>
+                <span className="font-medium">{formatCurrency(totalListPrice)}</span>
+              </div>
+              {totalDiscounts > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Descontos</span>
+                  <span className="font-medium text-green-600">
+                    -{formatCurrency(totalDiscounts)}
+                  </span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between">
+                <span className="font-semibold">Valor Total</span>
+                <span className="font-bold text-lg text-primary">
+                  {formatCurrency(totalFinalPrice)}
+                </span>
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleGenerateQuote}
+                disabled={createQuote.isPending}
+              >
+                {createQuote.isPending ? (
+                  'Gerando...'
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Gerar Cotação com Pricing Intelligence
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

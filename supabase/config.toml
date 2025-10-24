@@ -155,3 +155,6 @@ project_id = "ioaxzpwlurpduanzkfrt"
   
   [functions.calculate-advanced-roi]
   verify_jwt = true
+
+  [functions.calculate-quote-pricing]
+  verify_jwt = false

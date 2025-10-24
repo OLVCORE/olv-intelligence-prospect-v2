@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGenerateAccountStrategy } from '@/hooks/useAccountStrategies';
 import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalculator';
+import { QuoteConfigurator } from '@/components/cpq/QuoteConfigurator';
 
 export default function AccountStrategyPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -155,11 +156,12 @@ export default function AccountStrategyPage() {
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps & Oportunidades</TabsTrigger>
               <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
               <TabsTrigger value="roi">ROI Interativo</TabsTrigger>
+              <TabsTrigger value="cpq">Cotação (CPQ)</TabsTrigger>
               <TabsTrigger value="financial">Financeiro</TabsTrigger>
               <TabsTrigger value="actions">Próximas Ações</TabsTrigger>
             </TabsList>
@@ -320,6 +322,14 @@ export default function AccountStrategyPage() {
                 companyId={companyId!}
                 accountStrategyId={activeStrategy.id}
                 initialData={activeStrategy.ai_insights as any}
+              />
+            </TabsContent>
+
+            {/* CPQ Tab */}
+            <TabsContent value="cpq" className="space-y-4">
+              <QuoteConfigurator
+                companyId={companyId!}
+                accountStrategyId={activeStrategy.id}
               />
             </TabsContent>
 
