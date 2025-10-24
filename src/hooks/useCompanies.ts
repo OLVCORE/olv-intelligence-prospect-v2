@@ -25,12 +25,7 @@ export function useCompany(id: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          decision_makers(*),
-          digital_maturity(*),
-          buying_signals(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
       

@@ -37,17 +37,26 @@ export default function CompanyDetailPage() {
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: base, error: baseErr } = await supabase
         .from('companies')
-        .select(`
-          *,
-          decision_makers (*),
-          digital_maturity (*),
-          buying_signals (*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
-      return data;
+      if (baseErr) throw baseErr;
+      if (!base) return null;
+
+      const [decisorsRes, maturityRes, insightsRes] = await Promise.all([
+        supabase.from('decision_makers').select('*').eq('company_id', id!),
+        supabase.from('digital_maturity').select('*').eq('company_id', id!),
+        supabase.from('insights').select('*').eq('company_id', id!),
+      ]);
+
+      return {
+        ...base,
+        decision_makers: decisorsRes.data || [],
+        digital_maturity: maturityRes.data || [],
+        insights: insightsRes.data || [],
+      } as any;
     }
   });
 
