@@ -1,3 +1,4 @@
+import { BackButton } from "@/components/common/BackButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -124,6 +125,7 @@ export default function FitTOTVSPage() {
 
   return (
     <div className="p-8">
+      <BackButton className="mb-4" />
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div>

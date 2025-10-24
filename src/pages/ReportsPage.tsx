@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { ExplainabilityButton } from "@/components/common/ExplainabilityButton";
+import { BackButton } from "@/components/common/BackButton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -65,6 +66,7 @@ export default function ReportsPage() {
   if (!companyId) {
     return (
       <div className="p-8 space-y-6">
+        <BackButton />
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">Relatórios Executivos</h1>
@@ -147,6 +149,7 @@ export default function ReportsPage() {
 
   return (
     <div className="p-8">
+      <BackButton className="mb-4" />
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Relatórios Executivos</h1>
         <p className="text-muted-foreground">

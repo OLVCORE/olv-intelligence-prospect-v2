@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { BackButton } from '@/components/common/BackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -238,6 +239,7 @@ export default function CompaniesManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
+            <BackButton className="mb-2" />
             <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
             <p className="text-muted-foreground">
               Visualize, edite, exclua e enriqueça empresas cadastradas
@@ -463,8 +465,11 @@ export default function CompaniesManagementPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/analysis-360?company=${company.id}`)}
-                            title="Editar"
+                            onClick={() => {
+                              setEditCompany(company);
+                              setManualDialogOpen(true);
+                            }}
+                            title="Complementar Informações"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>

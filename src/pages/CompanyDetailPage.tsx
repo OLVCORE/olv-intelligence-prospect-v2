@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BackButton } from "@/components/common/BackButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -183,6 +184,7 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="p-8 space-y-6">
+      <BackButton to="/companies" />
       {/* Header */}
       <Card className="border-l-4 border-l-primary">
         <CardHeader>

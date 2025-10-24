@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { BackButton } from '@/components/common/BackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -220,6 +221,7 @@ export default function Analysis360Page() {
   const pitchContent = lang === 'pt-BR' ? enrichmentData?.pitch?.content : (translatedPitch ?? enrichmentData?.pitch?.content);
   return (
     <div className="p-8 space-y-6">
+      <BackButton className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

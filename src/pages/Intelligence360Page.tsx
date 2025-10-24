@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { BackButton } from '@/components/common/BackButton';
 import { EnhancedCompanyInputForm } from '@/components/intelligence/EnhancedCompanyInput';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export default function Intelligence360Page() {
   return (
     <AppLayout>
       <div className="container mx-auto py-8 space-y-8">
+        <BackButton className="mb-4" />
         {/* Header */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
