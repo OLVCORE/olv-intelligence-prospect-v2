@@ -2645,13 +2645,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sdr_deal_activities_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sdr_deal_activities_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
@@ -2743,13 +2736,6 @@ export type Database = {
           won_date?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "sdr_deals_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "sdr_deals_company_id_fkey"
             columns: ["company_id"]
