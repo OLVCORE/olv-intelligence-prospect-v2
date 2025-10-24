@@ -15,35 +15,26 @@ export default function DataMigrationPage() {
   const [confirmPhrase, setConfirmPhrase] = useState('');
   
   const loadStats = async () => {
+    setIsProcessing(true);
     try {
-      const tables = [
-        'governance_signals',
-        'digital_maturity',
-        'digital_presence',
-        'financial_data',
-        'legal_data',
-        'reputation_data',
-        'news_mentions',
-        'pitches',
-        'insights',
-        'risks'
-      ];
+      const { data, error } = await supabase.functions.invoke('cleanup-legacy-data', {
+        body: { action: 'get_stats' }
+      });
       
-      const counts: any = {};
+      if (error) throw error;
       
-      for (const table of tables) {
-        const { count, error } = await supabase
-          .from(table as any)
-          .select('*', { count: 'exact', head: true });
-        
-        if (!error) {
-          counts[table] = count || 0;
-        }
+      if (data?.counts) {
+        setStats(data.counts);
       }
-      
-      setStats(counts);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar as estatísticas",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -60,47 +51,29 @@ export default function DataMigrationPage() {
     setIsProcessing(true);
     
     try {
-      const tables = [
-        'governance_signals',
-        'digital_maturity',
-        'digital_presence',
-        'financial_data',
-        'legal_data',
-        'reputation_data',
-        'news_mentions',
-        'pitches',
-        'insights',
-        'risks'
-      ];
-      
-      let totalDeleted = 0;
-      
-      for (const table of tables) {
-        const { error, count } = await supabase
-          .from(table as any)
-          .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-        
-        if (error) {
-          console.error(`Erro ao limpar ${table}:`, error);
-        } else {
-          totalDeleted += count || 0;
-        }
-      }
-      
-      toast({
-        title: "Limpeza concluída!",
-        description: `${totalDeleted} registros removidos. Sistema pronto para o novo conceito.`,
+      const { data, error } = await supabase.functions.invoke('cleanup-legacy-data', {
+        body: { action: 'cleanup' }
       });
       
-      setConfirmPhrase('');
-      await loadStats();
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast({
+          title: "🎉 Limpeza concluída!",
+          description: `${data.totalDeleted} registros removidos. Sistema 100% limpo!`,
+        });
+        
+        setConfirmPhrase('');
+        await loadStats();
+      } else {
+        throw new Error('Falha na limpeza');
+      }
       
     } catch (error) {
       console.error('Erro na limpeza:', error);
       toast({
         title: "Erro na limpeza",
-        description: "Ocorreu um erro ao limpar os dados",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao limpar os dados",
         variant: "destructive",
       });
     } finally {

@@ -122,3 +122,5 @@ project_id = "ioaxzpwlurpduanzkfrt"
 
   [functions.suggest-next-action]
   verify_jwt = false
+
+  [functions.cleanup-legacy-data]
