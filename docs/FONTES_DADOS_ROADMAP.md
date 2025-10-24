@@ -1,8 +1,28 @@
 # 📊 Fontes de Dados e Roadmap SaaS
 
-## 🎯 Visão Geral do Sistema Atual
+## 🎯 Visão Geral Estratégica
 
 Este documento detalha todas as fontes de dados, APIs utilizadas, e o roadmap para transformar a plataforma em SaaS.
+
+### 💎 **MERCADO ALVO: PMEs de Capital Fechado (99.9% do mercado)**
+
+**Por que PMEs são a verdadeira oportunidade:**
+- 🏆 **6.5+ milhões de empresas** no Brasil (vs. 400 de capital aberto)
+- ❌ **95% sem governança** adequada
+- ❌ **90% sem compliance** estruturado
+- ❌ **80% usa Excel** como principal ferramenta de gestão
+- ✅ **FIT PERFEITO** para consultoria + TOTVS (Protheus, Fluig, RM, BI)
+
+**Estratégia:**
+1. **Enriquecimento 360°** → Identificar dores e gaps
+2. **Score de Maturidade** → Quantificar necessidade de governança
+3. **Consultoria Estratégica** → Não vender software, vender transformação
+4. **Produtos TOTVS** → Solução completa para estruturar a empresa
+
+**Diferencial competitivo:**
+- Não somos apenas "vendedores de software"
+- Somos **parceiros de transformação digital e governança**
+- Identificamos empresas que **PRECISAM** se estruturar (não as que já estão estruturadas)
 
 ---
 
@@ -233,7 +253,48 @@ A IA identificou:
 
 ## 🗺️ **ROADMAP PARA SAAS**
 
-### 📌 FASE 1: APIs GRATUITAS (Prioridade ALTA)
+### 📌 FASE 1: PMEs - Score de Governança (🏆 PRIORIDADE MÁXIMA)
+**Custo**: R$ 0/mês (só IA + dados públicos)
+
+**Objetivo**: Identificar PMEs que PRECISAM se estruturar (não as que já estão)
+
+**Métricas de Falta de Governança:**
+- [ ] **Score de Compliance**: Detectar riscos fiscais/trabalhistas
+- [ ] **Score de Processos**: Identificar operação manual vs. automatizada
+- [ ] **Score de Controles**: Avaliar ausência de KPIs e dashboards
+- [ ] **Score de Integração**: Detectar silos de informação (Excel, WhatsApp)
+- [ ] **Score de Risco Operacional**: Quantificar exposição por falta de estrutura
+
+**Como Detectar:**
+```typescript
+{
+  "sinais_de_falta_de_governanca": [
+    "❌ Sem site estruturado ou site desatualizado",
+    "❌ Presença digital fraca (LinkedIn sem posts, sem engajamento)",
+    "❌ Processos trabalhistas acima da média do setor",
+    "❌ Cadastro desatualizado na Receita Federal",
+    "❌ Ausência de tech stack moderno detectado",
+    "❌ Email genérico (contato@empresa.com) sem domínio próprio",
+    "❌ Ausência de decisores no LinkedIn (gestão informal)"
+  ],
+  "score_necessidade_estruturacao": 85, // Quanto MAIOR, maior a necessidade
+  "produtos_totvs_recomendados": [
+    "Protheus (ERP): Estruturar operação e controles",
+    "Fluig (BPM): Implantar governança e compliance",
+    "RM (RH): Profissionalizar gestão de pessoas"
+  ],
+  "angulo_consultoria": "Sua empresa está crescendo, mas a gestão ainda é informal. Isso gera riscos e limita o crescimento. Vamos estruturar juntos?"
+}
+```
+
+**Impacto**: 
+- 🎯 Identificar 6.5M+ PMEs que PRECISAM de estruturação
+- 💰 Ticket médio R$ 50k-500k (consultoria + TOTVS)
+- 🤝 Posicionamento como parceiro estratégico (não fornecedor)
+
+---
+
+### 📌 FASE 1b: APIs GRATUITAS (Complemento)
 **Custo**: R$ 0/mês
 
 - [ ] Integrar CEIS (empresas inidôneas)
@@ -442,15 +503,47 @@ Esta é uma **oportunidade de ouro** para criar análises ultra-precisas com dad
 
 ## 🎯 **PRÓXIMOS PASSOS IMEDIATOS - MVP**
 
-### ⭐ Prioridade MÁXIMA (GRATUITO - Quick Win)
-1. [ ] **🏆 Implementar Enriquecimento de Capital Aberto**
-   - Integrar API CVM (dados abertos)
-   - Extrair DFP, ITR, Formulário de Referência
-   - Analisar documentos com Gemini Pro (OCR + análise)
-   - Cross-reference decisores (CVM → LinkedIn)
-   - Buscar fatos relevantes (sinais de compra)
-   - **Impacto**: Análises ultra-precisas com dados públicos
-   - **Custo**: R$ 0 (só IA do Lovable)
+### 🏆 **PRIORIDADE ABSOLUTA: PMEs de Capital Fechado (99.9% do mercado)**
+
+**Estratégia Revisada:**
+- **Capital Aberto**: Quick win interessante, mas são apenas 400 empresas (0.01%)
+- **PMEs**: 6.5M+ empresas que PRECISAM de governança e estruturação
+
+### ⭐ Prioridade 1 - Enriquecimento PMEs (FOCO PRINCIPAL)
+1. [ ] **🎯 Score de Governança e Maturidade Organizacional**
+   - Detectar falta de processos estruturados
+   - Identificar uso de planilhas Excel
+   - Avaliar compliance fiscal/trabalhista
+   - Medir maturidade digital (infraestrutura, sistemas)
+   - **Output**: "Esta empresa PRECISA se estruturar" (não "está estruturada")
+
+2. [ ] **📊 Análise de Gaps e Oportunidades**
+   - Mapear onde faltam controles
+   - Identificar processos manuais
+   - Detectar falta de integração entre sistemas
+   - Quantificar risco de não-conformidade
+
+3. [ ] **🤝 Pitch de Consultoria + Tecnologia**
+   - Não vender "software"
+   - Vender "transformação organizacional"
+   - Posicionar TOTVS como solução completa:
+     - Protheus (ERP): Estruturar operação
+     - Fluig (BPM): Governança e compliance
+     - RM (RH): Gestão de pessoas
+     - BI/Analytics: Inteligência gerencial
+
+4. [ ] **💰 Sistema de Créditos para APIs Pagas**
+   - Serasa/SCPC: R$ 50-200/consulta (financeiro)
+   - JusBrasil: R$ 500-2000/mês (jurídico)
+   - Usuário decide quando vale a pena pagar
+   - Cache agressivo (evitar reconsultas)
+
+### 🚀 Prioridade 2 - Capital Aberto (Quick Win, mas mercado pequeno)
+5. [ ] **📈 Enriquecimento Capital Aberto (CVM/B3)**
+   - API CVM gratuita
+   - Análise de documentos com Gemini Pro
+   - **Mercado**: Apenas 400 empresas
+   - **Uso**: Showcase, cases de sucesso, benchmark
 
 ### Prioridade 1 (Gratuitas)
 2. [ ] **Ativar CEIS e CNEP** (APIs gratuitas do governo)
