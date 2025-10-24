@@ -2,14 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { TrendingUp, Users, DollarSign, Building2, GripVertical } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Building2, GripVertical, BarChart3, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DealCard } from '@/components/sdr/DealCard';
 import { PipelineFilters } from '@/components/sdr/PipelineFilters';
+import { PipelineMetrics } from '@/components/sdr/PipelineMetrics';
+import { PipelineForecast } from '@/components/sdr/PipelineForecast';
 
 interface Deal {
   id: string;
@@ -19,6 +23,8 @@ interface Deal {
   status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
   priority: string;
   last_message_at?: string;
+  created_at: string;
+  updated_at: string;
   contact?: { name: string; email?: string; phone?: string };
   company?: { 
     name: string;
@@ -282,9 +288,16 @@ export default function SDRPipelinePage() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Pipeline de Vendas</h1>
-            <p className="text-muted-foreground">Arraste leads entre os estágios do funil</p>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Activity className="h-8 w-8 text-primary" />
+              Sales Workspace
+            </h1>
+            <p className="text-muted-foreground">Gestão completa do pipeline com insights em tempo real</p>
           </div>
+          <Button variant="outline" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Exportar Relatório
+          </Button>
         </div>
 
         {/* Stats */}
@@ -346,24 +359,33 @@ export default function SDRPipelinePage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <PipelineFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          industryFilter={industryFilter}
-          onIndustryChange={setIndustryFilter}
-          priorityFilter={priorityFilter}
-          onPriorityChange={setPriorityFilter}
-          valueRange={valueRange}
-          onValueRangeChange={setValueRange}
-          maturityRange={maturityRange}
-          onMaturityRangeChange={setMaturityRange}
-          industries={industries}
-          activeFiltersCount={activeFiltersCount}
-          onClearFilters={clearFilters}
-        />
+        {/* Tabs */}
+        <Tabs defaultValue="kanban" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="metrics">Métricas</TabsTrigger>
+            <TabsTrigger value="forecast">Forecast</TabsTrigger>
+          </TabsList>
 
-        {/* Pipeline Board */}
+          <TabsContent value="kanban" className="space-y-6">
+            {/* Filters */}
+            <PipelineFilters
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              industryFilter={industryFilter}
+              onIndustryChange={setIndustryFilter}
+              priorityFilter={priorityFilter}
+              onPriorityChange={setPriorityFilter}
+              valueRange={valueRange}
+              onValueRangeChange={setValueRange}
+              maturityRange={maturityRange}
+              onMaturityRangeChange={setMaturityRange}
+              industries={industries}
+              activeFiltersCount={activeFiltersCount}
+              onClearFilters={clearFilters}
+            />
+
+            {/* Pipeline Board */}
         <DndContext
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
@@ -422,6 +444,16 @@ export default function SDRPipelinePage() {
             )}
           </DragOverlay>
         </DndContext>
+          </TabsContent>
+
+          <TabsContent value="metrics" className="space-y-6">
+            <PipelineMetrics deals={filteredDeals} />
+          </TabsContent>
+
+          <TabsContent value="forecast" className="space-y-6">
+            <PipelineForecast deals={filteredDeals} />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
