@@ -123,7 +123,7 @@ serve(async (req) => {
     });
 
     // 5. Buscar dados completos para retornar
-    const { data: fullCompany } = await supabase
+    const { data: fullCompany, error: fetchError } = await supabase
       .from('companies')
       .select(`
         *,
@@ -133,6 +133,11 @@ serve(async (req) => {
       `)
       .eq('id', savedCompany.id)
       .single();
+
+    if (fetchError || !fullCompany) {
+      console.error('[Save Company] Erro ao buscar dados completos:', fetchError);
+      throw new Error('Não foi possível recuperar os dados da empresa após salvar');
+    }
 
     console.log('[Save Company] ✅ Salvamento concluído');
 
