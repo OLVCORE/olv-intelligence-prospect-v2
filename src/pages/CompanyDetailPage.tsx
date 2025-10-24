@@ -23,6 +23,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import ReportPreviewDialog from "@/components/reports/ReportPreviewDialog";
+import FitAnalysisDialog from "@/components/reports/FitAnalysisDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -32,6 +34,9 @@ export default function CompanyDetailPage() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
   const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
+  const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
+  const [fitDialogOpen, setFitDialogOpen] = useState(false);
+  const [fitAnalysis, setFitAnalysis] = useState<any>(null);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -71,24 +76,18 @@ export default function CompanyDetailPage() {
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-company-report', {
+      // Pré-busca para garantir dados mais rápidos no preview
+      const { error } = await supabase.functions.invoke('generate-company-report', {
         body: { companyId: id }
       });
-
       if (error) throw error;
 
-      toast.success("Relatório gerado com sucesso!", {
-        description: "O relatório PDF está sendo preparado..."
+      setReportPreviewOpen(true);
+      toast.success("Relatório pronto para visualização", {
+        description: "Abra o preview para revisar e baixar o PDF."
       });
-
-      // Trigger download
-      if (data?.pdfUrl) {
-        window.open(data.pdfUrl, '_blank');
-      }
     } catch (error: any) {
-      toast.error("Erro ao gerar relatório", {
-        description: error.message
-      });
+      toast.error("Erro ao gerar relatório", { description: error.message });
     } finally {
       setIsGeneratingReport(false);
     }
@@ -103,16 +102,18 @@ export default function CompanyDetailPage() {
 
       if (error) throw error;
 
+      const fitScore = data?.analysis?.fitScore ?? 'N/A';
+      setFitAnalysis(data?.analysis ?? null);
+      setFitDialogOpen(true);
+
       toast.success("Análise de Fit TOTVS concluída!", {
-        description: `Score de adequação: ${data?.score || 'N/A'}`
+        description: `Score de adequação: ${fitScore}`
       });
 
       // Refresh company data
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
     } catch (error: any) {
-      toast.error("Erro ao analisar Fit TOTVS", {
-        description: error.message
-      });
+      toast.error("Erro ao analisar Fit TOTVS", { description: error.message });
     } finally {
       setIsAnalyzingFit(false);
     }
@@ -120,33 +121,33 @@ export default function CompanyDetailPage() {
 
   const handleUpdateReceita = async () => {
     if (!company?.cnpj) {
-      toast.error("CNPJ não disponível", {
-        description: "Não é possível atualizar dados sem CNPJ"
-      });
+      toast.error("CNPJ não disponível", { description: "Não é possível atualizar dados sem CNPJ" });
       return;
     }
 
     setIsUpdatingReceita(true);
     try {
       const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
-        body: { 
-          cnpj: company.cnpj,
-          companyId: id
-        }
+        body: { cnpj: company.cnpj }
       });
-
       if (error) throw error;
 
-      toast.success("Dados da Receita atualizados!", {
-        description: "Informações cadastrais foram atualizadas"
-      });
+      const receita = data?.data;
+      if (receita) {
+        const newRaw = { ...(company.raw_data || {}), receita };
+        const { error: updError } = await supabase
+          .from('companies')
+          .update({ raw_data: newRaw })
+          .eq('id', id);
+        if (updError) throw updError;
+      }
+
+      toast.success("Dados da Receita atualizados!", { description: "Informações cadastrais foram salvas" });
 
       // Refresh company data
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
     } catch (error: any) {
-      toast.error("Erro ao atualizar dados da Receita", {
-        description: error.message
-      });
+      toast.error("Erro ao atualizar dados da Receita", { description: error.message });
     } finally {
       setIsUpdatingReceita(false);
     }
@@ -738,8 +739,14 @@ export default function CompanyDetailPage() {
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Previews */}
+    {id && (
+      <ReportPreviewDialog open={reportPreviewOpen} onOpenChange={setReportPreviewOpen} companyId={id} />
+    )}
+    <FitAnalysisDialog open={fitDialogOpen} onOpenChange={setFitDialogOpen} analysis={fitAnalysis} />
+  </div>
+);
 }
