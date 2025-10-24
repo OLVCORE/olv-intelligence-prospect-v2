@@ -864,11 +864,16 @@ export default function SearchPage() {
                     setIsSaving(true);
                     try {
                       const companyPayload: any = {
+                        id: prefillCompanyId || undefined,
                         name: searchQuery || undefined,
                         cnpj: isValidCNPJ(searchQuery) ? searchQuery : undefined,
                         website: website || undefined,
                         linkedin_url: linkedin || undefined,
-                        instagram_url: instagram || undefined,
+                        raw_data: {
+                          social_media: {
+                            instagram: instagram || undefined
+                          }
+                        },
                         location: {
                           cep, state: estado, country: pais, city: municipio, neighborhood: bairro, street: logradouro, number: numero
                         }

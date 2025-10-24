@@ -23,12 +23,23 @@ serve(async (req) => {
     );
 
     // 1. Salvar empresa no banco (merge seguro para não perder dados existentes)
-    // Buscar empresa existente por CNPJ
-    const { data: existingCompany } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('cnpj', company.cnpj)
-      .maybeSingle();
+    // Buscar empresa existente por ID ou CNPJ
+    let existingCompany: any = null;
+    if (company.id) {
+      const { data } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', company.id)
+        .maybeSingle();
+      existingCompany = data;
+    } else if (company.cnpj) {
+      const { data } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('cnpj', company.cnpj)
+        .maybeSingle();
+      existingCompany = data;
+    }
 
     // Preparar merges
     const mergedRaw = {
@@ -56,37 +67,41 @@ serve(async (req) => {
       ...(Object.keys(mergedRaw).length ? { raw_data: mergedRaw } : {}),
     };
 
+    // Upsert usando PK (id) quando presente; caso contrário, conflito por CNPJ
+    const upsertOptions = company?.cnpj ? { onConflict: 'cnpj' } : undefined as any;
     const { data: savedCompany, error: companyError } = await supabase
       .from('companies')
-      .upsert(upsertPayload, { onConflict: 'cnpj' })
+      .upsert(upsertPayload, upsertOptions)
       .select()
       .single();
 
     if (companyError) throw companyError;
     console.log('[Save Company] Empresa salva:', savedCompany.id);
 
-    // 2. Salvar presença digital (Instagram, LinkedIn, Website)
-    if (savedCompany.linkedin_url || savedCompany.website || company.instagram_url) {
-      const { error: presenceError } = await supabase
-        .from('digital_presence')
-        .upsert({
-          company_id: savedCompany.id,
-          website_url: savedCompany.website,
-          linkedin_url: savedCompany.linkedin_url,
-          instagram_url: company.instagram_url,
-          has_website: !!savedCompany.website,
-          has_linkedin: !!savedCompany.linkedin_url,
-          has_instagram: !!company.instagram_url,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'company_id'
-        });
+    // 2. Salvar presença digital (Instagram/LinkedIn em jsonb)
+    try {
+      const instagramUrl = company?.raw_data?.social_media?.instagram || null;
+      const linkedinUrl = savedCompany.linkedin_url || null;
 
-      if (presenceError) {
-        console.error('[Save Company] Error saving digital presence:', presenceError);
-      } else {
-        console.log('[Save Company] Presença digital salva');
+      if (instagramUrl || linkedinUrl) {
+        const payload: any = {
+          company_id: savedCompany.id,
+          last_updated: new Date().toISOString(),
+        };
+        if (instagramUrl) payload.instagram_data = { url: instagramUrl };
+        if (linkedinUrl) payload.linkedin_data = { url: linkedinUrl };
+
+        const { error: presenceError } = await supabase
+          .from('digital_presence')
+          .upsert(payload, { onConflict: 'company_id' });
+        if (presenceError) {
+          console.error('[Save Company] Error saving digital presence:', presenceError);
+        } else {
+          console.log('[Save Company] Presença digital salva/atualizada');
+        }
       }
+    } catch (dpErr) {
+      console.warn('[Save Company] Falha não crítica ao salvar presença digital:', dpErr);
     }
 
     // 3. Salvar decisores
@@ -96,13 +111,15 @@ serve(async (req) => {
         name: person.name,
         title: person.title,
         email: person.email,
-        phone: person.phone,
-        whatsapp: person.whatsapp,
         linkedin_url: person.linkedin_url,
         department: person.department || person.headline,
         seniority: person.seniority,
         verified_email: person.verified_email || false,
-        raw_data: person
+        raw_data: {
+          ...person,
+          phone: person.phone,
+          whatsapp: person.whatsapp
+        }
       }));
 
       const { error: decisorsError } = await supabase
