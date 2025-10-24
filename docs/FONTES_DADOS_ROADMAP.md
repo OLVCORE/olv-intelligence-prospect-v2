@@ -290,7 +290,120 @@ A IA identificou:
 
 ---
 
-### 📌 FASE 5: EXPANSÃO E ESCALA
+### 📌 FASE 5: EMPRESAS DE CAPITAL ABERTO (⭐ ALTA PRIORIDADE MVP)
+**Custo**: GRATUITO + IA (100% dados públicos)
+
+Esta é uma **oportunidade de ouro** para criar análises ultra-precisas com dados públicos obrigatórios.
+
+#### Fontes de Dados Públicos (Brasil)
+
+**1. CVM - Comissão de Valores Mobiliários** (🆓 GRATUITO)
+- [ ] **API CVM - Dados Abertos**: https://dados.cvm.gov.br/
+- [ ] **DFP/ITR**: Demonstrações financeiras auditadas
+- [ ] **Formulário de Referência**: Governança, diretoria, remuneração
+- [ ] **Fatos Relevantes**: Alertas em tempo real
+- [ ] **Atas de Assembleia**: Decisões estratégicas
+- **Endpoint**: `/dados/CIA_ABERTA/DOC/` (JSON/XML)
+
+**2. B3 - Bolsa de Valores** (🆓 GRATUITO)
+- [ ] **Cotações e indicadores financeiros** em tempo real
+- [ ] **Relatórios de governança corporativa**
+- [ ] **Composição acionária**
+- **API**: https://www.b3.com.br/data/files/
+
+**3. Portal da Transparência** (🆓 GRATUITO)
+- [ ] **Contratos governamentais**
+- [ ] **CNEP/CEIS**: Empresas punidas
+- [ ] **Convênios e repasses**
+
+#### O que Extrair dos Dados CVM
+
+**A. Decisores (100% Público)**
+```json
+{
+  "decisor": {
+    "nome_completo": "João da Silva",
+    "cpf": "xxx.xxx.xxx-xx",
+    "cargo": "Diretor Presidente (CEO)",
+    "remuneracao_anual": "R$ 2.5M - R$ 3M",
+    "tempo_cargo": "3 anos",
+    "formacao": "Engenharia + MBA",
+    "experiencia_anterior": ["CFO na XYZ Corp", "VP na ABC Ltd"]
+  }
+}
+```
+
+**B. Saúde Financeira (Dados Reais)**
+```json
+{
+  "financeiro": {
+    "receita_liquida": 1500000000,
+    "ebitda": 350000000,
+    "lucro_liquido": 180000000,
+    "margem_liquida": 12.0,
+    "divida_liquida": 450000000,
+    "fluxo_caixa_operacional": 280000000
+  }
+}
+```
+
+**C. Sinais de Compra (Fatos Relevantes)**
+```json
+{
+  "sinais": [
+    "Aprovação de CAPEX R$ 50M em TI",
+    "Contratação de novo CTO",
+    "Expansão para 5 novos estados",
+    "Investimento em transformação digital"
+  ]
+}
+```
+
+#### Como Enriquecer com IA
+
+**1. Análise de Documentos CVM** (Lovable AI + OCR)
+- [ ] Extrair texto de PDFs (DFP, Formulário de Referência)
+- [ ] Usar **gemini-2.5-pro** para análise de documentos longos
+- [ ] Identificar mudanças estratégicas, investimentos em TI, expansão
+- [ ] Detectar sinais de compra em narrativas da administração
+
+**2. Cross-Reference Decisores**
+- [ ] Nome do decisor no CVM → buscar no LinkedIn
+- [ ] Buscar entrevistas, artigos, menções na mídia
+- [ ] Traçar histórico profissional
+- [ ] Detectar mudanças recentes (novo CEO = oportunidade)
+
+**3. Scoring Avançado**
+```typescript
+{
+  "fit_score": 95,  // Muito mais preciso com dados reais
+  "razoes": [
+    "Receita líquida R$ 1.5B (empresa grande)",
+    "CAPEX aprovado de R$ 50M em TI (sinal de compra)",
+    "Novo CTO contratado há 3 meses (momento ideal)",
+    "Margem EBITDA 23% (capacidade de investimento)",
+    "CEO com histórico de transformação digital"
+  ]
+}
+```
+
+#### Implementação Técnica
+
+**Edge Function: `enrich-public-company`**
+```typescript
+// 1. Detectar se é empresa de capital aberto (B3)
+// 2. Buscar dados CVM via API pública
+// 3. Extrair PDFs e analisar com Gemini Pro
+// 4. Cross-reference decisores no LinkedIn
+// 5. Buscar fatos relevantes e notícias
+// 6. Gerar score ultra-preciso
+```
+
+**Custo**: ZERO (tudo é API pública + Lovable AI)
+
+---
+
+### 📌 FASE 6: EXPANSÃO E ESCALA
 **Custo**: Variável
 
 - [ ] Open Banking (dados financeiros com consentimento)
@@ -329,29 +442,81 @@ A IA identificou:
 
 ## 🎯 **PRÓXIMOS PASSOS IMEDIATOS - MVP**
 
+### ⭐ Prioridade MÁXIMA (GRATUITO - Quick Win)
+1. [ ] **🏆 Implementar Enriquecimento de Capital Aberto**
+   - Integrar API CVM (dados abertos)
+   - Extrair DFP, ITR, Formulário de Referência
+   - Analisar documentos com Gemini Pro (OCR + análise)
+   - Cross-reference decisores (CVM → LinkedIn)
+   - Buscar fatos relevantes (sinais de compra)
+   - **Impacto**: Análises ultra-precisas com dados públicos
+   - **Custo**: R$ 0 (só IA do Lovable)
+
 ### Prioridade 1 (Gratuitas)
-1. [ ] **Ativar CEIS e CNEP** (APIs gratuitas do governo)
-2. [ ] **Melhorar scores estimados** (enquanto não tem APIs pagas)
+2. [ ] **Ativar CEIS e CNEP** (APIs gratuitas do governo)
+3. [ ] **Melhorar scores estimados** (enquanto não tem APIs pagas)
 
 ### Prioridade 2 (MVP SaaS)
-3. [ ] **Negociar Serasa Experian** (verificar trial gratuito)
+4. [ ] **Negociar Serasa Experian** (verificar trial gratuito)
    - Contato comercial para planos e custos exatos
    - Verificar sandbox de desenvolvimento
    - Avaliar créditos iniciais gratuitos
 
-4. [ ] **Sistema de Créditos e Consultas Pagas**
+5. [ ] **Sistema de Créditos e Consultas Pagas**
    - Implementar wallet de créditos do usuário
    - Mostrar custo antes de cada consulta paga (Serasa, JusBrasil)
    - Permitir compra de pacotes de créditos
    - Interface para usuário aprovar consultas pagas
 
-5. [ ] **Negociar JusBrasil** (dados jurídicos reais)
+6. [ ] **Negociar JusBrasil** (dados jurídicos reais)
    - Verificar planos e custos
    - Avaliar período de testes
 
 ### Bloqueadores Técnicos
 - ❌ **PhantomBuster**: Não pode ser usado
 - ⚠️ **LinkedIn direto**: Usar apenas Google Search público
+
+---
+
+## 💎 **VANTAGEM COMPETITIVA: Capital Aberto**
+
+**Por que isso é revolucionário:**
+
+1. **100% Dados Públicos e Gratuitos** 
+   - CVM, B3, Portal da Transparência
+   - Sem custo de APIs pagas
+
+2. **Decisores Rastreáveis**
+   - Nome completo, CPF, cargo, remuneração
+   - Cross-reference com LinkedIn, Google News
+   - Histórico de decisões documentado
+
+3. **Sinais de Compra em Tempo Real**
+   - Fatos relevantes CVM (investimentos, expansão)
+   - Mudanças de diretoria (novo CTO/CEO)
+   - CAPEX aprovado em TI/Digital
+
+4. **Análise de Documentos com IA**
+   - Gemini Pro analisa PDFs de 100+ páginas
+   - Extrai insights de narrativas da administração
+   - Detecta padrões de investimento em tecnologia
+
+5. **Score "Sniper" Ultra-Preciso**
+   - Dados financeiros auditados (não estimados)
+   - Decisores identificados (não aproximados)
+   - Sinais de compra documentados (não inferidos)
+
+**Exemplo de Precisão:**
+
+❌ **Antes (estimado)**: "Empresa média, ~100 funcionários, sem processos"
+
+✅ **Depois (capital aberto)**: 
+- "Magazine Luiza S.A."
+- "Receita líquida R$ 20B, EBITDA 23%"
+- "CEO: Frederico Trajano (LinkedIn 500k+ seguidores)"
+- "Fato relevante (15/10/2024): Aprovado CAPEX R$ 80M em transformação digital"
+- "Novo CTO contratado há 2 meses: João Silva (ex-Mercado Livre)"
+- "**FIT SCORE: 98/100** - Oportunidade CRÍTICA"
 
 ---
 
