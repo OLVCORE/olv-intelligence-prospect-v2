@@ -50,151 +50,132 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const menuItems = [
+// ============================================
+// 🎯 ARQUITETURA OTIMIZADA - 4 GRUPOS PRINCIPAIS
+// De 24 módulos → 15 itens visíveis
+// ============================================
+
+const menuGroups = [
   {
-    title: "Buscar Empresas",
-    icon: Search,
-    url: "/search",
-    highlighted: true,
-    description: "Busque e enriqueça dados de empresas brasileiras com informações completas de CNPJ, faturamento e tecnologias"
+    label: "🎯 Prospecção",
+    items: [
+      {
+        title: "Buscar Empresas",
+        icon: Search,
+        url: "/search",
+        highlighted: true,
+        description: "Busque e enriqueça dados de empresas brasileiras com CNPJ, faturamento e tecnologias"
+      },
+      {
+        title: "Base de Empresas",
+        icon: Building2,
+        url: "/companies",
+        description: "Gerencie sua carteira com histórico de enriquecimento e interações"
+      },
+      {
+        title: "SDR Suite",
+        icon: MessageSquare,
+        url: "/sdr/dashboard",
+        special: true,
+        description: "Automação completa de prospecção: sequências, inbox multicanal e pipeline",
+        submenu: [
+          { title: "Dashboard", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance SDR" },
+          { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Acompanhe leads em cada etapa" },
+          { title: "Inbox", icon: MessageSquare, url: "/sdr/inbox", description: "Central unificada de mensagens" },
+          { title: "Sequências", icon: Zap, url: "/sdr/sequences", description: "Cadências automatizadas" },
+          { title: "Tarefas", icon: CheckCircle2, url: "/sdr/tasks", description: "Gestão de atividades" },
+          { title: "Analytics", icon: BarChart3, url: "/sdr/analytics", description: "Métricas de conversão" },
+          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte CRM e ferramentas" },
+        ],
+      },
+    ]
   },
   {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    url: "/dashboard",
-    highlighted: true,
-    description: "Visão executiva consolidada com métricas de prospecção, conversão e performance de vendas"
+    label: "🧠 Inteligência",
+    items: [
+      {
+        title: "Hub 360º",
+        icon: Brain,
+        url: "/intelligence-360",
+        highlighted: true,
+        description: "Central de inteligência com IA: maturidade, sinais de compra e análises preditivas",
+        submenu: [
+          { title: "Visão Geral", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
+          { title: "Tech Stack", icon: Server, url: "/tech-stack", description: "Tecnologias: ERP, CRM, e-commerce" },
+          { title: "Decisores", icon: Users, url: "/intelligence", description: "Mapeamento de tomadores de decisão" },
+          { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Score de maturidade digital" },
+          { title: "Benchmark", icon: BarChart3, url: "/benchmark", description: "Compare empresas por setor" },
+          { title: "Fit TOTVS", icon: Target, url: "/fit-totvs", description: "Aderência aos produtos TOTVS" },
+          { title: "Presença Digital", icon: Radio, url: "/analysis-360", description: "Análise de presença online completa" },
+          { title: "Mapa Geográfico", icon: Globe, url: "/geographic-analysis", description: "Distribuição territorial" },
+        ],
+      },
+    ]
   },
   {
-    title: "SDR (OLV)",
-    icon: MessageSquare,
-    url: "/sdr/dashboard",
-    highlighted: true,
-    special: true,
-    description: "Suite completa de SDR com automação de sequências, inbox multicanal e gestão de pipeline de prospecção",
-    submenu: [
-      { title: "Dashboard", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral das atividades de SDR" },
-      { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Acompanhe leads em cada etapa do funil" },
-      { title: "Inbox", icon: MessageSquare, url: "/sdr/inbox", description: "Central de mensagens unificada multi-canal" },
-      { title: "Sequências", icon: Zap, url: "/sdr/sequences", description: "Automação de cadências e follow-ups" },
-      { title: "Tarefas", icon: CheckCircle2, url: "/sdr/tasks", description: "Gestão de tarefas e atividades diárias" },
-      { title: "Analytics", icon: BarChart3, url: "/sdr/analytics", description: "Análise de performance e conversão" },
-      { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e outras ferramentas" },
-    ],
+    label: "📋 Estratégia & Vendas",
+    items: [
+      {
+        title: "Dashboard Executivo",
+        icon: LayoutDashboard,
+        url: "/dashboard",
+        highlighted: true,
+        description: "Métricas consolidadas de prospecção, conversão e performance"
+      },
+      {
+        title: "Canvas (War Room)",
+        icon: PenTool,
+        url: "/canvas",
+        description: "Planejamento colaborativo com IA em tempo real"
+      },
+      {
+        title: "Playbooks",
+        icon: BookOpen,
+        url: "/playbooks",
+        description: "Scripts de abordagem personalizados por perfil"
+      },
+      {
+        title: "Biblioteca de Personas",
+        icon: Users,
+        url: "/personas-library",
+        description: "Perfis comportamentais e estratégias de abordagem"
+      },
+      {
+        title: "Metas de Vendas",
+        icon: Target,
+        url: "/goals",
+        description: "Acompanhamento de metas e resultados"
+      },
+      {
+        title: "Relatórios",
+        icon: FileText,
+        url: "/reports",
+        description: "Insights executivos e recomendações de IA"
+      },
+    ]
   },
   {
-    title: "Empresas",
-    icon: Building2,
-    url: "/companies",
-    description: "Gerencie sua base de empresas cadastradas com histórico completo de enriquecimento e interações"
-  },
-  {
-    title: "Inteligência 360º",
-    icon: Brain,
-    url: "/intelligence-360",
-    description: "Análise profunda e automatizada de empresas com IA: maturidade digital, sinais de compra e tecnologias"
-  },
-  {
-    title: "Tech Stack",
-    icon: Server,
-    url: "/tech-stack",
-    description: "Identifique as tecnologias usadas pelas empresas: ERP, CRM, e-commerce e infraestrutura"
-  },
-  {
-    title: "Decisores",
-    icon: Brain,
-    url: "/intelligence",
-    description: "Encontre e mapeie tomadores de decisão com dados de LinkedIn, e-mails e telefones validados"
-  },
-  {
-    title: "Maturidade",
-    icon: Target,
-    url: "/maturity",
-    description: "Score de maturidade digital baseado em presença online, tecnologias e engajamento digital"
-  },
-  {
-    title: "Benchmark",
-    icon: BarChart3,
-    url: "/benchmark",
-    description: "Compare empresas por setor, porte e maturidade digital para identificar melhores oportunidades"
-  },
-  {
-    title: "Fit TOTVS",
-    icon: TrendingUp,
-    url: "/fit-totvs",
-    description: "Score de aderência TOTVS com base em perfil da empresa, tecnologias atuais e potencial de upsell"
-  },
-  {
-    title: "Governança & Transformação",
-    icon: Target,
-    url: "/governance",
-    description: "Identificação de gaps críticos de governança e oportunidades de consultoria estratégica para PMEs"
-  },
-  {
-    title: "Playbooks",
-    icon: BookOpen,
-    url: "/playbooks",
-    description: "Scripts e estratégias de abordagem personalizadas por perfil de empresa e estágio do funil"
-  },
-  {
-    title: "Relatórios",
-    icon: FileText,
-    url: "/reports",
-    description: "Relatórios executivos e operacionais com insights acionáveis e recomendações de IA"
-  },
-  {
-    title: "Presença Digital",
-    icon: Radio,
-    url: "/digital-presence",
-    description: "Análise de presença online: site, redes sociais, SEO e reputação digital da empresa"
-  },
-  {
-    title: "Análise 360°",
-    icon: Target,
-    url: "/analysis-360",
-    description: "Visão completa e consolidada de todos os dados e inteligências disponíveis sobre uma empresa"
-  },
-  {
-    title: "Distribuição Geográfica",
-    icon: Globe,
-    url: "/geographic-analysis",
-    description: "Mapa interativo e análises de distribuição territorial das empresas com geocodificação automática"
-  },
-  {
-    title: "Canvas",
-    icon: PenTool,
-    url: "/canvas",
-    description: "War Room colaborativo com IA para planejar estratégias de venda e documentar decisões em tempo real"
-  },
-  {
-    title: "Biblioteca de Personas",
-    icon: Users,
-    url: "/personas-library",
-    description: "Gerencie buyer personas com perfis comportamentais, dores e estratégias de abordagem personalizadas"
-  },
-  {
-    title: "Metas de Vendas",
-    icon: Target,
-    url: "/goals",
-    description: "Defina e acompanhe metas mensais, trimestrais e anuais com comparação de resultados em tempo real"
-  },
-  {
-    title: "Log de Atividades",
-    icon: CheckCircle2,
-    url: "/activities",
-    description: "Registre todas as interações com clientes: ligações, reuniões, e-mails e acompanhamento de follow-ups"
-  },
-  {
-    title: "Migração de Dados",
-    icon: Database,
-    url: "/data-migration",
-    description: "Ferramenta de limpeza e migração para preparar o sistema com o novo conceito de análise"
-  },
-  {
-    title: "Configurações",
-    icon: Settings,
-    url: "/settings",
-    description: "Configure integrações, preferências e permissões do sistema"
+    label: "⚙️ Governança & Admin",
+    items: [
+      {
+        title: "Transformação Digital",
+        icon: Zap,
+        url: "/governance",
+        description: "Gaps de governança e oportunidades de consultoria"
+      },
+      {
+        title: "Migração de Dados",
+        icon: Database,
+        url: "/data-migration",
+        description: "Limpeza e preparação de dados"
+      },
+      {
+        title: "Configurações",
+        icon: Settings,
+        url: "/settings",
+        description: "Integrações e preferências do sistema"
+      },
+    ]
   },
 ];
 
@@ -222,117 +203,122 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Módulos Inteligentes</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <TooltipProvider delayDuration={200}>
-              <SidebarMenu>
-                {menuItems.map((item) => {
-                const isActive = location.pathname === item.url;
-                const hasSubmenu = (item as any).submenu;
-                
-                if (hasSubmenu) {
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <Collapsible className="group/collapsible">
+        <TooltipProvider delayDuration={200}>
+          {menuGroups.map((group) => (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => {
+                    const isActive = location.pathname === item.url;
+                    const hasSubmenu = (item as any).submenu;
+                    
+                    if (hasSubmenu) {
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Collapsible className="group/collapsible" defaultOpen={location.pathname.startsWith(item.url.split('/')[1])}>
+                                  <SidebarMenuButton 
+                                    asChild
+                                    className={cn(
+                                      (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
+                                      (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
+                                    )}
+                                  >
+                                    <CollapsibleTrigger className="w-full">
+                                      <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
+                                        <div className="relative">
+                                          <item.icon className={cn(
+                                            "h-4 w-4",
+                                            (item as any).special && "text-[hsl(var(--accent-gold))]"
+                                          )} />
+                                          {(item as any).special && (
+                                            <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
+                                          )}
+                                        </div>
+                                        {(open || isMobile) && (
+                                          <span className={cn(
+                                            "font-medium",
+                                            (item as any).special && "text-[hsl(var(--accent-gold))]"
+                                          )}>
+                                            {item.title}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {(open || isMobile) && (
+                                        <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                      )}
+                                    </CollapsibleTrigger>
+                                  </SidebarMenuButton>
+                                  <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                      {(item as any).submenu.map((subItem: any) => (
+                                        <SidebarMenuSubItem key={subItem.title}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div>
+                                                <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url}>
+                                                  <Link to={subItem.url}>
+                                                    <subItem.icon className="h-3.5 w-3.5" />
+                                                    <span className="text-xs">{subItem.title}</span>
+                                                  </Link>
+                                                </SidebarMenuSubButton>
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="right" className="max-w-[250px]">
+                                              <p className="text-xs">{subItem.description}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </SidebarMenuSubItem>
+                                      ))}
+                                    </SidebarMenuSub>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-[280px]">
+                              <p className="text-xs">{(item as any).description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </SidebarMenuItem>
+                      );
+                    }
+                    
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
                               <SidebarMenuButton 
-                                asChild
+                                asChild 
+                                isActive={isActive}
                                 className={cn(
-                                  (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300"
+                                  (item as any).highlighted && "font-semibold bg-primary/5 border-l-2 border-primary"
                                 )}
                               >
-                                <CollapsibleTrigger className="w-full">
-                                  <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
-                                    <div className="relative">
-                                      <item.icon className={cn(
-                                        "h-5 w-5",
-                                        (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                      )} />
-                                      {(item as any).special && (
-                                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
-                                      )}
-                                    </div>
-                                    {(open || isMobile) && (
-                                      <span className={cn(
-                                        "font-semibold",
-                                        (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                      )}>
-                                        {item.title}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {(open || isMobile) && (
-                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                  )}
-                                </CollapsibleTrigger>
+                                <Link to={item.url} className="flex items-center gap-2">
+                                  <item.icon className="h-4 w-4" />
+                                  {(open || isMobile) && <span className="text-sm">{item.title}</span>}
+                                </Link>
                               </SidebarMenuButton>
-                              <CollapsibleContent>
-                                <SidebarMenuSub>
-                                  {(item as any).submenu.map((subItem: any) => (
-                                    <SidebarMenuSubItem key={subItem.title}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <div>
-                                            <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url}>
-                                              <Link to={subItem.url}>
-                                                <subItem.icon className="h-4 w-4" />
-                                                <span>{subItem.title}</span>
-                                              </Link>
-                                            </SidebarMenuSubButton>
-                                          </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" className="max-w-[250px]">
-                                          <p className="text-xs">{subItem.description}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </SidebarMenuSubItem>
-                                  ))}
-                                </SidebarMenuSub>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-[280px]">
-                          <p className="text-xs">{(item as any).description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </SidebarMenuItem>
-                  );
-                }
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive}
-                            className={cn(
-                              (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
-                            )}
-                          >
-                            <Link to={item.url} className="flex items-center gap-2">
-                              <item.icon className="h-4 w-4" />
-                              {(open || isMobile) && <span>{item.title}</span>}
-                            </Link>
-                          </SidebarMenuButton>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[280px]">
-                        <p className="text-xs">{(item as any).description}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-            </TooltipProvider>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[280px]">
+                            <p className="text-xs">{(item as any).description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </TooltipProvider>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-2 md:p-4 group-data-[collapsible=icon]:p-2">
         <div className="space-y-2">
