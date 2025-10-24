@@ -10,17 +10,40 @@ export default function PlaybooksPage() {
   const { data: companies, isLoading } = useQuery({
     queryKey: ['playbooks'],
     queryFn: async () => {
-      const { data } = await supabase
+      // Busca empresas base
+      const { data: baseCompanies } = await supabase
         .from('companies')
-        .select(`
-          *,
-          decision_makers (id, name, title),
-          digital_maturity (overall_score)
-        `)
-        .not('decision_makers', 'is', null)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
-      return data || [];
+      
+      if (!baseCompanies) return [];
+
+      // Busca relações em paralelo para todas as empresas
+      const companyIds = baseCompanies.map(c => c.id);
+      const [decisorsRes, maturityRes] = await Promise.all([
+        supabase.from('decision_makers').select('id, name, title, company_id').in('company_id', companyIds),
+        supabase.from('digital_maturity').select('overall_score, company_id').in('company_id', companyIds),
+      ]);
+
+      // Agrupa por company_id
+      const decisorsByCompany = (decisorsRes.data || []).reduce((acc: any, d: any) => {
+        if (!acc[d.company_id]) acc[d.company_id] = [];
+        acc[d.company_id].push(d);
+        return acc;
+      }, {});
+      
+      const maturityByCompany = (maturityRes.data || []).reduce((acc: any, m: any) => {
+        acc[m.company_id] = m;
+        return acc;
+      }, {});
+
+      // Monta resultado final
+      return baseCompanies.map(company => ({
+        ...company,
+        decision_makers: decisorsByCompany[company.id] || [],
+        digital_maturity: maturityByCompany[company.id] ? [maturityByCompany[company.id]] : [],
+      })).filter(c => c.decision_makers.length > 0); // Apenas empresas com decisores
     }
   });
 

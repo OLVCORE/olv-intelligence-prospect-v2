@@ -42,15 +42,17 @@ export default function CompanyDetailPage() {
       const { data: base, error: baseErr } = await supabase
         .from('companies')
         .select('*')
-        .eq('id', id)
+        .eq('id', id!)
         .single();
       if (baseErr) throw baseErr;
       if (!base) return null;
 
-      const [decisorsRes, maturityRes, insightsRes] = await Promise.all([
+      // Busca relações em paralelo (evita erro 400 de joins)
+      const [decisorsRes, maturityRes, insightsRes, presenceRes] = await Promise.all([
         supabase.from('decision_makers').select('*').eq('company_id', id!),
         supabase.from('digital_maturity').select('*').eq('company_id', id!),
         supabase.from('insights').select('*').eq('company_id', id!),
+        supabase.from('digital_presence').select('*').eq('company_id', id!).maybeSingle(),
       ]);
 
       return {
@@ -58,8 +60,10 @@ export default function CompanyDetailPage() {
         decision_makers: decisorsRes.data || [],
         digital_maturity: maturityRes.data || [],
         insights: insightsRes.data || [],
+        digital_presence: presenceRes.data,
       } as any;
-    }
+    },
+    staleTime: 0, // Força refresh para garantir dados atualizados
   });
 
   if (isLoading) {

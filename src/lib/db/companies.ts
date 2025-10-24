@@ -3,7 +3,6 @@ import { supabase, type Company, type Inserts, type Updates, dbLogger, executeQu
 
 export interface CompanyWithRelations extends Company {
   decision_makers?: any[];
-  digital_maturity?: any[];
   governance_signals?: any[];
 }
 
@@ -14,27 +13,34 @@ export const companiesRepository = {
   async findById(id: string, includeRelations = false): Promise<CompanyWithRelations | null> {
     dbLogger.log('findById', 'companies', { id, includeRelations });
 
-    let query = supabase.from('companies').select('*');
+    // Busca base da empresa
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .single();
     
-    if (includeRelations) {
-      query = supabase
-        .from('companies')
-        .select(`
-          *,
-          decision_makers (*),
-          digital_maturity (*),
-          governance_signals (*)
-        `);
-    }
-
-    const { data, error } = await query.eq('id', id).single();
-
     if (error) {
       dbLogger.error('findById', 'companies', error);
       return null;
     }
 
-    return data as CompanyWithRelations;
+    // Se não precisa de relações, retorna direto
+    if (!includeRelations) {
+      return data as CompanyWithRelations;
+    }
+
+    // Busca relações separadamente (evita erro 400)
+    const [decisorsRes, signalsRes] = await Promise.all([
+      supabase.from('decision_makers').select('*').eq('company_id', id),
+      supabase.from('governance_signals').select('*').eq('company_id', id),
+    ]);
+
+    return {
+      ...data,
+      decision_makers: decisorsRes.data || [],
+      governance_signals: signalsRes.data || [],
+    } as CompanyWithRelations;
   },
 
   /**
