@@ -65,7 +65,7 @@ export default function CanvasPage() {
     executeAICommand,
     companyData,
     digitalMaturity,
-    buyingSignals,
+    governanceSignals,
     comments,
     addComment,
     updateCommentStatus,
@@ -308,7 +308,7 @@ export default function CanvasPage() {
             company={companyData}
             digitalMaturity={digitalMaturity}
             techStack={companyData.technologies}
-            buyingSignals={buyingSignals}
+            buyingSignals={governanceSignals}
           />
         )}
 

@@ -72,7 +72,7 @@ export function useDashboardExecutive() {
         supabase.from('companies').select('*'),
         supabase.from('decision_makers').select('*'),
         supabase.from('conversations').select('*, companies(name, industry)'),
-        supabase.from('buying_signals').select('*'),
+        supabase.from('governance_signals').select('*'),
         supabase.from('digital_maturity').select('*, companies(name, industry, employees)'),
         supabase.from('digital_presence').select('*'),
         supabase.from('financial_data').select('*'),
@@ -159,8 +159,8 @@ export function useDashboardExecutive() {
       }, [] as Array<{ industry: string; count: number; avgMaturity: number; avgEmployees: number }>)
       .sort((a, b) => b.count - a.count);
 
-      // Fit TOTVS analysis from buying signals
-      const fitSignals = signals.filter(s => s.signal_type === 'totvs_fit' || s.raw_data);
+      // Governance analysis from governance signals
+      const fitSignals = signals.filter(s => s.signal_type === 'governance_gap_analysis' || s.signal_type === 'totvs_fit_analysis' || s.raw_data);
       
       const fitByProduct = [
         { product: 'Protheus', companies: 0, avgScore: 0 },
@@ -342,10 +342,10 @@ export function useDashboardExecutive() {
           }).length
         },
         {
-          trend: 'Automação de Processos',
-          impact: 'Médio-Alto',
+          trend: 'Gaps de Governança',
+          impact: 'Alto',
           companies: signals.filter(s => 
-            s.signal_type?.includes('automation') || s.signal_type?.includes('process')
+            s.signal_type?.includes('governance') || s.signal_type?.includes('gap')
           ).length
         }
       ];

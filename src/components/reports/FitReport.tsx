@@ -25,7 +25,7 @@ export function FitReport({ companyId }: FitReportProps) {
         .select(`
           *,
           digital_maturity(*),
-          buying_signals(*)
+          governance_signals(*)
         `)
         .eq('id', companyId)
         .single();
@@ -58,8 +58,8 @@ export function FitReport({ companyId }: FitReportProps) {
     }
   });
 
-  const aiAnalysis = company?.buying_signals?.find(
-    (s: any) => s.signal_type === 'totvs_fit_analysis'
+  const aiAnalysis = company?.governance_signals?.find(
+    (s: any) => s.signal_type === 'governance_gap_analysis' || s.signal_type === 'totvs_fit_analysis'
   )?.raw_data as any;
 
   if (companyLoading) {
@@ -344,8 +344,8 @@ export function FitReport({ companyId }: FitReportProps) {
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Análise gerada em {new Date(company.buying_signals?.find(
-                (s: any) => s.signal_type === 'totvs_fit_analysis'
+              Análise gerada em {new Date(company.governance_signals?.find(
+                (s: any) => s.signal_type === 'governance_gap_analysis' || s.signal_type === 'totvs_fit_analysis'
               )?.created_at || '').toLocaleDateString('pt-BR')}
             </div>
             <Button

@@ -123,6 +123,12 @@ const menuItems = [
     description: "Score de aderência TOTVS com base em perfil da empresa, tecnologias atuais e potencial de upsell"
   },
   {
+    title: "Governança & Transformação",
+    icon: Target,
+    url: "/governance",
+    description: "Identificação de gaps críticos de governança e oportunidades de consultoria estratégica para PMEs"
+  },
+  {
     title: "Playbooks",
     icon: BookOpen,
     url: "/playbooks",

@@ -11,7 +11,7 @@ export default function IntelligencePage() {
     queryFn: async () => {
       const [decisorsRes, signalsRes, companiesRes] = await Promise.all([
         supabase.from('decision_makers').select('id', { count: 'exact' }),
-        supabase.from('buying_signals').select('id', { count: 'exact' }),
+        supabase.from('governance_signals').select('id', { count: 'exact' }),
         supabase.from('companies').select('id', { count: 'exact' })
       ]);
 
@@ -39,10 +39,10 @@ export default function IntelligencePage() {
   });
 
   const { data: signals, isLoading: signalsLoading } = useQuery({
-    queryKey: ['buying-signals'],
+    queryKey: ['governance-signals'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('buying_signals')
+        .from('governance_signals')
         .select(`
           *,
           companies (name)
@@ -80,14 +80,14 @@ export default function IntelligencePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sinais de Compra</CardTitle>
+            <CardTitle className="text-sm font-medium">Gaps de Governança</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {statsLoading ? <Skeleton className="h-8 w-20" /> : (
               <>
                 <div className="text-2xl font-bold">{stats?.signals}</div>
-                <p className="text-xs text-muted-foreground">Oportunidades detectadas</p>
+                <p className="text-xs text-muted-foreground">Gaps identificados</p>
               </>
             )}
           </CardContent>
@@ -152,8 +152,8 @@ export default function IntelligencePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sinais de Compra</CardTitle>
-            <CardDescription>Oportunidades detectadas</CardDescription>
+            <CardTitle>Gaps de Governança</CardTitle>
+            <CardDescription>Oportunidades de transformação</CardDescription>
           </CardHeader>
           <CardContent>
             {signalsLoading ? (
@@ -178,7 +178,7 @@ export default function IntelligencePage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhum sinal de compra detectado ainda.
+                Nenhum gap de governança detectado ainda.
               </p>
             )}
           </CardContent>

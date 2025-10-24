@@ -39,7 +39,7 @@ export function NotificationBell() {
       yesterday.setDate(yesterday.getDate() - 1);
       
       const { data: signals } = await supabase
-        .from('buying_signals')
+        .from('governance_signals')
         .select('*, companies(name)')
         .gte('detected_at', yesterday.toISOString())
         .order('detected_at', { ascending: false })
@@ -48,12 +48,12 @@ export function NotificationBell() {
       signals?.forEach(signal => {
         notifs.push({
           id: `signal-${signal.id}`,
-          title: '🎯 Novo Sinal de Compra',
+          title: '🎯 Novo Gap de Governança',
           message: `${signal.companies?.name}: ${signal.signal_type}`,
           type: 'signal',
           read: false,
           created_at: signal.detected_at,
-          link: `/intelligence`
+          link: `/governance`
         });
       });
 

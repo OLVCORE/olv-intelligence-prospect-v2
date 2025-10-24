@@ -28,6 +28,7 @@ const CompaniesManagementPage = lazy(() => import("./pages/CompaniesManagementPa
 const MaturityPage = lazy(() => import("./pages/MaturityPage"));
 const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
+const GovernancePage = lazy(() => import("./pages/GovernancePage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
 const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
@@ -165,6 +166,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <FitTOTVSPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/governance"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <GovernancePage />
                   </AppLayout>
                 </ProtectedRoute>
               }
