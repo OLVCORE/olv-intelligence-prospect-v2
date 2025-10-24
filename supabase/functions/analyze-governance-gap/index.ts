@@ -205,7 +205,47 @@ Retorne APENAS um JSON válido com esta estrutura:
       throw new Error('Erro ao processar análise da IA');
     }
 
-    // Preparar dados para inserção
+    // Preparar dados para inserção (sanitiza categorias para passar no CHECK constraint)
+    const rawCategory = (analysis.gaps?.[0]?.category || '').toString();
+
+    function normalize(str: string) {
+      return str
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '') // remove acentos
+        .toUpperCase()
+        .trim();
+    }
+
+    const allowedCategories = new Set([
+      'PROCESSOS',
+      'TECNOLOGIA',
+      'PESSOAS',
+      'GOVERNANCA',
+      'COMPLIANCE',
+      'SEGURANCA'
+    ]);
+
+    function mapGapCategory(input: string): string | null {
+      const n = normalize(input);
+      // alguns aliases comuns
+      const aliasMap: Record<string, string> = {
+        'GOVERNANCA': 'GOVERNANCA',
+        'GOVERNANCA CORPORATIVA': 'GOVERNANCA',
+        'GOVERNANCA E CONTROLE': 'GOVERNANCA',
+        'SEGURANCA DA INFORMACAO': 'SEGURANCA',
+        'SEGURANCA': 'SEGURANCA',
+        'PROCESSO': 'PROCESSOS',
+        'PROCESSOS': 'PROCESSOS',
+        'TECNOLOGIA': 'TECNOLOGIA',
+        'PESSOAS': 'PESSOAS',
+        'COMPLIANCE': 'COMPLIANCE',
+      };
+      const mapped = aliasMap[n] || n;
+      return allowedCategories.has(mapped) ? mapped : 'PROCESSOS';
+    }
+
+    const sanitizedCategory = mapGapCategory(rawCategory);
+
     const insertData = {
       company_id: companyId,
       signal_type: 'governance_gap_analysis',
@@ -214,10 +254,10 @@ Retorne APENAS um JSON válido com esta estrutura:
       source: 'ai_analysis',
       raw_data: analysis,
       governance_gap_score: analysis.governanceGapScore || 0,
-      transformation_priority: analysis.transformationPriority || 'MEDIO',
-      organizational_maturity_level: analysis.organizationalMaturityLevel || 'ESTRUTURANDO',
+      transformation_priority: (analysis.transformationPriority || 'MEDIO').toString().toUpperCase(),
+      organizational_maturity_level: (analysis.organizationalMaturityLevel || 'ESTRUTURANDO').toString().toUpperCase(),
       requires_consulting: analysis.requiresConsulting !== false,
-      gap_category: analysis.gaps?.[0]?.category || 'PROCESSOS'
+      gap_category: sanitizedCategory
     };
 
     console.log('[Governance Gap] Inserindo dados:', JSON.stringify(insertData, null, 2));
