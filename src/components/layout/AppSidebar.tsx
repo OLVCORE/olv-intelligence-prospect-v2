@@ -23,7 +23,18 @@ import {
   Database,
   Crosshair,
   Sparkles,
-  Shield
+  Shield,
+  Rocket,
+  Activity,
+  Code,
+  MapPin,
+  Layers,
+  Inbox,
+  ListChecks,
+  Repeat,
+  LineChart,
+  Award,
+  DollarSign
 } from "lucide-react";
 import {
   Sidebar,
@@ -54,127 +65,158 @@ import {
 } from "@/components/ui/tooltip";
 
 // ============================================
-// 🎯 ARQUITETURA OTIMIZADA - 4 GRUPOS PRINCIPAIS
-// De 24 módulos → 15 itens visíveis
+// 🎯 ARQUITETURA ESTRATÉGICA - FLUXO DE VENDAS B2B
+// FASE 1: Prospecção → FASE 2: Análise → FASE 3: Estratégia → FASE 4: Execução
 // ============================================
 
 const menuGroups = [
   {
-    label: "Prospecção",
-    icon: Crosshair,
-    items: [
-      {
-        title: "Buscar Empresas",
-        icon: Search,
-        url: "/search",
-        highlighted: true,
-        description: "Busque e enriqueça dados de empresas brasileiras com CNPJ, faturamento e tecnologias"
-      },
-      {
-        title: "Base de Empresas",
-        icon: Building2,
-        url: "/companies",
-        description: "Gerencie sua carteira com histórico de enriquecimento e interações"
-      },
-      {
-        title: "SDR Suite",
-        icon: MessageSquare,
-        url: "/sdr/dashboard",
-        special: true,
-        description: "Automação completa de prospecção: sequências, inbox multicanal e pipeline",
-        submenu: [
-          { title: "Dashboard", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance SDR" },
-          { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Acompanhe leads em cada etapa" },
-          { title: "Inbox", icon: MessageSquare, url: "/sdr/inbox", description: "Central unificada de mensagens" },
-          { title: "Sequências", icon: Zap, url: "/sdr/sequences", description: "Cadências automatizadas" },
-          { title: "Tarefas", icon: CheckCircle2, url: "/sdr/tasks", description: "Gestão de atividades" },
-          { title: "Analytics", icon: BarChart3, url: "/sdr/analytics", description: "Métricas de conversão" },
-          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte CRM e ferramentas" },
-        ],
-      },
-    ]
-  },
-  {
-    label: "Inteligência",
-    icon: Sparkles,
-    items: [
-      {
-        title: "Hub 360º",
-        icon: Brain,
-        url: "/intelligence-360",
-        highlighted: true,
-        description: "Central de inteligência com IA: maturidade, sinais de compra e análises preditivas",
-        submenu: [
-          { title: "Visão Geral", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
-          { title: "Tech Stack", icon: Server, url: "/tech-stack", description: "Tecnologias: ERP, CRM, e-commerce" },
-          { title: "Decisores", icon: Users, url: "/intelligence", description: "Mapeamento de tomadores de decisão" },
-          { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Score de maturidade digital" },
-          { title: "Benchmark", icon: BarChart3, url: "/benchmark", description: "Compare empresas por setor" },
-          { title: "Fit TOTVS", icon: Target, url: "/fit-totvs", description: "Aderência aos produtos TOTVS" },
-          { title: "Presença Digital", icon: Radio, url: "/analysis-360", description: "Análise de presença online completa" },
-          { title: "Mapa Geográfico", icon: Globe, url: "/geographic-analysis", description: "Distribuição territorial" },
-        ],
-      },
-    ]
-  },
-  {
-    label: "Estratégia & Vendas",
-    icon: TrendingUp,
+    label: "Início",
+    icon: LayoutDashboard,
     items: [
       {
         title: "Dashboard Executivo",
         icon: LayoutDashboard,
         url: "/dashboard",
+        description: "Visão geral consolidada de métricas e performance"
+      },
+      {
+        title: "Busca Global",
+        icon: Search,
+        url: "/search",
+        description: "Busca unificada de empresas, contatos e inteligência"
+      }
+    ]
+  },
+  {
+    label: "🔍 FASE 1: Prospecção & Qualificação",
+    icon: Crosshair,
+    items: [
+      {
+        title: "Base de Empresas",
+        icon: Building2,
+        url: "/companies",
+        description: "Gestão completa da base de prospectos"
+      },
+      {
+        title: "Intelligence 360°",
+        icon: Brain,
+        url: "/intelligence-360",
         highlighted: true,
-        description: "Métricas consolidadas de prospecção, conversão e performance"
+        description: "Análise completa automatizada com IA",
+        submenu: [
+          { title: "Visão Geral 360°", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
+          { title: "Fit TOTVS Score", icon: Target, url: "/fit-totvs", description: "Score de aderência aos produtos TOTVS" },
+          { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Nível de transformação digital" },
+          { title: "Digital Health", icon: Activity, url: "/digital-presence", description: "Saúde da presença digital" },
+          { title: "Tech Stack", icon: Code, url: "/tech-stack", description: "Tecnologias utilizadas (ERP, CRM, e-commerce)" },
+          { title: "Análise Geográfica", icon: MapPin, url: "/geographic-analysis", description: "Distribuição territorial e insights regionais" },
+          { title: "Benchmark Setorial", icon: Award, url: "/enhanced-benchmark", description: "Comparação com mercado e concorrentes" },
+        ],
+      },
+    ]
+  },
+  {
+    label: "💰 FASE 2: Estratégia & Vendas",
+    icon: DollarSign,
+    highlight: true,
+    items: [
+      {
+        title: "Account Strategy Hub",
+        icon: Target,
+        url: "/account-strategy",
+        special: true,
+        description: "🎯 Central estratégica: ROI, CPQ, Cenários, Propostas e Valor",
+        submenu: [
+          { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy", description: "Visão geral da conta e estratégia" },
+          { title: "ROI & TCO Calculator", icon: DollarSign, url: "/account-strategy?tab=roi", description: "Calculadora interativa de retorno" },
+          { title: "CPQ & Pricing Intelligence", icon: Sparkles, url: "/account-strategy?tab=cpq", description: "Configure-Price-Quote com IA" },
+          { title: "Cenários & Propostas", icon: Layers, url: "/account-strategy?tab=scenarios", description: "Análise Best/Expected/Worst case" },
+          { title: "Competitive Intelligence", icon: Shield, url: "/account-strategy?tab=competitive", description: "Posicionamento competitivo" },
+          { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
+        ],
       },
       {
         title: "Canvas (War Room)",
-        icon: PenTool,
+        icon: Layers,
         url: "/canvas",
-        description: "Planejamento colaborativo com IA em tempo real"
+        description: "Planejamento colaborativo em tempo real"
+      },
+      {
+        title: "Competitive Intelligence",
+        icon: Shield,
+        url: "/competitive-intelligence",
+        description: "Battle cards e win/loss analysis completa"
       },
       {
         title: "Playbooks",
         icon: BookOpen,
         url: "/playbooks",
-        description: "Scripts de abordagem personalizados por perfil"
+        description: "Guias de abordagem e melhores práticas"
       },
       {
         title: "Biblioteca de Personas",
         icon: Users,
         url: "/personas-library",
-        description: "Perfis comportamentais e estratégias de abordagem"
-      },
+        description: "Perfis comportamentais e estratégias"
+      }
+    ]
+  },
+  {
+    label: "🎯 FASE 3: Execução & Operação",
+    icon: Rocket,
+    items: [
       {
-        title: "Inteligência Competitiva",
-        icon: Shield,
-        url: "/competitive-intelligence",
-        description: "Battle cards, win/loss analysis e estratégias contra competidores"
-      },
+        title: "SDR Suite",
+        icon: MessageSquare,
+        url: "/sdr/dashboard",
+        highlighted: true,
+        description: "Automação completa de prospecção e vendas",
+        submenu: [
+          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance" },
+          { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades" },
+          { title: "Atividades", icon: CheckCircle2, url: "/activities", description: "Tarefas e follow-ups" },
+          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas" },
+          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal" },
+          { title: "Tasks", icon: ListChecks, url: "/sdr/tasks", description: "Lista de tarefas e lembretes" },
+          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte CRM e ferramentas" },
+        ],
+      }
+    ]
+  },
+  {
+    label: "📈 FASE 4: Resultados & Analytics",
+    icon: BarChart3,
+    items: [
       {
         title: "Metas de Vendas",
         icon: Target,
         url: "/goals",
-        description: "Acompanhamento de metas e resultados"
+        description: "Acompanhamento de metas e performance"
+      },
+      {
+        title: "Analytics SDR",
+        icon: LineChart,
+        url: "/sdr/analytics",
+        description: "Métricas detalhadas de conversão"
       },
       {
         title: "Relatórios",
         icon: FileText,
         url: "/reports",
-        description: "Insights executivos e recomendações de IA"
-      },
+        description: "Biblioteca de relatórios e análises"
+      }
     ]
   },
   {
     label: "Governança & Admin",
-    icon: Shield,
+    icon: Settings,
     items: [
       {
         title: "Transformação Digital",
         icon: Zap,
         url: "/governance",
-        description: "Gaps de governança e oportunidades de consultoria"
+        description: "Gaps de governança e consultoria"
       },
       {
         title: "Migração de Dados",
@@ -186,7 +228,7 @@ const menuGroups = [
         title: "Configurações",
         icon: Settings,
         url: "/settings",
-        description: "Integrações e preferências do sistema"
+        description: "Integrações e preferências"
       },
     ]
   },
