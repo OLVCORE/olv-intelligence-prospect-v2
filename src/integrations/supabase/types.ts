@@ -337,6 +337,56 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_cards: {
+        Row: {
+          competitor_id: string
+          created_at: string | null
+          feature_comparison: Json
+          id: string
+          objection_handling: Json | null
+          pricing_comparison: Json
+          proof_points: Json | null
+          totvs_product_sku: string
+          updated_at: string | null
+          win_stories: Json | null
+          win_strategy: string | null
+        }
+        Insert: {
+          competitor_id: string
+          created_at?: string | null
+          feature_comparison?: Json
+          id?: string
+          objection_handling?: Json | null
+          pricing_comparison?: Json
+          proof_points?: Json | null
+          totvs_product_sku: string
+          updated_at?: string | null
+          win_stories?: Json | null
+          win_strategy?: string | null
+        }
+        Update: {
+          competitor_id?: string
+          created_at?: string | null
+          feature_comparison?: Json
+          id?: string
+          objection_handling?: Json | null
+          pricing_comparison?: Json
+          proof_points?: Json | null
+          totvs_product_sku?: string
+          updated_at?: string | null
+          win_stories?: Json | null
+          win_strategy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_cards_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_cases: {
         Row: {
           accepted_at: string | null
@@ -897,6 +947,60 @@ export type Database = {
           query?: string | null
           snapshot?: Json
           updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      competitors: {
+        Row: {
+          active: boolean | null
+          avg_deal_size: number | null
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          market_position: string | null
+          name: string
+          pricing_model: string | null
+          strengths: Json | null
+          target_market: string[] | null
+          totvs_advantages: Json | null
+          updated_at: string | null
+          weaknesses: Json | null
+          website: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          avg_deal_size?: number | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          market_position?: string | null
+          name: string
+          pricing_model?: string | null
+          strengths?: Json | null
+          target_market?: string[] | null
+          totvs_advantages?: Json | null
+          updated_at?: string | null
+          weaknesses?: Json | null
+          website?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          avg_deal_size?: number | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          market_position?: string | null
+          name?: string
+          pricing_model?: string | null
+          strengths?: Json | null
+          target_market?: string[] | null
+          totvs_advantages?: Json | null
+          updated_at?: string | null
+          weaknesses?: Json | null
           website?: string | null
         }
         Relationships: []
@@ -1944,6 +2048,94 @@ export type Database = {
         }
         Relationships: []
       }
+      scenario_analysis: {
+        Row: {
+          account_strategy_id: string | null
+          assumptions: Json | null
+          best_case: Json
+          company_id: string
+          confidence_level: number | null
+          created_at: string | null
+          created_by: string | null
+          expected_case: Json
+          id: string
+          key_insights: Json | null
+          probability_best: number | null
+          probability_expected: number | null
+          probability_worst: number | null
+          quote_id: string | null
+          recommended_scenario: string | null
+          risk_factors: Json | null
+          sensitivity_analysis: Json | null
+          updated_at: string | null
+          worst_case: Json
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          assumptions?: Json | null
+          best_case?: Json
+          company_id: string
+          confidence_level?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          expected_case?: Json
+          id?: string
+          key_insights?: Json | null
+          probability_best?: number | null
+          probability_expected?: number | null
+          probability_worst?: number | null
+          quote_id?: string | null
+          recommended_scenario?: string | null
+          risk_factors?: Json | null
+          sensitivity_analysis?: Json | null
+          updated_at?: string | null
+          worst_case?: Json
+        }
+        Update: {
+          account_strategy_id?: string | null
+          assumptions?: Json | null
+          best_case?: Json
+          company_id?: string
+          confidence_level?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          expected_case?: Json
+          id?: string
+          key_insights?: Json | null
+          probability_best?: number | null
+          probability_expected?: number | null
+          probability_worst?: number | null
+          quote_id?: string | null
+          recommended_scenario?: string | null
+          risk_factors?: Json | null
+          sensitivity_analysis?: Json | null
+          updated_at?: string | null
+          worst_case?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_analysis_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scenario_analysis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scenario_analysis_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdr_audit: {
         Row: {
           action: string
@@ -2302,6 +2494,131 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      visual_proposals: {
+        Row: {
+          account_strategy_id: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          metadata: Json | null
+          pdf_url: string | null
+          presentation_url: string | null
+          primary_color: string | null
+          proposal_number: string
+          quote_id: string | null
+          requires_signature: boolean | null
+          scenario_id: string | null
+          secondary_color: string | null
+          sections: Json
+          sent_at: string | null
+          signature_ip: string | null
+          signed_at: string | null
+          signed_by_email: string | null
+          signed_by_name: string | null
+          status: string | null
+          template_id: string | null
+          time_spent_seconds: number | null
+          title: string
+          updated_at: string | null
+          valid_until: string | null
+          view_count: number | null
+          viewed_at: string | null
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          metadata?: Json | null
+          pdf_url?: string | null
+          presentation_url?: string | null
+          primary_color?: string | null
+          proposal_number: string
+          quote_id?: string | null
+          requires_signature?: boolean | null
+          scenario_id?: string | null
+          secondary_color?: string | null
+          sections?: Json
+          sent_at?: string | null
+          signature_ip?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          status?: string | null
+          template_id?: string | null
+          time_spent_seconds?: number | null
+          title: string
+          updated_at?: string | null
+          valid_until?: string | null
+          view_count?: number | null
+          viewed_at?: string | null
+        }
+        Update: {
+          account_strategy_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          metadata?: Json | null
+          pdf_url?: string | null
+          presentation_url?: string | null
+          primary_color?: string | null
+          proposal_number?: string
+          quote_id?: string | null
+          requires_signature?: boolean | null
+          scenario_id?: string | null
+          secondary_color?: string | null
+          sections?: Json
+          sent_at?: string | null
+          signature_ip?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          status?: string | null
+          template_id?: string | null
+          time_spent_seconds?: number | null
+          title?: string
+          updated_at?: string | null
+          valid_until?: string | null
+          view_count?: number | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visual_proposals_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visual_proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visual_proposals_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visual_proposals_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_logs: {
         Row: {

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { useAccountStrategies, useGenerateBusinessCase, useSuggestNextAction } from '@/hooks/useAccountStrategies';
 import { useBuyerPersonas } from '@/hooks/useBuyerPersonas';
 import { useDecisionMakers } from '@/hooks/useDecisionMakers';
@@ -15,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGenerateAccountStrategy } from '@/hooks/useAccountStrategies';
 import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalculator';
 import { QuoteConfigurator } from '@/components/cpq/QuoteConfigurator';
+import { ScenarioComparison } from '@/components/scenarios/ScenarioComparison';
+import { ProposalManager } from '@/components/proposals/ProposalManager';
 
 export default function AccountStrategyPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -156,12 +159,13 @@ export default function AccountStrategyPage() {
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps & Oportunidades</TabsTrigger>
               <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
               <TabsTrigger value="roi">ROI Interativo</TabsTrigger>
               <TabsTrigger value="cpq">Cotação (CPQ)</TabsTrigger>
+              <TabsTrigger value="scenarios">Cenários</TabsTrigger>
               <TabsTrigger value="financial">Financeiro</TabsTrigger>
               <TabsTrigger value="actions">Próximas Ações</TabsTrigger>
             </TabsList>
@@ -333,8 +337,23 @@ export default function AccountStrategyPage() {
               />
             </TabsContent>
 
+            {/* Scenarios Tab */}
+            <TabsContent value="scenarios" className="space-y-4">
+              <ScenarioComparison
+                companyId={companyId!}
+                accountStrategyId={activeStrategy.id}
+                baseInvestment={Number(activeStrategy.investment_required) || 50000}
+                baseAnnualBenefit={Number(activeStrategy.annual_value) || 100000}
+              />
+            </TabsContent>
+
             {/* Financial Tab */}
             <TabsContent value="financial" className="space-y-4">
+              <ProposalManager
+                companyId={companyId!}
+                accountStrategyId={activeStrategy.id}
+              />
+              <Separator className="my-6" />
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>

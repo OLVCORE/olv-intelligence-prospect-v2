@@ -158,3 +158,9 @@ project_id = "ioaxzpwlurpduanzkfrt"
 
   [functions.calculate-quote-pricing]
   verify_jwt = false
+
+  [functions.generate-scenario-analysis]
+  verify_jwt = false
+
+  [functions.generate-visual-proposal]
+  verify_jwt = false
