@@ -212,13 +212,15 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         <TooltipProvider delayDuration={200}>
           {menuGroups.map((group) => (
-            <Collapsible key={group.label} defaultOpen className="group/group">
+            <Collapsible key={group.label} className="group/group">
               <SidebarGroup>
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="group-data-[collapsible=icon]:hidden flex items-center gap-2 text-[11px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer w-full touch-manipulation active:scale-95 py-3 md:py-2">
-                    <group.icon className="h-4 w-4 md:h-4 md:w-4" />
-                    <span>{group.label}</span>
-                    <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/group:rotate-90" />
+                  <CollapsibleTrigger className="group-data-[collapsible=icon]:hidden flex items-center gap-3 text-[11px] md:text-xs font-bold text-foreground hover:text-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-4 md:py-3 px-2 rounded-lg hover:bg-primary/5">
+                    <div className="flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all">
+                      <group.icon className="h-5 w-5 md:h-4 md:w-4 text-primary" />
+                    </div>
+                    <span className="flex-1">{group.label}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/group:rotate-90" />
                   </CollapsibleTrigger>
                 </SidebarGroupLabel>
                 <CollapsibleContent>
