@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { BackButton } from '@/components/common/BackButton';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { logger } from '@/lib/utils/logger';
 import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
 
 export default function CompaniesManagementPage() {
+  logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -232,8 +235,9 @@ export default function CompaniesManagementPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="p-8 space-y-6">
+    <ErrorBoundary context="CompaniesManagement" onReset={() => window.location.reload()}>
+      <AppLayout>
+        <div className="p-8 space-y-6" data-testid="companies-table">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -566,5 +570,6 @@ export default function CompaniesManagementPage() {
         </AlertDialog>
       </div>
     </AppLayout>
+    </ErrorBoundary>
   );
 }
