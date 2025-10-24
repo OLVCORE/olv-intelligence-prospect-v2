@@ -170,12 +170,22 @@ export default function SearchPage() {
   useEffect(() => {
     const loadCompany = async () => {
       if (!prefillCompanyId) return;
-      const { data, error } = await supabase.from('companies').select('*').eq('id', prefillCompanyId).maybeSingle();
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*, decision_makers(*), digital_presence(*)')
+        .eq('id', prefillCompanyId)
+        .maybeSingle();
       if (error) return;
       if (data) {
         setSearchQuery(data.cnpj || data.name || "");
         setWebsite(data.website || "");
         setLinkedin(data.linkedin_url || "");
+        
+        // Load Instagram from digital_presence or raw_data
+        const instagramUrl = (data.digital_presence as any)?.[0]?.instagram_url || 
+                            (data.raw_data as any)?.instagram_url || "";
+        setInstagram(instagramUrl);
+        
         if (data.location && typeof data.location === 'object' && !Array.isArray(data.location)) {
           const loc = data.location as Record<string, any>;
           setCep((loc.cep as string) || "");
@@ -185,6 +195,18 @@ export default function SearchPage() {
           setBairro((loc.neighborhood as string) || "");
           setLogradouro((loc.street as string) || "");
           setNumero((loc.number as string) || "");
+        }
+        
+        // Load existing contacts
+        const decisores = data.decision_makers as any[];
+        if (decisores && decisores.length > 0) {
+          setContacts(decisores.map((dm: any) => ({
+            name: dm.name || '',
+            title: dm.title || '',
+            phone: dm.phone || '',
+            whatsapp: dm.whatsapp || '',
+            email: dm.email || ''
+          })));
         }
       }
     };
@@ -846,6 +868,7 @@ export default function SearchPage() {
                         cnpj: isValidCNPJ(searchQuery) ? searchQuery : undefined,
                         website: website || undefined,
                         linkedin_url: linkedin || undefined,
+                        instagram_url: instagram || undefined,
                         location: {
                           cep, state: estado, country: pais, city: municipio, neighborhood: bairro, street: logradouro, number: numero
                         }
@@ -854,13 +877,26 @@ export default function SearchPage() {
                         name: c.name,
                         title: c.title,
                         email: c.email,
-                        raw_data: { phone: c.phone, whatsapp: c.whatsapp, source: 'manual' }
+                        phone: c.phone,
+                        whatsapp: c.whatsapp,
+                        raw_data: { source: 'manual' }
                       }));
                       const { data, error } = await supabase.functions.invoke('save-company', {
                         body: { company: companyPayload, decision_makers: decisionMakers }
                       });
                       if (error) throw error;
-                      toast({ title: 'Dados salvos!', description: 'Empresa e contatos registrados com sucesso.' });
+                      toast({ title: 'Dados salvos!', description: 'Empresa e contatos registrados com sucesso. Agora execute "Análise 360°" para reprocessar os dados.' });
+                      
+                      // Force 360° analysis after save
+                      try {
+                        await supabase.functions.invoke('enrich-company-360', {
+                          body: { company_id: data.company.id }
+                        });
+                        toast({ title: '🔄 Reprocessando análise 360°', description: 'Os dados atualizados serão analisados em breve.' });
+                      } catch (enrichError) {
+                        console.error('Error triggering 360 analysis:', enrichError);
+                      }
+                      
                       navigate(`/company/${data.company.id}`);
                     } catch (e: any) {
                       toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });

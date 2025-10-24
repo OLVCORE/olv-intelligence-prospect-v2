@@ -65,13 +65,39 @@ serve(async (req) => {
     if (companyError) throw companyError;
     console.log('[Save Company] Empresa salva:', savedCompany.id);
 
-    // 2. Salvar decisores
+    // 2. Salvar presença digital (Instagram, LinkedIn, Website)
+    if (savedCompany.linkedin_url || savedCompany.website || company.instagram_url) {
+      const { error: presenceError } = await supabase
+        .from('digital_presence')
+        .upsert({
+          company_id: savedCompany.id,
+          website_url: savedCompany.website,
+          linkedin_url: savedCompany.linkedin_url,
+          instagram_url: company.instagram_url,
+          has_website: !!savedCompany.website,
+          has_linkedin: !!savedCompany.linkedin_url,
+          has_instagram: !!company.instagram_url,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'company_id'
+        });
+
+      if (presenceError) {
+        console.error('[Save Company] Error saving digital presence:', presenceError);
+      } else {
+        console.log('[Save Company] Presença digital salva');
+      }
+    }
+
+    // 3. Salvar decisores
     if (decision_makers && decision_makers.length > 0) {
       const decisorsPayload = decision_makers.map((person: any) => ({
         company_id: savedCompany.id,
         name: person.name,
         title: person.title,
         email: person.email,
+        phone: person.phone,
+        whatsapp: person.whatsapp,
         linkedin_url: person.linkedin_url,
         department: person.department || person.headline,
         seniority: person.seniority,
@@ -93,7 +119,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Salvar maturidade digital
+    // 4. Salvar maturidade digital
     if (digital_maturity) {
       await supabase.from('digital_maturity').insert({
         company_id: savedCompany.id,
@@ -115,20 +141,21 @@ serve(async (req) => {
       console.log('[Save Company] Maturidade digital salva');
     }
 
-    // 4. Registrar no histórico
+    // 5. Registrar no histórico
     await supabase.from('search_history').insert({
       query: company.name || company.cnpj,
       filters: company.raw_data?.refinamentos || {},
       results_count: 1
     });
 
-    // 5. Buscar dados completos para retornar
+    // 6. Buscar dados completos para retornar
     const { data: fullCompany, error: fetchError } = await supabase
       .from('companies')
       .select(`
         *,
         decision_makers (*),
         digital_maturity (*),
+        digital_presence (*),
         governance_signals (*)
       `)
       .eq('id', savedCompany.id)
