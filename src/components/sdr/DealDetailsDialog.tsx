@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Clock, User, MessageSquare, Save } from 'lucide-react';
+import { CalendarIcon, Clock, User, MessageSquare, Save, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Deal } from '@/hooks/useDeals';
 import { useUpdateDeal, useDealActivities } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
-
+import { supabase } from '@/integrations/supabase/client';
+import { CallInterface } from '@/components/sdr/CallInterface';
+import { useNavigate } from 'react-router-dom';
 interface DealDetailsDialogProps {
   deal: Deal | null;
   open: boolean;
@@ -24,11 +26,38 @@ interface DealDetailsDialogProps {
 }
 
 export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialogProps) {
+  const navigate = useNavigate();
   const updateDeal = useUpdateDeal();
   const { data: activities } = useDealActivities(deal?.id || '');
   
   const [editedDeal, setEditedDeal] = useState<Partial<Deal>>({});
   const [note, setNote] = useState('');
+  const [primaryContact, setPrimaryContact] = useState<{ id: string; name?: string; email?: string; phone?: string } | null>(null);
+  const [loadingContact, setLoadingContact] = useState(false);
+
+  useEffect(() => {
+    if (!deal?.company_id) {
+      setPrimaryContact(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoadingContact(true);
+      try {
+        const { data } = await supabase
+          .from('contacts')
+          .select('id, name, email, phone')
+          .eq('company_id', deal.company_id as string)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (!cancelled) setPrimaryContact((data as any) || null);
+      } finally {
+        if (!cancelled) setLoadingContact(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [deal?.company_id, open]);
 
   if (!deal) return null;
 
@@ -56,10 +85,11 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Detalhes</TabsTrigger>
             <TabsTrigger value="activity">Atividades</TabsTrigger>
             <TabsTrigger value="notes">Notas</TabsTrigger>
+            <TabsTrigger value="comms">Comunicação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
@@ -219,6 +249,41 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
                 Sistema de notas em desenvolvimento
               </p>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="comms" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-3 p-3 border rounded-lg">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Phone className="h-4 w-4" /> Telefonia
+                </h4>
+                {loadingContact ? (
+                  <p className="text-sm text-muted-foreground">Carregando contato...</p>
+                ) : primaryContact?.phone ? (
+                  <CallInterface
+                    phoneNumber={primaryContact.phone}
+                    contactName={primaryContact.name}
+                    companyName={currentDeal.companies?.name}
+                    companyId={currentDeal.company_id || undefined}
+                    dealId={currentDeal.id}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum telefone encontrado para esta empresa.</p>
+                )}
+              </div>
+
+              <div className="space-y-3 p-3 border rounded-lg">
+                <h4 className="font-semibold">Ações Rápidas</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => navigate('/sdr/inbox')}>Abrir Inbox</Button>
+                  <Button variant="outline" onClick={() => navigate('/sdr/sequences')}>Ver Sequências</Button>
+                  <Button variant="outline" onClick={() => navigate('/sdr/tasks')}>Abrir Tarefas</Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Dica: Vincule um contato à empresa para habilitar WhatsApp e Email aqui.
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
