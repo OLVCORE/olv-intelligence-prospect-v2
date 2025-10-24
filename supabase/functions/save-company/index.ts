@@ -129,7 +129,7 @@ serve(async (req) => {
         *,
         decision_makers (*),
         digital_maturity (*),
-        buying_signals (*)
+        governance_signals (*)
       `)
       .eq('id', savedCompany.id)
       .single();

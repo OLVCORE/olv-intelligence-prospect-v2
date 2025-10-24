@@ -32,7 +32,7 @@ serve(async (req) => {
     const [decisorsRes, maturityRes, signalsRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
       supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle(),
-      supabase.from('buying_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false })
+      supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false })
     ]);
 
     const decisors = decisorsRes.data || [];
