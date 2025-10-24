@@ -28,33 +28,30 @@ export function useEnrichmentStatus(companyId?: string) {
           name,
           cnpj,
           raw_data,
-          digital_maturity_score,
-          decision_makers (id),
-          digital_maturity (id),
-          insights (id)
+          digital_maturity_score
         `)
         .eq('id', companyId)
         .single();
 
       if (error) throw error;
 
-      // Buscar legal_data separadamente
-      const { data: legalData } = await supabase
-        .from('legal_data')
-        .select('id')
-        .eq('company_id', companyId)
-        .maybeSingle();
+      const [decisorsCountRes, digitalPresenceRes, insightsRes, legalDataRes] = await Promise.all([
+        supabase.from('decision_makers').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('digital_maturity').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('insights').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('legal_data').select('id').eq('company_id', companyId).maybeSingle(),
+      ]);
 
       const status: EnrichmentStatus = {
         companyId: company.id,
         companyName: company.name,
         hasReceitaWS: !!company.cnpj && !!company.raw_data,
-        hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-        hasDigitalPresence: !!company.digital_maturity?.length,
+        hasDecisionMakers: (decisorsCountRes.count || 0) > 0,
+        hasDigitalPresence: (digitalPresenceRes.count || 0) > 0,
         hasMaturityScore: !!company.digital_maturity_score,
         hasFitScore: false,
-        hasLegalData: !!legalData,
-        hasInsights: (company.insights?.length || 0) > 0,
+        hasLegalData: !!(legalDataRes as any).data,
+        hasInsights: (insightsRes.count || 0) > 0,
         completionPercentage: 0,
         isFullyEnriched: false,
       };
@@ -94,33 +91,35 @@ export function useAllEnrichmentStatus() {
           name,
           cnpj,
           raw_data,
-          digital_maturity_score,
-          decision_makers (id),
-          digital_maturity (id),
-          insights (id)
+          digital_maturity_score
         `);
 
       if (error) throw error;
 
-      // Buscar legal_data para todas as empresas
-      const { data: legalDataList } = await supabase
-        .from('legal_data')
-        .select('company_id')
-        .in('company_id', companies.map(c => c.id));
+      // Buscar conjuntos de relacionamentos para todas as empresas
+      const [decisorsListRes, digitalMaturityListRes, insightsListRes, legalDataListRes] = await Promise.all([
+        supabase.from('decision_makers').select('company_id'),
+        supabase.from('digital_maturity').select('company_id'),
+        supabase.from('insights').select('company_id'),
+        supabase.from('legal_data').select('company_id'),
+      ]);
 
-      const legalDataMap = new Set(legalDataList?.map(ld => ld.company_id) || []);
+      const decisorsSet = new Set((decisorsListRes.data || []).map((r: any) => r.company_id));
+      const digitalMaturitySet = new Set((digitalMaturityListRes.data || []).map((r: any) => r.company_id));
+      const insightsSet = new Set((insightsListRes.data || []).map((r: any) => r.company_id));
+      const legalDataSet = new Set((legalDataListRes.data || []).map((r: any) => r.company_id));
 
       const statusList: EnrichmentStatus[] = companies.map(company => {
         const status: EnrichmentStatus = {
           companyId: company.id,
           companyName: company.name,
           hasReceitaWS: !!company.cnpj && !!company.raw_data,
-          hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-          hasDigitalPresence: !!company.digital_maturity?.length,
+          hasDecisionMakers: decisorsSet.has(company.id),
+          hasDigitalPresence: digitalMaturitySet.has(company.id),
           hasMaturityScore: !!company.digital_maturity_score,
           hasFitScore: false,
-          hasLegalData: legalDataMap.has(company.id),
-          hasInsights: (company.insights?.length || 0) > 0,
+          hasLegalData: legalDataSet.has(company.id),
+          hasInsights: insightsSet.has(company.id),
           completionPercentage: 0,
           isFullyEnriched: false,
         };
