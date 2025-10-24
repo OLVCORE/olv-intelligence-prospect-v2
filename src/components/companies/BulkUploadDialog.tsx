@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const MAX_COMPANIES = 500;
+const MAX_COMPANIES = 1000; // Aumentado para 1000 empresas por upload
 
 export function BulkUploadDialog() {
   const [isOpen, setIsOpen] = useState(false);

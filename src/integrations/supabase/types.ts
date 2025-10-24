@@ -442,6 +442,42 @@ export type Database = {
         }
         Relationships: []
       }
+      company_previews: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          domain: string | null
+          id: string
+          name: string | null
+          query: string | null
+          snapshot: Json
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name?: string | null
+          query?: string | null
+          snapshot?: Json
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name?: string | null
+          query?: string | null
+          snapshot?: Json
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           channel: Json | null

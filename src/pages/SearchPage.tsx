@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -387,6 +387,17 @@ export default function SearchPage() {
     try {
       setIsSaving(true);
       
+      // 1. Salvar preview no histórico (mesmo que não confirme)
+      await supabase.from('company_previews').insert({
+        query: searchQuery,
+        cnpj: previewData.company.cnpj,
+        name: previewData.company.name,
+        website: previewData.company.website,
+        domain: previewData.company.domain,
+        snapshot: previewData
+      });
+      
+      // 2. Salvar empresa no funil de vendas
       const { data, error } = await supabase.functions.invoke('save-company', {
         body: {
           company: previewData.company,
@@ -401,8 +412,8 @@ export default function SearchPage() {
       setShowPreview(false);
       
       toast({
-        title: "Empresa salva!",
-        description: `${previewData.company.name} foi cadastrada com sucesso`,
+        title: "Empresa salva no funil!",
+        description: `${previewData.company.name} foi cadastrada com sucesso e está no pipeline de vendas`,
       });
       
       // Navegar para a página de detalhes da empresa
@@ -420,13 +431,30 @@ export default function SearchPage() {
     }
   };
 
-  const cancelPreview = () => {
+  const cancelPreview = async () => {
+    if (!previewData) return;
+    
+    try {
+      // Salvar preview no histórico mesmo ao cancelar (para memória de buscas)
+      await supabase.from('company_previews').insert({
+        query: searchQuery,
+        cnpj: previewData.company.cnpj,
+        name: previewData.company.name,
+        website: previewData.company.website,
+        domain: previewData.company.domain,
+        snapshot: previewData
+      });
+      
+      toast({
+        title: "Busca registrada",
+        description: "A empresa não foi salva no funil, mas a busca foi registrada no histórico",
+      });
+    } catch (error) {
+      console.error('Error saving preview:', error);
+    }
+    
     setShowPreview(false);
     setPreviewData(null);
-    toast({
-      title: "Cancelado",
-      description: "A empresa não foi salva",
-    });
   };
 
   const clearAllFields = () => {
@@ -1072,104 +1100,243 @@ export default function SearchPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de preview */}
+      {/* Dialog de preview completo */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preview dos Dados</DialogTitle>
+            <DialogTitle className="text-2xl flex items-center gap-3">
+              <Building2 className="h-6 w-6 text-primary" />
+              Preview Completo dos Dados
+              {previewData?.company.raw_data?.receita?.situacao && (
+                <Badge variant={previewData.company.raw_data.receita.situacao === 'ATIVA' ? 'default' : 'destructive'} className="ml-2">
+                  {previewData.company.raw_data.receita.situacao === 'ATIVA' ? '✓ CNPJ ATIVO' : 'CNPJ INATIVO'}
+                </Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>
-              Revise as informações antes de confirmar o cadastro
+              Revise as informações completas antes de confirmar o cadastro no funil de vendas
             </DialogDescription>
           </DialogHeader>
           
           {previewData && (
             <div className="space-y-6">
-              {/* Dados da empresa */}
-              <Card>
+              {/* Header com dados principais */}
+              <Card className="border-l-4 border-l-primary">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    {previewData.company.name}
-                  </CardTitle>
+                  <CardTitle className="text-xl">{previewData.company.name}</CardTitle>
+                  <CardDescription className="space-y-1">
+                    {previewData.company.cnpj && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">CNPJ:</span>
+                        <span className="text-sm font-mono">{previewData.company.cnpj}</span>
+                      </div>
+                    )}
+                    {previewData.company.website && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-3 w-3" />
+                        <a href={previewData.company.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                          {previewData.company.website}
+                        </a>
+                      </div>
+                    )}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {previewData.company.cnpj && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">CNPJ</Label>
-                      <p className="text-sm font-mono">{previewData.company.cnpj}</p>
-                    </div>
-                  )}
-                  {previewData.company.website && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Website</Label>
-                      <p className="text-sm">{previewData.company.website}</p>
-                    </div>
-                  )}
-                  {previewData.company.description && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Descrição</Label>
-                      <p className="text-sm">{previewData.company.description}</p>
-                    </div>
-                  )}
-                </CardContent>
               </Card>
 
-              {/* Decisores */}
-              {previewData.decision_makers && previewData.decision_makers.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Users className="h-4 w-4" />
-                      Decisores ({previewData.decision_makers.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {previewData.decision_makers.slice(0, 5).map((dm: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{dm.name}</p>
-                            <p className="text-xs text-muted-foreground">{dm.title}</p>
-                          </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Coluna Esquerda - Dados */}
+                <div className="space-y-6">
+                  {/* Localização + Mapa */}
+                  {previewData.company.location && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <MapPin className="h-4 w-4" />
+                          Localização
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="text-sm space-y-1">
+                          {previewData.company.location.logradouro && (
+                            <p>{previewData.company.location.logradouro}, {previewData.company.raw_data?.receita?.numero || 'S/N'}</p>
+                          )}
+                          {previewData.company.location.bairro && <p>{previewData.company.location.bairro}</p>}
+                          <p className="font-semibold">
+                            {previewData.company.location.city}/{previewData.company.location.state} - {previewData.company.location.country}
+                          </p>
+                          {previewData.company.location.cep && (
+                            <p className="text-xs text-muted-foreground">CEP: {previewData.company.location.cep}</p>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                        
+                        {/* Mapa */}
+                        {(previewData.company.location.cep || previewData.company.location.city) && (
+                          <div className="h-[200px] rounded-lg overflow-hidden">
+                            <LocationMap
+                              address={previewData.company.location.logradouro}
+                              municipio={previewData.company.location.city}
+                              estado={previewData.company.location.state}
+                              cep={previewData.company.location.cep}
+                              pais={previewData.company.location.country}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {/* Maturidade Digital */}
-              {previewData.digital_maturity && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <BarChart className="h-4 w-4" />
-                      Maturidade Digital
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Score</span>
-                        <Badge>{previewData.digital_maturity.score}/100</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  {/* Decisores */}
+                  {previewData.decision_makers && previewData.decision_makers.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Users className="h-4 w-4" />
+                          Decisores Identificados ({previewData.decision_makers.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                          {previewData.decision_makers.map((dm: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border">
+                              <Users className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{dm.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{dm.title}</p>
+                                {dm.email && (
+                                  <p className="text-xs text-muted-foreground font-mono truncate">{dm.email}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Coluna Direita - Scores */}
+                <div className="space-y-6">
+                  {/* Maturidade Digital */}
+                  {previewData.digital_maturity && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <BarChart className="h-4 w-4" />
+                          Maturidade Digital
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Score Geral</span>
+                          <Badge variant="default" className="text-base">
+                            {previewData.digital_maturity.overall?.toFixed(1) || previewData.digital_maturity.score}/10
+                          </Badge>
+                        </div>
+                        
+                        {previewData.digital_maturity.infrastructure && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                              <span>Infraestrutura</span>
+                              <span className="font-medium">{previewData.digital_maturity.infrastructure}/10</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Sistemas</span>
+                              <span className="font-medium">{previewData.digital_maturity.systems}/10</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Processos</span>
+                              <span className="font-medium">{previewData.digital_maturity.processes}/10</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Segurança</span>
+                              <span className="font-medium">{previewData.digital_maturity.security}/10</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Inovação</span>
+                              <span className="font-medium">{previewData.digital_maturity.innovation}/10</span>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Dados ReceitaWS */}
+                  {previewData.company.raw_data?.receita && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <FileText className="h-4 w-4" />
+                          Receita Federal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        {previewData.company.raw_data.receita.fantasia && (
+                          <div>
+                            <span className="text-xs text-muted-foreground">Nome Fantasia:</span>
+                            <p className="font-medium">{previewData.company.raw_data.receita.fantasia}</p>
+                          </div>
+                        )}
+                        {previewData.company.raw_data.receita.porte && (
+                          <div>
+                            <span className="text-xs text-muted-foreground">Porte:</span>
+                            <p className="font-medium">{previewData.company.raw_data.receita.porte}</p>
+                          </div>
+                        )}
+                        {previewData.company.raw_data.receita.abertura && (
+                          <div>
+                            <span className="text-xs text-muted-foreground">Data de Abertura:</span>
+                            <p className="font-medium">{previewData.company.raw_data.receita.abertura}</p>
+                          </div>
+                        )}
+                        {previewData.company.raw_data.receita.capital_social && (
+                          <div>
+                            <span className="text-xs text-muted-foreground">Capital Social:</span>
+                            <p className="font-medium text-green-600">
+                              R$ {parseFloat(previewData.company.raw_data.receita.capital_social).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Atividade Econômica */}
+                  {previewData.company.raw_data?.receita?.atividade_principal && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Briefcase className="h-4 w-4" />
+                          Atividade Principal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {previewData.company.raw_data.receita.atividade_principal.map((ativ: any, idx: number) => (
+                            <div key={idx} className="text-sm">
+                              <Badge variant="outline" className="text-xs mb-1">{ativ.code}</Badge>
+                              <p className="text-xs">{ativ.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
 
               {/* Botões de ação */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4 border-t">
                 <Button onClick={confirmSave} disabled={isSaving} className="flex-1">
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
+                      Salvando no Funil de Vendas...
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Confirmar e Salvar
+                      Confirmar e Salvar no Funil
                     </>
                   )}
                 </Button>
@@ -1177,6 +1344,10 @@ export default function SearchPage() {
                   Cancelar
                 </Button>
               </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Esta busca será registrada no histórico mesmo que você não salve a empresa no funil de vendas
+              </p>
             </div>
           )}
         </DialogContent>

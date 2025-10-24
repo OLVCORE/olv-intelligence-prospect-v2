@@ -184,6 +184,26 @@ serve(async (req) => {
     const apolloData = await fetchApolloData(companyName, domain);
     console.log('[Search] Apollo:', apolloData ? '✅' : '❌');
     
+    // 2.5. Detectar setor/segmento via IA
+    let segmentData = null;
+    try {
+      const segmentResponse = await supabase.functions.invoke('detect-company-segment', {
+        body: {
+          companyName,
+          website: website || domain,
+          description: apolloData?.description || receitaData?.fantasia,
+          activities: receitaData?.atividade_principal
+        }
+      });
+      
+      if (!segmentResponse.error && segmentResponse.data?.success) {
+        segmentData = segmentResponse.data;
+        console.log('[Search] Segmento detectado via IA:', segmentData.setor, segmentData.vertical);
+      }
+    } catch (segmentError) {
+      console.error('[Search] Erro ao detectar segmento:', segmentError);
+    }
+    
     // Log de dados de refinamento usados
     if (instagram || linkedin || produto || marca || municipio) {
       console.log('[Search] Refinamentos aplicados:', {
@@ -201,7 +221,7 @@ serve(async (req) => {
       cnpj: cnpj || receitaData?.cnpj,
       domain: domain || apolloData?.primary_domain,
       website: website || apolloData?.website_url || receitaData?.fantasia,
-      industry: apolloData?.industry || receitaData?.atividade_principal?.[0]?.text,
+      industry: segmentData?.setor || apolloData?.industry || receitaData?.atividade_principal?.[0]?.text,
       employees: apolloData?.estimated_num_employees || 0,
       revenue: apolloData?.annual_revenue,
       location: {
@@ -217,6 +237,7 @@ serve(async (req) => {
       raw_data: { 
         receita: receitaData, 
         apollo: apolloData,
+        segment: segmentData, // Adicionar dados de segmento detectados via IA
         refinamentos: {
           presencaDigital: { website, instagram, linkedin },
           produtos: { produto, marca, linkProduto },
@@ -256,9 +277,11 @@ serve(async (req) => {
         company: companyPayload,
         decision_makers: decisorsPayload,
         digital_maturity: maturityData,
+        segment: segmentData, // Incluir análise de segmento via IA
         stats: {
           decisors: decisionMakers.length,
-          hasMaturity: !!maturityData
+          hasMaturity: !!maturityData,
+          hasSegment: !!segmentData
         }
       }),
       { 
