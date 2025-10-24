@@ -14,6 +14,8 @@ import { WorkspaceInboxMini } from '@/components/sdr/WorkspaceInboxMini';
 import { WorkspaceTasksMini } from '@/components/sdr/WorkspaceTasksMini';
 import { WorkspaceSequencesMini } from '@/components/sdr/WorkspaceSequencesMini';
 import { AutomationPanel } from '@/components/sdr/AutomationPanel';
+import { ExecutiveDashboard } from '@/components/sdr/ExecutiveDashboard';
+import { ForecastPanel } from '@/components/sdr/ForecastPanel';
 import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSDRAutomations } from '@/hooks/useSDRAutomations';
@@ -133,10 +135,18 @@ export default function SDRWorkspacePage() {
 
         {/* Main Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-5xl">
             <TabsTrigger value="pipeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="forecast" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Forecast
             </TabsTrigger>
             <TabsTrigger value="automations" className="gap-2">
               <Zap className="h-4 w-4" />
@@ -154,14 +164,18 @@ export default function SDRWorkspacePage() {
               <Zap className="h-4 w-4" />
               Sequências
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pipeline" className="flex-1 mt-4">
             <EnhancedKanbanBoard />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="flex-1 mt-4">
+            <ExecutiveDashboard />
+          </TabsContent>
+
+          <TabsContent value="forecast" className="flex-1 mt-4">
+            <ForecastPanel />
           </TabsContent>
 
           <TabsContent value="automations" className="flex-1 mt-4">
@@ -178,17 +192,6 @@ export default function SDRWorkspacePage() {
 
           <TabsContent value="sequences" className="flex-1 mt-4">
             <WorkspaceSequencesMini />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="flex-1 mt-4">
-            <Card className="p-8 text-center">
-              <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-20" />
-              <h3 className="text-xl font-semibold mb-2">Analytics & Forecast</h3>
-              <p className="text-muted-foreground mb-4">
-                Métricas em tempo real e previsão de resultados
-              </p>
-              <Button>Ver Relatórios</Button>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
