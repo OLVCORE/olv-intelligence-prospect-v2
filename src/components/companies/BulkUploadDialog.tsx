@@ -44,9 +44,65 @@ export function BulkUploadDialog() {
     }
   };
 
+  const detectSeparator = (text: string): string => {
+    const firstLine = text.split(/\r?\n/)[0];
+    const commas = (firstLine.match(/,/g) || []).length;
+    const semicolons = (firstLine.match(/;/g) || []).length;
+    return semicolons > commas ? ';' : ',';
+  };
+
+  const normalizeHeader = (header: string): string => {
+    // Remove acentos e normaliza para lowercase
+    return header
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  };
+
+  const mapHeaders = (headers: string[]): Map<string, string> => {
+    const mapping = new Map<string, string>();
+    const normalized = headers.map(h => normalizeHeader(h));
+    
+    // Mapeamento flexível de headers
+    const headerMap: { [key: string]: string[] } = {
+      'CNPJ': ['cnpj', 'cnpj da empresa', 'cnpj empresa'],
+      'Nome da Empresa': ['nome', 'nome da empresa', 'razao social', 'empresa'],
+      'Website': ['website', 'site', 'url', 'website da empresa'],
+      'Instagram': ['instagram', 'insta', '@instagram'],
+      'LinkedIn': ['linkedin', 'link linkedin', 'linkedin url'],
+      'Produto/Categoria': ['produto', 'categoria', 'produto/categoria', 'tipo'],
+      'Marca': ['marca', 'brand'],
+      'Link Produto/Marketplace': ['link produto', 'marketplace', 'link'],
+      'CEP': ['cep', 'codigo postal'],
+      'Estado': ['estado', 'uf', 'state'],
+      'Pais': ['pais', 'país', 'country'],
+      'Municipio': ['municipio', 'município', 'cidade', 'city'],
+      'Bairro': ['bairro', 'neighborhood'],
+      'Logradouro': ['logradouro', 'endereco', 'endereço', 'rua', 'address'],
+      'Numero': ['numero', 'número', 'num', 'number']
+    };
+
+    normalized.forEach((norm, idx) => {
+      for (const [standard, variations] of Object.entries(headerMap)) {
+        if (variations.includes(norm)) {
+          mapping.set(standard, headers[idx]);
+          break;
+        }
+      }
+    });
+
+    console.log('🔄 Mapeamento de headers:', Object.fromEntries(mapping));
+    return mapping;
+  };
+
   const parseCSV = (text: string): any[] => {
     // Remove BOM se existir
     text = text.replace(/^\uFEFF/, '');
+    
+    // Detecta separador automaticamente
+    const separator = detectSeparator(text);
+    console.log(`📊 Separador detectado: "${separator}"`);
     
     // Split por linhas, preservando quebras dentro de aspas
     const lines = text.split(/\r?\n/).filter(line => line.trim());
@@ -57,9 +113,10 @@ export function BulkUploadDialog() {
     
     // Parse do cabeçalho
     const headerLine = lines[0];
-    const headers = parseCSVLine(headerLine);
+    const rawHeaders = parseCSVLine(headerLine, separator);
+    const headerMapping = mapHeaders(rawHeaders);
     
-    console.log('📋 Cabeçalhos detectados:', headers);
+    console.log('📋 Cabeçalhos detectados:', rawHeaders);
     
     // Parse das linhas de dados
     const rows: any[] = [];
@@ -69,29 +126,43 @@ export function BulkUploadDialog() {
       if (!line.trim()) continue;
       
       try {
-        const values = parseCSVLine(line);
+        const values = parseCSVLine(line, separator);
         const row: any = {};
         
-        headers.forEach((header, index) => {
+        // Mapeia valores usando os headers normalizados
+        rawHeaders.forEach((rawHeader, index) => {
           const value = values[index]?.trim() || '';
-          row[header] = value;
+          
+          // Procura o header normalizado correspondente
+          for (const [standard, mapped] of headerMapping.entries()) {
+            if (mapped === rawHeader) {
+              row[standard] = value;
+              break;
+            }
+          }
         });
         
         // Só adiciona se tiver pelo menos um identificador
-        if (row.CNPJ || row['Nome da Empresa'] || row.Website || row.Instagram || row.LinkedIn) {
+        const hasIdentifier = row.CNPJ || row['Nome da Empresa'] || row.Website || 
+                              row.Instagram || row.LinkedIn;
+        
+        if (hasIdentifier) {
           rows.push(row);
+          console.log(`✓ Linha ${i + 1}:`, row['Nome da Empresa'] || row.CNPJ || 'Sem nome');
+        } else {
+          console.warn(`✗ Linha ${i + 1}: Sem identificadores válidos`);
         }
       } catch (error) {
         console.warn(`Erro ao processar linha ${i + 1}:`, error);
       }
     }
     
-    console.log(`✅ ${rows.length} empresas válidas detectadas`);
+    console.log(`✅ ${rows.length} empresas válidas de ${lines.length - 1} linhas`);
     return rows;
   };
   
-  // Parser robusto de linha CSV que lida com vírgulas dentro de aspas
-  const parseCSVLine = (line: string): string[] => {
+  // Parser robusto de linha CSV que lida com vírgulas/ponto-vírgula dentro de aspas
+  const parseCSVLine = (line: string, separator: string = ','): string[] => {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
@@ -109,8 +180,8 @@ export function BulkUploadDialog() {
           // Toggle estado de aspas
           inQuotes = !inQuotes;
         }
-      } else if (char === ',' && !inQuotes) {
-        // Vírgula fora de aspas = separador
+      } else if (char === separator && !inQuotes) {
+        // Separador fora de aspas
         result.push(current);
         current = '';
       } else {
