@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, Clock, ChevronDown } from "lucide-react";
+import { Sparkles, Loader2, Clock, ChevronDown, ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,7 @@ export function EnhancedBatchEnrichment() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<'selected' | 'batch'>('batch');
+  const [selectOpen, setSelectOpen] = useState(false);
 
   // Busca informação de última atualização
   const { data: lastUpdate } = useQuery({
@@ -89,6 +91,35 @@ export function EnhancedBatchEnrichment() {
     }
   };
 
+  const handleSelectedEnrichment = async (selectedIds: string[]) => {
+    if (!selectedIds?.length) return;
+    setIsProcessing(true);
+    let success = 0;
+    let failed = 0;
+    toast({
+      title: "Processamento Iniciado",
+      description: `Enriquecendo ${selectedIds.length} empresa${selectedIds.length === 1 ? '' : 's'}...`,
+    });
+    for (const id of selectedIds) {
+      try {
+        const { error } = await supabase.functions.invoke('enrich-company-360', {
+          body: { companyId: id }
+        });
+        if (error) throw error as any;
+        success++;
+      } catch (e) {
+        console.error('Falha no enriquecimento', id, e);
+        failed++;
+      }
+    }
+    toast({
+      title: "Enriquecimento finalizado",
+      description: `${success} sucesso${success !== 1 ? 's' : ''}${failed ? ` • ${failed} falha${failed !== 1 ? 's' : ''}` : ''}`,
+    });
+    setIsProcessing(false);
+    setSelectOpen(false);
+  };
+
   const formatLastUpdate = (timestamp: string | null) => {
     if (!timestamp) return "Nunca atualizado";
     const date = new Date(timestamp);
@@ -120,7 +151,7 @@ export function EnhancedBatchEnrichment() {
             <ChevronDown className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className="w-64 z-50 bg-popover">
           <DropdownMenuItem
             onClick={() => {
               setAnalysisMode('batch');
@@ -134,6 +165,22 @@ export function EnhancedBatchEnrichment() {
             </div>
             <span className="text-xs text-muted-foreground">
               Processa todas as empresas pendentes (até 50)
+            </span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => {
+              setAnalysisMode('selected');
+              setSelectOpen(true);
+            }}
+            className="flex flex-col items-start gap-1 p-3"
+          >
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              <span className="font-medium">Análise por Seleção</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Escolha empresas específicas para enriquecer agora
             </span>
           </DropdownMenuItem>
           

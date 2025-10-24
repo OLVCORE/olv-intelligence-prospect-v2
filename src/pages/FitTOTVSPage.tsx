@@ -8,9 +8,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
+import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 
 export default function FitTOTVSPage() {
   const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState<'single' | 'multiple'>('single');
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
 
   const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ['fit-totvs-companies'],
@@ -53,6 +58,35 @@ export default function FitTOTVSPage() {
     }
   });
 
+  const handleConfirm = async (selectedIds: string[]) => {
+    if (!selectedIds || selectedIds.length === 0) return;
+    if (selectMode === 'single') {
+      analyzeMutation.mutate(selectedIds[0]);
+      return;
+    }
+    setIsBulkRunning(true);
+    let success = 0;
+    let failed = 0;
+    for (const id of selectedIds) {
+      try {
+        const { error } = await supabase.functions.invoke('analyze-totvs-fit', {
+          body: { companyId: id }
+        });
+        if (error) throw error as any;
+        success++;
+      } catch (e) {
+        console.error('Falha ao analisar', id, e);
+        failed++;
+      }
+    }
+    toast({
+      title: 'Análise em Lote concluída',
+      description: `${success} sucesso${success !== 1 ? 's' : ''}${failed ? ` • ${failed} falha${failed !== 1 ? 's' : ''}` : ''}`,
+    });
+    setIsBulkRunning(false);
+    refetch();
+  };
+
   const getAIAnalysis = (company: any) => {
     const signal = company.buying_signals?.find(
       (s: any) => s.signal_type === 'totvs_fit_analysis'
@@ -63,11 +97,49 @@ export default function FitTOTVSPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Fit TOTVS</h1>
-        <p className="text-muted-foreground">
-          Análise de aderência e recomendações de produtos TOTVS
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Fit TOTVS</h1>
+            <p className="text-muted-foreground">
+              Análise de aderência e recomendações de produtos TOTVS
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectMode('single');
+                setDialogOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Análise Individual
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectMode('multiple');
+                setDialogOpen(true);
+              }}
+              className="gap-2"
+              disabled={isBulkRunning}
+            >
+              <Sparkles className="h-4 w-4" />
+              {isBulkRunning ? 'Processando...' : 'Análise em Massa'}
+            </Button>
+          </div>
+        </div>
       </div>
+
+      <CompanySelectDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={selectMode}
+        onConfirm={handleConfirm}
+        title={selectMode === 'single' ? 'Selecionar empresa para análise' : 'Selecionar múltiplas empresas'}
+        confirmLabel={selectMode === 'single' ? 'Analisar empresa' : 'Analisar selecionadas'}
+      />
 
       <div className="grid gap-6">
         {isLoading ? (
