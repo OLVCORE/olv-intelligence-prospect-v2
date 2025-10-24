@@ -337,6 +337,140 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_artifacts: {
+        Row: {
+          api_call_cost: number | null
+          artifact_type: string
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          data_checksum: string | null
+          error_details: string | null
+          execution_time_ms: number | null
+          fields_count: number | null
+          id: string
+          normalized_data: Json | null
+          raw_data: Json
+          run_id: string
+          source_name: string
+          status: string
+        }
+        Insert: {
+          api_call_cost?: number | null
+          artifact_type: string
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          data_checksum?: string | null
+          error_details?: string | null
+          execution_time_ms?: number | null
+          fields_count?: number | null
+          id?: string
+          normalized_data?: Json | null
+          raw_data: Json
+          run_id: string
+          source_name: string
+          status: string
+        }
+        Update: {
+          api_call_cost?: number | null
+          artifact_type?: string
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          data_checksum?: string | null
+          error_details?: string | null
+          execution_time_ms?: number | null
+          fields_count?: number | null
+          id?: string
+          normalized_data?: Json | null
+          raw_data?: Json
+          run_id?: string
+          source_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_artifacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_artifacts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_runs: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          data_quality_score: number | null
+          duration_ms: number | null
+          error_log: Json | null
+          fields_enriched: number | null
+          fields_total: number | null
+          id: string
+          metadata: Json | null
+          run_type: string
+          sources_attempted: Json | null
+          sources_failed: Json | null
+          sources_succeeded: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          fields_enriched?: number | null
+          fields_total?: number | null
+          id?: string
+          metadata?: Json | null
+          run_type: string
+          sources_attempted?: Json | null
+          sources_failed?: Json | null
+          sources_succeeded?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          fields_enriched?: number | null
+          fields_total?: number | null
+          id?: string
+          metadata?: Json | null
+          run_type?: string
+          sources_attempted?: Json | null
+          sources_failed?: Json | null
+          sources_succeeded?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_cards: {
         Row: {
           competitor_id: string
@@ -1011,6 +1145,63 @@ export type Database = {
         }
         Relationships: []
       }
+      company_snapshots: {
+        Row: {
+          company_data: Json
+          company_id: string
+          data_freshness_score: number | null
+          data_hash: string
+          days_since_last_update: number | null
+          decision_makers_data: Json | null
+          digital_presence_data: Json | null
+          governance_signals_data: Json | null
+          id: string
+          run_id: string
+          snapshot_date: string
+        }
+        Insert: {
+          company_data: Json
+          company_id: string
+          data_freshness_score?: number | null
+          data_hash: string
+          days_since_last_update?: number | null
+          decision_makers_data?: Json | null
+          digital_presence_data?: Json | null
+          governance_signals_data?: Json | null
+          id?: string
+          run_id: string
+          snapshot_date?: string
+        }
+        Update: {
+          company_data?: Json
+          company_id?: string
+          data_freshness_score?: number | null
+          data_hash?: string
+          days_since_last_update?: number | null
+          decision_makers_data?: Json | null
+          digital_presence_data?: Json | null
+          governance_signals_data?: Json | null
+          id?: string
+          run_id?: string
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitors: {
         Row: {
           active: boolean | null
@@ -1336,28 +1527,112 @@ export type Database = {
         Row: {
           company_id: string
           content: Json
+          data_quality_score: number | null
           generated_at: string
           id: string
           report_type: string
+          run_id: string | null
+          sources_used: Json | null
           updated_at: string
         }
         Insert: {
           company_id: string
           content: Json
+          data_quality_score?: number | null
           generated_at?: string
           id?: string
           report_type: string
+          run_id?: string | null
+          sources_used?: Json | null
           updated_at?: string
         }
         Update: {
           company_id?: string
           content?: Json
+          data_quality_score?: number | null
           generated_at?: string
           id?: string
           report_type?: string
+          run_id?: string | null
+          sources_used?: Json | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "executive_reports_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_reports_versions: {
+        Row: {
+          change_summary: string | null
+          company_id: string
+          content: Json
+          created_at: string
+          created_by: string | null
+          fields_changed: Json | null
+          id: string
+          quality_improvement: number | null
+          report_id: string
+          report_type: string
+          run_id: string | null
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          company_id: string
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          fields_changed?: Json | null
+          id?: string
+          quality_improvement?: number | null
+          report_id: string
+          report_type: string
+          run_id?: string | null
+          version_number: number
+        }
+        Update: {
+          change_summary?: string | null
+          company_id?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          fields_changed?: Json | null
+          id?: string
+          quality_improvement?: number | null
+          report_id?: string
+          report_type?: string
+          run_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_reports_versions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_reports_versions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "executive_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_reports_versions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_data: {
         Row: {
@@ -3232,6 +3507,10 @@ export type Database = {
       create_canvas_version: {
         Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
         Returns: string
+      }
+      get_next_report_version: {
+        Args: { p_company_id: string; p_report_type: string }
+        Returns: number
       }
       has_role: {
         Args: {
