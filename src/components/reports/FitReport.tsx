@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Target, Sparkles, CheckCircle2, AlertCircle, TrendingUp, Zap, Clock } from "lucide-react";
+import { Target, Sparkles, CheckCircle2, AlertCircle, TrendingUp, Zap, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface FitReportProps {
@@ -325,7 +325,9 @@ export function FitReport({ companyId }: FitReportProps) {
         <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
           <CardContent className="py-6">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">💰</span>
+              <span className="text-2xl text-green-600">
+                <DollarSign className="h-6 w-6" />
+              </span>
               <div>
                 <p className="font-semibold text-green-900 dark:text-green-100 mb-1">
                   Benefício de TCO Estimado

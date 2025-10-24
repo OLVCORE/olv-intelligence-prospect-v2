@@ -5,12 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, AlertCircle, Clock, Link as LinkIcon } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Clock, Link as LinkIcon, RefreshCw, Info, Code } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function GoogleSheetsSyncConfig() {
   const [loading, setLoading] = useState(false);
@@ -119,15 +128,115 @@ export function GoogleSheetsSyncConfig() {
   };
 
   return (
-    <Card>
+    <Card className="border-2">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <LinkIcon className="h-5 w-5" />
-          Sincronização Automática Google Sheets
-        </CardTitle>
-        <CardDescription>
-          Configure uma planilha do Google Sheets para importar leads automaticamente em intervalos programados
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5 text-primary" />
+              Sincronização Automática Google Sheets
+            </CardTitle>
+            <CardDescription>
+              Configure uma planilha do Google Sheets para importar leads automaticamente em intervalos programados
+            </CardDescription>
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Code className="h-4 w-4" />
+                Instruções Cron Job
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5" />
+                  Configurar Cron Job no Supabase
+                </DialogTitle>
+                <DialogDescription>
+                  Siga estes passos para ativar a sincronização automática periódica
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Requer Acesso Admin</AlertTitle>
+                  <AlertDescription>
+                    Esta configuração requer acesso de administrador ao painel do Supabase
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Passo 1: Acesse o Supabase Dashboard</h3>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                    <li>Abra o painel do Supabase em <a href="https://supabase.com/dashboard" target="_blank" rel="noopener" className="text-primary underline">supabase.com/dashboard</a></li>
+                    <li>Selecione seu projeto</li>
+                    <li>No menu lateral, clique em "SQL Editor"</li>
+                  </ol>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Passo 2: Execute o SQL abaixo</h3>
+                  <div className="bg-muted p-4 rounded-lg overflow-x-auto">
+                    <pre className="text-xs font-mono">
+{`-- Habilitar extensões necessárias
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- Criar cron job para sincronização a cada 15 minutos
+SELECT cron.schedule(
+  'google-sheets-auto-sync',
+  '*/15 * * * *', -- A cada 15 minutos
+  $$
+  SELECT
+    net.http_post(
+      url:='https://ioaxzpwlurpduanzkfrt.supabase.co/functions/v1/google-sheets-auto-sync',
+      headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvYXh6cHdsdXJwZHVhbnprZnJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODY3MjEsImV4cCI6MjA3NjU2MjcyMX0.k5Zv_wnficuIrQZQjfppo66RR3mJNwR00kKT76ceK8g"}'::jsonb,
+      body:='{}'::jsonb
+    ) as request_id;
+  $$
+);`}
+                    </pre>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Passo 3: Ajustar Frequência (opcional)</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Modifique o padrão cron na linha 2 do comando acima:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground ml-4">
+                    <li><code className="bg-muted px-1 rounded">*/15 * * * *</code> - A cada 15 minutos</li>
+                    <li><code className="bg-muted px-1 rounded">*/30 * * * *</code> - A cada 30 minutos</li>
+                    <li><code className="bg-muted px-1 rounded">0 * * * *</code> - A cada hora</li>
+                    <li><code className="bg-muted px-1 rounded">0 */2 * * *</code> - A cada 2 horas</li>
+                    <li><code className="bg-muted px-1 rounded">0 0 * * *</code> - Uma vez por dia (00:00)</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Verificar Cron Jobs Ativos</h3>
+                  <div className="bg-muted p-3 rounded-lg">
+                    <code className="text-xs">SELECT * FROM cron.job;</code>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Remover Cron Job</h3>
+                  <div className="bg-muted p-3 rounded-lg">
+                    <code className="text-xs">SELECT cron.unschedule('google-sheets-auto-sync');</code>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <Alert>
@@ -220,18 +329,31 @@ export function GoogleSheetsSyncConfig() {
 
           {config && (
             <Button
-              variant="outline"
+              variant="default"
               onClick={handleTestSync}
               disabled={loading}
+              className="gap-2"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Testar Agora'
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Sincronizar Agora
+                </>
               )}
             </Button>
           )}
         </div>
+
+        <Alert className="bg-muted/50">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            <strong>Como funciona:</strong> Adicione ou atualize dados na planilha do Google Sheets a qualquer momento. 
+            O sistema irá sincronizar automaticamente nos períodos configurados OU você pode clicar em 
+            "Sincronizar Agora" para forçar uma atualização imediata.
+          </AlertDescription>
+        </Alert>
       </CardContent>
     </Card>
   );

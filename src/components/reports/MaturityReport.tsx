@@ -62,11 +62,11 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
   };
 
   const dimensions = [
-    { key: 'infrastructure_score', label: 'Infraestrutura', icon: '🏗️' },
-    { key: 'systems_score', label: 'Sistemas', icon: '💻' },
-    { key: 'processes_score', label: 'Processos', icon: '⚙️' },
-    { key: 'security_score', label: 'Segurança', icon: '🔒' },
-    { key: 'innovation_score', label: 'Inovação', icon: '💡' }
+    { key: 'infrastructure_score', label: 'Infraestrutura', icon: 'Infra' },
+    { key: 'systems_score', label: 'Sistemas', icon: 'Sistemas' },
+    { key: 'processes_score', label: 'Processos', icon: 'Processos' },
+    { key: 'security_score', label: 'Segurança', icon: 'Segurança' },
+    { key: 'innovation_score', label: 'Inovação', icon: 'Inovação' }
   ];
 
   return (

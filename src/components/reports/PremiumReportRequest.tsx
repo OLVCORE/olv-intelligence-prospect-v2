@@ -35,7 +35,7 @@ export function PremiumReportRequest({ companyId, companyName, cnpj }: PremiumRe
       if (error) throw error;
 
       toast({
-        title: "✨ Relatório Premium Gerado!",
+        title: "Relatório Premium Gerado!",
         description: `Análise Serasa completa para ${companyName}`,
       });
 
@@ -87,7 +87,7 @@ export function PremiumReportRequest({ companyId, companyName, cnpj }: PremiumRe
             <Alert className="border-primary/30 bg-primary/5">
               <AlertDescription className="text-sm">
                 <div className="space-y-2">
-                  <p className="font-semibold">📊 O que está incluído:</p>
+                  <p className="font-semibold">O que está incluído:</p>
                   <div className="grid gap-2 mt-2">
                     {premiumFeatures.map((feature) => (
                       <div key={feature.title} className="flex items-start gap-2">
@@ -105,7 +105,7 @@ export function PremiumReportRequest({ companyId, companyName, cnpj }: PremiumRe
 
             <Alert className="border-yellow-500/30 bg-yellow-500/5">
               <AlertDescription className="text-sm">
-                <p className="font-semibold text-yellow-600 dark:text-yellow-500">💰 Investimento:</p>
+                <p className="font-semibold text-yellow-600 dark:text-yellow-500">Investimento:</p>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs">• Custo Serasa: <span className="font-mono">R$ 30-50</span></p>
                   <p className="text-xs">• Preço sugerido cliente: <span className="font-mono font-semibold">R$ 200-300</span></p>

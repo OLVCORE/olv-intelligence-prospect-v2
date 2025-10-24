@@ -64,11 +64,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// ============================================
-// 🎯 ARQUITETURA ESTRATÉGICA - FLUXO DE VENDAS B2B
-// FASE 1: Prospecção → FASE 2: Análise → FASE 3: Estratégia → FASE 4: Execução
-// ============================================
-
 const menuGroups = [
   {
     label: "Início",
@@ -89,7 +84,7 @@ const menuGroups = [
     ]
   },
   {
-    label: "🔍 FASE 1: Prospecção & Qualificação",
+    label: "FASE 1: Prospecção & Qualificação",
     icon: Crosshair,
     items: [
       {
@@ -99,13 +94,13 @@ const menuGroups = [
         description: "Gestão completa da base de prospectos"
       },
       {
-        title: "Intelligence 360°",
+        title: "Intelligence 360",
         icon: Brain,
         url: "/intelligence-360",
         highlighted: true,
         description: "Análise completa automatizada com IA",
         submenu: [
-          { title: "Visão Geral 360°", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
+          { title: "Visão Geral 360", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
           { title: "Fit TOTVS Score", icon: Target, url: "/fit-totvs", description: "Score de aderência aos produtos TOTVS" },
           { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Nível de transformação digital" },
           { title: "Digital Health", icon: Activity, url: "/digital-presence", description: "Saúde da presença digital" },
@@ -117,7 +112,7 @@ const menuGroups = [
     ]
   },
   {
-    label: "💰 FASE 2: Estratégia & Vendas",
+    label: "FASE 2: Estratégia & Vendas",
     icon: DollarSign,
     highlight: true,
     items: [
@@ -126,7 +121,7 @@ const menuGroups = [
         icon: Target,
         url: "/account-strategy",
         special: true,
-        description: "🎯 Central estratégica: ROI, CPQ, Cenários, Propostas e Valor",
+        description: "Central estratégica: ROI, CPQ, Cenários, Propostas e Valor",
         submenu: [
           { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy", description: "Visão geral da conta e estratégia" },
           { title: "ROI & TCO Calculator", icon: DollarSign, url: "/account-strategy?tab=roi", description: "Calculadora interativa de retorno" },
@@ -163,7 +158,7 @@ const menuGroups = [
     ]
   },
   {
-    label: "🎯 FASE 3: Execução & Operação",
+    label: "FASE 3: Execução & Operação",
     icon: Rocket,
     items: [
       {
@@ -185,7 +180,7 @@ const menuGroups = [
     ]
   },
   {
-    label: "📈 FASE 4: Resultados & Analytics",
+    label: "FASE 4: Resultados & Analytics",
     icon: BarChart3,
     items: [
       {
@@ -259,8 +254,14 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2">
         <TooltipProvider delayDuration={200}>
-          {menuGroups.map((group) => (
-            <Collapsible key={group.label} className="group/group" defaultOpen>
+          {menuGroups.map((group) => {
+            const isGroupActive = group.items.some(item => 
+              location.pathname === item.url || 
+              (item as any).submenu?.some((sub: any) => location.pathname === sub.url)
+            );
+            
+            return (
+            <Collapsible key={group.label} className="group/group" defaultOpen={isGroupActive}>
               <SidebarGroup>
                 <SidebarGroupLabel asChild>
                   <CollapsibleTrigger className="flex items-center gap-3 text-[11px] md:text-xs font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-4 md:py-3 px-2 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
@@ -284,7 +285,10 @@ export function AppSidebar() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div>
-                                 <Collapsible className="group/collapsible" defaultOpen={location.pathname.startsWith(item.url.split('/')[1])}>
+                                 <Collapsible 
+                                   className="group/collapsible" 
+                                   defaultOpen={(item as any).submenu?.some((sub: any) => location.pathname === sub.url)}
+                                 >
                                    <SidebarMenuButton 
                                      asChild
                                      className={cn(
@@ -384,7 +388,7 @@ export function AppSidebar() {
                 </CollapsibleContent>
               </SidebarGroup>
             </Collapsible>
-          ))}
+          )})}
         </TooltipProvider>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2">

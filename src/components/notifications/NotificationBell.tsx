@@ -48,7 +48,7 @@ export function NotificationBell() {
       signals?.forEach(signal => {
         notifs.push({
           id: `signal-${signal.id}`,
-          title: '🎯 Novo Gap de Governança',
+          title: 'Novo Gap de Governança',
           message: `${signal.companies?.name}: ${signal.signal_type}`,
           type: 'signal',
           read: false,
@@ -112,7 +112,7 @@ export function NotificationBell() {
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'signal': return '🎯';
+      case 'signal': return 'Signal';
       case 'decision_maker': return '👤';
       case 'maturity': return '⭐';
       case 'canvas': return '📋';

@@ -256,7 +256,7 @@ export function EnhancedBatchEnrichment() {
 
       {/* Info sobre Análise Programada */}
       <div className="text-xs text-muted-foreground bg-card/50 border rounded-lg p-3 mt-2">
-        <p className="font-medium mb-1">💡 Análise Programada (Roadmap)</p>
+        <p className="font-medium mb-1">Análise Programada (Roadmap)</p>
         <p>
           Em breve: Configure horários automáticos para varredura completa da base.
           Exemplo: Atualização automática às 2h, 10h e 18h todos os dias.

@@ -193,11 +193,11 @@ export function CanvasDashboard() {
               const total = metrics?.totalBlocks || 1;
               const percentage = Math.round((count / total) * 100);
               const icons: Record<string, string> = {
-                insight: '💡',
-                decision: '⚡',
-                task: '✅',
-                note: '📝',
-                reference: '🔗'
+                insight: 'Insight',
+                decision: 'Decisão',
+                task: 'Tarefa',
+                note: 'Nota',
+                reference: 'Referência'
               };
               
               return (

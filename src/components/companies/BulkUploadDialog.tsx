@@ -229,7 +229,7 @@ export function BulkUploadDialog() {
     text = text.replace(/^\uFEFF/, '');
     
     const separator = detectSeparator(text);
-    console.log(`📊 Separador detectado: "${separator === '\t' ? 'TAB' : separator}"`);
+    console.log(`Separador detectado: "${separator === '\t' ? 'TAB' : separator}"`);
     
     const lines = text.split(/\r?\n/).filter(line => line.trim());
     

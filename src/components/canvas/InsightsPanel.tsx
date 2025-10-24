@@ -86,10 +86,10 @@ export const InsightsPanel = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="insight">💡 Insight</SelectItem>
-                <SelectItem value="risk">⚠️ Risco</SelectItem>
-                <SelectItem value="hypothesis">🎯 Hipótese</SelectItem>
-                <SelectItem value="task">✅ Tarefa</SelectItem>
+                <SelectItem value="insight">Insight</SelectItem>
+                <SelectItem value="risk">Risco</SelectItem>
+                <SelectItem value="hypothesis">Hipótese</SelectItem>
+                <SelectItem value="task">Tarefa</SelectItem>
               </SelectContent>
             </Select>
             <Textarea

@@ -77,7 +77,7 @@ export function CanvasTutorial() {
             <Card className="border-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  🔍 Canvas de Descoberta Inicial
+                  Canvas de Descoberta Inicial
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -153,7 +153,7 @@ export function CanvasTutorial() {
             <div className="flex items-start gap-3 p-3 rounded-lg border">
               <Lightbulb className="h-5 w-5 text-yellow-500 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold mb-1">💡 Insight</h4>
+                <h4 className="font-semibold mb-1">Insight</h4>
                 <p className="text-sm text-muted-foreground">
                   Observações e descobertas importantes sobre a empresa
                 </p>
@@ -162,7 +162,7 @@ export function CanvasTutorial() {
             <div className="flex items-start gap-3 p-3 rounded-lg border">
               <Target className="h-5 w-5 text-blue-500 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold mb-1">⚡ Decisão</h4>
+                <h4 className="font-semibold mb-1">Decisão</h4>
                 <p className="text-sm text-muted-foreground">
                   Próximas ações e decisões estratégicas (pode virar task SDR)
                 </p>

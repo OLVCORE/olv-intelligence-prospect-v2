@@ -13,11 +13,11 @@ export const ReferenceBlock = ({ block, onRefresh }: ReferenceBlockProps) => {
   const { source, snapshot_at, data } = block.content;
 
   const sourceLabels: Record<string, string> = {
-    maturity: '📊 Maturidade Digital',
-    fit: '🎯 Fit TOTVS',
-    tech: '⚙️ Tech Stack',
-    decisors: '👥 Decisores',
-    benchmark: '📈 Benchmark'
+    maturity: 'Maturidade Digital',
+    fit: 'Fit TOTVS',
+    tech: 'Tech Stack',
+    decisors: 'Decisores',
+    benchmark: 'Benchmark'
   };
 
   const isStale = snapshot_at && new Date().getTime() - new Date(snapshot_at).getTime() > 3600000; // 1 hora
