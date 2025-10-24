@@ -136,6 +136,18 @@ serve(async (req) => {
         signupUrl: 'https://account.mapbox.com/auth/signup'
       },
       {
+        name: 'Twilio (Voice)',
+        status: Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_PHONE_NUMBER') ? 'online' : 'offline',
+        configured: !!(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_PHONE_NUMBER')),
+        category: 'calling',
+        priority: 'high',
+        description: 'Sistema de chamadas de voz com gravação e transcrição automática',
+        estimatedCost: 'US$ 0.013/min',
+        signupUrl: 'https://www.twilio.com/try-twilio',
+        envVarName: 'TWILIO_ACCOUNT_SID',
+        apiKey: maskApiKey(Deno.env.get('TWILIO_ACCOUNT_SID'))
+      },
+      {
         name: 'Twilio (WhatsApp)',
         status: Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') ? 'online' : 'offline',
         configured: !!(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN')),
@@ -143,7 +155,9 @@ serve(async (req) => {
         priority: 'high',
         description: 'Envio de mensagens WhatsApp para engajamento e sequências',
         estimatedCost: 'US$ 0.005/msg',
-        signupUrl: 'https://www.twilio.com/try-twilio'
+        signupUrl: 'https://www.twilio.com/try-twilio',
+        envVarName: 'TWILIO_AUTH_TOKEN',
+        apiKey: maskApiKey(Deno.env.get('TWILIO_AUTH_TOKEN'))
       },
       {
         name: 'Resend (Email)',
