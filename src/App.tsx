@@ -54,6 +54,8 @@ const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
 const GeographicAnalysisPage = lazy(() => import("./pages/GeographicAnalysisPage"));
 const GoalsPage = lazy(() => import("./pages/GoalsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Error500 = lazy(() => import("./pages/Error500"));
+const OfflinePage = lazy(() => import("./pages/OfflinePage"));
 
 // Query client with optimized defaults
 const queryClient = new QueryClient({
@@ -391,7 +393,9 @@ const App = () => (
               }
             />
             <Route path="/account-strategy" element={<Navigate to="/companies" replace />} />
-              <Route path="*" element={<NotFound />} />
+            <Route path="/error-500" element={<Error500 />} />
+            <Route path="/offline" element={<OfflinePage />} />
+            <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </AuthProvider>
