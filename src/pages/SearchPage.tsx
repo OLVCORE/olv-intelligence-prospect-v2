@@ -173,7 +173,7 @@ export default function SearchPage() {
       // Carrega empresa
       const { data: companyData, error: companyErr } = await supabase
         .from('companies')
-        .select('*, decision_makers(*)')
+        .select('*')
         .eq('id', prefillCompanyId)
         .maybeSingle();
       if (companyErr) return;
@@ -184,6 +184,12 @@ export default function SearchPage() {
         .select('*')
         .eq('company_id', prefillCompanyId)
         .maybeSingle();
+
+      // Carrega decisores separadamente (evita join 400)
+      const { data: decisors } = await supabase
+        .from('decision_makers')
+        .select('*')
+        .eq('company_id', prefillCompanyId);
 
       if (companyData) {
         setSearchQuery(companyData.cnpj || companyData.name || "");
