@@ -2,8 +2,10 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
+import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
+import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
 import { Badge } from "@/components/ui/badge";
-import { Shield, TrendingUp, TrendingDown, Award, BarChart3 } from "lucide-react";
+import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus } from "lucide-react";
 import { useWinLossAnalysis } from "@/hooks/useCompetitiveIntelligence";
 
 export default function CompetitiveIntelligencePage() {
@@ -77,19 +79,51 @@ export default function CompetitiveIntelligencePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="battle-cards" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="battle-cards">
               <Shield className="mr-2 h-4 w-4" />
               Battle Cards
             </TabsTrigger>
+            <TabsTrigger value="manage">
+              <Plus className="mr-2 h-4 w-4" />
+              Gerenciar
+            </TabsTrigger>
+            <TabsTrigger value="auto-search">
+              <Search className="mr-2 h-4 w-4" />
+              Busca Auto
+            </TabsTrigger>
             <TabsTrigger value="win-loss">
               <BarChart3 className="mr-2 h-4 w-4" />
-              Win/Loss Analysis
+              Win/Loss
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="battle-cards" className="space-y-4">
             <BattleCardViewer />
+          </TabsContent>
+
+          <TabsContent value="manage" className="space-y-4">
+            <div className="flex justify-end">
+              <CompetitorFormDialog />
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciamento de Concorrentes</CardTitle>
+                <CardDescription>
+                  Adicione concorrentes manualmente ou através da busca automática
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Use o botão "Adicionar Concorrente" acima para cadastrar manualmente,
+                  ou vá para a aba "Busca Auto" para encontrar concorrentes automaticamente na web.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="auto-search" className="space-y-4">
+            <AutoSearchCompetitors />
           </TabsContent>
 
           <TabsContent value="win-loss" className="space-y-4">

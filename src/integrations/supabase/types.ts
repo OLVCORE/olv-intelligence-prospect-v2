@@ -955,10 +955,12 @@ export type Database = {
         Row: {
           active: boolean | null
           avg_deal_size: number | null
+          catalog_url: string | null
           category: string
           created_at: string | null
           description: string | null
           id: string
+          logo_url: string | null
           market_position: string | null
           name: string
           pricing_model: string | null
@@ -968,14 +970,17 @@ export type Database = {
           updated_at: string | null
           weaknesses: Json | null
           website: string | null
+          website_url: string | null
         }
         Insert: {
           active?: boolean | null
           avg_deal_size?: number | null
+          catalog_url?: string | null
           category: string
           created_at?: string | null
           description?: string | null
           id?: string
+          logo_url?: string | null
           market_position?: string | null
           name: string
           pricing_model?: string | null
@@ -985,14 +990,17 @@ export type Database = {
           updated_at?: string | null
           weaknesses?: Json | null
           website?: string | null
+          website_url?: string | null
         }
         Update: {
           active?: boolean | null
           avg_deal_size?: number | null
+          catalog_url?: string | null
           category?: string
           created_at?: string | null
           description?: string | null
           id?: string
+          logo_url?: string | null
           market_position?: string | null
           name?: string
           pricing_model?: string | null
@@ -1002,6 +1010,7 @@ export type Database = {
           updated_at?: string | null
           weaknesses?: Json | null
           website?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -2165,6 +2174,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      sdr_diagnostics: {
+        Row: {
+          ai_insights: string | null
+          company_id: string | null
+          competitive_analysis: Json | null
+          created_at: string | null
+          diagnostic_file_path: string
+          diagnostic_summary: Json | null
+          gaps_identified: Json | null
+          id: string
+          recommended_products: Json | null
+          sdr_user_id: string | null
+          technologies_found: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_insights?: string | null
+          company_id?: string | null
+          competitive_analysis?: Json | null
+          created_at?: string | null
+          diagnostic_file_path: string
+          diagnostic_summary?: Json | null
+          gaps_identified?: Json | null
+          id?: string
+          recommended_products?: Json | null
+          sdr_user_id?: string | null
+          technologies_found?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_insights?: string | null
+          company_id?: string | null
+          competitive_analysis?: Json | null
+          created_at?: string | null
+          diagnostic_file_path?: string
+          diagnostic_summary?: Json | null
+          gaps_identified?: Json | null
+          id?: string
+          recommended_products?: Json | null
+          sdr_user_id?: string | null
+          technologies_found?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_diagnostics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sdr_routing_rules: {
         Row: {

@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { DiagnosticUpload } from "@/components/sdr/DiagnosticUpload";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -1289,6 +1290,9 @@ export default function CompanyDetailPage() {
 
         {/* Actions Tab */}
         <TabsContent value="actions" className="space-y-6">
+          {/* Upload de Diagnóstico SDR */}
+          <DiagnosticUpload companyId={company.id} companyName={company.name} />
+
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
