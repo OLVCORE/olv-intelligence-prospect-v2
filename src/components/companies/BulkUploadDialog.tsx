@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,24 @@ export function BulkUploadDialog() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
+
+  // Fecha automaticamente após sucesso
+  useEffect(() => {
+    if (result && result.success > 0 && !isUploading) {
+      const timer = setTimeout(() => {
+        setIsOpen(false);
+        // Reseta o estado após fechar
+        setTimeout(() => {
+          setFile(null);
+          setGoogleSheetUrl("");
+          setResult(null);
+          setProgress(0);
+        }, 300);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [result, isUploading]);
 
   const downloadTemplate = () => {
     const BOM = '\uFEFF';
