@@ -10,7 +10,7 @@ import { FileText, BarChart3, Target, Building2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
-import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
+import { ExplainabilityButton } from "@/components/common/ExplainabilityButton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -106,46 +106,26 @@ export default function ReportsPage() {
           confirmLabel={selectMode === 'single' ? 'Gerar relatório' : 'Gerar relatórios'}
         />
 
-        {/* Card Explicativo */}
-        <ExplainabilityCard
-          title="Critérios dos Relatórios Executivos"
-          description="Entenda como geramos análises completas com dados reais e IA"
-          analysisType="Relatórios IA"
-          dataSources={[
-            {
-              name: "Dados Cadastrais",
-              description: "Receita Federal (CNPJ), localização, porte, setor"
-            },
-            {
-              name: "Presença Digital",
-              description: "Website, redes sociais, marketplace, tech stack"
-            },
-            {
-              name: "Decisores",
-              description: "LinkedIn (PhantomBuster), Apollo.io, Hunter.io para contatos B2B"
-            },
-            {
-              name: "Inteligência de Mercado",
-              description: "Notícias, sentimento, sinais de compra, empresas similares"
-            }
-          ]}
-          criteria={[
-            {
-              name: "Relatório de Empresa",
-              description: "Visão 360°: dados oficiais, presença digital, tech stack, maturidade, decisores mapeados, sinais de compra."
-            },
-            {
-              name: "Relatório de Maturidade",
-              description: "Deep dive nos 5 pilares (infraestrutura, sistemas, processos, segurança, inovação) com gaps identificados."
-            },
-            {
-              name: "Relatório de Fit TOTVS",
-              description: "Análise de compatibilidade: produtos recomendados, fit score, timing score, estratégia de abordagem."
-            }
-          ]}
-          methodology="Cada relatório agrega dados de 8+ fontes distintas, processa com IA para gerar insights acionáveis, e apresenta em formato executivo. Todos os dados são verificáveis - fontes são citadas. IA (Gemini 2.5 Flash) é usada para síntese, não para invenção de dados."
-          interpretation="Use os relatórios para embasar estratégias de vendas, pitch personalizado, identificar momentos de abordagem e construir business cases. Quanto mais completo o enriquecimento da empresa, mais preciso o relatório."
-        />
+        <div className="flex justify-center my-6">
+          <ExplainabilityButton
+            title="Critérios dos Relatórios Executivos"
+            description="Entenda como geramos análises completas com dados reais e IA"
+            analysisType="Relatórios IA"
+            dataSources={[
+              { name: "Dados Cadastrais", description: "Receita Federal (CNPJ), localização, porte, setor" },
+              { name: "Presença Digital", description: "Website, redes sociais, marketplace, tech stack" },
+              { name: "Decisores", description: "LinkedIn (PhantomBuster), Apollo.io, Hunter.io para contatos B2B" },
+              { name: "Inteligência de Mercado", description: "Notícias, sentimento, sinais de compra, empresas similares" }
+            ]}
+            criteria={[
+              { name: "Relatório de Empresa", description: "Visão 360°: dados oficiais, presença digital, tech stack, maturidade, decisores mapeados, sinais de compra." },
+              { name: "Relatório de Maturidade", description: "Deep dive nos 5 pilares (infraestrutura, sistemas, processos, segurança, inovação) com gaps identificados." },
+              { name: "Relatório de Fit TOTVS", description: "Análise de compatibilidade: produtos recomendados, fit score, timing score, estratégia de abordagem." }
+            ]}
+            methodology="Cada relatório agrega dados de 8+ fontes distintas, processa com IA para gerar insights acionáveis, e apresenta em formato executivo. Todos os dados são verificáveis - fontes são citadas. IA (Gemini 2.5 Flash) é usada para síntese, não para invenção de dados."
+            interpretation="Use os relatórios para embasar estratégias de vendas, pitch personalizado, identificar momentos de abordagem e construir business cases. Quanto mais completo o enriquecimento da empresa, mais preciso o relatório."
+          />
+        </div>
 
         <Card>
           <CardHeader>

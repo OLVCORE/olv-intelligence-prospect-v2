@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useState, useMemo } from "react";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
-import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
+import { ExplainabilityButton } from "@/components/common/ExplainabilityButton";
 
 export default function FitTOTVSPage() {
   const { toast } = useToast();
@@ -167,50 +167,6 @@ export default function FitTOTVSPage() {
         onConfirm={handleConfirm}
         title={selectMode === 'single' ? 'Selecionar empresa para análise' : 'Selecionar múltiplas empresas'}
         confirmLabel={selectMode === 'single' ? 'Analisar empresa' : 'Analisar selecionadas'}
-      />
-
-      {/* Card Explicativo */}
-      <ExplainabilityCard
-        title="Critérios da Análise de Fit TOTVS"
-        description="Entenda como identificamos a compatibilidade e momento ideal para produtos TOTVS"
-        analysisType="Product-Market Fit"
-        dataSources={[
-          {
-            name: "Dados da Empresa",
-            description: "Setor, porte (funcionários), localização, revenue, tech stack atual"
-          },
-          {
-            name: "Maturidade Digital",
-            description: "Scores de infraestrutura, processos, sistemas e inovação"
-          },
-          {
-            name: "Sinais de Compra",
-            description: "Expansão, contratações, investimentos, notícias de crescimento"
-          },
-          {
-            name: "Base de Clientes TOTVS",
-            description: "Benchmarking com empresas similares que já são clientes"
-          }
-        ]}
-        criteria={[
-          {
-            name: "Fit Score (0-100)",
-            weight: "35%",
-            description: "Compatibilidade geral: quanto mais próximo de 100, maior a chance de conversão. Considera setor, porte, maturidade e necessidades identificadas."
-          },
-          {
-            name: "Timing Score (0-100)",
-            weight: "35%",
-            description: "Momento ideal para abordagem: score alto indica janela de oportunidade (expansão, mudanças, dores urgentes)."
-          },
-          {
-            name: "Recomendação de Produtos",
-            weight: "30%",
-            description: "IA analisa gaps e sugere produtos TOTVS específicos com justificativa de por que fazem sentido."
-          }
-        ]}
-        methodology="A IA (Gemini 2.5 Flash) cruza dados da empresa com padrões de clientes TOTVS bem-sucedidos. Fit Score = similaridade com ICP ideal. Timing Score = presença de sinais de compra (hiring, growth, pain points). Produtos são recomendados baseado em gaps entre estado atual e best practices do setor."
-        interpretation="Fit > 80 + Timing > 70 = CONTA QUENTE (abordar imediatamente). Fit > 60 = BOM FIT (incluir em cadência). Timing > 70 = MOMENTO IDEAL (priorizar contato). Fit < 40 = BAIXA PRIORIDADE (nutrir para futuro)."
       />
 
       <div className="grid gap-6">
@@ -445,6 +401,52 @@ export default function FitTOTVSPage() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* Botão de Explicação */}
+      <div className="mt-8 flex justify-center">
+        <ExplainabilityButton
+          title="Critérios da Análise de Fit TOTVS"
+          description="Entenda como identificamos a compatibilidade e momento ideal para produtos TOTVS"
+          analysisType="Product-Market Fit"
+          dataSources={[
+            {
+              name: "Dados da Empresa",
+              description: "Setor, porte (funcionários), localização, revenue, tech stack atual"
+            },
+            {
+              name: "Maturidade Digital",
+              description: "Scores de infraestrutura, processos, sistemas e inovação"
+            },
+            {
+              name: "Sinais de Compra",
+              description: "Expansão, contratações, investimentos, notícias de crescimento"
+            },
+            {
+              name: "Base de Clientes TOTVS",
+              description: "Benchmarking com empresas similares que já são clientes"
+            }
+          ]}
+          criteria={[
+            {
+              name: "Fit Score (0-100)",
+              weight: "35%",
+              description: "Compatibilidade geral: quanto mais próximo de 100, maior a chance de conversão. Considera setor, porte, maturidade e necessidades identificadas."
+            },
+            {
+              name: "Timing Score (0-100)",
+              weight: "35%",
+              description: "Momento ideal para abordagem: score alto indica janela de oportunidade (expansão, mudanças, dores urgentes)."
+            },
+            {
+              name: "Recomendação de Produtos",
+              weight: "30%",
+              description: "IA analisa gaps e sugere produtos TOTVS específicos com justificativa de por que fazem sentido."
+            }
+          ]}
+          methodology="A IA (Gemini 2.5 Flash) cruza dados da empresa com padrões de clientes TOTVS bem-sucedidos. Fit Score = similaridade com ICP ideal. Timing Score = presença de sinais de compra (hiring, growth, pain points). Produtos são recomendados baseado em gaps entre estado atual e best practices do setor."
+          interpretation="Fit > 80 + Timing > 70 = CONTA QUENTE (abordar imediatamente). Fit > 60 = BOM FIT (incluir em cadência). Timing > 70 = MOMENTO IDEAL (priorizar contato). Fit < 40 = BAIXA PRIORIDADE (nutrir para futuro)."
+        />
       </div>
     </div>
   );
