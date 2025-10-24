@@ -11,6 +11,13 @@ serve(async (req) => {
   }
 
   try {
+    // Função para mascarar chaves de API
+    const maskApiKey = (key: string | undefined): string => {
+      if (!key) return '';
+      if (key.length <= 8) return '••••••••';
+      return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
+    };
+
     // Verificar todas as APIs configuradas
     const apis = [
       // CRÍTICAS (Vermelho) - Essenciais para MVP
@@ -22,7 +29,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'Dados cadastrais de empresas brasileiras (CNPJ, razão social, endereço, QSA)',
         estimatedCost: 'R$ 49-199/mês',
-        signupUrl: 'https://receitaws.com.br/pricing'
+        signupUrl: 'https://receitaws.com.br/pricing',
+        envVarName: 'RECEITAWS_API_TOKEN',
+        apiKey: maskApiKey(Deno.env.get('RECEITAWS_API_TOKEN'))
       },
       {
         name: 'Apollo.io',
@@ -32,7 +41,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'Enriquecimento de dados de decisores e contatos B2B',
         estimatedCost: 'US$ 49-149/mês',
-        signupUrl: 'https://apollo.io/pricing'
+        signupUrl: 'https://apollo.io/pricing',
+        envVarName: 'APOLLO_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('APOLLO_API_KEY'))
       },
       {
         name: 'OpenAI',
@@ -42,7 +53,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'IA para análises contextuais, fit score, pitches e insights estratégicos',
         estimatedCost: 'US$ 20-200/mês (uso)',
-        signupUrl: 'https://platform.openai.com/signup'
+        signupUrl: 'https://platform.openai.com/signup',
+        envVarName: 'OPENAI_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('OPENAI_API_KEY'))
       },
       {
         name: 'Lovable AI',
@@ -52,7 +65,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'Gateway AI para múltiplos modelos (Gemini, GPT) - análises e relatórios',
         estimatedCost: 'Incluído no plano',
-        signupUrl: 'https://lovable.dev'
+        signupUrl: 'https://lovable.dev',
+        envVarName: 'LOVABLE_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('LOVABLE_API_KEY'))
       },
       {
         name: 'Google Places',
@@ -62,7 +77,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'Dados de localização, endereços e presença digital',
         estimatedCost: 'US$ 0-200/mês (free tier)',
-        signupUrl: 'https://console.cloud.google.com/apis'
+        signupUrl: 'https://console.cloud.google.com/apis',
+        envVarName: 'GOOGLE_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('GOOGLE_API_KEY'))
       },
       {
         name: 'Serper (Search)',
@@ -72,7 +89,9 @@ serve(async (req) => {
         priority: 'critical',
         description: 'Busca Google para tech stack, notícias e presença digital',
         estimatedCost: 'US$ 50/mês (2.5k queries)',
-        signupUrl: 'https://serper.dev'
+        signupUrl: 'https://serper.dev',
+        envVarName: 'SERPER_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('SERPER_API_KEY'))
       },
       
       // ALTA PRIORIDADE (Laranja) - Importantes para funcionalidade completa
