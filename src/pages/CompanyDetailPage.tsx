@@ -177,7 +177,15 @@ export default function CompanyDetailPage() {
                   <p className="text-sm text-muted-foreground">Score Digital</p>
                 </div>
               )}
-              <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+              <Badge 
+                className={`${
+                  receitaData?.situacao === 'ATIVA' 
+                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                    : receitaData?.situacao === 'ALERTA'
+                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                    : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                }`}
+              >
                 {receitaData?.situacao || 'Status desconhecido'}
               </Badge>
             </div>
@@ -381,7 +389,15 @@ export default function CompanyDetailPage() {
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Status</span>
-                    <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                    <Badge 
+                      className={`${
+                        receitaData?.situacao === 'ATIVA' 
+                          ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                          : receitaData?.situacao === 'ALERTA'
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                          : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                      }`}
+                    >
                       {receitaData?.situacao || 'N/A'}
                     </Badge>
                   </div>
@@ -681,7 +697,15 @@ export default function CompanyDetailPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                  <Badge 
+                    className={`${
+                      receitaData?.situacao === 'ATIVA' 
+                        ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                        : receitaData?.situacao === 'ALERTA'
+                        ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                        : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                    }`}
+                  >
                     {receitaData?.situacao || 'N/A'}
                   </Badge>
                 </div>

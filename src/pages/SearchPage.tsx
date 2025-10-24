@@ -1108,8 +1108,18 @@ export default function SearchPage() {
               <Building2 className="h-6 w-6 text-primary" />
               Preview Completo dos Dados
               {previewData?.company.raw_data?.receita?.situacao && (
-                <Badge variant={previewData.company.raw_data.receita.situacao === 'ATIVA' ? 'default' : 'destructive'} className="ml-2">
-                  {previewData.company.raw_data.receita.situacao === 'ATIVA' ? '✓ CNPJ ATIVO' : 'CNPJ INATIVO'}
+                <Badge 
+                  className={`ml-2 ${
+                    previewData.company.raw_data.receita.situacao === 'ATIVA' 
+                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                      : previewData.company.raw_data.receita.situacao === 'ALERTA'
+                      ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                      : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                  }`}
+                >
+                  {previewData.company.raw_data.receita.situacao === 'ATIVA' ? '✓ CNPJ ATIVO' : 
+                   previewData.company.raw_data.receita.situacao === 'ALERTA' ? '⚠ ALERTA' : 
+                   '✕ CNPJ INATIVO'}
                 </Badge>
               )}
             </DialogTitle>
@@ -1225,7 +1235,15 @@ export default function SearchPage() {
                       {previewData.company.raw_data?.receita?.situacao && (
                         <div>
                           <span className="text-muted-foreground">Status:</span>
-                          <Badge variant={previewData.company.raw_data.receita.situacao === 'ATIVA' ? 'default' : 'destructive'} className="ml-2">
+                          <Badge 
+                            className={`ml-2 ${
+                              previewData.company.raw_data.receita.situacao === 'ATIVA' 
+                                ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                                : previewData.company.raw_data.receita.situacao === 'ALERTA'
+                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                                : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                            }`}
+                          >
                             {previewData.company.raw_data.receita.situacao}
                           </Badge>
                         </div>
