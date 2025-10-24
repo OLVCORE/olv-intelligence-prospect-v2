@@ -3,9 +3,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { GripVertical, Building2, Calendar, TrendingUp } from 'lucide-react';
+import { GripVertical, Building2, Calendar, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import type { Deal } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
+import { formatDistanceToNow, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface DraggableDealCardProps {
   deal: Deal;
@@ -37,6 +39,10 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
     high: 'bg-orange-500/10 text-orange-500',
     urgent: 'bg-red-500/10 text-red-500',
   };
+
+  // Calcular dias no estágio
+  const daysInStage = differenceInDays(new Date(), new Date(deal.created_at));
+  const isStale = daysInStage > 7; // Mais de 7 dias no mesmo estágio
 
   return (
     <Card
@@ -89,13 +95,23 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
               </div>
             </div>
 
-            {/* Date */}
-            {deal.expected_close_date && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {new Date(deal.expected_close_date).toLocaleDateString('pt-BR')}
+            {/* Date & Days in Stage */}
+            <div className="flex items-center justify-between">
+              {deal.expected_close_date && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(deal.expected_close_date).toLocaleDateString('pt-BR')}
+                </div>
+              )}
+              <div className={cn(
+                "flex items-center gap-1 text-xs",
+                isStale ? "text-orange-600" : "text-muted-foreground"
+              )}>
+                <Clock className="h-3 w-3" />
+                {daysInStage}d no estágio
+                {isStale && <AlertCircle className="h-3 w-3" />}
               </div>
-            )}
+            </div>
 
             {/* Priority Badge */}
             <Badge

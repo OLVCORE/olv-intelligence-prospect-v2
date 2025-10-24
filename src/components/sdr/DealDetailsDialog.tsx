@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Clock, User, MessageSquare, Save, Phone } from 'lucide-react';
+import { CalendarIcon, Clock, User, MessageSquare, Save, Phone, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Deal } from '@/hooks/useDeals';
@@ -18,6 +18,7 @@ import { useUpdateDeal, useDealActivities } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { CallInterface } from '@/components/sdr/CallInterface';
+import { DealQuickActions } from '@/components/sdr/DealQuickActions';
 import { useNavigate } from 'react-router-dom';
 interface DealDetailsDialogProps {
   deal: Deal | null;
@@ -85,8 +86,9 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="ai">IA Sugestões</TabsTrigger>
             <TabsTrigger value="activity">Atividades</TabsTrigger>
             <TabsTrigger value="notes">Notas</TabsTrigger>
             <TabsTrigger value="comms">Comunicação</TabsTrigger>
@@ -206,6 +208,10 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
                 </div>
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-4">
+            <DealQuickActions deal={currentDeal} />
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-4">

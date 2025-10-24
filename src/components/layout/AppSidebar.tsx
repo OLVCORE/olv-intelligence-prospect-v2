@@ -164,15 +164,15 @@ const menuGroups = [
       {
         title: "SDR Suite",
         icon: MessageSquare,
-        url: "/sdr/dashboard",
+        url: "/sdr/workspace",
         highlighted: true,
         description: "Automação completa de prospecção e vendas",
         submenu: [
+          { title: "🚀 Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado" },
           { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance" },
           { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades" },
-          { title: "Atividades", icon: CheckCircle2, url: "/activities", description: "Tarefas e follow-ups" },
-          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas" },
           { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal" },
+          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas" },
           { title: "Tasks", icon: ListChecks, url: "/sdr/tasks", description: "Lista de tarefas e lembretes" },
           { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte CRM e ferramentas" },
         ],

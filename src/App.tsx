@@ -42,6 +42,7 @@ const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const DigitalPresencePage = lazy(() => import("./pages/DigitalPresencePage"));
 const Analysis360Page = lazy(() => import("./pages/Analysis360Page"));
+const SDRWorkspacePage = lazy(() => import("./pages/SDRWorkspacePage"));
 const SDRInboxPage = lazy(() => import("./pages/SDRInboxPage"));
 const SDRDashboardPage = lazy(() => import("./pages/SDRDashboardPage"));
 const SDRPipelinePage = lazy(() => import("./pages/SDRPipelinePage"));
@@ -296,6 +297,14 @@ const App = () => (
                   <AppLayout>
                     <GeographicAnalysisPage />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/workspace"
+              element={
+                <ProtectedRoute>
+                  <SDRWorkspacePage />
                 </ProtectedRoute>
               }
             />
