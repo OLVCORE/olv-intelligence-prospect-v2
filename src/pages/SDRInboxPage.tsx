@@ -147,15 +147,35 @@ export default function SDRInboxPage() {
         (data || []).map(async (conv) => {
           const { data: lastMsg } = await supabase
             .from('messages')
-            .select('body')
+            .select('body, metadata')
             .eq('conversation_id', conv.id)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
+          let preview = '';
+          if (lastMsg?.body) {
+            // Remove HTML tags and get plain text
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = lastMsg.body;
+            const plainText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // For emails, try to get subject from metadata
+            let subject = '';
+            if (conv.channel === 'email' && lastMsg.metadata) {
+              const metadata = lastMsg.metadata as any;
+              subject = metadata.subject || '';
+            }
+            
+            // Format preview: "Subject - Message preview" or just message preview
+            preview = subject 
+              ? `${subject} - ${plainText.substring(0, 100)}`.trim()
+              : plainText.substring(0, 100).trim();
+          }
+
           return {
             ...conv,
-            _lastMessagePreview: lastMsg?.body || '',
+            _lastMessagePreview: preview || 'Sem prévia',
           };
         })
       );
