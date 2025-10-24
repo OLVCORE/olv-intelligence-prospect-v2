@@ -214,9 +214,9 @@ export default function SearchPage() {
           setNumero((loc.number as string) || "");
         }
         
-        // Contatos existentes
-        const decisores = companyData.decision_makers as any[];
-        if (decisores && decisores.length > 0) {
+        // Contatos existentes (buscados separadamente)
+        const decisores = (decisors as any[]) || [];
+        if (decisores.length > 0) {
           setContacts(decisores.map((dm: any) => ({
             name: dm.name || '',
             title: dm.title || '',
