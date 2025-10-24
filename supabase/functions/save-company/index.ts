@@ -33,10 +33,11 @@ serve(async (req) => {
         .maybeSingle();
       existingCompany = data;
     } else if (company.cnpj) {
+      const cnpjDigits = String(company.cnpj).replace(/\D/g, '');
       const { data } = await supabase
         .from('companies')
         .select('*')
-        .eq('cnpj', company.cnpj)
+        .eq('cnpj', cnpjDigits)
         .maybeSingle();
       existingCompany = data;
     }
@@ -67,11 +68,28 @@ serve(async (req) => {
       ...(Object.keys(mergedRaw).length ? { raw_data: mergedRaw } : {}),
     };
 
-    // Upsert usando PK (id) quando presente; caso contrário, conflito por CNPJ
-    const upsertOptions = company?.cnpj ? { onConflict: 'cnpj' } : undefined as any;
+    // Upsert seguro: normaliza CNPJ e evita conflito com PK quando formatos diferem
+    const cnpjDigits = company?.cnpj ? String(company.cnpj).replace(/\D/g, '') : null;
+    const willConflictOnCnpj = !company?.id && !!cnpjDigits;
+
+    const safePayload: any = {
+      ...upsertPayload,
+      ...(cnpjDigits ? { cnpj: cnpjDigits } : {}),
+    };
+
+    // Evita gravar websites placeholder
+    if (typeof safePayload.website === 'string' && /(exemplo\.com\.br|kelludyfestas\.com\.br)/i.test(safePayload.website)) {
+      delete safePayload.website;
+    }
+
+    // Se vamos conflitar por CNPJ, removemos o id para não estourar a PK
+    if (willConflictOnCnpj) {
+      delete safePayload.id;
+    }
+
     const { data: savedCompany, error: companyError } = await supabase
       .from('companies')
-      .upsert(upsertPayload, upsertOptions)
+      .upsert(safePayload, willConflictOnCnpj ? { onConflict: 'cnpj' } : undefined as any)
       .select()
       .single();
 
@@ -91,13 +109,31 @@ serve(async (req) => {
         if (instagramUrl) payload.instagram_data = { url: instagramUrl };
         if (linkedinUrl) payload.linkedin_data = { url: linkedinUrl };
 
-        const { error: presenceError } = await supabase
+        const { data: existingPresence } = await supabase
           .from('digital_presence')
-          .upsert(payload, { onConflict: 'company_id' });
-        if (presenceError) {
-          console.error('[Save Company] Error saving digital presence:', presenceError);
+          .select('id')
+          .eq('company_id', savedCompany.id)
+          .maybeSingle();
+
+        if (!existingPresence) {
+          const { error: presenceInsertError } = await supabase
+            .from('digital_presence')
+            .insert(payload);
+          if (presenceInsertError) {
+            console.error('[Save Company] Error inserting digital presence:', presenceInsertError);
+          } else {
+            console.log('[Save Company] Presença digital criada');
+          }
         } else {
-          console.log('[Save Company] Presença digital salva/atualizada');
+          const { error: presenceUpdateError } = await supabase
+            .from('digital_presence')
+            .update(payload)
+            .eq('company_id', savedCompany.id);
+          if (presenceUpdateError) {
+            console.error('[Save Company] Error updating digital presence:', presenceUpdateError);
+          } else {
+            console.log('[Save Company] Presença digital atualizada');
+          }
         }
       }
     } catch (dpErr) {
@@ -172,7 +208,6 @@ serve(async (req) => {
         *,
         decision_makers (*),
         digital_maturity (*),
-        digital_presence (*),
         governance_signals (*)
       `)
       .eq('id', savedCompany.id)
@@ -182,6 +217,19 @@ serve(async (req) => {
       console.error('[Save Company] Erro ao buscar dados completos:', fetchError);
       throw new Error('Não foi possível recuperar os dados da empresa após salvar');
     }
+
+    // Buscar presença digital separadamente (sem depender de relacionamento FK)
+    const { data: presence } = await supabase
+      .from('digital_presence')
+      .select('*')
+      .eq('company_id', savedCompany.id)
+      .maybeSingle();
+
+    const enrichedCompany = {
+      ...fullCompany,
+      digital_presence: presence ? [presence] : [],
+    };
+    
 
     console.log('[Save Company] ✅ Salvamento concluído');
 
@@ -203,7 +251,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        company: fullCompany
+        company: enrichedCompany
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
