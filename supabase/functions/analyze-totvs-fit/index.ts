@@ -175,7 +175,7 @@ Retorne APENAS um JSON válido com esta estrutura:
 
     // Salvar análise no banco
     const { data: savedAnalysis } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .insert({
         company_id: companyId,
         signal_type: 'totvs_fit_analysis',

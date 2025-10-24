@@ -26,7 +26,7 @@ export default function FitTOTVSPage() {
         .select(`
           *,
           digital_maturity (*),
-          buying_signals (*)
+          governance_signals (*)
         `)
         .not('digital_maturity_score', 'is', null)
         .order('digital_maturity_score', { ascending: false })
@@ -89,7 +89,7 @@ export default function FitTOTVSPage() {
   };
 
   const getAIAnalysis = (company: any) => {
-    const signal = company.buying_signals?.find(
+    const signal = company.governance_signals?.find(
       (s: any) => s.signal_type === 'totvs_fit_analysis'
     );
     return signal?.raw_data as any;
