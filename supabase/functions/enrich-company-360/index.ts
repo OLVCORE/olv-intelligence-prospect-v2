@@ -248,9 +248,9 @@ serve(async (req) => {
     }
 
     // ========================================
-    // 3️⃣ BUSCAR PRESENÇA DIGITAL COMPLETA EM TODAS AS REDES SOCIAIS
+    // 3️⃣ BUSCAR PRESENÇA DIGITAL COMPLETA EM TODAS AS REDES SOCIAIS (COM INTELIGÊNCIA)
     // ========================================
-    console.log('🌐 Searching ALL social media presence...');
+    console.log('🌐 Starting INTELLIGENT social media search...');
     
     const socialMediaData: {
       linkedin: any;
@@ -276,138 +276,312 @@ serve(async (req) => {
       estimatedTraffic: 'medium'
     };
 
-    // Buscar em TODAS as redes sociais em paralelo
+    // 🧠 CONSTRUIR CONTEXTO INTELIGENTE PARA BUSCA
+    const buildSearchContext = (baseName: string) => {
+      const context = [baseName];
+      
+      // Adicionar localização se disponível
+      if (company.location?.city) {
+        context.push(company.location.city);
+      }
+      if (company.location?.state) {
+        context.push(company.location.state);
+      }
+      
+      // Adicionar setor/indústria
+      if (company.industry) {
+        const industryKeywords = company.industry.split(' ').slice(0, 2); // Primeiras 2 palavras
+        context.push(...industryKeywords);
+      }
+      
+      // Adicionar segmento se disponível
+      if (company.segment) {
+        context.push(company.segment);
+      }
+      
+      return context.filter(Boolean).join(' ');
+    };
+
+    // 🎯 DETERMINAR MELHOR NOME PARA BUSCA
+    // Prioridade: Nome Fantasia > Nome > Razão Social
+    let searchName = company.name;
+    
+    if (receitaData?.fantasia && receitaData.fantasia !== company.name) {
+      searchName = receitaData.fantasia;
+      console.log(`🎯 Usando nome fantasia para busca: ${searchName}`);
+    }
+
+    // Buscar em TODAS as redes sociais em paralelo com INTELIGÊNCIA
     const socialSearches = [
-      // LinkedIn
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:linkedin.com/company ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
-        if (data?.results?.[0]) {
+      // ===== LINKEDIN =====
+      (async () => {
+        // ✅ Se temos URL direta → buscar exatamente ela
+        if (company.linkedin_url) {
+          console.log('🎯 LinkedIn URL provided, fetching exact profile...');
           socialMediaData.linkedin = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
+            url: company.linkedin_url,
             hasPage: true,
-            platform: 'LinkedIn'
+            platform: 'LinkedIn',
+            source: 'direct_url'
           };
-          console.log('✅ LinkedIn found');
+          return;
         }
-      }).catch(err => console.error('❌ LinkedIn search error:', err)),
+        
+        // 🧠 Senão → busca inteligente com contexto
+        const linkedinContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `site:linkedin.com/company ${linkedinContext}`,
+            numResults: 5
+          }
+        });
 
-      // Instagram
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:instagram.com ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
         if (data?.results?.[0]) {
+          // Validar se resultado é relevante (contém parte do nome)
+          const isRelevant = data.results[0].title.toLowerCase().includes(searchName.toLowerCase().split(' ')[0]);
+          
+          if (isRelevant) {
+            socialMediaData.linkedin = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'LinkedIn',
+              source: 'intelligent_search',
+              confidence: 0.85
+            };
+            console.log('✅ LinkedIn found (intelligent search)');
+          }
+        }
+      })().catch(err => console.error('❌ LinkedIn search error:', err)),
+
+      // ===== INSTAGRAM =====
+      (async () => {
+        if (company.instagram_url) {
+          console.log('🎯 Instagram URL provided, using direct URL...');
           socialMediaData.instagram = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
+            url: company.instagram_url,
             hasPage: true,
-            platform: 'Instagram'
+            platform: 'Instagram',
+            source: 'direct_url'
           };
-          console.log('✅ Instagram found');
+          return;
         }
-      }).catch(err => console.error('❌ Instagram search error:', err)),
+        
+        const instagramContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `site:instagram.com ${instagramContext}`,
+            numResults: 5
+          }
+        });
 
-      // Facebook
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:facebook.com ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
         if (data?.results?.[0]) {
+          const firstWord = searchName.toLowerCase().split(' ')[0];
+          const isRelevant = data.results[0].link.toLowerCase().includes(firstWord) || 
+                            data.results[0].title.toLowerCase().includes(firstWord);
+          
+          if (isRelevant) {
+            socialMediaData.instagram = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'Instagram',
+              source: 'intelligent_search',
+              confidence: 0.80
+            };
+            console.log('✅ Instagram found (intelligent search)');
+          }
+        }
+      })().catch(err => console.error('❌ Instagram search error:', err)),
+
+      // ===== FACEBOOK =====
+      (async () => {
+        if (company.facebook_url) {
+          console.log('🎯 Facebook URL provided, using direct URL...');
           socialMediaData.facebook = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
+            url: company.facebook_url,
             hasPage: true,
-            platform: 'Facebook'
+            platform: 'Facebook',
+            source: 'direct_url'
           };
-          console.log('✅ Facebook found');
+          return;
         }
-      }).catch(err => console.error('❌ Facebook search error:', err)),
+        
+        const facebookContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `site:facebook.com ${facebookContext}`,
+            numResults: 5
+          }
+        });
 
-      // Twitter/X
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:twitter.com ${company.name} OR site:x.com ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
         if (data?.results?.[0]) {
+          const firstWord = searchName.toLowerCase().split(' ')[0];
+          const isRelevant = data.results[0].link.toLowerCase().includes(firstWord) || 
+                            data.results[0].title.toLowerCase().includes(firstWord);
+          
+          if (isRelevant) {
+            socialMediaData.facebook = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'Facebook',
+              source: 'intelligent_search',
+              confidence: 0.80
+            };
+            console.log('✅ Facebook found (intelligent search)');
+          }
+        }
+      })().catch(err => console.error('❌ Facebook search error:', err)),
+
+      // ===== TWITTER/X =====
+      (async () => {
+        if (company.twitter_url) {
+          console.log('🎯 Twitter/X URL provided, using direct URL...');
           socialMediaData.twitter = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
+            url: company.twitter_url,
             hasPage: true,
-            platform: 'Twitter/X'
+            platform: 'Twitter/X',
+            source: 'direct_url'
           };
-          console.log('✅ Twitter/X found');
+          return;
         }
-      }).catch(err => console.error('❌ Twitter/X search error:', err)),
+        
+        const twitterContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `(site:twitter.com OR site:x.com) ${twitterContext}`,
+            numResults: 5
+          }
+        });
 
-      // YouTube
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:youtube.com ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
         if (data?.results?.[0]) {
+          const firstWord = searchName.toLowerCase().split(' ')[0];
+          const isRelevant = data.results[0].link.toLowerCase().includes(firstWord) || 
+                            data.results[0].title.toLowerCase().includes(firstWord);
+          
+          if (isRelevant) {
+            socialMediaData.twitter = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'Twitter/X',
+              source: 'intelligent_search',
+              confidence: 0.75
+            };
+            console.log('✅ Twitter/X found (intelligent search)');
+          }
+        }
+      })().catch(err => console.error('❌ Twitter/X search error:', err)),
+
+      // ===== YOUTUBE =====
+      (async () => {
+        if (company.youtube_url) {
+          console.log('🎯 YouTube URL provided, using direct URL...');
           socialMediaData.youtube = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
+            url: company.youtube_url,
             hasPage: true,
-            platform: 'YouTube'
+            platform: 'YouTube',
+            source: 'direct_url'
           };
-          console.log('✅ YouTube found');
+          return;
         }
-      }).catch(err => console.error('❌ YouTube search error:', err)),
+        
+        const youtubeContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `site:youtube.com ${youtubeContext}`,
+            numResults: 5
+          }
+        });
 
-      // TikTok
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `site:tiktok.com ${company.name}`,
-          numResults: 3
-        }
-      }).then(({ data }) => {
         if (data?.results?.[0]) {
-          socialMediaData.tiktok = {
-            url: data.results[0].link,
-            description: data.results[0].snippet,
-            hasPage: true,
-            platform: 'TikTok'
-          };
-          console.log('✅ TikTok found');
+          const firstWord = searchName.toLowerCase().split(' ')[0];
+          const isRelevant = data.results[0].link.toLowerCase().includes(firstWord) || 
+                            data.results[0].title.toLowerCase().includes(firstWord);
+          
+          if (isRelevant) {
+            socialMediaData.youtube = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'YouTube',
+              source: 'intelligent_search',
+              confidence: 0.80
+            };
+            console.log('✅ YouTube found (intelligent search)');
+          }
         }
-      }).catch(err => console.error('❌ TikTok search error:', err)),
+      })().catch(err => console.error('❌ YouTube search error:', err)),
 
-      // WhatsApp Business
-      supabase.functions.invoke('google-search', {
-        body: { 
-          query: `"${company.name}" whatsapp contato`,
-          numResults: 3
+      // ===== TIKTOK =====
+      (async () => {
+        if (company.tiktok_url) {
+          console.log('🎯 TikTok URL provided, using direct URL...');
+          socialMediaData.tiktok = {
+            url: company.tiktok_url,
+            hasPage: true,
+            platform: 'TikTok',
+            source: 'direct_url'
+          };
+          return;
         }
-      }).then(({ data }) => {
+        
+        const tiktokContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `site:tiktok.com ${tiktokContext}`,
+            numResults: 5
+          }
+        });
+
+        if (data?.results?.[0]) {
+          const firstWord = searchName.toLowerCase().split(' ')[0];
+          const isRelevant = data.results[0].link.toLowerCase().includes(firstWord) || 
+                            data.results[0].title.toLowerCase().includes(firstWord);
+          
+          if (isRelevant) {
+            socialMediaData.tiktok = {
+              url: data.results[0].link,
+              description: data.results[0].snippet,
+              hasPage: true,
+              platform: 'TikTok',
+              source: 'intelligent_search',
+              confidence: 0.75
+            };
+            console.log('✅ TikTok found (intelligent search)');
+          }
+        }
+      })().catch(err => console.error('❌ TikTok search error:', err)),
+
+      // ===== WHATSAPP BUSINESS =====
+      (async () => {
+        const whatsappContext = buildSearchContext(searchName);
+        const { data } = await supabase.functions.invoke('google-search', {
+          body: { 
+            query: `"${whatsappContext}" whatsapp contato`,
+            numResults: 5
+          }
+        });
+
         if (data?.results?.[0]) {
           const hasWhatsApp = data.results.some((r: any) => 
             r.snippet?.toLowerCase().includes('whatsapp') || 
             r.link?.includes('wa.me')
           );
+          
           if (hasWhatsApp) {
             socialMediaData.whatsapp = {
               hasPage: true,
               description: 'WhatsApp Business detectado',
-              platform: 'WhatsApp'
+              platform: 'WhatsApp',
+              source: 'intelligent_search',
+              confidence: 0.70
             };
-            console.log('✅ WhatsApp Business found');
+            console.log('✅ WhatsApp Business found (intelligent search)');
           }
         }
-      }).catch(err => console.error('❌ WhatsApp search error:', err))
+      })().catch(err => console.error('❌ WhatsApp search error:', err))
     ];
 
     // Aguardar todas as buscas em paralelo
