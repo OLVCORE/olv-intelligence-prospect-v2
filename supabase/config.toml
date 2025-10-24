@@ -113,3 +113,12 @@ project_id = "ioaxzpwlurpduanzkfrt"
   
   [functions.detect-company-segment]
   verify_jwt = true
+
+  [functions.generate-account-strategy]
+  verify_jwt = false
+
+  [functions.generate-business-case]
+  verify_jwt = false
+
+  [functions.suggest-next-action]
+  verify_jwt = false
