@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { EnhancedBatchEnrichment } from "@/components/admin/EnhancedBatchEnrichment";
 import { EnrichmentMonitor } from "@/components/admin/EnrichmentMonitor";
 import { SystemHealthPanel } from "@/components/admin/SystemHealthPanel";
+import { useNavigate } from "react-router-dom";
 import {
   ComposedChart,
   BarChart,
@@ -59,6 +60,7 @@ const CHART_COLORS = {
 
 export default function Dashboard() {
   const { data, isLoading } = useDashboardExecutive();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -110,6 +112,7 @@ export default function Dashboard() {
               icon={Building2}
               trend="neutral"
               color="blue"
+              onClick={() => navigate('/companies')}
             />
             <HeroMetric
               title="Decisores Mapeados"
@@ -118,6 +121,7 @@ export default function Dashboard() {
               icon={Users}
               trend="neutral"
               color="green"
+              onClick={() => navigate('/companies')}
             />
             <HeroMetric
               title="Pipeline Revenue"
@@ -127,6 +131,7 @@ export default function Dashboard() {
               trend="neutral"
               color="cyan"
               highlight
+              onClick={() => navigate('/sdr/pipeline')}
             />
             <HeroMetric
               title="Conversações"
@@ -135,6 +140,7 @@ export default function Dashboard() {
               icon={MessageSquare}
               trend="neutral"
               color="purple"
+              onClick={() => navigate('/sdr/inbox')}
             />
           </div>
         </div>
@@ -282,9 +288,15 @@ export default function Dashboard() {
               >
                 <div className="space-y-3 mt-4">
                   {data.companiesByIndustry.slice(0, 5).map((industry, i) => (
-                    <div key={i} className="flex items-center justify-between group cursor-pointer">
+                    <div 
+                      key={i} 
+                      className="flex items-center justify-between group cursor-pointer hover:bg-primary/5 p-3 rounded-xl transition-all"
+                      onClick={() => navigate(`/companies?industry=${encodeURIComponent(industry.industry)}`)}
+                      role="button"
+                      tabIndex={0}
+                    >
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent-cyan" />
+                        <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent-cyan group-hover:scale-110 transition-transform" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{industry.industry}</p>
                           <p className="text-xs text-muted-foreground">
@@ -292,7 +304,10 @@ export default function Dashboard() {
                           </p>
                         </div>
                       </div>
-                      <Badge variant="secondary">{industry.count}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{industry.count}</Badge>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -435,8 +450,14 @@ export default function Dashboard() {
               >
                 <div className="space-y-3 mt-4">
                   {data.topFitCompanies.slice(0, 6).map((company, i) => (
-                    <div key={i} className="group">
-                      <div className="flex items-center justify-between p-3 rounded-xl glass-card glass-card-hover">
+                    <div 
+                      key={i} 
+                      className="group cursor-pointer"
+                      onClick={() => navigate(`/companies/${company.id}`)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-center justify-between p-3 rounded-xl glass-card glass-card-hover hover:bg-primary/5 transition-all">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{company.name}</p>
                           <p className="text-xs text-muted-foreground">{company.recommendedProducts[0]}</p>
@@ -446,6 +467,7 @@ export default function Dashboard() {
                           <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0">
                             {company.fitScore}%
                           </Badge>
+                          <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       </div>
                     </div>
@@ -618,7 +640,7 @@ export default function Dashboard() {
   );
 }
 
-// Hero Metric Component - Premium
+// Hero Metric Component - Premium (Clicável)
 function HeroMetric({
   title,
   value,
@@ -627,6 +649,7 @@ function HeroMetric({
   icon: Icon,
   color,
   highlight = false,
+  onClick,
 }: {
   title: string;
   value: string;
@@ -635,6 +658,7 @@ function HeroMetric({
   icon: any;
   color: 'blue' | 'green' | 'cyan' | 'purple';
   highlight?: boolean;
+  onClick?: () => void;
 }) {
   const colorClasses = {
     blue: { bg: 'from-blue-500/20 to-blue-500/5', icon: 'text-blue-600', border: 'border-blue-500/20' },
@@ -646,11 +670,24 @@ function HeroMetric({
   const colors = colorClasses[color];
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl glass-card glass-card-hover p-6 ${highlight ? 'ring-2 ring-primary' : ''}`}>
-      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-50`} />
+    <div 
+      className={`relative overflow-hidden rounded-2xl glass-card glass-card-hover p-6 transition-all duration-300 ${
+        highlight ? 'ring-2 ring-primary' : ''
+      } ${onClick ? 'cursor-pointer hover:scale-105 active:scale-100 group' : ''}`}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-50 group-hover:opacity-70 transition-opacity`} />
       <div className="relative">
         <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border}`}>
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border} group-hover:scale-110 transition-transform`}>
             <Icon className={`h-5 w-5 ${colors.icon}`} />
           </div>
           {change !== null && trend !== 'neutral' && (
@@ -664,7 +701,12 @@ function HeroMetric({
           )}
         </div>
         <p className="text-sm text-muted-foreground font-medium mb-2">{title}</p>
-        <p className="text-4xl font-bold tracking-tight">{value}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-4xl font-bold tracking-tight">{value}</p>
+          {onClick && (
+            <ArrowUpRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+        </div>
       </div>
     </div>
   );
