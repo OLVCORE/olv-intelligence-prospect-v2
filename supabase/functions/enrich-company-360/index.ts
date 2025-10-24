@@ -300,8 +300,9 @@ serve(async (req) => {
         console.log('👥 Fetching decision makers via Apollo...');
         const { data: apolloData } = await supabase.functions.invoke('enrich-apollo', {
           body: { 
-            company_name: company.name,
-            domain: company.domain
+            type: 'people',
+            organizationName: company.name,
+            ...(company.domain && { domain: company.domain })
           }
         });
 

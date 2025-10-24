@@ -56,21 +56,47 @@ serve(async (req) => {
     }
 
     // 2. Decision Makers (Apollo)
-    if (website) {
-      console.log(`👥 Finding decision makers for: ${website}`);
+    if (website || name) {
+      console.log(`👥 Finding decision makers for: ${name}`);
       try {
-        const domain = new URL(website).hostname.replace('www.', '');
+        const domain = website ? new URL(website).hostname.replace('www.', '') : undefined;
         const { data: apolloData, error: apolloError } = await supabaseClient.functions.invoke('enrich-apollo', {
           body: { 
-            company_name: name,
-            domain: domain,
-            company_id: companyId
+            type: 'people',
+            organizationName: name,
+            ...(domain && { domain })
           }
         });
         
-        if (!apolloError && apolloData) {
+        if (!apolloError && apolloData?.people) {
           enrichmentResults.apollo = apolloData;
-          console.log(`✅ Apollo enrichment completed - Found ${apolloData.decision_makers?.length || 0} decision makers`);
+          console.log(`✅ Found ${apolloData.people.length} decision makers`);
+          
+          // Salvar decisores no banco
+          const decisorsPayload = apolloData.people.map((person: any) => ({
+            company_id: companyId,
+            name: person.name,
+            title: person.title,
+            email: person.email,
+            linkedin_url: person.linkedin_url,
+            department: person.headline || person.title,
+            seniority: person.seniority,
+            verified_email: !!person.email,
+            raw_data: person
+          }));
+
+          const { error: decisorsError } = await supabaseClient
+            .from('decision_makers')
+            .upsert(decisorsPayload, { 
+              onConflict: 'company_id,email',
+              ignoreDuplicates: true 
+            });
+
+          if (decisorsError) {
+            console.error('❌ Error saving decision makers:', decisorsError);
+          } else {
+            console.log(`✅ Saved ${decisorsPayload.length} decision makers to database`);
+          }
         }
       } catch (error) {
         console.error(`❌ Apollo enrichment failed:`, error);

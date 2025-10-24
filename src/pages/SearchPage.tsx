@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ const ESTADOS_BRASIL = [
 ];
 
 export default function SearchPage() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -403,9 +405,10 @@ export default function SearchPage() {
         description: `${previewData.company.name} foi cadastrada com sucesso`,
       });
       
+      // Navegar para a página de detalhes da empresa
       setTimeout(() => {
-        window.location.href = `/company/${data.company.id}`;
-      }, 1500);
+        navigate(`/company/${data.company.id}`);
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Erro ao salvar",

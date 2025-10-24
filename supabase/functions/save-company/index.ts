@@ -36,11 +36,28 @@ serve(async (req) => {
     if (decision_makers && decision_makers.length > 0) {
       const decisorsPayload = decision_makers.map((person: any) => ({
         company_id: savedCompany.id,
-        ...person
+        name: person.name,
+        title: person.title,
+        email: person.email,
+        linkedin_url: person.linkedin_url,
+        department: person.department || person.headline,
+        seniority: person.seniority,
+        verified_email: person.verified_email || false,
+        raw_data: person
       }));
 
-      await supabase.from('decision_makers').insert(decisorsPayload);
-      console.log('[Save Company] Decisores salvos:', decision_makers.length);
+      const { error: decisorsError } = await supabase
+        .from('decision_makers')
+        .upsert(decisorsPayload, {
+          onConflict: 'company_id,email',
+          ignoreDuplicates: true
+        });
+
+      if (decisorsError) {
+        console.error('[Save Company] Error saving decision makers:', decisorsError);
+      } else {
+        console.log('[Save Company] Decisores salvos:', decision_makers.length);
+      }
     }
 
     // 3. Salvar maturidade digital

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
-  CheckCircle, TrendingUp, Activity, Trash2
+  CheckCircle, TrendingUp, Activity, Trash2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,11 @@ import { toast } from "sonner";
 export default function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
+  const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -63,6 +67,90 @@ export default function CompanyDetailPage() {
       </div>
     );
   }
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-company-report', {
+        body: { companyId: id }
+      });
+
+      if (error) throw error;
+
+      toast.success("Relatório gerado com sucesso!", {
+        description: "O relatório PDF está sendo preparado..."
+      });
+
+      // Trigger download
+      if (data?.pdfUrl) {
+        window.open(data.pdfUrl, '_blank');
+      }
+    } catch (error: any) {
+      toast.error("Erro ao gerar relatório", {
+        description: error.message
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleAnalyzeFit = async () => {
+    setIsAnalyzingFit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-totvs-fit', {
+        body: { companyId: id }
+      });
+
+      if (error) throw error;
+
+      toast.success("Análise de Fit TOTVS concluída!", {
+        description: `Score de adequação: ${data?.score || 'N/A'}`
+      });
+
+      // Refresh company data
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+    } catch (error: any) {
+      toast.error("Erro ao analisar Fit TOTVS", {
+        description: error.message
+      });
+    } finally {
+      setIsAnalyzingFit(false);
+    }
+  };
+
+  const handleUpdateReceita = async () => {
+    if (!company?.cnpj) {
+      toast.error("CNPJ não disponível", {
+        description: "Não é possível atualizar dados sem CNPJ"
+      });
+      return;
+    }
+
+    setIsUpdatingReceita(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
+        body: { 
+          cnpj: company.cnpj,
+          companyId: id
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Dados da Receita atualizados!", {
+        description: "Informações cadastrais foram atualizadas"
+      });
+
+      // Refresh company data
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+    } catch (error: any) {
+      toast.error("Erro ao atualizar dados da Receita", {
+        description: error.message
+      });
+    } finally {
+      setIsUpdatingReceita(false);
+    }
+  };
 
   const receitaData = (company.raw_data as any)?.receita;
   const maturity = company.digital_maturity?.[0];
@@ -540,17 +628,41 @@ export default function CompanyDetailPage() {
                 <CardTitle className="text-sm">Ações Recomendadas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" variant="default">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório Completo (PDF)
+                <Button 
+                  className="w-full" 
+                  variant="default"
+                  onClick={handleGenerateReport}
+                  disabled={isGeneratingReport}
+                >
+                  {isGeneratingReport ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Gerando...</>
+                  ) : (
+                    <><FileText className="h-4 w-4 mr-2" />Gerar Relatório Completo (PDF)</>
+                  )}
                 </Button>
-                <Button className="w-full" variant="outline">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Analisar Fit TOTVS
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={handleAnalyzeFit}
+                  disabled={isAnalyzingFit}
+                >
+                  {isAnalyzingFit ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analisando...</>
+                  ) : (
+                    <><TrendingUp className="h-4 w-4 mr-2" />Analisar Fit TOTVS</>
+                  )}
                 </Button>
-                <Button className="w-full" variant="outline">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Atualizar Dados da Receita
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={handleUpdateReceita}
+                  disabled={isUpdatingReceita}
+                >
+                  {isUpdatingReceita ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Atualizando...</>
+                  ) : (
+                    <><Shield className="h-4 w-4 mr-2" />Atualizar Dados da Receita</>
+                  )}
                 </Button>
                 <Button 
                   className="w-full" 
