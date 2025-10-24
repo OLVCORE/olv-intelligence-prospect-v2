@@ -2,17 +2,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText } from "lucide-react";
+import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { PremiumReportRequest } from "./PremiumReportRequest";
 
 interface CompanyReportProps {
   companyId: string;
 }
 
 export function CompanyReport({ companyId }: CompanyReportProps) {
+  // Buscar dados da empresa para verificar se tem relatório premium
+  const { data: company } = useQuery({
+    queryKey: ['company', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const { data: report, isLoading } = useQuery({
     queryKey: ['company-report', companyId],
     queryFn: async () => {
@@ -42,8 +58,107 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
 
   if (!report) return null;
 
+  const hasPremiumReport = company?.raw_data && (company.raw_data as any)?.serasa_premium;
+
   return (
     <div className="space-y-6">
+      {/* Premium Report Request */}
+      {!hasPremiumReport && company?.cnpj && (
+        <PremiumReportRequest
+          companyId={companyId}
+          companyName={company.name}
+          cnpj={company.cnpj}
+        />
+      )}
+
+      {/* Premium Report Display */}
+      {hasPremiumReport && (
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/10 to-transparent">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Análise Financeira Premium Serasa
+                </CardTitle>
+                <CardDescription>
+                  Gerado em {new Date((company.raw_data as any).premium_report_generated_at).toLocaleString('pt-BR')}
+                </CardDescription>
+              </div>
+              <Badge className="bg-primary text-primary-foreground">Premium</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-background/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Score de Crédito</p>
+                <p className="text-3xl font-bold">{(company.raw_data as any).serasa_premium.creditScore}</p>
+                <Badge variant={
+                  (company.raw_data as any).serasa_premium.riskClassification === 'A' ? 'default' :
+                  (company.raw_data as any).serasa_premium.riskClassification === 'B' ? 'secondary' :
+                  'destructive'
+                } className="mt-2">
+                  Risco {(company.raw_data as any).serasa_premium.riskClassification}
+                </Badge>
+              </div>
+              <div className="text-center p-4 bg-background/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Score Preditivo</p>
+                <p className="text-3xl font-bold">{(company.raw_data as any).serasa_premium.predictiveRiskScore.toFixed(1)}%</p>
+                <Progress value={(company.raw_data as any).serasa_premium.predictiveRiskScore} className="mt-2" />
+              </div>
+              <div className="text-center p-4 bg-background/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Protestos</p>
+                <p className="text-3xl font-bold text-yellow-600">{(company.raw_data as any).serasa_premium.serasaData.protestos}</p>
+              </div>
+              <div className="text-center p-4 bg-background/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Ações Judiciais</p>
+                <p className="text-3xl font-bold text-orange-600">{(company.raw_data as any).serasa_premium.serasaData.acoesJudiciais}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Histórico de Pagamentos</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pontuais</span>
+                    <span className="font-semibold text-green-600">{(company.raw_data as any).serasa_premium.paymentHistory.onTimePayments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Atrasados</span>
+                    <span className="font-semibold text-yellow-600">{(company.raw_data as any).serasa_premium.paymentHistory.latePayments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Atraso Médio</span>
+                    <span className="font-semibold">{(company.raw_data as any).serasa_premium.paymentHistory.avgPaymentDelay.toFixed(1)} dias</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Indicadores de Dívida</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dívida Total</span>
+                    <span className="font-semibold">R$ {((company.raw_data as any).serasa_premium.debtIndicators.totalDebt / 1000).toFixed(0)}k</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vencida</span>
+                    <span className="font-semibold text-red-600">R$ {((company.raw_data as any).serasa_premium.debtIndicators.overdueDebt / 1000).toFixed(0)}k</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dívida/Receita</span>
+                    <span className="font-semibold">{((company.raw_data as any).serasa_premium.debtIndicators.debtToRevenueRatio * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header do Relatório */}
       <Card>
         <CardHeader>
