@@ -7,6 +7,8 @@ import {
   Link2, Image, Smile, ChevronDown, X 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useMessageTemplates } from '@/hooks/useMessageTemplates';
 
 interface EmailComposerProps {
   to: string;
@@ -37,6 +39,8 @@ export function EmailComposer({
   const [cco, setCco] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
 
+  const { templates, categories, loading: loadingTemplates, applyTemplate } = useMessageTemplates({ channel: 'email' });
+
   const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setAttachments([...attachments, ...Array.from(e.target.files)]);
@@ -52,7 +56,6 @@ export function EmailComposer({
       onSend();
     }
   };
-
   return (
     <div className="flex flex-col gap-2 border rounded-lg p-4 bg-card">
       {/* Header - Para, Cc, Cco */}
@@ -170,6 +173,46 @@ export function EmailComposer({
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Smile className="h-4 w-4" />
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-2">
+              Modelos
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>Selecionar modelo</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {loadingTemplates && (
+              <DropdownMenuItem disabled>Carregando...</DropdownMenuItem>
+            )}
+            {!loadingTemplates && Object.keys(categories).length === 0 && (
+              <DropdownMenuItem disabled>Nenhum modelo disponível</DropdownMenuItem>
+            )}
+            {!loadingTemplates && Object.entries(categories).map(([cat, items]) => (
+              <div key={cat}>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">{cat}</DropdownMenuLabel>
+                {items.map((t) => (
+                  <DropdownMenuItem
+                    key={t.id}
+                    onClick={() => {
+                      const applied = applyTemplate(t);
+                      if (t.subject) onSubjectChange(applied.subject);
+                      onBodyChange(applied.body);
+                    }}
+                    className="whitespace-normal h-auto py-2"
+                  >
+                    <div>
+                      <div className="text-sm font-medium">{t.name}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-2">{t.body}</div>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="flex-1" />
         <label htmlFor="email-attachment">
           <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
