@@ -133,6 +133,10 @@ export default function CompanyDetailPage() {
     }
 
     setIsUpdatingReceita(true);
+    toast.info("Buscando dados da Receita Federal...", {
+      description: "Aguarde..."
+    });
+    
     try {
       const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
         body: { cnpj: company.cnpj }

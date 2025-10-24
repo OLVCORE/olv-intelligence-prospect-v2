@@ -207,36 +207,55 @@ serve(async (req) => {
     if (company.website || company.domain) {
       try {
         console.log('🔧 Detecting tech stack...');
-        const domain = company.domain || new URL(company.website).hostname;
         
-        const { data: techSearchData } = await supabase.functions.invoke('google-search', {
-          body: { 
-            query: `${domain} technology stack tools software used`,
-            numResults: 5
+        // Validar URL antes de fazer parse
+        let domain = company.domain;
+        if (!domain && company.website) {
+          try {
+            // Validar se o website é uma URL válida
+            const websiteStr = String(company.website).trim();
+            if (websiteStr && websiteStr !== 'não encontrado' && !websiteStr.startsWith('não')) {
+              domain = new URL(websiteStr.startsWith('http') ? websiteStr : `https://${websiteStr}`).hostname;
+            }
+          } catch (urlError) {
+            console.warn('⚠️ Invalid website URL, skipping tech stack detection:', company.website);
           }
-        });
+        }
         
-        const techKeywords: { [key: string]: string[] } = {
-          'SAP': ['sap erp', 'sap business', 'sap hana'],
-          'Oracle': ['oracle database', 'oracle erp', 'oracle cloud'],
-          'Salesforce': ['salesforce crm', 'salesforce'],
-          'Microsoft Dynamics': ['dynamics 365', 'microsoft dynamics'],
-          'AWS': ['amazon web services', 'aws cloud'],
-          'Azure': ['microsoft azure', 'azure cloud'],
-          'Google Cloud': ['google cloud platform', 'gcp'],
-          'PostgreSQL': ['postgresql', 'postgres'],
-          'MySQL': ['mysql database'],
-          'MongoDB': ['mongodb', 'mongo database']
-        };
+        if (!domain) {
+          console.log('⚠️ No valid domain found, skipping tech stack detection');
+          techStack = [];
+        } else {
+        
+          const { data: techSearchData } = await supabase.functions.invoke('google-search', {
+            body: { 
+              query: `${domain} technology stack tools software used`,
+              numResults: 5
+            }
+          });
+        
+          const techKeywords: { [key: string]: string[] } = {
+            'SAP': ['sap erp', 'sap business', 'sap hana'],
+            'Oracle': ['oracle database', 'oracle erp', 'oracle cloud'],
+            'Salesforce': ['salesforce crm', 'salesforce'],
+            'Microsoft Dynamics': ['dynamics 365', 'microsoft dynamics'],
+            'AWS': ['amazon web services', 'aws cloud'],
+            'Azure': ['microsoft azure', 'azure cloud'],
+            'Google Cloud': ['google cloud platform', 'gcp'],
+            'PostgreSQL': ['postgresql', 'postgres'],
+            'MySQL': ['mysql database'],
+            'MongoDB': ['mongodb', 'mongo database']
+          };
 
-        if (techSearchData?.results) {
-          const searchText = techSearchData.results.map((r: any) => 
-            `${r.title} ${r.snippet}`.toLowerCase()
-          ).join(' ');
+          if (techSearchData?.results) {
+            const searchText = techSearchData.results.map((r: any) => 
+              `${r.title} ${r.snippet}`.toLowerCase()
+            ).join(' ');
 
-          for (const [tech, keywords] of Object.entries(techKeywords)) {
-            if (keywords.some(keyword => searchText.includes(keyword))) {
-              techStack.push(tech);
+            for (const [tech, keywords] of Object.entries(techKeywords)) {
+              if (keywords.some(keyword => searchText.includes(keyword))) {
+                techStack.push(tech);
+              }
             }
           }
         }
@@ -784,10 +803,30 @@ Retorne APENAS um JSON válido no formato:
       const aiData = await aiResponse.json();
       const aiContent = aiData.choices[0].message.content;
       
-      // Parse do JSON retornado pela IA
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const aiInsights = JSON.parse(jsonMatch[0]);
+      // Parse do JSON retornado pela IA com tratamento de erros
+      let aiInsights = null;
+      try {
+        // Tentar encontrar JSON no conteúdo
+        const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          // Limpar possíveis problemas de formatação
+          let jsonStr = jsonMatch[0];
+          
+          // Remover trailing commas antes de ] ou }
+          jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+          
+          // Remover quebras de linha dentro de strings
+          jsonStr = jsonStr.replace(/("\w+":\s*"[^"]*)\n([^"]*")/g, '$1 $2');
+          
+          aiInsights = JSON.parse(jsonStr);
+        }
+      } catch (parseError) {
+        console.error('❌ JSON parse error:', parseError);
+        console.error('Content:', aiContent);
+        // Continuar sem insights da IA
+      }
+      
+      if (aiInsights && aiInsights.insights && Array.isArray(aiInsights.insights)) {
         
         // Deletar insights antigos
         await supabase.from('insights')
@@ -809,6 +848,8 @@ Retorne APENAS um JSON válido no formato:
         }
         
         console.log(`✅ ${aiInsights.insights.length} AI insights generated`);
+      } else {
+        console.warn('⚠️ No valid insights generated by AI');
       }
     } catch (error) {
       console.error('❌ AI insights error:', error);
