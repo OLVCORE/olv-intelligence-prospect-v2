@@ -41,50 +41,6 @@ export type Database = {
         }
         Relationships: []
       }
-      buying_signals: {
-        Row: {
-          company_id: string | null
-          confidence_score: number | null
-          created_at: string
-          description: string | null
-          detected_at: string
-          id: string
-          raw_data: Json | null
-          signal_type: string
-          source: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          confidence_score?: number | null
-          created_at?: string
-          description?: string | null
-          detected_at?: string
-          id?: string
-          raw_data?: Json | null
-          signal_type: string
-          source?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          confidence_score?: number | null
-          created_at?: string
-          description?: string | null
-          detected_at?: string
-          id?: string
-          raw_data?: Json | null
-          signal_type?: string
-          source?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "buying_signals_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       canvas: {
         Row: {
           company_id: string | null
@@ -780,6 +736,65 @@ export type Database = {
           serasa_data?: Json | null
         }
         Relationships: []
+      }
+      governance_signals: {
+        Row: {
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string
+          description: string | null
+          detected_at: string
+          gap_category: string | null
+          governance_gap_score: number | null
+          id: string
+          organizational_maturity_level: string | null
+          raw_data: Json | null
+          requires_consulting: boolean | null
+          signal_type: string
+          source: string | null
+          transformation_priority: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          gap_category?: string | null
+          governance_gap_score?: number | null
+          id?: string
+          organizational_maturity_level?: string | null
+          raw_data?: Json | null
+          requires_consulting?: boolean | null
+          signal_type: string
+          source?: string | null
+          transformation_priority?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          gap_category?: string | null
+          governance_gap_score?: number | null
+          id?: string
+          organizational_maturity_level?: string | null
+          raw_data?: Json | null
+          requires_consulting?: boolean | null
+          signal_type?: string
+          source?: string | null
+          transformation_priority?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buying_signals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       insights: {
         Row: {

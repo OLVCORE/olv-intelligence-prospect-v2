@@ -7,7 +7,7 @@ export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
   const canvas = useCanvas(canvasId);
   const [companyData, setCompanyData] = useState<any>(null);
   const [digitalMaturity, setDigitalMaturity] = useState<any>(null);
-  const [buyingSignals, setBuyingSignals] = useState<any[]>([]);
+  const [governanceSignals, setGovernanceSignals] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const { toast } = useToast();
@@ -39,14 +39,14 @@ export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
       
       setDigitalMaturity(maturity);
 
-      // Buying Signals
+      // Governance signals
       const { data: signals } = await supabase
-        .from('buying_signals')
+        .from('governance_signals')
         .select('*')
         .eq('company_id', companyId)
         .order('detected_at', { ascending: false });
       
-      setBuyingSignals(signals || []);
+      setGovernanceSignals(signals || []);
 
     } catch (error) {
       console.error('Error loading company data:', error);
@@ -152,7 +152,7 @@ export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
           companyId,
           companyData,
           digitalMaturity,
-          buyingSignals
+          governanceSignals
         }
       });
 
@@ -171,7 +171,7 @@ export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
     } catch (error) {
       console.error('Error executing proactive AI:', error);
     }
-  }, [canvasId, companyId, companyData, digitalMaturity, buyingSignals, addComment, toast]);
+  }, [canvasId, companyId, companyData, digitalMaturity, governanceSignals, addComment, toast]);
 
   // Load all data on mount
   useEffect(() => {
@@ -208,7 +208,7 @@ export const useCanvasIntelligence = (canvasId: string, companyId?: string) => {
     ...canvas,
     companyData,
     digitalMaturity,
-    buyingSignals,
+    governanceSignals,
     comments,
     isLoadingData,
     addComment,

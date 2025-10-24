@@ -4,7 +4,7 @@ import { supabase, type Company, type Inserts, type Updates, dbLogger, executeQu
 export interface CompanyWithRelations extends Company {
   decision_makers?: any[];
   digital_maturity?: any[];
-  buying_signals?: any[];
+  governance_signals?: any[];
 }
 
 export const companiesRepository = {
@@ -23,7 +23,7 @@ export const companiesRepository = {
           *,
           decision_makers (*),
           digital_maturity (*),
-          buying_signals (*)
+          governance_signals (*)
         `);
     }
 

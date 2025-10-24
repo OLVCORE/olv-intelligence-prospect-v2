@@ -1,21 +1,21 @@
-// ✅ Repository de sinais de compra
-import { supabase, type BuyingSignal, type Inserts, dbLogger } from './index';
+// ✅ Repository de sinais de governança
+import { supabase, type GovernanceSignal, type Inserts, dbLogger } from './index';
 
 export const signalsRepository = {
   /**
    * Busca sinais de uma empresa
    */
-  async findByCompany(companyId: string): Promise<BuyingSignal[]> {
-    dbLogger.log('findByCompany', 'buying_signals', { companyId });
+  async findByCompany(companyId: string): Promise<GovernanceSignal[]> {
+    dbLogger.log('findByCompany', 'governance_signals', { companyId });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('*')
       .eq('company_id', companyId)
       .order('detected_at', { ascending: false });
 
     if (error) {
-      dbLogger.error('findByCompany', 'buying_signals', error);
+      dbLogger.error('findByCompany', 'governance_signals', error);
       return [];
     }
 
@@ -25,18 +25,18 @@ export const signalsRepository = {
   /**
    * Busca sinais por tipo
    */
-  async findByType(companyId: string, signalType: string): Promise<BuyingSignal[]> {
-    dbLogger.log('findByType', 'buying_signals', { companyId, signalType });
+  async findByType(companyId: string, signalType: string): Promise<GovernanceSignal[]> {
+    dbLogger.log('findByType', 'governance_signals', { companyId, signalType });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('*')
       .eq('company_id', companyId)
       .eq('signal_type', signalType)
       .order('detected_at', { ascending: false });
 
     if (error) {
-      dbLogger.error('findByType', 'buying_signals', error);
+      dbLogger.error('findByType', 'governance_signals', error);
       return [];
     }
 
@@ -46,37 +46,37 @@ export const signalsRepository = {
   /**
    * Cria múltiplos sinais
    */
-  async createMany(signals: Inserts<'buying_signals'>[]): Promise<BuyingSignal[]> {
-    dbLogger.log('createMany', 'buying_signals', { count: signals.length });
+  async createMany(signals: Inserts<'governance_signals'>[]): Promise<GovernanceSignal[]> {
+    dbLogger.log('createMany', 'governance_signals', { count: signals.length });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .insert(signals)
       .select();
 
     if (error) {
-      dbLogger.error('createMany', 'buying_signals', error);
+      dbLogger.error('createMany', 'governance_signals', error);
       return [];
     }
 
-    dbLogger.log('createMany SUCCESS', 'buying_signals', { count: data.length });
+    dbLogger.log('createMany SUCCESS', 'governance_signals', { count: data.length });
     return data || [];
   },
 
   /**
    * Cria sinal único
    */
-  async create(signal: Inserts<'buying_signals'>): Promise<BuyingSignal | null> {
-    dbLogger.log('create', 'buying_signals', { signal });
+  async create(signal: Inserts<'governance_signals'>): Promise<GovernanceSignal | null> {
+    dbLogger.log('create', 'governance_signals', { signal });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .insert(signal)
       .select()
       .single();
 
     if (error) {
-      dbLogger.error('create', 'buying_signals', error);
+      dbLogger.error('create', 'governance_signals', error);
       return null;
     }
 
@@ -86,18 +86,18 @@ export const signalsRepository = {
   /**
    * Busca sinais de alta confiança
    */
-  async findHighConfidence(companyId: string, minScore = 0.8): Promise<BuyingSignal[]> {
-    dbLogger.log('findHighConfidence', 'buying_signals', { companyId, minScore });
+  async findHighConfidence(companyId: string, minScore = 0.8): Promise<GovernanceSignal[]> {
+    dbLogger.log('findHighConfidence', 'governance_signals', { companyId, minScore });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('*')
       .eq('company_id', companyId)
       .gte('confidence_score', minScore)
       .order('confidence_score', { ascending: false });
 
     if (error) {
-      dbLogger.error('findHighConfidence', 'buying_signals', error);
+      dbLogger.error('findHighConfidence', 'governance_signals', error);
       return [];
     }
 
@@ -105,16 +105,16 @@ export const signalsRepository = {
   },
 
   /**
-   * Busca análise TOTVS Fit
+   * Busca análise de Governança (antes TOTVS Fit)
    */
-  async findTOTVSFit(companyId: string): Promise<BuyingSignal | null> {
-    dbLogger.log('findTOTVSFit', 'buying_signals', { companyId });
+  async findGovernanceAnalysis(companyId: string): Promise<GovernanceSignal | null> {
+    dbLogger.log('findGovernanceAnalysis', 'governance_signals', { companyId });
 
     const { data, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('*')
       .eq('company_id', companyId)
-      .eq('signal_type', 'totvs_fit_analysis')
+      .eq('signal_type', 'governance_gap_analysis')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -123,7 +123,7 @@ export const signalsRepository = {
       if (error.code === 'PGRST116') {
         return null;
       }
-      dbLogger.error('findTOTVSFit', 'buying_signals', error);
+      dbLogger.error('findGovernanceAnalysis', 'governance_signals', error);
       return null;
     }
 
@@ -135,12 +135,12 @@ export const signalsRepository = {
    */
   async countByCompany(companyId: string): Promise<number> {
     const { count, error } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId);
 
     if (error) {
-      dbLogger.error('countByCompany', 'buying_signals', error);
+      dbLogger.error('countByCompany', 'governance_signals', error);
       return 0;
     }
 
