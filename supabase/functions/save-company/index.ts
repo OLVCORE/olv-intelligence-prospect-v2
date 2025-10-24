@@ -22,10 +22,43 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Salvar empresa no banco
+    // 1. Salvar empresa no banco (merge seguro para não perder dados existentes)
+    // Buscar empresa existente por CNPJ
+    const { data: existingCompany } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('cnpj', company.cnpj)
+      .maybeSingle();
+
+    // Preparar merges
+    const mergedRaw = {
+      ...(existingCompany?.raw_data ?? {}),
+      ...(company.raw_data ?? {}),
+    };
+
+    const mergedLocation = {
+      ...(existingCompany?.location ?? {}),
+      ...(company.location ?? {}),
+    } as Record<string, unknown>;
+
+    const mergedTechnologies = Array.from(
+      new Set([...(existingCompany?.technologies ?? []), ...(company.technologies ?? [])])
+    );
+
+    // Sanitizar campos existentes que não devem ser enviados (id, timestamps)
+    const { id: _id, created_at: _ca, updated_at: _ua, ...restExisting } = existingCompany || {} as any;
+
+    const upsertPayload = {
+      ...(restExisting || {}),
+      ...company,
+      ...(Object.keys(mergedLocation).length ? { location: mergedLocation } : {}),
+      ...(mergedTechnologies.length ? { technologies: mergedTechnologies } : {}),
+      ...(Object.keys(mergedRaw).length ? { raw_data: mergedRaw } : {}),
+    };
+
     const { data: savedCompany, error: companyError } = await supabase
       .from('companies')
-      .upsert(company, { onConflict: 'cnpj' })
+      .upsert(upsertPayload, { onConflict: 'cnpj' })
       .select()
       .single();
 

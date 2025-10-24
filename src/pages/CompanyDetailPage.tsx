@@ -131,11 +131,20 @@ export default function CompanyDetailPage() {
 
       const receita = data?.data;
       if (receita) {
-        const baseRaw: Record<string, any> = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any) : {};
-        const newRaw = { ...baseRaw, receita };
+      // Merge seguro - preservar dados existentes em raw_data
+        const existingRaw = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any) : {};
+        const mergedRaw = {
+          ...existingRaw,
+          receita,
+          // Preservar outros dados importantes
+          ...(existingRaw.apollo && { apollo: existingRaw.apollo }),
+          ...(existingRaw.segment && { segment: existingRaw.segment }),
+          ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
+        };
+        
         const { error: updError } = await supabase
           .from('companies')
-          .update({ raw_data: newRaw })
+          .update({ raw_data: mergedRaw })
           .eq('id', id);
         if (updError) throw updError;
       }
