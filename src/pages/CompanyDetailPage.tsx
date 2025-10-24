@@ -23,8 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import ReportPreviewDialog from "@/components/reports/ReportPreviewDialog";
-import FitAnalysisDialog from "@/components/reports/FitAnalysisDialog";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -34,9 +32,6 @@ export default function CompanyDetailPage() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
   const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
-  const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
-  const [fitDialogOpen, setFitDialogOpen] = useState(false);
-  const [fitAnalysis, setFitAnalysis] = useState<any>(null);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -76,18 +71,21 @@ export default function CompanyDetailPage() {
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
     try {
-      // Pré-busca para garantir dados mais rápidos no preview
-      const { error } = await supabase.functions.invoke('generate-company-report', {
+      const { data, error } = await supabase.functions.invoke('generate-company-report', {
         body: { companyId: id }
       });
+
       if (error) throw error;
 
-      setReportPreviewOpen(true);
-      toast.success("Relatório pronto para visualização", {
-        description: "Abra o preview para revisar e baixar o PDF."
+      toast.success("Relatório gerado com sucesso!", {
+        description: "Relatório disponível para visualização"
       });
+
+      console.log('Report data:', data);
     } catch (error: any) {
-      toast.error("Erro ao gerar relatório", { description: error.message });
+      toast.error("Erro ao gerar relatório", {
+        description: error.message
+      });
     } finally {
       setIsGeneratingReport(false);
     }
@@ -103,12 +101,11 @@ export default function CompanyDetailPage() {
       if (error) throw error;
 
       const fitScore = data?.analysis?.fitScore ?? 'N/A';
-      setFitAnalysis(data?.analysis ?? null);
-      setFitDialogOpen(true);
-
       toast.success("Análise de Fit TOTVS concluída!", {
         description: `Score de adequação: ${fitScore}`
       });
+
+      console.log('Fit analysis:', data?.analysis);
 
       // Refresh company data
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
@@ -134,7 +131,8 @@ export default function CompanyDetailPage() {
 
       const receita = data?.data;
       if (receita) {
-        const newRaw = { ...(company.raw_data || {}), receita };
+        const baseRaw: Record<string, any> = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any) : {};
+        const newRaw = { ...baseRaw, receita };
         const { error: updError } = await supabase
           .from('companies')
           .update({ raw_data: newRaw })
@@ -741,12 +739,6 @@ export default function CompanyDetailPage() {
           </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-
-    {/* Previews */}
-    {id && (
-      <ReportPreviewDialog open={reportPreviewOpen} onOpenChange={setReportPreviewOpen} companyId={id} />
-    )}
-    <FitAnalysisDialog open={fitDialogOpen} onOpenChange={setFitDialogOpen} analysis={fitAnalysis} />
   </div>
 );
 }
