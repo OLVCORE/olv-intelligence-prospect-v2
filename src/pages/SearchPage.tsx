@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -40,10 +40,11 @@ export default function SearchPage() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Busca múltipla
   const [multipleResults, setMultipleResults] = useState<any[]>([]);
   const [showMultipleResults, setShowMultipleResults] = useState(false);
+  
+  const [contacts, setContacts] = useState<Array<{name:string; title:string; phone?:string; whatsapp?:string; email?:string}>>([]);
+  const [newContact, setNewContact] = useState<{name:string; title:string; phone?:string; whatsapp?:string; email?:string}>({name:"", title:"", phone:"", whatsapp:"", email:""});
   
   const { toast } = useToast();
   
@@ -162,6 +163,32 @@ export default function SearchPage() {
   const { predictions: municipioPredictions } = useBrazilianAddressAutocomplete(municipio, 'locality');
   const { predictions: bairroPredictions } = useBrazilianAddressAutocomplete(bairro, 'sublocality');
   const { predictions: logradouroPredictions } = useBrazilianAddressAutocomplete(logradouro, 'route');
+
+  // Prefill ao editar empresa existente
+  const params = new URLSearchParams(window.location.search);
+  const prefillCompanyId = params.get('companyId');
+  useEffect(() => {
+    const loadCompany = async () => {
+      if (!prefillCompanyId) return;
+      const { data, error } = await supabase.from('companies').select('*').eq('id', prefillCompanyId).maybeSingle();
+      if (error) return;
+      if (data) {
+        setSearchQuery(data.cnpj || data.name || "");
+        setWebsite(data.website || "");
+        setLinkedin(data.linkedin_url || "");
+        if (data.location) {
+          setCep((data.location.cep as string) || "");
+          setEstado((data.location.state as string) || "");
+          setPais((data.location.country as string) || "Brasil");
+          setMunicipio((data.location.city as string) || "");
+          setBairro((data.location.neighborhood as string) || "");
+          setLogradouro((data.location.street as string) || "");
+          setNumero((data.location.number as string) || "");
+        }
+      }
+    };
+    loadCompany();
+  }, [prefillCompanyId]);
 
   // Fetch autocomplete suggestions
   const fetchSuggestions = async (query: string) => {
@@ -721,219 +748,70 @@ export default function SearchPage() {
                   </AccordionContent>
                 </AccordionItem>
 
-                {/* Localização */}
-                <AccordionItem value="location">
+                {/* Contatos */}
+                <AccordionItem value="contacts">
                   <AccordionTrigger className="text-sm">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>Localização</span>
-                      {(cep || logradouro || numero || bairro || municipio || estado) && (
-                        <Badge variant="secondary" className="ml-2">
-                          {[cep, logradouro, numero, bairro, municipio, estado].filter(Boolean).length}
-                        </Badge>
+                      <Users className="h-4 w-4" />
+                      <span>Contatos</span>
+                      {contacts.length > 0 && (
+                        <Badge variant="secondary" className="ml-2">{contacts.length}</Badge>
                       )}
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-3 pt-4">
-                    {/* CEP, Estado, País */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid md:grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="cep" className="text-xs">CEP</Label>
-                        <Input
-                          id="cep"
-                          placeholder="00000-000"
-                          value={cep}
-                          onChange={(e) => handleCepChange(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                          maxLength={9}
-                        />
+                        <Label className="text-xs">Nome</Label>
+                        <Input value={newContact.name} onChange={(e)=>setNewContact({...newContact, name: e.target.value})} />
                       </div>
-                      
                       <div className="space-y-2">
-                        <Label htmlFor="estado" className="text-xs">Estado</Label>
-                        <Select value={estado} onValueChange={setEstado} disabled={isSearching}>
-                          <SelectTrigger id="estado">
-                            <SelectValue placeholder="UF" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            {ESTADOS_BRASIL.map((uf) => (
-                              <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs">Cargo</Label>
+                        <Input value={newContact.title} onChange={(e)=>setNewContact({...newContact, title: e.target.value})} />
                       </div>
-                      
                       <div className="space-y-2">
-                        <Label htmlFor="pais" className="text-xs">País</Label>
-                        <Input
-                          id="pais"
-                          placeholder="Brasil"
-                          value={pais}
-                          onChange={(e) => setPais(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                          disabled={isSearching}
-                        />
+                        <Label className="text-xs">Telefone</Label>
+                        <Input value={newContact.phone} onChange={(e)=>setNewContact({...newContact, phone: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">WhatsApp</Label>
+                        <Input value={newContact.whatsapp} onChange={(e)=>setNewContact({...newContact, whatsapp: e.target.value})} />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="text-xs">Email</Label>
+                        <Input value={newContact.email} onChange={(e)=>setNewContact({...newContact, email: e.target.value})} />
                       </div>
                     </div>
-                    
-                    {/* Município */}
-                    <div className="space-y-2">
-                      <Label htmlFor="municipio" className="text-xs">Município</Label>
-                      <Popover open={showMunicipioSuggestions && municipioPredictions.length > 0} onOpenChange={setShowMunicipioSuggestions}>
-                        <PopoverTrigger asChild>
-                          <Input
-                            id="municipio"
-                            placeholder="Digite para buscar"
-                            value={municipio}
-                            onChange={(e) => {
-                              setMunicipio(e.target.value);
-                              setShowMunicipioSuggestions(true);
-                            }}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            onFocus={() => municipio.length >= 3 && setShowMunicipioSuggestions(true)}
-                            disabled={isSearching}
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandList>
-                              <CommandEmpty>Nenhum município encontrado</CommandEmpty>
-                              <CommandGroup>
-                                {municipioPredictions.map((pred) => (
-                                  <CommandItem
-                                    key={pred.place_id}
-                                    onSelect={() => {
-                                      setMunicipio(pred.structured_formatting.main_text);
-                                      setShowMunicipioSuggestions(false);
-                                    }}
-                                    className="cursor-pointer"
-                                  >
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {pred.structured_formatting.secondary_text}
-                                      </div>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (!newContact.name || !newContact.title) { 
+                            toast({ title: 'Preencha nome e cargo do contato', variant: 'destructive' });
+                            return; 
+                          }
+                          setContacts([...contacts, newContact]);
+                          setNewContact({ name:'', title:'', phone:'', whatsapp:'', email:'' });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />Adicionar contato
+                      </Button>
                     </div>
-                    
-                    {/* Bairro e Logradouro */}
-                    <div className="grid grid-cols-2 gap-3">
+                    {contacts.length > 0 && (
                       <div className="space-y-2">
-                        <Label htmlFor="bairro" className="text-xs">Bairro</Label>
-                        <Popover open={showBairroSuggestions && bairroPredictions.length > 0} onOpenChange={setShowBairroSuggestions}>
-                          <PopoverTrigger asChild>
-                            <Input
-                              id="bairro"
-                              placeholder="Digite para buscar"
-                              value={bairro}
-                              onChange={(e) => {
-                                setBairro(e.target.value);
-                                setShowBairroSuggestions(true);
-                              }}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                              onFocus={() => bairro.length >= 3 && setShowBairroSuggestions(true)}
-                              disabled={isSearching}
-                            />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0" align="start">
-                            <Command>
-                              <CommandList>
-                                <CommandEmpty>Nenhum bairro encontrado</CommandEmpty>
-                                <CommandGroup>
-                                  {bairroPredictions.map((pred) => (
-                                    <CommandItem
-                                      key={pred.place_id}
-                                      onSelect={() => {
-                                        setBairro(pred.structured_formatting.main_text);
-                                        setShowBairroSuggestions(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <MapPin className="mr-2 h-4 w-4" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {pred.structured_formatting.secondary_text}
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <Label className="text-xs">Contatos adicionados</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {contacts.map((c, idx) => (
+                            <Badge key={idx} variant="outline" className="gap-2">
+                              {c.name} • {c.title}
+                              <button className="ml-2 text-xs" onClick={() => setContacts(contacts.filter((_,i)=>i!==idx))}>remover</button>
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="logradouro" className="text-xs">Logradouro</Label>
-                        <Popover open={showLogradouroSuggestions && logradouroPredictions.length > 0} onOpenChange={setShowLogradouroSuggestions}>
-                          <PopoverTrigger asChild>
-                            <Input
-                              id="logradouro"
-                              placeholder="Rua, Av, etc"
-                              value={logradouro}
-                              onChange={(e) => {
-                                setLogradouro(e.target.value);
-                                setShowLogradouroSuggestions(true);
-                              }}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                              onFocus={() => logradouro.length >= 3 && setShowLogradouroSuggestions(true)}
-                              disabled={isSearching}
-                            />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0" align="start">
-                            <Command>
-                              <CommandList>
-                                <CommandEmpty>Nenhum logradouro encontrado</CommandEmpty>
-                                <CommandGroup>
-                                  {logradouroPredictions.map((pred) => (
-                                    <CommandItem
-                                      key={pred.place_id}
-                                      onSelect={() => {
-                                        setLogradouro(pred.structured_formatting.main_text);
-                                        setShowLogradouroSuggestions(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <MapPin className="mr-2 h-4 w-4" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium truncate">{pred.structured_formatting.main_text}</div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                          {pred.structured_formatting.secondary_text}
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                    
-                    {/* Número */}
-                    <div className="space-y-2">
-                      <Label htmlFor="numero" className="text-xs">Número</Label>
-                      <Input
-                        id="numero"
-                        placeholder="1578"
-                        value={numero}
-                        onChange={(e) => setNumero(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        disabled={isSearching}
-                      />
-                    </div>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -957,7 +835,43 @@ export default function SearchPage() {
                     </>
                   )}
                 </Button>
-                
+                <Button 
+                  variant="secondary"
+                  onClick={async () => {
+                    setIsSaving(true);
+                    try {
+                      const companyPayload: any = {
+                        name: searchQuery || undefined,
+                        cnpj: isValidCNPJ(searchQuery) ? searchQuery : undefined,
+                        website: website || undefined,
+                        linkedin_url: linkedin || undefined,
+                        location: {
+                          cep, state: estado, country: pais, city: municipio, neighborhood: bairro, street: logradouro, number: numero
+                        }
+                      };
+                      const decisionMakers = contacts.map(c => ({
+                        name: c.name,
+                        title: c.title,
+                        email: c.email,
+                        raw_data: { phone: c.phone, whatsapp: c.whatsapp, source: 'manual' }
+                      }));
+                      const { data, error } = await supabase.functions.invoke('save-company', {
+                        body: { company: companyPayload, decision_makers: decisionMakers }
+                      });
+                      if (error) throw error;
+                      toast({ title: 'Dados salvos!', description: 'Empresa e contatos registrados com sucesso.' });
+                      navigate(`/company/${data.company.id}`);
+                    } catch (e: any) {
+                      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Salvar
+                </Button>
                 {(searchQuery || filledCount > 0) && (
                   <Button 
                     variant="outline" 

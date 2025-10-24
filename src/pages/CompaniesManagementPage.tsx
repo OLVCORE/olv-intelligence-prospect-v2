@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { BackButton } from '@/components/common/BackButton';
+import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
-import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
-import { ManualEnrichmentDialog } from '@/components/companies/ManualEnrichmentDialog';
 import {
   Table,
   TableBody,
@@ -47,8 +46,6 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'location'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [manualDialogOpen, setManualDialogOpen] = useState(false);
-  const [editCompany, setEditCompany] = useState<any | null>(null);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -126,8 +123,6 @@ export default function CompaniesManagementPage() {
       setEnrichingId(null);
     }
   };
-
-  const handleBatchEnrichReceitaWS = async () => {
     try {
       setIsBatchEnriching(true);
       toast.info('Iniciando enriquecimento em lote com Receita Federal...');
@@ -465,13 +460,23 @@ export default function CompaniesManagementPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setEditCompany(company);
-                              setManualDialogOpen(true);
-                            }}
-                            title="Complementar Informações"
+                            onClick={() => navigate(`/search?companyId=${company.id}`)}
+                            title="Editar/Salvar Dados"
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEnrichReceita(company.id)}
+                            disabled={enrichingReceitaId === company.id}
+                            title="Enriquecer Receita Federal"
+                          >
+                            {enrichingReceitaId === company.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Building2 className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
@@ -483,21 +488,10 @@ export default function CompaniesManagementPage() {
                             {enrichingId === company.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <Zap className="h-4 w-4" />
+                              <Sparkles className="h-4 w-4" />
                             )}
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setCompanyToDelete(company);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive hover:text-destructive"
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -508,18 +502,6 @@ export default function CompaniesManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Diálogo para Complementar Informações */}
-        <ManualEnrichmentDialog
-          open={manualDialogOpen}
-          onOpenChange={setManualDialogOpen}
-          companyId={editCompany?.id}
-          initialData={{
-            website: editCompany?.website || '',
-            linkedin_url: editCompany?.linkedin_url || '',
-            domain: editCompany?.domain || ''
-          }}
-          onSaved={() => { setManualDialogOpen(false); setEditCompany(null); refetch(); }}
-        />
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
