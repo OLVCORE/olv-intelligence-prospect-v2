@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { ExplainabilityCard } from "@/components/common/ExplainabilityCard";
 
@@ -35,6 +35,30 @@ export default function FitTOTVSPage() {
     }
   });
 
+  const companyIds = useMemo(() => (companies?.map((c: any) => c.id) ?? []), [companies]);
+
+  const { data: analyses, isLoading: isAnalysesLoading, refetch: refetchAnalyses } = useQuery({
+    queryKey: ['fit-totvs-analyses', companyIds],
+    enabled: companyIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('governance_signals')
+        .select('*')
+        .in('company_id', companyIds)
+        .eq('signal_type', 'totvs_fit_analysis')
+        .order('detected_at', { ascending: false });
+      return data || [];
+    }
+  });
+
+  const analysisByCompany = useMemo(() => {
+    const map = new Map<string, any>();
+    analyses?.forEach((rec: any) => {
+      if (!map.has(rec.company_id)) map.set(rec.company_id, rec);
+    });
+    return map;
+  }, [analyses]);
+
   const analyzeMutation = useMutation({
     mutationFn: async (companyId: string) => {
       const { data, error } = await supabase.functions.invoke('analyze-totvs-fit', {
@@ -49,6 +73,7 @@ export default function FitTOTVSPage() {
         description: "Recomendações TOTVS geradas com IA",
       });
       refetch();
+      refetchAnalyses();
     },
     onError: (error: any) => {
       toast({
@@ -86,13 +111,11 @@ export default function FitTOTVSPage() {
     });
     setIsBulkRunning(false);
     refetch();
+    refetchAnalyses();
   };
 
   const getAIAnalysis = (company: any) => {
-    const signal = company.governance_signals?.find(
-      (s: any) => s.signal_type === 'totvs_fit_analysis'
-    );
-    return signal?.raw_data as any;
+    return analysisByCompany.get(company.id)?.raw_data as any;
   };
 
   return (
