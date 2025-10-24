@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { useNavigate } from "react-router-dom";
 
 const GoogleIcon = () => (
   <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -29,6 +30,7 @@ export function BulkUploadDialog() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
+  const navigate = useNavigate();
 
   // Fecha automaticamente após sucesso
   useEffect(() => {
@@ -321,13 +323,18 @@ export function BulkUploadDialog() {
       setResult(data);
       setProgress(100);
       
-      if (data.success > 0) {
-        toast.success(`${data.success} empresas importadas com sucesso!`);
-      }
-      
-      if (data.errors.length > 0) {
-        toast.warning(`${data.errors.length} empresas com erros`);
-      }
+if (data.success > 0) {
+  toast.success(`${data.success} empresas importadas com sucesso!`, {
+    action: {
+      label: 'Ver base de empresas',
+      onClick: () => navigate('/companies')
+    }
+  });
+}
+
+if (data.errors.length > 0) {
+  toast.warning(`${data.errors.length} empresas com erros`);
+}
 
     } catch (error) {
       console.error('Erro no upload:', error);
@@ -349,62 +356,40 @@ export function BulkUploadDialog() {
     setProgress(0);
     setResult(null);
 
-    try {
-      let csvUrl = googleSheetUrl;
-      
-      if (googleSheetUrl.includes('/edit')) {
-        csvUrl = googleSheetUrl.replace('/edit', '/export?format=csv');
-      } else if (!googleSheetUrl.includes('/export')) {
-        csvUrl = googleSheetUrl + '/export?format=csv';
+try {
+  // Evitar CORS: delega para função de backend que baixa e importa
+  toast.info("Processando planilha no servidor...");
+
+  const { data, error } = await supabase.functions.invoke('import-google-sheet', {
+    body: { url: googleSheetUrl }
+  });
+
+  if (error) throw error;
+
+  setResult(data);
+  setProgress(100);
+
+  if (data.success > 0) {
+    toast.success(`${data.success} empresas importadas do Google Sheets!`, {
+      action: {
+        label: 'Ver base de empresas',
+        onClick: () => navigate('/companies')
       }
+    });
+  }
 
-      toast.info("Baixando dados do Google Sheets...");
-      
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error('Não foi possível acessar a planilha. Verifique se está pública.');
-      }
+  if (data.errors?.length > 0) {
+    toast.warning(`${data.errors.length} empresas com erros`);
+  }
 
-      const text = await response.text();
-      const companies = parseCSV(text);
-
-      if (companies.length === 0) {
-        toast.error("Nenhuma empresa encontrada na planilha");
-        setIsUploading(false);
-        return;
-      }
-
-      if (companies.length > MAX_COMPANIES) {
-        toast.error(`Limite de ${MAX_COMPANIES} empresas. A planilha contém ${companies.length}.`);
-        setIsUploading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('bulk-upload-companies', {
-        body: { companies }
-      });
-
-      if (error) throw error;
-
-      setResult(data);
-      setProgress(100);
-      
-      if (data.success > 0) {
-        toast.success(`${data.success} empresas importadas do Google Sheets!`);
-      }
-      
-      if (data.errors.length > 0) {
-        toast.warning(`${data.errors.length} empresas com erros`);
-      }
-
-    } catch (error) {
-      console.error('Erro ao importar do Google Sheets:', error);
-      toast.error("Erro ao importar planilha", {
-        description: error instanceof Error ? error.message : "Verifique se a planilha está pública"
-      });
-    } finally {
-      setIsUploading(false);
-    }
+} catch (error) {
+  console.error('Erro ao importar do Google Sheets:', error);
+  toast.error("Erro ao importar planilha", {
+    description: error instanceof Error ? error.message : "Verifique se a planilha está pública"
+  });
+} finally {
+  setIsUploading(false);
+}
   };
 
   return (
