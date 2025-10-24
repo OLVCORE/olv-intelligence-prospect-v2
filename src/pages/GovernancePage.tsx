@@ -1,16 +1,21 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Target, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Clock, Zap, Shield } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Clock, Zap, Shield, Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 
 export default function GovernancePage() {
   const { toast } = useToast();
+  const [selectOpen, setSelectOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState<'single' | 'multiple'>('single');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ['governance-companies'],
@@ -80,14 +85,81 @@ export default function GovernancePage() {
     }
   };
 
+  const handleConfirmAnalysis = async (companyIds: string[]) => {
+    setIsAnalyzing(true);
+    let success = 0;
+    let failed = 0;
+
+    toast({
+      title: "Análise iniciada",
+      description: `Processando ${companyIds.length} empresa${companyIds.length === 1 ? '' : 's'}...`,
+    });
+
+    for (const id of companyIds) {
+      try {
+        const { error } = await supabase.functions.invoke('analyze-governance-gap', {
+          body: { companyId: id }
+        });
+        if (error) throw error;
+        success++;
+      } catch (e) {
+        console.error('Falha na análise', id, e);
+        failed++;
+      }
+    }
+
+    toast({
+      title: "Análise concluída",
+      description: `${success} sucesso${success !== 1 ? 's' : ''}${failed ? ` • ${failed} falha${failed !== 1 ? 's' : ''}` : ''}`,
+    });
+
+    setIsAnalyzing(false);
+    setSelectOpen(false);
+    refetch();
+  };
+
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Governança & Transformação</h1>
-        <p className="text-muted-foreground">
-          Análise de gaps organizacionais e oportunidades de consultoria estratégica
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Governança & Transformação</h1>
+          <p className="text-muted-foreground">
+            Análise de gaps organizacionais e oportunidades de consultoria estratégica
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setSelectMode('single');
+              setSelectOpen(true);
+            }}
+            disabled={isAnalyzing}
+            variant="outline"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Análise Individual
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectMode('multiple');
+              setSelectOpen(true);
+            }}
+            disabled={isAnalyzing}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Análise em Massa
+          </Button>
+        </div>
       </div>
+
+      <CompanySelectDialog
+        open={selectOpen}
+        onOpenChange={setSelectOpen}
+        mode={selectMode}
+        onConfirm={handleConfirmAnalysis}
+        title={selectMode === 'single' ? 'Selecionar Empresa para Análise' : 'Selecionar Empresas para Análise'}
+        confirmLabel={selectMode === 'single' ? 'Analisar empresa' : 'Analisar selecionadas'}
+      />
 
       <div className="grid gap-6">
         {isLoading ? (

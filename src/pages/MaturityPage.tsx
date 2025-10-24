@@ -1,12 +1,21 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { BarChart, TrendingUp, Activity } from "lucide-react";
+import { BarChart, TrendingUp, Activity, Target, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 
 export default function MaturityPage() {
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { toast } = useToast();
+  const [selectOpen, setSelectOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState<'single' | 'multiple'>('single');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['maturity-stats'],
     queryFn: async () => {
       const { data: maturityData } = await supabase
@@ -25,7 +34,7 @@ export default function MaturityPage() {
     }
   });
 
-  const { data: maturityList, isLoading: listLoading } = useQuery({
+  const { data: maturityList, isLoading: listLoading, refetch: refetchList } = useQuery({
     queryKey: ['maturity-list'],
     queryFn: async () => {
       const { data } = await supabase
@@ -40,14 +49,82 @@ export default function MaturityPage() {
     }
   });
 
+  const handleConfirmAnalysis = async (companyIds: string[]) => {
+    setIsAnalyzing(true);
+    let success = 0;
+    let failed = 0;
+
+    toast({
+      title: "Análise de Maturidade Iniciada",
+      description: `Processando ${companyIds.length} empresa${companyIds.length === 1 ? '' : 's'}...`,
+    });
+
+    for (const id of companyIds) {
+      try {
+        const { error } = await supabase.functions.invoke('calculate-maturity-score', {
+          body: { companyId: id }
+        });
+        if (error) throw error;
+        success++;
+      } catch (e) {
+        console.error('Falha na análise', id, e);
+        failed++;
+      }
+    }
+
+    toast({
+      title: "Análise concluída",
+      description: `${success} sucesso${success !== 1 ? 's' : ''}${failed ? ` • ${failed} falha${failed !== 1 ? 's' : ''}` : ''}`,
+    });
+
+    setIsAnalyzing(false);
+    setSelectOpen(false);
+    refetchStats();
+    refetchList();
+  };
+
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Maturidade Digital</h1>
-        <p className="text-muted-foreground">
-          Análise da maturidade digital das empresas prospectadas
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Maturidade Digital</h1>
+          <p className="text-muted-foreground">
+            Análise da maturidade digital das empresas prospectadas
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setSelectMode('single');
+              setSelectOpen(true);
+            }}
+            disabled={isAnalyzing}
+            variant="outline"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Análise Individual
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectMode('multiple');
+              setSelectOpen(true);
+            }}
+            disabled={isAnalyzing}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Análise em Massa
+          </Button>
+        </div>
       </div>
+
+      <CompanySelectDialog
+        open={selectOpen}
+        onOpenChange={setSelectOpen}
+        mode={selectMode}
+        onConfirm={handleConfirmAnalysis}
+        title={selectMode === 'single' ? 'Selecionar Empresa para Análise' : 'Selecionar Empresas para Análise'}
+        confirmLabel={selectMode === 'single' ? 'Analisar maturidade' : 'Analisar selecionadas'}
+      />
 
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         <Card>
