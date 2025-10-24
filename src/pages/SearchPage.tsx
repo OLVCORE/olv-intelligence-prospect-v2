@@ -1102,7 +1102,7 @@ export default function SearchPage() {
 
       {/* Dialog de preview completo */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-3">
               <Building2 className="h-6 w-6 text-primary" />
@@ -1123,12 +1123,30 @@ export default function SearchPage() {
               {/* Header com dados principais */}
               <Card className="border-l-4 border-l-primary">
                 <CardHeader>
-                  <CardTitle className="text-xl">{previewData.company.name}</CardTitle>
-                  <CardDescription className="space-y-1">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <CardTitle className="text-xl">{previewData.company.name}</CardTitle>
+                      {previewData.company.raw_data?.receita?.fantasia && previewData.company.raw_data.receita.fantasia !== previewData.company.name && (
+                        <p className="text-sm text-muted-foreground">Nome Fantasia: {previewData.company.raw_data.receita.fantasia}</p>
+                      )}
+                    </div>
+                    {/* Segmento IA Detectado */}
+                    {previewData.segment && (
+                      <div className="text-right space-y-1">
+                        <Badge variant="secondary" className="text-xs">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          {previewData.segment.setor}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground">{previewData.segment.vertical}</p>
+                        <p className="text-xs text-muted-foreground">Confiança: {previewData.segment.confianca}%</p>
+                      </div>
+                    )}
+                  </div>
+                  <CardDescription className="space-y-1 pt-2">
                     {previewData.company.cnpj && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">CNPJ:</span>
-                        <span className="text-sm font-mono">{previewData.company.cnpj}</span>
+                        <span className="text-sm font-mono font-semibold">{previewData.company.cnpj}</span>
                       </div>
                     )}
                     {previewData.company.website && (
@@ -1139,41 +1157,163 @@ export default function SearchPage() {
                         </a>
                       </div>
                     )}
+                    {previewData.company.linkedin_url && (
+                      <div className="flex items-center gap-2">
+                        <Linkedin className="h-3 w-3" />
+                        <a href={previewData.company.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                          LinkedIn
+                        </a>
+                      </div>
+                    )}
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Coluna Esquerda - Dados */}
-                <div className="space-y-6">
+              {/* Grid com 3 colunas */}
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Coluna 1 - Dados Cadastrais Receita */}
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <FileText className="h-4 w-4" />
+                        Dados Cadastrais
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {previewData.company.raw_data?.receita?.porte && (
+                        <div>
+                          <span className="text-muted-foreground">Porte:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.porte}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.tipo && (
+                        <div>
+                          <span className="text-muted-foreground">Tipo:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.tipo}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.abertura && (
+                        <div>
+                          <span className="text-muted-foreground">Abertura:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.abertura}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.natureza_juridica && (
+                        <div>
+                          <span className="text-muted-foreground">Natureza Jurídica:</span>
+                          <p className="font-medium text-[10px]">{previewData.company.raw_data.receita.natureza_juridica}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.capital_social && (
+                        <div>
+                          <span className="text-muted-foreground">Capital Social:</span>
+                          <p className="font-medium text-green-600">
+                            R$ {parseFloat(previewData.company.raw_data.receita.capital_social).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Situação Cadastral */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Situação Cadastral</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {previewData.company.raw_data?.receita?.situacao && (
+                        <div>
+                          <span className="text-muted-foreground">Status:</span>
+                          <Badge variant={previewData.company.raw_data.receita.situacao === 'ATIVA' ? 'default' : 'destructive'} className="ml-2">
+                            {previewData.company.raw_data.receita.situacao}
+                          </Badge>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.data_situacao && (
+                        <div>
+                          <span className="text-muted-foreground">Data:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.data_situacao}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.motivo_situacao && (
+                        <div>
+                          <span className="text-muted-foreground">Motivo:</span>
+                          <p className="font-medium text-[10px]">{previewData.company.raw_data.receita.motivo_situacao}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Regimes Especiais */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Regimes Especiais</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {previewData.company.raw_data?.receita?.simples && (
+                        <div>
+                          <span className="text-muted-foreground">Simples Nacional:</span>
+                          <Badge variant={previewData.company.raw_data.receita.simples.optante ? 'default' : 'secondary'} className="ml-2 text-[10px]">
+                            {previewData.company.raw_data.receita.simples.optante ? 'Optante' : 'Não Optante'}
+                          </Badge>
+                          {previewData.company.raw_data.receita.simples.data_opcao && (
+                            <p className="text-[10px] text-muted-foreground mt-1">Desde: {previewData.company.raw_data.receita.simples.data_opcao}</p>
+                          )}
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.simei && (
+                        <div>
+                          <span className="text-muted-foreground">MEI (Simei):</span>
+                          <Badge variant={previewData.company.raw_data.receita.simei.optante ? 'default' : 'secondary'} className="ml-2 text-[10px]">
+                            {previewData.company.raw_data.receita.simei.optante ? 'Optante' : 'Não Optante'}
+                          </Badge>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.efr && (
+                        <div>
+                          <span className="text-muted-foreground">EFR:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.efr}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Coluna 2 - Localização e Contato */}
+                <div className="space-y-4">
                   {/* Localização + Mapa */}
                   {previewData.company.location && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
                           <MapPin className="h-4 w-4" />
                           Localização
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="text-sm space-y-1">
-                          {previewData.company.location.logradouro && (
-                            <p>{previewData.company.location.logradouro}, {previewData.company.raw_data?.receita?.numero || 'S/N'}</p>
+                        <div className="text-xs space-y-1">
+                          {previewData.company.raw_data?.receita?.logradouro && (
+                            <p>{previewData.company.raw_data.receita.logradouro}, {previewData.company.raw_data.receita.numero || 'S/N'}</p>
                           )}
-                          {previewData.company.location.bairro && <p>{previewData.company.location.bairro}</p>}
+                          {previewData.company.raw_data?.receita?.complemento && (
+                            <p className="text-muted-foreground">{previewData.company.raw_data.receita.complemento}</p>
+                          )}
+                          {previewData.company.raw_data?.receita?.bairro && <p>{previewData.company.raw_data.receita.bairro}</p>}
                           <p className="font-semibold">
-                            {previewData.company.location.city}/{previewData.company.location.state} - {previewData.company.location.country}
+                            {previewData.company.raw_data?.receita?.municipio || previewData.company.location.city}/
+                            {previewData.company.raw_data?.receita?.uf || previewData.company.location.state}
                           </p>
-                          {previewData.company.location.cep && (
-                            <p className="text-xs text-muted-foreground">CEP: {previewData.company.location.cep}</p>
+                          {previewData.company.raw_data?.receita?.cep && (
+                            <p className="text-muted-foreground">CEP: {previewData.company.raw_data.receita.cep}</p>
                           )}
                         </div>
                         
                         {/* Mapa */}
                         {(previewData.company.location.cep || previewData.company.location.city) && (
-                          <div className="h-[200px] rounded-lg overflow-hidden">
+                          <div className="h-[180px] rounded-lg overflow-hidden">
                             <LocationMap
-                              address={previewData.company.location.logradouro}
+                              address={previewData.company.raw_data?.receita?.logradouro}
                               municipio={previewData.company.location.city}
                               estado={previewData.company.location.state}
                               cep={previewData.company.location.cep}
@@ -1185,27 +1325,47 @@ export default function SearchPage() {
                     </Card>
                   )}
 
-                  {/* Decisores */}
-                  {previewData.decision_makers && previewData.decision_makers.length > 0 && (
+                  {/* Contato */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Contato</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {previewData.company.raw_data?.receita?.email && (
+                        <div>
+                          <span className="text-muted-foreground">Email:</span>
+                          <p className="font-mono text-[10px]">{previewData.company.raw_data.receita.email}</p>
+                        </div>
+                      )}
+                      {previewData.company.raw_data?.receita?.telefone && (
+                        <div>
+                          <span className="text-muted-foreground">Telefone:</span>
+                          <p className="font-medium">{previewData.company.raw_data.receita.telefone}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* QSA - Quadro de Sócios */}
+                  {previewData.company.raw_data?.receita?.qsa && previewData.company.raw_data.receita.qsa.length > 0 && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Users className="h-4 w-4" />
-                          Decisores Identificados ({previewData.decision_makers.length})
-                        </CardTitle>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Quadro de Sócios e Administradores</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                          {previewData.decision_makers.map((dm: any, idx: number) => (
-                            <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border">
-                              <Users className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{dm.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{dm.title}</p>
-                                {dm.email && (
-                                  <p className="text-xs text-muted-foreground font-mono truncate">{dm.email}</p>
-                                )}
-                              </div>
+                        <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                          {previewData.company.raw_data.receita.qsa.map((socio: any, idx: number) => (
+                            <div key={idx} className="p-2 rounded border bg-muted/30">
+                              <p className="font-medium text-xs">{socio.nome}</p>
+                              <Badge variant="outline" className="text-[10px] mt-1">{socio.qual}</Badge>
+                              {socio.pais_origem && socio.pais_origem !== 'BRASIL' && (
+                                <p className="text-[10px] text-muted-foreground mt-1">País: {socio.pais_origem}</p>
+                              )}
+                              {socio.nome_rep_legal && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Rep. Legal: {socio.nome_rep_legal} ({socio.qual_rep_legal})
+                                </p>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1214,44 +1374,92 @@ export default function SearchPage() {
                   )}
                 </div>
 
-                {/* Coluna Direita - Scores */}
-                <div className="space-y-6">
+                {/* Coluna 3 - Atividades e Scores */}
+                <div className="space-y-4">
+                  {/* Atividade Principal */}
+                  {previewData.company.raw_data?.receita?.atividade_principal && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <Briefcase className="h-4 w-4" />
+                          Atividade Principal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {previewData.company.raw_data.receita.atividade_principal.map((ativ: any, idx: number) => (
+                            <div key={idx} className="text-xs">
+                              <Badge variant="outline" className="text-[10px] mb-1">{ativ.code}</Badge>
+                              <p className="text-[10px] leading-relaxed">{ativ.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Atividades Secundárias */}
+                  {previewData.company.raw_data?.receita?.atividades_secundarias && previewData.company.raw_data.receita.atividades_secundarias.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">
+                          Atividades Secundárias ({previewData.company.raw_data.receita.atividades_secundarias.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1 max-h-[180px] overflow-y-auto text-[10px]">
+                          {previewData.company.raw_data.receita.atividades_secundarias.slice(0, 5).map((ativ: any, idx: number) => (
+                            <div key={idx} className="pb-1 border-b last:border-0">
+                              <Badge variant="secondary" className="text-[9px]">{ativ.code}</Badge>
+                              <p className="mt-0.5 leading-tight">{ativ.text}</p>
+                            </div>
+                          ))}
+                          {previewData.company.raw_data.receita.atividades_secundarias.length > 5 && (
+                            <p className="text-muted-foreground text-center py-1">
+                              +{previewData.company.raw_data.receita.atividades_secundarias.length - 5} atividades adicionais
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Maturidade Digital */}
                   {previewData.digital_maturity && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
                           <BarChart className="h-4 w-4" />
                           Maturidade Digital
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Score Geral</span>
-                          <Badge variant="default" className="text-base">
+                          <span className="text-xs font-medium">Score Geral</span>
+                          <Badge variant="default">
                             {previewData.digital_maturity.overall?.toFixed(1) || previewData.digital_maturity.score}/10
                           </Badge>
                         </div>
                         
                         {previewData.digital_maturity.infrastructure && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs">
+                          <div className="space-y-1.5 text-[10px]">
+                            <div className="flex justify-between">
                               <span>Infraestrutura</span>
                               <span className="font-medium">{previewData.digital_maturity.infrastructure}/10</span>
                             </div>
-                            <div className="flex justify-between text-xs">
+                            <div className="flex justify-between">
                               <span>Sistemas</span>
                               <span className="font-medium">{previewData.digital_maturity.systems}/10</span>
                             </div>
-                            <div className="flex justify-between text-xs">
+                            <div className="flex justify-between">
                               <span>Processos</span>
                               <span className="font-medium">{previewData.digital_maturity.processes}/10</span>
                             </div>
-                            <div className="flex justify-between text-xs">
+                            <div className="flex justify-between">
                               <span>Segurança</span>
                               <span className="font-medium">{previewData.digital_maturity.security}/10</span>
                             </div>
-                            <div className="flex justify-between text-xs">
+                            <div className="flex justify-between">
                               <span>Inovação</span>
                               <span className="font-medium">{previewData.digital_maturity.innovation}/10</span>
                             </div>
@@ -1261,63 +1469,31 @@ export default function SearchPage() {
                     </Card>
                   )}
 
-                  {/* Dados ReceitaWS */}
-                  {previewData.company.raw_data?.receita && (
+                  {/* Decisores */}
+                  {previewData.decision_makers && previewData.decision_makers.length > 0 && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <FileText className="h-4 w-4" />
-                          Receita Federal
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        {previewData.company.raw_data.receita.fantasia && (
-                          <div>
-                            <span className="text-xs text-muted-foreground">Nome Fantasia:</span>
-                            <p className="font-medium">{previewData.company.raw_data.receita.fantasia}</p>
-                          </div>
-                        )}
-                        {previewData.company.raw_data.receita.porte && (
-                          <div>
-                            <span className="text-xs text-muted-foreground">Porte:</span>
-                            <p className="font-medium">{previewData.company.raw_data.receita.porte}</p>
-                          </div>
-                        )}
-                        {previewData.company.raw_data.receita.abertura && (
-                          <div>
-                            <span className="text-xs text-muted-foreground">Data de Abertura:</span>
-                            <p className="font-medium">{previewData.company.raw_data.receita.abertura}</p>
-                          </div>
-                        )}
-                        {previewData.company.raw_data.receita.capital_social && (
-                          <div>
-                            <span className="text-xs text-muted-foreground">Capital Social:</span>
-                            <p className="font-medium text-green-600">
-                              R$ {parseFloat(previewData.company.raw_data.receita.capital_social).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Atividade Econômica */}
-                  {previewData.company.raw_data?.receita?.atividade_principal && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Briefcase className="h-4 w-4" />
-                          Atividade Principal
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <Users className="h-4 w-4" />
+                          Decisores ({previewData.decision_makers.length})
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2">
-                          {previewData.company.raw_data.receita.atividade_principal.map((ativ: any, idx: number) => (
-                            <div key={idx} className="text-sm">
-                              <Badge variant="outline" className="text-xs mb-1">{ativ.code}</Badge>
-                              <p className="text-xs">{ativ.text}</p>
+                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                          {previewData.decision_makers.slice(0, 4).map((dm: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 p-2 rounded bg-muted/30 border">
+                              <Users className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-[10px] truncate">{dm.name}</p>
+                                <p className="text-[9px] text-muted-foreground truncate">{dm.title}</p>
+                              </div>
                             </div>
                           ))}
+                          {previewData.decision_makers.length > 4 && (
+                            <p className="text-[10px] text-muted-foreground text-center py-1">
+                              +{previewData.decision_makers.length - 4} decisores
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
