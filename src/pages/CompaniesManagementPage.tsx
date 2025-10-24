@@ -46,6 +46,7 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'location'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [enrichingReceitaId, setEnrichingReceitaId] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -123,6 +124,28 @@ export default function CompaniesManagementPage() {
       setEnrichingId(null);
     }
   };
+
+  const handleEnrichReceita = async (companyId: string) => {
+    try {
+      setEnrichingReceitaId(companyId);
+      toast.info('Enriquecendo dados da Receita Federal...');
+
+      const { error } = await supabase.functions.invoke('enrich-receitaws', {
+        body: { company_id: companyId }
+      });
+
+      if (error) throw error;
+      toast.success('Dados da Receita Federal atualizados!');
+      refetch();
+    } catch (error) {
+      console.error('Error enriching ReceitaWS:', error);
+      toast.error('Erro ao enriquecer com Receita Federal');
+    } finally {
+      setEnrichingReceitaId(null);
+    }
+  };
+
+  const handleBatchEnrichReceitaWS = async () => {
     try {
       setIsBatchEnriching(true);
       toast.info('Iniciando enriquecimento em lote com Receita Federal...');
@@ -492,6 +515,17 @@ export default function CompaniesManagementPage() {
                             )}
                           </Button>
                           <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setCompanyToDelete(company);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-destructive hover:text-destructive"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -501,7 +535,6 @@ export default function CompaniesManagementPage() {
             )}
           </CardContent>
         </Card>
-
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

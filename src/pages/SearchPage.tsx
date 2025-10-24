@@ -176,14 +176,15 @@ export default function SearchPage() {
         setSearchQuery(data.cnpj || data.name || "");
         setWebsite(data.website || "");
         setLinkedin(data.linkedin_url || "");
-        if (data.location) {
-          setCep((data.location.cep as string) || "");
-          setEstado((data.location.state as string) || "");
-          setPais((data.location.country as string) || "Brasil");
-          setMunicipio((data.location.city as string) || "");
-          setBairro((data.location.neighborhood as string) || "");
-          setLogradouro((data.location.street as string) || "");
-          setNumero((data.location.number as string) || "");
+        if (data.location && typeof data.location === 'object' && !Array.isArray(data.location)) {
+          const loc = data.location as Record<string, any>;
+          setCep((loc.cep as string) || "");
+          setEstado((loc.state as string) || "");
+          setPais((loc.country as string) || "Brasil");
+          setMunicipio((loc.city as string) || "");
+          setBairro((loc.neighborhood as string) || "");
+          setLogradouro((loc.street as string) || "");
+          setNumero((loc.number as string) || "");
         }
       }
     };
