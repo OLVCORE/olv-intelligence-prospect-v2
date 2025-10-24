@@ -2,15 +2,20 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { GripVertical, Building2, Calendar, TrendingUp } from 'lucide-react';
 import type { Deal } from '@/hooks/useDeals';
+import { cn } from '@/lib/utils';
 
 interface DraggableDealCardProps {
   deal: Deal;
   isDragging?: boolean;
+  isSelected?: boolean;
+  onSelect?: (dealId: string, selected: boolean) => void;
+  onClick?: (deal: Deal) => void;
 }
 
-export function DraggableDealCard({ deal, isDragging }: DraggableDealCardProps) {
+export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onClick }: DraggableDealCardProps) {
   const {
     attributes,
     listeners,
@@ -37,14 +42,31 @@ export function DraggableDealCard({ deal, isDragging }: DraggableDealCardProps) 
     <Card
       ref={setNodeRef}
       style={style}
-      className="cursor-move hover:shadow-md transition-shadow"
+      className={cn(
+        "cursor-move hover:shadow-md transition-all",
+        isSelected && "ring-2 ring-primary"
+      )}
       {...attributes}
       {...listeners}
     >
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
+          {onSelect && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(deal.id, checked as boolean)}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1"
+            />
+          )}
           <GripVertical className="h-4 w-4 text-muted-foreground mt-1" />
-          <div className="flex-1 space-y-2">
+          <div 
+            className="flex-1 space-y-2 cursor-pointer" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.(deal);
+            }}
+          >
             {/* Title */}
             <h4 className="font-medium text-sm leading-tight">{deal.title}</h4>
 

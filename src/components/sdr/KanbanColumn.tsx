@@ -9,9 +9,12 @@ import type { Deal } from '@/hooks/useDeals';
 interface KanbanColumnProps {
   stage: PipelineStage;
   deals: Deal[];
+  selectedDeals?: Set<string>;
+  onSelectDeal?: (dealId: string, selected: boolean) => void;
+  onDealClick?: (deal: Deal) => void;
 }
 
-export function KanbanColumn({ stage, deals }: KanbanColumnProps) {
+export function KanbanColumn({ stage, deals, selectedDeals, onSelectDeal, onDealClick }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.key });
   
   const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
@@ -45,7 +48,13 @@ export function KanbanColumn({ stage, deals }: KanbanColumnProps) {
             strategy={verticalListSortingStrategy}
           >
             {deals.map((deal) => (
-              <DraggableDealCard key={deal.id} deal={deal} />
+              <DraggableDealCard 
+                key={deal.id} 
+                deal={deal}
+                isSelected={selectedDeals?.has(deal.id)}
+                onSelect={onSelectDeal}
+                onClick={onDealClick}
+              />
             ))}
           </SortableContext>
           {deals.length === 0 && (

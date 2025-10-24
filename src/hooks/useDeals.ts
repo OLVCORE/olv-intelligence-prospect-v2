@@ -54,6 +54,21 @@ export function useCreateDeal() {
   });
 }
 
+export function useUpdateDeal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ dealId, updates }: { dealId: string; updates: Record<string, any> }) => {
+      const { data, error } = await supabase.from('sdr_deals').update(updates).eq('id', dealId).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DEALS_QUERY_KEY });
+      toastMessages.success.updated();
+    },
+  });
+}
+
 export function useMoveDeal() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -66,5 +81,64 @@ export function useMoveDeal() {
       queryClient.invalidateQueries({ queryKey: DEALS_QUERY_KEY });
       toastMessages.sdr.dealMoved();
     },
+  });
+}
+
+export function useDeleteDeal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dealId: string) => {
+      const { error } = await supabase.from('sdr_deals').delete().eq('id', dealId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DEALS_QUERY_KEY });
+      toastMessages.success.deleted();
+    },
+  });
+}
+
+export function useBulkUpdateDeals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ dealIds, updates }: { dealIds: string[]; updates: Record<string, any> }) => {
+      const promises = dealIds.map(id => 
+        supabase.from('sdr_deals').update(updates).eq('id', id)
+      );
+      const results = await Promise.all(promises);
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) throw errors[0].error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: DEALS_QUERY_KEY });
+    },
+  });
+}
+
+export interface DealActivity {
+  id: string;
+  deal_id: string;
+  activity_type: string;
+  description: string;
+  old_value?: any;
+  new_value?: any;
+  created_at: string;
+  created_by?: string;
+}
+
+export function useDealActivities(dealId: string) {
+  return useQuery({
+    queryKey: ['sdr_deal_activities', dealId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sdr_deal_activities')
+        .select('*')
+        .eq('deal_id', dealId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as DealActivity[];
+    },
+    enabled: !!dealId,
   });
 }
