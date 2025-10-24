@@ -1524,6 +1524,129 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_rules: {
+        Row: {
+          action: Json
+          active: boolean | null
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          customer_segments: string[] | null
+          id: string
+          max_quantity: number | null
+          metadata: Json | null
+          min_quantity: number | null
+          name: string
+          priority: number | null
+          product_categories: string[] | null
+          rule_type: string
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          action?: Json
+          active?: boolean | null
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          customer_segments?: string[] | null
+          id?: string
+          max_quantity?: number | null
+          metadata?: Json | null
+          min_quantity?: number | null
+          name: string
+          priority?: number | null
+          product_categories?: string[] | null
+          rule_type: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          action?: Json
+          active?: boolean | null
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          customer_segments?: string[] | null
+          id?: string
+          max_quantity?: number | null
+          metadata?: Json | null
+          min_quantity?: number | null
+          name?: string
+          priority?: number | null
+          product_categories?: string[] | null
+          rule_type?: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      product_catalog: {
+        Row: {
+          active: boolean | null
+          base_price: number
+          category: string
+          config_options: Json | null
+          cost: number | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          id: string
+          is_configurable: boolean | null
+          max_quantity: number | null
+          metadata: Json | null
+          min_price: number | null
+          min_quantity: number | null
+          name: string
+          recommended_with: string[] | null
+          sku: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          base_price: number
+          category: string
+          config_options?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_configurable?: boolean | null
+          max_quantity?: number | null
+          metadata?: Json | null
+          min_price?: number | null
+          min_quantity?: number | null
+          name: string
+          recommended_with?: string[] | null
+          sku: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          base_price?: number
+          category?: string
+          config_options?: Json | null
+          cost?: number | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_configurable?: boolean | null
+          max_quantity?: number | null
+          metadata?: Json | null
+          min_price?: number | null
+          min_quantity?: number | null
+          name?: string
+          recommended_with?: string[] | null
+          sku?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1574,6 +1697,111 @@ export type Database = {
           whatsapp?: string | null
         }
         Relationships: []
+      }
+      quote_history: {
+        Row: {
+          accepted_at: string | null
+          account_strategy_id: string | null
+          applied_rules: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string | null
+          competitive_position: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          negotiation_history: Json | null
+          products: Json
+          quote_number: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          requires_approval: boolean | null
+          sent_at: string | null
+          status: string | null
+          suggested_price: number | null
+          total_discounts: number | null
+          total_final_price: number
+          total_list_price: number | null
+          updated_at: string | null
+          valid_until: string | null
+          viewed_at: string | null
+          win_probability: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_strategy_id?: string | null
+          applied_rules?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          competitive_position?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          negotiation_history?: Json | null
+          products?: Json
+          quote_number: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          requires_approval?: boolean | null
+          sent_at?: string | null
+          status?: string | null
+          suggested_price?: number | null
+          total_discounts?: number | null
+          total_final_price: number
+          total_list_price?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          viewed_at?: string | null
+          win_probability?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          account_strategy_id?: string | null
+          applied_rules?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          competitive_position?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          negotiation_history?: Json | null
+          products?: Json
+          quote_number?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          requires_approval?: boolean | null
+          sent_at?: string | null
+          status?: string | null
+          suggested_price?: number | null
+          total_discounts?: number | null
+          total_final_price?: number
+          total_list_price?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          viewed_at?: string | null
+          win_probability?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_history_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reputation_data: {
         Row: {
