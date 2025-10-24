@@ -56,52 +56,35 @@ export function useDashboardExecutive() {
   return useQuery({
     queryKey: ['dashboard-executive'],
     queryFn: async (): Promise<DashboardExecutiveData> => {
-      // Fetch all data in parallel
+      // Fetch only NEW architecture data
       const [
         companiesRes,
         decisorsRes,
+        strategiesRes,
         conversationsRes,
-        signalsRes,
-        maturityRes,
-        presenceRes,
-        financialRes,
-        legalRes,
-        reputationRes,
         messagesRes
       ] = await Promise.all([
         supabase.from('companies').select('*'),
         supabase.from('decision_makers').select('*'),
+        supabase.from('account_strategies').select('*, companies(name, industry, employees, location)'),
         supabase.from('conversations').select('*, companies(name, industry)'),
-        supabase.from('governance_signals').select('*'),
-        supabase.from('digital_maturity').select('*, companies(name, industry, employees)'),
-        supabase.from('digital_presence').select('*'),
-        supabase.from('financial_data').select('*'),
-        supabase.from('legal_data').select('*'),
-        supabase.from('reputation_data').select('*'),
         supabase.from('messages').select('*')
       ]);
 
       const companies = companiesRes.data || [];
       const decisors = decisorsRes.data || [];
+      const strategies = strategiesRes.data || [];
       const conversations = conversationsRes.data || [];
-      const signals = signalsRes.data || [];
-      const maturity = maturityRes.data || [];
-      const presence = presenceRes.data || [];
-      const financial = financialRes.data || [];
-      const legal = legalRes.data || [];
-      const reputation = reputationRes.data || [];
       const messages = messagesRes.data || [];
 
-      // Core metrics
+      // Core metrics - REAL DATA ONLY
       const totalCompanies = companies.length;
       const totalDecisors = decisors.length;
       const totalConversations = conversations.length;
 
-      // Pipeline value calculation
-      const ticketByPriority = { high: 120000, medium: 75000, low: 30000 };
-      const pipelineValue = conversations.reduce((total, conv) => {
-        const priority = conv.priority as keyof typeof ticketByPriority || 'medium';
-        return total + ticketByPriority[priority];
+      // Pipeline value calculation - FROM ACCOUNT STRATEGIES ONLY
+      const pipelineValue = strategies.reduce((total, strategy) => {
+        return total + (Number(strategy.annual_value) || 0);
       }, 0);
 
       // Geographic insights
@@ -128,7 +111,7 @@ export function useDashboardExecutive() {
       const companiesByRegion = companies.reduce((acc, comp) => {
         const state = (comp.location as any)?.state || 'Não especificado';
         const region = stateToRegion[state] || 'Não especificado';
-        const maturityScore = maturity.find(m => m.company_id === comp.id)?.overall_score || 0;
+        const maturityScore = comp.digital_maturity_score || 0;
         
         const existing = acc.find(r => r.region === region);
         if (existing) {
@@ -144,7 +127,7 @@ export function useDashboardExecutive() {
       // Industry insights
       const companiesByIndustry = companies.reduce((acc, comp) => {
         const industry = comp.industry || 'Não especificado';
-        const maturityScore = maturity.find(m => m.company_id === comp.id)?.overall_score || 0;
+        const maturityScore = comp.digital_maturity_score || 0;
         const employees = comp.employees || 0;
         
         const existing = acc.find(i => i.industry === industry);
@@ -159,9 +142,7 @@ export function useDashboardExecutive() {
       }, [] as Array<{ industry: string; count: number; avgMaturity: number; avgEmployees: number }>)
       .sort((a, b) => b.count - a.count);
 
-      // Governance analysis from governance signals
-      const fitSignals = signals.filter(s => s.signal_type === 'governance_gap_analysis' || s.signal_type === 'totvs_fit_analysis' || s.raw_data);
-      
+      // Fit Analysis - FROM ACCOUNT STRATEGIES
       const fitByProduct = [
         { product: 'Protheus', companies: 0, avgScore: 0 },
         { product: 'Fluig', companies: 0, avgScore: 0 },
@@ -170,41 +151,17 @@ export function useDashboardExecutive() {
         { product: 'Logix', companies: 0, avgScore: 0 }
       ];
 
-      // Analyze maturity and tech to predict fit
-      companies.forEach(comp => {
-        const maturityScore = maturity.find(m => m.company_id === comp.id)?.overall_score || 0;
-        const employees = comp.employees || 0;
-        const tech = comp.technologies || [];
-
-        // Protheus fit: médio porte, manufatura
-        if (employees > 50 && employees < 500 && ['Manufatura', 'Indústria', 'Distribuição'].includes(comp.industry || '')) {
-          fitByProduct[0].companies++;
-          fitByProduct[0].avgScore += maturityScore as number;
-        }
-
-        // Fluig fit: processos, maturidade média-alta
-        if ((maturityScore as number) > 6 && employees > 100) {
-          fitByProduct[1].companies++;
-          fitByProduct[1].avgScore += maturityScore as number;
-        }
-
-        // RM fit: educação, saúde, RH intensivo
-        if (['Educação', 'Saúde', 'Serviços'].includes(comp.industry || '')) {
-          fitByProduct[2].companies++;
-          fitByProduct[2].avgScore += maturityScore as number;
-        }
-
-        // Datasul fit: manufatura grande porte
-        if (employees > 500 && ['Manufatura', 'Indústria'].includes(comp.industry || '')) {
-          fitByProduct[3].companies++;
-          fitByProduct[3].avgScore += maturityScore as number;
-        }
-
-        // Logix fit: grande porte, multinacional
-        if (employees > 1000) {
-          fitByProduct[4].companies++;
-          fitByProduct[4].avgScore += maturityScore as number;
-        }
+      // Count products from strategies
+      strategies.forEach(strategy => {
+        const products = (strategy.recommended_products as any) || [];
+        products.forEach((product: string) => {
+          const fitProduct = fitByProduct.find(p => p.product === product);
+          if (fitProduct) {
+            fitProduct.companies++;
+            const fitScore = (strategy as any).fit_score || 0;
+            fitProduct.avgScore += fitScore;
+          }
+        });
       });
 
       fitByProduct.forEach(p => {
@@ -213,24 +170,17 @@ export function useDashboardExecutive() {
         }
       });
 
-      const topFitCompanies = companies
-        .map(comp => {
-          const maturityScore = maturity.find(m => m.company_id === comp.id)?.overall_score || 0;
-          const employees = comp.employees || 0;
-          const recommendedProducts: string[] = [];
-
-          if (employees > 50 && employees < 500) recommendedProducts.push('Protheus');
-          if ((maturityScore as number) > 6 && employees > 100) recommendedProducts.push('Fluig');
-          if (['Educação', 'Saúde'].includes(comp.industry || '')) recommendedProducts.push('RM');
-
+      const topFitCompanies = strategies
+        .filter(s => s.companies)
+        .map(strategy => {
+          const company = strategy.companies as any;
           return {
-            id: comp.id,
-            name: comp.name,
-            fitScore: maturityScore as number,
-            recommendedProducts
+            id: company.id,
+            name: company.name,
+            fitScore: (strategy as any).fit_score || 0,
+            recommendedProducts: (strategy.recommended_products as string[]) || []
           };
         })
-        .filter(c => c.recommendedProducts.length > 0)
         .sort((a, b) => b.fitScore - a.fitScore)
         .slice(0, 10);
 
@@ -258,7 +208,7 @@ export function useDashboardExecutive() {
         .sort((a, b) => b.count - a.count)
         .slice(0, 15);
 
-      // Maturity distribution
+      // Maturity distribution - FROM COMPANIES
       const maturityLevels = [
         { level: 'Inicial (0-3)', min: 0, max: 3 },
         { level: 'Básico (4-5)', min: 4, max: 5 },
@@ -268,85 +218,73 @@ export function useDashboardExecutive() {
       ];
 
       const maturityDistribution = maturityLevels.map(level => {
-        const count = maturity.filter(m => 
-          (m.overall_score || 0) >= level.min && (m.overall_score || 0) <= level.max
-        ).length;
-        const percentage = maturity.length > 0 ? Math.round((count / maturity.length) * 100) : 0;
+        const count = companies.filter(c => {
+          const score = c.digital_maturity_score || 0;
+          return score >= level.min && score <= level.max;
+        }).length;
+        const percentage = companies.length > 0 ? Math.round((count / companies.length) * 100) : 0;
         return { level: level.level, count, percentage };
       });
 
-      // Health insights
-      const healthScores = {
-        digital: presence.reduce((sum, p) => sum + (p.overall_score || 0), 0) / (presence.length || 1),
-        legal: legal.reduce((sum, l) => sum + (l.legal_health_score || 0), 0) / (legal.length || 1),
-        financial: financial.reduce((sum, f) => sum + (f.predictive_risk_score || 0), 0) / (financial.length || 1),
-        reputation: reputation.reduce((sum, r) => sum + (r.reputation_score || 0), 0) / (reputation.length || 1)
-      };
-
-      const avgDigitalHealth = Object.values(healthScores).reduce((sum, score) => sum + score, 0) / 4;
+      // Health insights - FROM ACCOUNT STRATEGIES
+      const avgDigitalHealth = companies.reduce((sum, c) => sum + (c.digital_maturity_score || 0), 0) / (companies.length || 1);
 
       const healthDistribution = [
-        { category: 'Presença Digital', score: Math.round(healthScores.digital * 10) / 10, count: presence.length },
-        { category: 'Saúde Jurídica', score: Math.round(healthScores.legal * 10) / 10, count: legal.length },
-        { category: 'Saúde Financeira', score: Math.round(healthScores.financial * 10) / 10, count: financial.length },
-        { category: 'Reputação', score: Math.round(healthScores.reputation * 10) / 10, count: reputation.length }
+        { category: 'Presença Digital', score: avgDigitalHealth, count: companies.length },
+        { category: 'Saúde Jurídica', score: 0, count: 0 },
+        { category: 'Saúde Financeira', score: 0, count: 0 },
+        { category: 'Reputação', score: 0, count: 0 }
       ];
 
-      const companiesAtRisk = financial.filter(f => 
-        (f.predictive_risk_score || 0) < 50 || (f.risk_classification || '') === 'D'
-      ).length;
+      const companiesAtRisk = 0;
 
-      // Predictive insights
+      // Predictive insights - FROM STRATEGIES
       const emergingOpportunities = [
         {
           type: 'Transformação Digital',
-          companies: maturity.filter(m => (m.overall_score || 0) >= 4 && (m.overall_score || 0) < 7).length,
+          companies: strategies.filter(s => 
+            s.identified_gaps && (s.identified_gaps as any[]).some(g => 
+              g.category === 'digital_transformation'
+            )
+          ).length,
           potential: 'Alto',
           description: 'Empresas prontas para dar o próximo passo na jornada digital'
         },
         {
           type: 'Modernização de Stack',
-          companies: companies.filter(c => {
-            const techs = c.technologies || [];
-            return techs.some((t: string) => ['PHP', 'jQuery', 'MySQL'].includes(t)) && (c.employees || 0) > 50;
-          }).length,
+          companies: strategies.filter(s => 
+            s.identified_gaps && (s.identified_gaps as any[]).some(g => 
+              g.category === 'technology_modernization'
+            )
+          ).length,
           potential: 'Médio',
           description: 'Empresas com tech stack legado e porte para investir'
         },
         {
-          type: 'Expansão Cloud',
-          companies: companies.filter(c => {
-            const techs = c.technologies || [];
-            return !techs.some((t: string) => ['AWS', 'Azure', 'GCP'].includes(t)) && (c.employees || 0) > 100;
-          }).length,
+          type: 'Gaps de Governança',
+          companies: strategies.filter(s => 
+            s.identified_gaps && (s.identified_gaps as any[]).length > 0
+          ).length,
           potential: 'Alto',
-          description: 'Empresas de médio/grande porte sem presença cloud'
+          description: 'Empresas com oportunidades de melhoria identificadas'
         }
       ];
 
       const marketTrends = [
         {
-          trend: 'Adoção de IA/ML',
-          impact: 'Disruptivo',
-          companies: companies.filter(c => {
-            const techs = c.technologies || [];
-            return techs.some((t: string) => ['TensorFlow', 'PyTorch', 'OpenAI'].includes(t));
-          }).length
+          trend: 'Estratégias Ativas',
+          impact: 'Alto',
+          companies: strategies.filter(s => s.status === 'active').length
         },
         {
-          trend: 'Cloud-First',
-          impact: 'Alto',
-          companies: companies.filter(c => {
-            const techs = c.technologies || [];
-            return techs.some((t: string) => ['AWS', 'Azure', 'GCP'].includes(t));
-          }).length
+          trend: 'Em Negociação',
+          impact: 'Médio',
+          companies: strategies.filter(s => s.current_stage === 'negotiation').length
         },
         {
-          trend: 'Gaps de Governança',
+          trend: 'Conversas Abertas',
           impact: 'Alto',
-          companies: signals.filter(s => 
-            s.signal_type?.includes('governance') || s.signal_type?.includes('gap')
-          ).length
+          companies: conversations.filter(c => c.status === 'open').length
         }
       ];
 
