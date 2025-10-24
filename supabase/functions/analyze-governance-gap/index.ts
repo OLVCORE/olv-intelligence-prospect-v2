@@ -205,26 +205,41 @@ Retorne APENAS um JSON válido com esta estrutura:
       throw new Error('Erro ao processar análise da IA');
     }
 
-    // Salvar análise no banco (tabela renomeada: governance_signals)
-    const { data: savedAnalysis } = await supabase
+    // Preparar dados para inserção
+    const insertData = {
+      company_id: companyId,
+      signal_type: 'governance_gap_analysis',
+      description: analysis.summary || 'Análise de gaps de governança',
+      confidence_score: analysis.governanceGapScore || 0,
+      source: 'ai_analysis',
+      raw_data: analysis,
+      governance_gap_score: analysis.governanceGapScore || 0,
+      transformation_priority: analysis.transformationPriority || 'MEDIO',
+      organizational_maturity_level: analysis.organizationalMaturityLevel || 'ESTRUTURANDO',
+      requires_consulting: analysis.requiresConsulting !== false,
+      gap_category: analysis.gaps?.[0]?.category || 'PROCESSOS'
+    };
+
+    console.log('[Governance Gap] Inserindo dados:', JSON.stringify(insertData, null, 2));
+
+    // Salvar análise no banco
+    const { data: savedAnalysis, error: insertError } = await supabase
       .from('governance_signals')
-      .insert({
-        company_id: companyId,
-        signal_type: 'governance_gap_analysis',
-        description: analysis.summary,
-        confidence_score: analysis.governanceGapScore,
-        source: 'ai_analysis',
-        raw_data: analysis,
-        governance_gap_score: analysis.governanceGapScore,
-        transformation_priority: analysis.transformationPriority,
-        organizational_maturity_level: analysis.organizationalMaturityLevel,
-        requires_consulting: analysis.requiresConsulting,
-        gap_category: analysis.gaps[0]?.category || 'PROCESSOS'
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    console.log('[Governance Gap] ✅ Análise concluída');
+    if (insertError) {
+      console.error('[Governance Gap] ❌ Erro ao inserir no banco:', insertError);
+      throw new Error(`Falha ao salvar análise: ${insertError.message}`);
+    }
+
+    if (!savedAnalysis) {
+      console.error('[Governance Gap] ❌ Nenhum dado retornado após inserção');
+      throw new Error('Falha ao salvar análise no banco de dados');
+    }
+
+    console.log('[Governance Gap] ✅ Análise salva com sucesso. ID:', savedAnalysis.id);
 
     return new Response(
       JSON.stringify({ 
