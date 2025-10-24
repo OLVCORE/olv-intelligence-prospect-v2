@@ -147,6 +147,12 @@ const menuGroups = [
         description: "Perfis comportamentais e estratégias de abordagem"
       },
       {
+        title: "Inteligência Competitiva",
+        icon: Shield,
+        url: "/competitive-intelligence",
+        description: "Battle cards, win/loss analysis e estratégias contra competidores"
+      },
+      {
         title: "Metas de Vendas",
         icon: Target,
         url: "/goals",
