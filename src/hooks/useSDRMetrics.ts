@@ -13,6 +13,8 @@ export interface SDRMetrics {
   overdueConversations: number;
   newLeadsToday: number;
   totalCompanies: number;
+  totalOpportunities: number;
+  qualifiedLeadsToday: number;
 }
 
 export function useSDRMetrics() {
@@ -28,6 +30,8 @@ export function useSDRMetrics() {
     overdueConversations: 0,
     newLeadsToday: 0,
     totalCompanies: 0,
+    totalOpportunities: 0,
+    qualifiedLeadsToday: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,8 +156,26 @@ export function useSDRMetrics() {
         }
       }
 
-      // Conversion rate (mock for now - would need opportunity tracking)
-      const conversionRate = 12;
+      // Conversion rate REAL - opportunities won / total opportunities
+      const { count: totalOpps } = await supabase
+        .from('sdr_opportunities')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: wonOpps } = await supabase
+        .from('sdr_opportunities')
+        .select('*', { count: 'exact', head: true })
+        .eq('stage', 'won');
+
+      const conversionRate = totalOpps && totalOpps > 0 
+        ? Math.round((wonOpps || 0) / totalOpps * 100)
+        : 0;
+
+      // Qualified leads today (opportunities created today with stage >= qualified)
+      const { count: qualifiedToday } = await supabase
+        .from('sdr_opportunities')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${today}T00:00:00`)
+        .in('stage', ['qualified', 'proposal', 'negotiation', 'won']);
 
       setMetrics({
         totalContacts: contactsCount || 0,
@@ -167,6 +189,8 @@ export function useSDRMetrics() {
         overdueConversations: overdueCount || 0,
         newLeadsToday: newLeadsCount || 0,
         totalCompanies: companiesCount || 0,
+        totalOpportunities: totalOpps || 0,
+        qualifiedLeadsToday: qualifiedToday || 0,
       });
     } catch (err: any) {
       console.error('Error loading SDR metrics:', err);

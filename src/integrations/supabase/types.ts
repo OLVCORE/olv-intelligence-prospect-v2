@@ -2363,6 +2363,98 @@ export type Database = {
           },
         ]
       }
+      sdr_opportunities: {
+        Row: {
+          assigned_to: string | null
+          canvas_id: string | null
+          company_id: string | null
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string | null
+          expected_close_date: string | null
+          id: string
+          lost_reason: string | null
+          metadata: Json | null
+          next_action: string | null
+          next_action_date: string | null
+          probability: number
+          stage: string
+          title: string
+          updated_at: string | null
+          value: number
+          won_date: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          canvas_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          metadata?: Json | null
+          next_action?: string | null
+          next_action_date?: string | null
+          probability?: number
+          stage: string
+          title: string
+          updated_at?: string | null
+          value?: number
+          won_date?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          canvas_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          metadata?: Json | null
+          next_action?: string | null
+          next_action_date?: string | null
+          probability?: number
+          stage?: string
+          title?: string
+          updated_at?: string | null
+          value?: number
+          won_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_opportunities_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_opportunities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_opportunities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_opportunities_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdr_routing_rules: {
         Row: {
           active: boolean | null

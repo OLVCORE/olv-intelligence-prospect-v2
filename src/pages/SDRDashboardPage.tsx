@@ -76,7 +76,6 @@ export default function SDRDashboardPage() {
             title="Contatos Ativos"
             value={metrics.totalContacts}
             icon={Users}
-            trend="+12% vs mês anterior"
           />
           <MetricCard
             title="Conversas Abertas"
@@ -88,7 +87,6 @@ export default function SDRDashboardPage() {
             title="Taxa de Resposta"
             value={`${metrics.responseRate}%`}
             icon={Target}
-            trend="+5% vs semana anterior"
           />
           <MetricCard
             title="Tempo Médio Resposta"
@@ -115,11 +113,10 @@ export default function SDRDashboardPage() {
             title="Taxa Conversão"
             value={`${metrics.conversionRate}%`}
             icon={TrendingUp}
-            trend="+3% vs mês anterior"
           />
           <MetricCard
             title="Oportunidades"
-            value="23"
+            value={metrics.totalOpportunities}
             icon={BarChart3}
             subtitle="Em pipeline"
           />
@@ -199,27 +196,39 @@ export default function SDRDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="p-3 border border-orange-200 bg-orange-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="destructive" className="text-xs">SLA Vencido</Badge>
-                        <span className="text-sm font-medium">5 conversas</span>
+                    {metrics.overdueConversations > 0 && (
+                      <div className="p-3 border border-orange-200 bg-orange-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="destructive" className="text-xs">SLA Vencido</Badge>
+                          <span className="text-sm font-medium">{metrics.overdueConversations} conversas</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Requerem atenção imediata</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">Requerem atenção imediata</p>
-                    </div>
-                    <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="secondary" className="text-xs">Follow-up</Badge>
-                        <span className="text-sm font-medium">12 leads</span>
+                    )}
+                    {(metrics.activeConversations - metrics.overdueConversations) > 0 && (
+                      <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary" className="text-xs">Follow-up</Badge>
+                          <span className="text-sm font-medium">{metrics.activeConversations - metrics.overdueConversations} leads</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Aguardando retorno</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">Aguardando retorno</p>
-                    </div>
-                    <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge className="text-xs">Oportunidades</Badge>
-                        <span className="text-sm font-medium">8 novas</span>
+                    )}
+                    {metrics.qualifiedLeadsToday > 0 && (
+                      <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="text-xs">Oportunidades</Badge>
+                          <span className="text-sm font-medium">{metrics.qualifiedLeadsToday} novas</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Qualificadas hoje</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">Qualificadas hoje</p>
-                    </div>
+                    )}
+                    {metrics.overdueConversations === 0 && (metrics.activeConversations - metrics.overdueConversations) === 0 && metrics.qualifiedLeadsToday === 0 && (
+                      <div className="p-6 text-center text-muted-foreground">
+                        <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Nenhum alerta no momento</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

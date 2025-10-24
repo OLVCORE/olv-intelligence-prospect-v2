@@ -16,6 +16,7 @@ export interface Lead {
   contact?: { name: string; email?: string; phone?: string };
   conversation_id?: string;
   canvas_id?: string;
+  title?: string;
 }
 
 export function useSDRPipeline() {
@@ -32,15 +33,21 @@ export function useSDRPipeline() {
     setError(null);
 
     try {
-      // Get conversations with companies and contacts
-      const { data: conversations, error: convError } = await supabase
-        .from('conversations')
+      // Get REAL opportunities from sdr_opportunities table
+      const { data: opportunities, error: oppError } = await supabase
+        .from('sdr_opportunities')
         .select(`
           id,
           company_id,
           contact_id,
-          status,
-          priority,
+          conversation_id,
+          canvas_id,
+          title,
+          stage,
+          value,
+          probability,
+          next_action,
+          next_action_date,
           created_at,
           updated_at,
           company:companies(id, name, website, industry),
@@ -48,46 +55,26 @@ export function useSDRPipeline() {
         `)
         .order('created_at', { ascending: false });
 
-      if (convError) throw convError;
+      if (oppError) throw oppError;
 
-      // Map conversations to leads with estimated values
-      const leadsData: Lead[] = (conversations || []).map(conv => {
-        // Map status to stage
-        let stage = 'new';
-        if (conv.status === 'open') stage = 'contacted';
-        if (conv.status === 'pending') stage = 'qualified';
-        if (conv.status === 'closed') stage = 'won';
-
-        // Estimate value based on company industry and priority
-        let estimatedValue = 50000;
-        if (conv.priority === 'high') estimatedValue = 120000;
-        if (conv.priority === 'medium') estimatedValue = 75000;
-        if (conv.priority === 'low') estimatedValue = 30000;
-
-        // Calculate probability based on stage
-        let probability = 20;
-        if (stage === 'contacted') probability = 40;
-        if (stage === 'qualified') probability = 60;
-        if (stage === 'proposal') probability = 75;
-        if (stage === 'negotiation') probability = 85;
-        if (stage === 'won') probability = 100;
-
-        return {
-          id: conv.id,
-          company_id: conv.company_id || '',
-          contact_id: conv.contact_id || '',
-          stage,
-          value: estimatedValue,
-          probability,
-          next_action: 'Follow-up agendado',
-          next_action_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          created_at: conv.created_at,
-          updated_at: conv.updated_at,
-          company: conv.company as any,
-          contact: conv.contact as any,
-          conversation_id: conv.id,
-        };
-      });
+      // Map to Lead interface
+      const leadsData: Lead[] = (opportunities || []).map(opp => ({
+        id: opp.id,
+        company_id: opp.company_id || '',
+        contact_id: opp.contact_id || '',
+        stage: opp.stage,
+        value: Number(opp.value) || 0,
+        probability: opp.probability || 0,
+        next_action: opp.next_action || 'Follow-up agendado',
+        next_action_date: opp.next_action_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: opp.created_at,
+        updated_at: opp.updated_at,
+        company: opp.company as any,
+        contact: opp.contact as any,
+        conversation_id: opp.conversation_id || undefined,
+        canvas_id: opp.canvas_id || undefined,
+        title: opp.title,
+      }));
 
       setLeads(leadsData);
     } catch (err: any) {
@@ -100,16 +87,13 @@ export function useSDRPipeline() {
 
   const updateLeadStage = async (leadId: string, newStage: string) => {
     try {
-      // Update conversation status based on stage
-      let status = 'open';
-      if (newStage === 'new') status = 'open';
-      if (newStage === 'contacted') status = 'open';
-      if (newStage === 'qualified') status = 'pending';
-      if (newStage === 'won') status = 'closed';
-
+      // Update opportunity stage in sdr_opportunities table
       const { error } = await supabase
-        .from('conversations')
-        .update({ status })
+        .from('sdr_opportunities')
+        .update({ 
+          stage: newStage,
+          won_date: newStage === 'won' ? new Date().toISOString() : null,
+        })
         .eq('id', leadId);
 
       if (error) throw error;
