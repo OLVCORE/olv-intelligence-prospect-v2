@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -1441,6 +1441,100 @@ export default function SearchPage() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Score Financeiro */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <DollarSign className="h-4 w-4" />
+                        Score Financeiro
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Classificação</span>
+                        <Badge 
+                          variant="default"
+                          className={`${
+                            previewData.company.raw_data?.financial?.risk_classification === 'A' ? 'bg-green-600' :
+                            previewData.company.raw_data?.financial?.risk_classification === 'B' ? 'bg-blue-600' :
+                            previewData.company.raw_data?.financial?.risk_classification === 'C' ? 'bg-yellow-600' :
+                            previewData.company.raw_data?.financial?.risk_classification === 'D' ? 'bg-orange-600' :
+                            'bg-red-600'
+                          }`}
+                        >
+                          {previewData.company.raw_data?.financial?.risk_classification || 'N/A'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1.5 text-[10px]">
+                        <div className="flex justify-between">
+                          <span>Score de Crédito</span>
+                          <span className="font-bold text-green-600">
+                            {previewData.company.raw_data?.financial?.credit_score || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Risco Preditivo</span>
+                          <span className="font-medium">
+                            {previewData.company.raw_data?.financial?.predictive_risk_score || 'N/A'}/100
+                          </span>
+                        </div>
+                        {previewData.company.raw_data?.financial?.payment_history && (
+                          <div className="flex justify-between">
+                            <span>Histórico de Pagamentos</span>
+                            <Badge variant="outline" className="text-[9px]">
+                              {previewData.company.raw_data.financial.payment_history.on_time || 0} no prazo
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Score Jurídico */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <Scale className="h-4 w-4" />
+                        Score Jurídico
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Nível de Risco</span>
+                        <Badge 
+                          className={`${
+                            previewData.company.raw_data?.legal?.risk_level === 'baixo' ? 'bg-green-500 text-white' :
+                            previewData.company.raw_data?.legal?.risk_level === 'medio' ? 'bg-yellow-500 text-white' :
+                            previewData.company.raw_data?.legal?.risk_level === 'alto' ? 'bg-orange-500 text-white' :
+                            'bg-red-500 text-white'
+                          }`}
+                        >
+                          {previewData.company.raw_data?.legal?.risk_level?.toUpperCase() || 'N/A'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1.5 text-[10px]">
+                        <div className="flex justify-between">
+                          <span>Processos Ativos</span>
+                          <span className="font-bold text-red-600">
+                            {previewData.company.raw_data?.legal?.active_processes || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total de Processos</span>
+                          <span className="font-medium">
+                            {previewData.company.raw_data?.legal?.total_processes || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Saúde Jurídica</span>
+                          <span className="font-bold text-green-600">
+                            {previewData.company.raw_data?.legal?.legal_health_score || 0}/100
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Maturidade Digital */}
                   {previewData.digital_maturity && (

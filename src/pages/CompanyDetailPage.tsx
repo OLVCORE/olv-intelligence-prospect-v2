@@ -203,10 +203,11 @@ export default function CompanyDetailPage() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="relatorio">Relatório Completo</TabsTrigger>
           <TabsTrigger value="receita">Receita Federal</TabsTrigger>
+          <TabsTrigger value="scores">Scores</TabsTrigger>
           <TabsTrigger value="digital">Presença Digital</TabsTrigger>
           <TabsTrigger value="decisores">Decisores</TabsTrigger>
           <TabsTrigger value="maturity">Maturidade</TabsTrigger>
@@ -987,6 +988,303 @@ export default function CompanyDetailPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Scores Tab - NOVA ABA com Financeiro e Jurídico */}
+        <TabsContent value="scores" className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Score Financeiro */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Score Financeiro
+                </CardTitle>
+                <CardDescription>
+                  Dados de crédito e saúde financeira
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(company.raw_data as any)?.financial ? (
+                  <>
+                    {/* Classificação de Risco */}
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold">Classificação de Risco</span>
+                        <Badge 
+                          className={`text-lg px-4 py-1 ${
+                            (company.raw_data as any).financial.risk_classification === 'A' ? 'bg-green-600 hover:bg-green-700' :
+                            (company.raw_data as any).financial.risk_classification === 'B' ? 'bg-blue-600 hover:bg-blue-700' :
+                            (company.raw_data as any).financial.risk_classification === 'C' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                            (company.raw_data as any).financial.risk_classification === 'D' ? 'bg-orange-600 hover:bg-orange-700' :
+                            'bg-red-600 hover:bg-red-700'
+                          }`}
+                        >
+                          {(company.raw_data as any).financial.risk_classification}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {(company.raw_data as any).financial.risk_classification === 'A' && 'Excelente - Risco Muito Baixo'}
+                        {(company.raw_data as any).financial.risk_classification === 'B' && 'Bom - Risco Baixo'}
+                        {(company.raw_data as any).financial.risk_classification === 'C' && 'Regular - Risco Médio'}
+                        {(company.raw_data as any).financial.risk_classification === 'D' && 'Atenção - Risco Alto'}
+                        {(company.raw_data as any).financial.risk_classification === 'E' && 'Crítico - Risco Muito Alto'}
+                      </p>
+                    </div>
+
+                    {/* Scores Principais */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-lg border bg-card">
+                        <p className="text-xs text-muted-foreground mb-1">Score de Crédito</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {(company.raw_data as any).financial.credit_score}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">de 1000</p>
+                      </div>
+                      
+                      <div className="p-4 rounded-lg border bg-card">
+                        <p className="text-xs text-muted-foreground mb-1">Risco Preditivo</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {(company.raw_data as any).financial.predictive_risk_score}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">de 100</p>
+                      </div>
+                    </div>
+
+                    {/* Histórico de Pagamentos */}
+                    {(company.raw_data as any).financial.payment_history && (
+                      <div className="p-4 rounded-lg border">
+                        <p className="text-sm font-semibold mb-3">Histórico de Pagamentos</p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">No Prazo:</span>
+                            <span className="font-medium text-green-600">
+                              {(company.raw_data as any).financial.payment_history.on_time} pagamentos
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Atrasados:</span>
+                            <span className="font-medium text-orange-600">
+                              {(company.raw_data as any).financial.payment_history.late} pagamentos
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Inadimplentes:</span>
+                            <span className="font-medium text-red-600">
+                              {(company.raw_data as any).financial.payment_history.defaulted} pagamentos
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Indicadores de Dívida */}
+                    {(company.raw_data as any).financial.debt_indicators && (
+                      <div className="p-4 rounded-lg border">
+                        <p className="text-sm font-semibold mb-3">Indicadores de Dívida</p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total de Protestos:</span>
+                            <Badge variant={(company.raw_data as any).financial.debt_indicators.total_protests > 0 ? 'destructive' : 'secondary'}>
+                              {(company.raw_data as any).financial.debt_indicators.total_protests}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Protestos Ativos:</span>
+                            <Badge variant={(company.raw_data as any).financial.debt_indicators.active_protests > 0 ? 'destructive' : 'secondary'}>
+                              {(company.raw_data as any).financial.debt_indicators.active_protests}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Valor Total:</span>
+                            <span className="font-bold text-red-600">
+                              R$ {(company.raw_data as any).financial.debt_indicators.total_debt?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fontes de Dados */}
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs font-semibold mb-2">Fontes Consultadas:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(company.raw_data as any).financial.serasa_data && <Badge variant="outline" className="text-[10px]">Serasa</Badge>}
+                        {(company.raw_data as any).financial.scpc_data && <Badge variant="outline" className="text-[10px]">SCPC</Badge>}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Dados financeiros não disponíveis
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Execute o enriquecimento 360° para obter estes dados
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Score Jurídico */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                  Score Jurídico
+                </CardTitle>
+                <CardDescription>
+                  Processos judiciais e saúde jurídica
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(company.raw_data as any)?.legal ? (
+                  <>
+                    {/* Nível de Risco */}
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold">Nível de Risco Jurídico</span>
+                        <Badge 
+                          className={`text-lg px-4 py-1 ${
+                            (company.raw_data as any).legal.risk_level === 'baixo' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                            (company.raw_data as any).legal.risk_level === 'medio' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
+                            (company.raw_data as any).legal.risk_level === 'alto' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
+                            'bg-red-500 hover:bg-red-600 text-white'
+                          }`}
+                        >
+                          {(company.raw_data as any).legal.risk_level?.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {(company.raw_data as any).legal.risk_level === 'baixo' && 'Baixo risco - Poucas ações judiciais'}
+                        {(company.raw_data as any).legal.risk_level === 'medio' && 'Risco moderado - Processos sob controle'}
+                        {(company.raw_data as any).legal.risk_level === 'alto' && 'Alto risco - Muitos processos ativos'}
+                        {(company.raw_data as any).legal.risk_level === 'critico' && 'Risco crítico - Situação preocupante'}
+                      </p>
+                    </div>
+
+                    {/* Scores Principais */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-lg border bg-card">
+                        <p className="text-xs text-muted-foreground mb-1">Processos Ativos</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {(company.raw_data as any).legal.active_processes}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">em andamento</p>
+                      </div>
+                      
+                      <div className="p-4 rounded-lg border bg-card">
+                        <p className="text-xs text-muted-foreground mb-1">Total de Processos</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          {(company.raw_data as any).legal.total_processes}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">histórico completo</p>
+                      </div>
+                    </div>
+
+                    {/* Saúde Jurídica Score */}
+                    <div className="p-4 rounded-lg border bg-gradient-to-r from-green-50 to-blue-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold">Saúde Jurídica</span>
+                        <span className="text-3xl font-bold text-green-600">
+                          {(company.raw_data as any).legal.legal_health_score}/100
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            (company.raw_data as any).legal.legal_health_score >= 70 ? 'bg-green-500' :
+                            (company.raw_data as any).legal.legal_health_score >= 40 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${(company.raw_data as any).legal.legal_health_score}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Tipos de Processos */}
+                    {(company.raw_data as any).legal.jusbrasil_data?.processesByType && (
+                      <div className="p-4 rounded-lg border">
+                        <p className="text-sm font-semibold mb-3">Processos por Tipo</p>
+                        <div className="space-y-2">
+                          {Object.entries((company.raw_data as any).legal.jusbrasil_data.processesByType).map(([tipo, qtd]: [string, any]) => (
+                            qtd > 0 && (
+                              <div key={tipo} className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground capitalize">{tipo}:</span>
+                                <Badge variant="outline">{qtd} processos</Badge>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status dos Processos */}
+                    {(company.raw_data as any).legal.jusbrasil_data?.processesByStatus && (
+                      <div className="p-4 rounded-lg border">
+                        <p className="text-sm font-semibold mb-3">Processos por Status</p>
+                        <div className="space-y-2">
+                          {Object.entries((company.raw_data as any).legal.jusbrasil_data.processesByStatus).map(([status, qtd]: [string, any]) => (
+                            qtd > 0 && (
+                              <div key={status} className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground capitalize">{status}:</span>
+                                <Badge 
+                                  variant={status === 'ativo' ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {qtd}
+                                </Badge>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fontes de Dados */}
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs font-semibold mb-2">Fontes Consultadas:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-[10px]">JusBrasil</Badge>
+                        {(company.raw_data as any).legal.ceis_data && <Badge variant="outline" className="text-[10px]">CEIS</Badge>}
+                        {(company.raw_data as any).legal.cnep_data && <Badge variant="outline" className="text-[10px]">CNEP</Badge>}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Dados jurídicos não disponíveis
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Execute o enriquecimento 360° para obter estes dados
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Nota sobre os dados */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">Sobre os Scores</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Os scores financeiro e jurídico são calculados com base em dados de múltiplas fontes públicas e privadas.
+                    <strong className="text-foreground"> Score Financeiro:</strong> Serasa, SCPC e histórico de crédito.
+                    <strong className="text-foreground"> Score Jurídico:</strong> JusBrasil, CEIS e CNEP.
+                    Os dados são atualizados periodicamente para garantir precisão nas análises.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Actions Tab */}
