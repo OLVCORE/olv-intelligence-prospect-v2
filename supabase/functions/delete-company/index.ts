@@ -28,7 +28,7 @@ serve(async (req) => {
     // 1) Apagar decisores, maturidade e sinais
     await supabase.from('decision_makers').delete().eq('company_id', id);
     await supabase.from('digital_maturity').delete().eq('company_id', id);
-    await supabase.from('buying_signals').delete().eq('company_id', id);
+    await supabase.from('governance_signals').delete().eq('company_id', id);
     await supabase.from('insights').delete().eq('company_id', id);
     await supabase.from('risks').delete().eq('company_id', id);
     await supabase.from('pitches').delete().eq('company_id', id);

@@ -37,7 +37,7 @@ export function useEnrichmentStatus(companyId?: string) {
 
       const [decisorsCountRes, digitalPresenceRes, insightsRes, legalDataRes] = await Promise.all([
         supabase.from('decision_makers').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-        supabase.from('digital_maturity').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('digital_presence').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('insights').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
         supabase.from('legal_data').select('id').eq('company_id', companyId).maybeSingle(),
       ]);
@@ -99,7 +99,7 @@ export function useAllEnrichmentStatus() {
       // Buscar conjuntos de relacionamentos para todas as empresas
       const [decisorsListRes, digitalMaturityListRes, insightsListRes, legalDataListRes] = await Promise.all([
         supabase.from('decision_makers').select('company_id'),
-        supabase.from('digital_maturity').select('company_id'),
+        supabase.from('digital_presence').select('company_id'),
         supabase.from('insights').select('company_id'),
         supabase.from('legal_data').select('company_id'),
       ]);

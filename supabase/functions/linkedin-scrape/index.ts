@@ -64,7 +64,7 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      await supabase.from('buying_signals').insert({
+      await supabase.from('governance_signals').insert({
         company_id: company_id,
         signal_type: 'linkedin_activity',
         description: 'Análise de atividade no LinkedIn iniciada',

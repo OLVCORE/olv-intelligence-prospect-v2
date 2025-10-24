@@ -259,7 +259,7 @@ serve(async (req) => {
     // 8. Buying Signals
     if (results.length < 10) {
       const { data: signals } = await supabase
-        .from('buying_signals')
+        .from('governance_signals')
         .select('id, signal_type, description, confidence_score, companies(name)')
         .or(`signal_type.ilike.${searchTerm},description.ilike.${searchTerm}`)
         .limit(5);

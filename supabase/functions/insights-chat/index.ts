@@ -163,7 +163,7 @@ ${companies.length > 10 ? `\n... e mais ${companies.length - 10} empresas` : ''}
 
     // Get buying signals
     const { data: signals, error: signalsError } = await supabase
-      .from('buying_signals')
+      .from('governance_signals')
       .select('company_id, signal_type, confidence_score, description')
       .order('detected_at', { ascending: false })
       .limit(50);
