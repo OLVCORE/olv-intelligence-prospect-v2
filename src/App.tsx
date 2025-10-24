@@ -30,6 +30,8 @@ const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
 const GovernancePage = lazy(() => import("./pages/GovernancePage"));
 const AccountStrategyPage = lazy(() => import("./pages/AccountStrategyPage"));
+const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
+const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
 const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
@@ -187,6 +189,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <AccountStrategyPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personas-library"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PersonasLibraryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/data-migration"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <DataMigrationPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

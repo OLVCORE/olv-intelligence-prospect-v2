@@ -18,7 +18,9 @@ import {
   ChevronRight,
   Zap,
   CheckCircle2,
-  Globe
+  Globe,
+  Users,
+  Database
 } from "lucide-react";
 import {
   Sidebar,
@@ -163,6 +165,18 @@ const menuItems = [
     icon: PenTool,
     url: "/canvas",
     description: "War Room colaborativo com IA para planejar estratégias de venda e documentar decisões em tempo real"
+  },
+  {
+    title: "Biblioteca de Personas",
+    icon: Users,
+    url: "/personas-library",
+    description: "Gerencie buyer personas com perfis comportamentais, dores e estratégias de abordagem personalizadas"
+  },
+  {
+    title: "Migração de Dados",
+    icon: Database,
+    url: "/data-migration",
+    description: "Ferramenta de limpeza e migração para preparar o sistema com o novo conceito de análise"
   },
   {
     title: "Configurações",
