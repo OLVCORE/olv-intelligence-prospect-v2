@@ -1,0 +1,91 @@
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { GripVertical, Building2, Calendar, TrendingUp } from 'lucide-react';
+import type { Deal } from '@/hooks/useDeals';
+
+interface DraggableDealCardProps {
+  deal: Deal;
+  isDragging?: boolean;
+}
+
+export function DraggableDealCard({ deal, isDragging }: DraggableDealCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: deal.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: (isDragging || isSortableDragging) ? 0.5 : 1,
+  };
+
+  const priorityColors = {
+    low: 'bg-blue-500/10 text-blue-500',
+    medium: 'bg-yellow-500/10 text-yellow-500',
+    high: 'bg-orange-500/10 text-orange-500',
+    urgent: 'bg-red-500/10 text-red-500',
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className="cursor-move hover:shadow-md transition-shadow"
+      {...attributes}
+      {...listeners}
+    >
+      <CardContent className="p-3">
+        <div className="flex items-start gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground mt-1" />
+          <div className="flex-1 space-y-2">
+            {/* Title */}
+            <h4 className="font-medium text-sm leading-tight">{deal.title}</h4>
+
+            {/* Company */}
+            {deal.companies && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Building2 className="h-3 w-3" />
+                {deal.companies.name}
+              </div>
+            )}
+
+            {/* Value & Probability */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-sm font-semibold text-primary">
+                R$ {(deal.value / 1000).toFixed(1)}k
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <TrendingUp className="h-3 w-3" />
+                {deal.probability}%
+              </div>
+            </div>
+
+            {/* Date */}
+            {deal.expected_close_date && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                {new Date(deal.expected_close_date).toLocaleDateString('pt-BR')}
+              </div>
+            )}
+
+            {/* Priority Badge */}
+            <Badge
+              variant="secondary"
+              className={`text-xs ${priorityColors[deal.priority]}`}
+            >
+              {deal.priority === 'urgent' && '🔥 '}
+              {deal.priority.toUpperCase()}
+            </Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
