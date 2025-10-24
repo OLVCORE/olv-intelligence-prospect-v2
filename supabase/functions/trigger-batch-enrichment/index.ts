@@ -29,8 +29,7 @@ serve(async (req) => {
         website,
         linkedin_url,
         digital_maturity_score,
-        digital_maturity (id),
-        legal_data (id)
+        digital_maturity (id)
       `)
       .is('digital_maturity_score', null)
       .limit(50); // Processa 50 por vez para não sobrecarregar
