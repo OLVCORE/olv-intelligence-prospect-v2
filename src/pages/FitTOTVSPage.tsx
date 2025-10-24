@@ -87,8 +87,12 @@ export default function FitTOTVSPage() {
   const handleConfirm = async (selectedIds: string[]) => {
     if (!selectedIds || selectedIds.length === 0) return;
     if (selectMode === 'single') {
-      analyzeMutation.mutate(selectedIds[0]);
-      return;
+      return new Promise<void>((resolve, reject) => {
+        analyzeMutation.mutate(selectedIds[0], {
+          onSuccess: () => resolve(),
+          onError: (err) => reject(err)
+        });
+      });
     }
     setIsBulkRunning(true);
     let success = 0;
