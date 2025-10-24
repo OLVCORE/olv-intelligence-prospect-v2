@@ -62,20 +62,22 @@ serve(async (req) => {
         console.log(`🔄 Enriching ${company.name} (${company.cnpj})...`);
 
         // Buscar dados da ReceitaWS
-        const { data: receitaData } = await supabase.functions.invoke('enrich-receitaws', {
+        const { data: response } = await supabase.functions.invoke('enrich-receitaws', {
           body: { cnpj: company.cnpj }
         });
 
-        if (!receitaData) {
+        if (!response?.data) {
           results.errors++;
           results.details.push({
             company_id: company.id,
             company_name: company.name,
             status: 'error',
-            reason: 'No data returned from ReceitaWS'
+            reason: response?.error || 'No data returned from ReceitaWS'
           });
           continue;
         }
+
+        const receitaData = response.data;
 
         // Atualizar a empresa com os dados obtidos
         const updateData: any = {};
