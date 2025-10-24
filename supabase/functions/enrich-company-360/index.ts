@@ -16,19 +16,29 @@ function calculateDigitalPresenceScore(data: {
   hasLinkedIn: boolean;
   hasTechStack: boolean;
   employees: number;
+  socialMediaCount: number;
 }) {
   let overall = 50; // Base score
   
-  if (data.hasWebsite) overall += 20;
-  if (data.hasLinkedIn) overall += 15;
+  if (data.hasWebsite) overall += 15;
+  if (data.hasLinkedIn) overall += 10;
   if (data.hasTechStack) overall += 10;
   if (data.employees > 100) overall += 5;
   
+  // ✅ NOVO: Pontuação por presença em múltiplas redes sociais
+  // Cada rede adicional vale pontos (máximo 20 pontos)
+  const socialScore = Math.min(20, data.socialMediaCount * 3);
+  overall += socialScore;
+  
+  // Score social ajustado pela quantidade de plataformas
+  const socialPercentage = Math.min(100, (data.socialMediaCount / 7) * 100); // 7 redes possíveis
+  
   return {
     overall: Math.min(100, overall),
-    social: data.hasLinkedIn ? 75 : 40,
+    social: socialPercentage,
     web: data.hasWebsite ? 80 : 30,
-    engagement: data.hasLinkedIn && data.hasWebsite ? 70 : 45
+    engagement: data.hasLinkedIn && data.hasWebsite ? 70 : 45,
+    platforms_count: data.socialMediaCount
   };
 }
 
@@ -238,50 +248,193 @@ serve(async (req) => {
     }
 
     // ========================================
-    // 3️⃣ BUSCAR PRESENÇA DIGITAL REAL
+    // 3️⃣ BUSCAR PRESENÇA DIGITAL COMPLETA EM TODAS AS REDES SOCIAIS
     // ========================================
-    let linkedinData = null;
+    console.log('🌐 Searching ALL social media presence...');
+    
+    const socialMediaData: {
+      linkedin: any;
+      instagram: any;
+      facebook: any;
+      twitter: any;
+      youtube: any;
+      tiktok: any;
+      whatsapp: any;
+    } = {
+      linkedin: null,
+      instagram: null,
+      facebook: null,
+      twitter: null,
+      youtube: null,
+      tiktok: null,
+      whatsapp: null
+    };
+
     const webMetrics = {
       hasWebsite: !!company.website,
       hasSocialMedia: false,
       estimatedTraffic: 'medium'
     };
 
-    if (company.linkedin_url || company.name) {
-      try {
-        console.log('🔍 Searching LinkedIn presence...');
-        const { data: linkedinSearchData } = await supabase.functions.invoke('google-search', {
-          body: { 
-            query: `site:linkedin.com/company ${company.name}`,
-            numResults: 3
-          }
-        });
-
-        if (linkedinSearchData?.results?.[0]) {
-          linkedinData = {
-            url: linkedinSearchData.results[0].link,
-            description: linkedinSearchData.results[0].snippet,
-            hasPage: true
-          };
-          webMetrics.hasSocialMedia = true;
+    // Buscar em TODAS as redes sociais em paralelo
+    const socialSearches = [
+      // LinkedIn
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:linkedin.com/company ${company.name}`,
+          numResults: 3
         }
-        console.log('✅ LinkedIn data retrieved');
-      } catch (error) {
-        console.error('❌ LinkedIn search error:', error);
-      }
-    }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.linkedin = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'LinkedIn'
+          };
+          console.log('✅ LinkedIn found');
+        }
+      }).catch(err => console.error('❌ LinkedIn search error:', err)),
+
+      // Instagram
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:instagram.com ${company.name}`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.instagram = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'Instagram'
+          };
+          console.log('✅ Instagram found');
+        }
+      }).catch(err => console.error('❌ Instagram search error:', err)),
+
+      // Facebook
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:facebook.com ${company.name}`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.facebook = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'Facebook'
+          };
+          console.log('✅ Facebook found');
+        }
+      }).catch(err => console.error('❌ Facebook search error:', err)),
+
+      // Twitter/X
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:twitter.com ${company.name} OR site:x.com ${company.name}`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.twitter = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'Twitter/X'
+          };
+          console.log('✅ Twitter/X found');
+        }
+      }).catch(err => console.error('❌ Twitter/X search error:', err)),
+
+      // YouTube
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:youtube.com ${company.name}`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.youtube = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'YouTube'
+          };
+          console.log('✅ YouTube found');
+        }
+      }).catch(err => console.error('❌ YouTube search error:', err)),
+
+      // TikTok
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `site:tiktok.com ${company.name}`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          socialMediaData.tiktok = {
+            url: data.results[0].link,
+            description: data.results[0].snippet,
+            hasPage: true,
+            platform: 'TikTok'
+          };
+          console.log('✅ TikTok found');
+        }
+      }).catch(err => console.error('❌ TikTok search error:', err)),
+
+      // WhatsApp Business
+      supabase.functions.invoke('google-search', {
+        body: { 
+          query: `"${company.name}" whatsapp contato`,
+          numResults: 3
+        }
+      }).then(({ data }) => {
+        if (data?.results?.[0]) {
+          const hasWhatsApp = data.results.some((r: any) => 
+            r.snippet?.toLowerCase().includes('whatsapp') || 
+            r.link?.includes('wa.me')
+          );
+          if (hasWhatsApp) {
+            socialMediaData.whatsapp = {
+              hasPage: true,
+              description: 'WhatsApp Business detectado',
+              platform: 'WhatsApp'
+            };
+            console.log('✅ WhatsApp Business found');
+          }
+        }
+      }).catch(err => console.error('❌ WhatsApp search error:', err))
+    ];
+
+    // Aguardar todas as buscas em paralelo
+    await Promise.allSettled(socialSearches);
+
+    // Contar redes sociais ativas
+    const activeSocialMedia = Object.values(socialMediaData).filter(data => data !== null).length;
+    webMetrics.hasSocialMedia = activeSocialMedia > 0;
+
+    console.log(`✅ Social media scan complete: ${activeSocialMedia} platforms found`);
 
     const digitalPresenceScore = calculateDigitalPresenceScore({
       hasWebsite: webMetrics.hasWebsite,
-      hasLinkedIn: !!linkedinData,
+      hasLinkedIn: !!socialMediaData.linkedin,
       hasTechStack: techStack.length > 0,
-      employees: company.employees || 0
+      employees: company.employees || 0,
+      socialMediaCount: activeSocialMedia
     });
 
     await supabase.from('digital_presence').upsert({
       company_id,
-      linkedin_data: linkedinData,
-      website_metrics: webMetrics,
+      linkedin_data: socialMediaData.linkedin,
+      social_media_data: socialMediaData, // ✅ Todas as redes sociais consolidadas
+      website_metrics: {
+        ...webMetrics,
+        platforms_count: activeSocialMedia
+      },
       overall_score: digitalPresenceScore.overall,
       social_score: digitalPresenceScore.social,
       web_score: digitalPresenceScore.web,
@@ -401,7 +554,7 @@ Setor: ${company.industry || 'Não especificado'}
 Funcionários: ${company.employees || 'Não especificado'}
 Website: ${company.website || 'Não disponível'}
 Tech Stack detectado: ${techStack.join(', ') || 'Nenhum detectado'}
-LinkedIn: ${linkedinData ? 'Presente' : 'Ausente'}
+LinkedIn: ${socialMediaData.linkedin ? 'Presente' : 'Ausente'}
 Score Digital: ${digitalPresenceScore.overall}
 Score Jurídico: ${legalData?.legal_health_score || 'N/A'}
 Score Financeiro: ${financialData?.predictive_risk_score || 'N/A'}
