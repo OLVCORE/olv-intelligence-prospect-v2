@@ -329,45 +329,36 @@ serve(async (req) => {
     }
 
     // ========================================
-    // 5️⃣ CALCULAR SCORES REAIS
+    // 5️⃣ ENRIQUECER DADOS FINANCEIROS E JURÍDICOS (APIs REAIS)
     // ========================================
     
-    const yearsActive = receitaData?.years_active || 5;
-    
-    const legalHealthScore = calculateLegalHealthScore({
-      employees: company.employees || 0,
-      industry: company.industry,
-      yearsActive
-    });
+    // 💰 Enriquecimento Financeiro
+    console.log('💰 Enriching financial data...');
+    try {
+      const { data: financialData } = await supabase.functions.invoke('enrich-financial', {
+        body: { 
+          company_id,
+          cnpj: company.cnpj 
+        }
+      });
+      console.log('✅ Financial enrichment completed');
+    } catch (error) {
+      console.error('❌ Financial enrichment error:', error);
+    }
 
-    await supabase.from('legal_data').upsert({
-      company_id,
-      total_processes: legalHealthScore.estimatedProcesses,
-      active_processes: legalHealthScore.estimatedActive,
-      risk_level: legalHealthScore.riskLevel,
-      legal_health_score: legalHealthScore.score,
-      jusbrasil_data: { note: 'Estimado baseado em porte e setor' },
-      last_checked: new Date().toISOString()
-    });
-
-    console.log('✅ Legal health score saved');
-
-    const financialScore = calculateFinancialScore({
-      employees: company.employees || 0,
-      yearsActive,
-      industry: company.industry
-    });
-
-    await supabase.from('financial_data').upsert({
-      company_id,
-      credit_score: financialScore.creditScore,
-      risk_classification: financialScore.classification,
-      predictive_risk_score: financialScore.predictiveRiskScore,
-      serasa_data: { note: 'Estimado baseado em histórico e porte' },
-      last_updated: new Date().toISOString()
-    });
-
-    console.log('✅ Financial score saved');
+    // ⚖️ Enriquecimento Jurídico
+    console.log('⚖️ Enriching legal data...');
+    try {
+      const { data: legalData } = await supabase.functions.invoke('enrich-legal', {
+        body: { 
+          company_id,
+          cnpj: company.cnpj 
+        }
+      });
+      console.log('✅ Legal enrichment completed');
+    } catch (error) {
+      console.error('❌ Legal enrichment error:', error);
+    }
 
     // Reputação (estimada)
     const reputationScore = company.employees > 100 ? 75 : 65;
@@ -385,7 +376,22 @@ serve(async (req) => {
     console.log('✅ Reputation score saved');
 
     // ========================================
-    // 6️⃣ GERAR INSIGHTS COM LOVABLE AI (100% REAL)
+    // 6️⃣ BUSCAR SCORES CALCULADOS PARA CONTEXTO DA IA
+    // ========================================
+    const { data: legalData } = await supabase
+      .from('legal_data')
+      .select('*')
+      .eq('company_id', company_id)
+      .single();
+
+    const { data: financialData } = await supabase
+      .from('financial_data')
+      .select('*')
+      .eq('company_id', company_id)
+      .single();
+
+    // ========================================
+    // 7️⃣ GERAR INSIGHTS COM LOVABLE AI (100% REAL)
     // ========================================
     console.log('🤖 Generating AI insights...');
     
@@ -397,8 +403,10 @@ Website: ${company.website || 'Não disponível'}
 Tech Stack detectado: ${techStack.join(', ') || 'Nenhum detectado'}
 LinkedIn: ${linkedinData ? 'Presente' : 'Ausente'}
 Score Digital: ${digitalPresenceScore.overall}
-Score Jurídico: ${legalHealthScore.score}
-Score Financeiro: ${financialScore.predictiveRiskScore}
+Score Jurídico: ${legalData?.legal_health_score || 'N/A'}
+Score Financeiro: ${financialData?.predictive_risk_score || 'N/A'}
+Classificação Financeira: ${financialData?.risk_classification || 'N/A'}
+Processos Ativos: ${legalData?.active_processes || 0}
 `;
 
     try {

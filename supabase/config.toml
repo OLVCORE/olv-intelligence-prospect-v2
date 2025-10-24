@@ -44,6 +44,12 @@ project_id = "ioaxzpwlurpduanzkfrt"
  
  [functions.enrich-company-360]
  verify_jwt = true
+
+ [functions.enrich-financial]
+ verify_jwt = true
+
+ [functions.enrich-legal]
+ verify_jwt = true
  
  [functions.ai-contextual-analysis]
  verify_jwt = false
