@@ -2612,6 +2612,160 @@ export type Database = {
         }
         Relationships: []
       }
+      sdr_deal_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          created_by: string | null
+          deal_id: string
+          description: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          created_by?: string | null
+          deal_id: string
+          description?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          deal_id?: string
+          description?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_deal_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_deal_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_deals: {
+        Row: {
+          assigned_to: string | null
+          bitrix24_data: Json | null
+          bitrix24_synced_at: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          expected_close_date: string | null
+          external_id: string | null
+          id: string
+          last_activity_at: string | null
+          lost_reason: string | null
+          pipeline_id: string | null
+          priority: string | null
+          probability: number | null
+          source: string | null
+          stage: string
+          stage_order: number | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          value: number | null
+          won_date: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          bitrix24_data?: Json | null
+          bitrix24_synced_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          external_id?: string | null
+          id?: string
+          last_activity_at?: string | null
+          lost_reason?: string | null
+          pipeline_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          source?: string | null
+          stage?: string
+          stage_order?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          value?: number | null
+          won_date?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          bitrix24_data?: Json | null
+          bitrix24_synced_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expected_close_date?: string | null
+          external_id?: string | null
+          id?: string
+          last_activity_at?: string | null
+          lost_reason?: string | null
+          pipeline_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          source?: string | null
+          stage?: string
+          stage_order?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          value?: number | null
+          won_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_deals_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_deals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdr_diagnostics: {
         Row: {
           ai_insights: string | null
@@ -2756,6 +2910,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sdr_pipeline_stages: {
+        Row: {
+          automation_rules: Json | null
+          color: string | null
+          created_at: string | null
+          id: string
+          is_closed: boolean | null
+          is_won: boolean | null
+          key: string
+          name: string
+          order_index: number
+          probability_default: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          automation_rules?: Json | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_closed?: boolean | null
+          is_won?: boolean | null
+          key: string
+          name: string
+          order_index: number
+          probability_default?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          automation_rules?: Json | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_closed?: boolean | null
+          is_won?: boolean | null
+          key?: string
+          name?: string
+          order_index?: number
+          probability_default?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       sdr_routing_rules: {
         Row: {
