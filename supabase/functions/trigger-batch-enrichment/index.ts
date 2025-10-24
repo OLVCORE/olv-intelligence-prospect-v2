@@ -30,7 +30,6 @@ serve(async (req) => {
         linkedin_url,
         digital_maturity_score,
         digital_maturity (id),
-        digital_presence (id),
         legal_data (id)
       `)
       .is('digital_maturity_score', null)

@@ -30,7 +30,6 @@ export function useEnrichmentStatus(companyId?: string) {
           raw_data,
           digital_maturity_score,
           decision_makers (id),
-          digital_presence (id),
           digital_maturity (id),
           legal_data (id),
           insights (id)
@@ -45,7 +44,7 @@ export function useEnrichmentStatus(companyId?: string) {
         companyName: company.name,
         hasReceitaWS: !!company.cnpj && !!company.raw_data,
         hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-        hasDigitalPresence: !!company.digital_presence?.length,
+        hasDigitalPresence: !!company.digital_maturity?.length, // Usa digital_maturity como proxy
         hasMaturityScore: !!company.digital_maturity_score,
         hasFitScore: false, // TODO: Check fit analysis table
         hasLegalData: !!company.legal_data?.length,
@@ -91,7 +90,6 @@ export function useAllEnrichmentStatus() {
           raw_data,
           digital_maturity_score,
           decision_makers (id),
-          digital_presence (id),
           digital_maturity (id),
           legal_data (id),
           insights (id)
@@ -105,7 +103,7 @@ export function useAllEnrichmentStatus() {
           companyName: company.name,
           hasReceitaWS: !!company.cnpj && !!company.raw_data,
           hasDecisionMakers: (company.decision_makers?.length || 0) > 0,
-          hasDigitalPresence: !!company.digital_presence?.length,
+          hasDigitalPresence: !!company.digital_maturity?.length, // Usa digital_maturity como proxy
           hasMaturityScore: !!company.digital_maturity_score,
           hasFitScore: false,
           hasLegalData: !!company.legal_data?.length,
