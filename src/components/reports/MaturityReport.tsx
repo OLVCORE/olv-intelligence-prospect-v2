@@ -17,7 +17,7 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, digital_presence(*)')
+        .select('*')
         .eq('id', companyId)
         .single();
       if (error) throw error;
@@ -26,7 +26,18 @@ export function MaturityReport({ companyId }: MaturityReportProps) {
     staleTime: 300000, // Cache por 5 minutos
   });
 
-  const maturity = company?.digital_presence?.[0];
+  const { data: maturity } = useQuery({
+    queryKey: ['digital-presence', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('digital_presence')
+        .select('*')
+        .eq('company_id', companyId)
+        .maybeSingle();
+      return data as any;
+    },
+    staleTime: 300000,
+  });
 
   if (companyLoading) {
     return (

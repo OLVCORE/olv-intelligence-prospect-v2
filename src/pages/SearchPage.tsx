@@ -170,24 +170,35 @@ export default function SearchPage() {
   useEffect(() => {
     const loadCompany = async () => {
       if (!prefillCompanyId) return;
-      const { data, error } = await supabase
+      // Carrega empresa
+      const { data: companyData, error: companyErr } = await supabase
         .from('companies')
-        .select('*, decision_makers(*), digital_presence(*)')
+        .select('*, decision_makers(*)')
         .eq('id', prefillCompanyId)
         .maybeSingle();
-      if (error) return;
-      if (data) {
-        setSearchQuery(data.cnpj || data.name || "");
-        setWebsite(data.website || "");
-        setLinkedin(data.linkedin_url || "");
+      if (companyErr) return;
+
+      // Carrega presença digital separadamente (não há relação FK)
+      const { data: presence } = await supabase
+        .from('digital_presence')
+        .select('*')
+        .eq('company_id', prefillCompanyId)
+        .maybeSingle();
+
+      if (companyData) {
+        setSearchQuery(companyData.cnpj || companyData.name || "");
+        setWebsite(companyData.website || "");
+        setLinkedin(companyData.linkedin_url || "");
         
-        // Load Instagram from digital_presence or raw_data
-        const instagramUrl = (data.digital_presence as any)?.[0]?.instagram_url || 
-                            (data.raw_data as any)?.instagram_url || "";
+        // Instagram do digital_presence ou do raw_data
+        const instagramUrl = (presence as any)?.instagram_data?.url 
+          || (presence as any)?.instagram_url
+          || (companyData.raw_data as any)?.instagram_url 
+          || "";
         setInstagram(instagramUrl);
         
-        if (data.location && typeof data.location === 'object' && !Array.isArray(data.location)) {
-          const loc = data.location as Record<string, any>;
+        if (companyData.location && typeof companyData.location === 'object' && !Array.isArray(companyData.location)) {
+          const loc = companyData.location as Record<string, any>;
           setCep((loc.cep as string) || "");
           setEstado((loc.state as string) || "");
           setPais((loc.country as string) || "Brasil");
@@ -197,8 +208,8 @@ export default function SearchPage() {
           setNumero((loc.number as string) || "");
         }
         
-        // Load existing contacts
-        const decisores = data.decision_makers as any[];
+        // Contatos existentes
+        const decisores = companyData.decision_makers as any[];
         if (decisores && decisores.length > 0) {
           setContacts(decisores.map((dm: any) => ({
             name: dm.name || '',
