@@ -20,7 +20,10 @@ import {
   CheckCircle2,
   Globe,
   Users,
-  Database
+  Database,
+  Crosshair,
+  Sparkles,
+  Shield
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,7 +60,8 @@ import {
 
 const menuGroups = [
   {
-    label: "🎯 Prospecção",
+    label: "Prospecção",
+    icon: Crosshair,
     items: [
       {
         title: "Buscar Empresas",
@@ -91,7 +95,8 @@ const menuGroups = [
     ]
   },
   {
-    label: "🧠 Inteligência",
+    label: "Inteligência",
+    icon: Sparkles,
     items: [
       {
         title: "Hub 360º",
@@ -113,7 +118,8 @@ const menuGroups = [
     ]
   },
   {
-    label: "📋 Estratégia & Vendas",
+    label: "Estratégia & Vendas",
+    icon: TrendingUp,
     items: [
       {
         title: "Dashboard Executivo",
@@ -155,7 +161,8 @@ const menuGroups = [
     ]
   },
   {
-    label: "⚙️ Governança & Admin",
+    label: "Governança & Admin",
+    icon: Shield,
     items: [
       {
         title: "Transformação Digital",
@@ -205,13 +212,19 @@ export function AppSidebar() {
       <SidebarContent>
         <TooltipProvider delayDuration={200}>
           {menuGroups.map((group) => (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {group.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => {
+            <Collapsible key={group.label} defaultOpen className="group/group">
+              <SidebarGroup>
+                <SidebarGroupLabel asChild>
+                  <CollapsibleTrigger className="group-data-[collapsible=icon]:hidden flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer w-full">
+                    <group.icon className="h-4 w-4" />
+                    <span>{group.label}</span>
+                    <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/group:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {group.items.map((item) => {
                     const isActive = location.pathname === item.url;
                     const hasSubmenu = (item as any).submenu;
                     
@@ -313,10 +326,12 @@ export function AppSidebar() {
                         </Tooltip>
                       </SidebarMenuItem>
                     );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
           ))}
         </TooltipProvider>
       </SidebarContent>
