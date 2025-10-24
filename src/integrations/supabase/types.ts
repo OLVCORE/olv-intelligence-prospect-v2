@@ -558,6 +558,66 @@ export type Database = {
         }
         Relationships: []
       }
+      call_recordings: {
+        Row: {
+          call_sid: string
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          recording_sid: string | null
+          recording_url: string | null
+          status: string | null
+          transcription: string | null
+          transcription_sid: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          call_sid: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          recording_sid?: string | null
+          recording_url?: string | null
+          status?: string | null
+          transcription?: string | null
+          transcription_sid?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          call_sid?: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          recording_sid?: string | null
+          recording_url?: string | null
+          status?: string | null
+          transcription?: string | null
+          transcription_sid?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_recordings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_recordings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canvas: {
         Row: {
           company_id: string | null
@@ -1526,6 +1586,48 @@ export type Database = {
           legal_health_score?: number | null
           risk_level?: string | null
           total_processes?: number | null
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          body: string
+          category: string
+          channel: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          subject: string | null
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          body: string
+          category: string
+          channel: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          subject?: string | null
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          body?: string
+          category?: string
+          channel?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          subject?: string | null
+          updated_at?: string | null
+          variables?: Json | null
         }
         Relationships: []
       }

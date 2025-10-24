@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { CallInterface } from './CallInterface';
 
 interface DealCardProps {
   deal: {
@@ -156,29 +155,30 @@ export function DealCard({ deal }: DealCardProps) {
             </div>
           )}
 
-          {/* Contact Info */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {/* Contact Info & Quick Actions */}
+          <div className="flex items-center gap-2">
             {deal.contact?.email && (
-              <button 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   window.location.href = `mailto:${deal.contact.email}`;
                 }}
               >
-                <Mail className="h-3 w-3" />
-              </button>
+                <Mail className="h-3 w-3 mr-1" />
+                Email
+              </Button>
             )}
             {deal.contact?.phone && (
-              <button 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = `tel:${deal.contact.phone}`;
-                }}
-              >
-                <Phone className="h-3 w-3" />
-              </button>
+              <CallInterface
+                phoneNumber={deal.contact.phone}
+                contactName={deal.contact.name}
+                companyName={deal.company?.name}
+                dealId={deal.id}
+                companyId={deal.company_id}
+              />
             )}
           </div>
 
