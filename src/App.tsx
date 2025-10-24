@@ -50,6 +50,8 @@ const SDRAnalyticsPage = lazy(() => import("./pages/SDRAnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
 const GeographicAnalysisPage = lazy(() => import("./pages/GeographicAnalysisPage"));
+const GoalsPage = lazy(() => import("./pages/GoalsPage"));
+const ActivitiesPage = lazy(() => import("./pages/ActivitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Query client with optimized defaults
@@ -362,6 +364,26 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <EmailSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/goals"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <GoalsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/activities"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ActivitiesPage />
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />

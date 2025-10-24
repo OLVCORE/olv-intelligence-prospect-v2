@@ -106,34 +106,34 @@ export default function Dashboard() {
             <HeroMetric
               title="Empresas Ativas"
               value={data.totalCompanies.toString()}
-              change={15.5}
+              change={null}
               icon={Building2}
-              trend="up"
+              trend="neutral"
               color="blue"
             />
             <HeroMetric
-              title="Decisores Mapped"
+              title="Decisores Mapeados"
               value={data.totalDecisors.toString()}
-              change={23.4}
+              change={null}
               icon={Users}
-              trend="up"
+              trend="neutral"
               color="green"
             />
             <HeroMetric
               title="Pipeline Revenue"
-              value={`$${(data.pipelineValue / 1000000).toFixed(1)}M`}
-              change={data.conversionRate}
+              value={data.pipelineValue > 0 ? `R$ ${(data.pipelineValue / 1000000).toFixed(1)}M` : "R$ 0"}
+              change={null}
               icon={DollarSign}
-              trend="up"
+              trend="neutral"
               color="cyan"
               highlight
             />
             <HeroMetric
-              title="Win Rate"
-              value={`${data.conversionRate.toFixed(1)}%`}
-              change={8.7}
-              icon={Target}
-              trend="up"
+              title="Conversações"
+              value={data.totalConversations.toString()}
+              change={null}
+              icon={MessageSquare}
+              trend="neutral"
               color="purple"
             />
           </div>
@@ -630,8 +630,8 @@ function HeroMetric({
 }: {
   title: string;
   value: string;
-  change: number;
-  trend: 'up' | 'down';
+  change: number | null;
+  trend: 'up' | 'down' | 'neutral';
   icon: any;
   color: 'blue' | 'green' | 'cyan' | 'purple';
   highlight?: boolean;
@@ -653,13 +653,15 @@ function HeroMetric({
           <div className={`p-3 rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border}`}>
             <Icon className={`h-5 w-5 ${colors.icon}`} />
           </div>
-          <Badge 
-            variant={trend === 'up' ? 'default' : 'destructive'} 
-            className="gap-1 font-semibold"
-          >
-            {trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {change > 0 ? '+' : ''}{change.toFixed(1)}%
-          </Badge>
+          {change !== null && trend !== 'neutral' && (
+            <Badge 
+              variant={trend === 'up' ? 'default' : 'destructive'} 
+              className="gap-1 font-semibold"
+            >
+              {trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {change > 0 ? '+' : ''}{change.toFixed(1)}%
+            </Badge>
+          )}
         </div>
         <p className="text-sm text-muted-foreground font-medium mb-2">{title}</p>
         <p className="text-4xl font-bold tracking-tight">{value}</p>

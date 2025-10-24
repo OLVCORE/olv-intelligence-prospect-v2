@@ -11,6 +11,20 @@ interface APIHealth {
   lastCheck: string;
 }
 
+interface APIHealthResponse {
+  apis: Array<{
+    name: string;
+    status: 'online' | 'offline';
+    configured: boolean;
+    category: string;
+  }>;
+  summary: {
+    online: number;
+    total: number;
+    percentage: number;
+  };
+}
+
 export function SystemHealthPanel() {
   const { data: health, isLoading } = useQuery({
     queryKey: ['api-health'],
@@ -19,10 +33,10 @@ export function SystemHealthPanel() {
       
       if (error) throw error;
       
-      return data as { apis: APIHealth[] };
+      return data as APIHealthResponse;
     },
-    refetchInterval: 300000, // A cada 5 minutos
-    staleTime: 240000, // Dados válidos por 4 minutos
+    refetchInterval: 300000,
+    staleTime: 240000,
   });
 
   if (isLoading) {
@@ -39,7 +53,19 @@ export function SystemHealthPanel() {
   }
 
   const apis = health?.apis || [];
-  const onlineCount = apis.filter(api => api.status === 'online').length;
+  const summary = health?.summary || { online: 0, total: 0, percentage: 0 };
+
+  // Agrupar por categoria
+  const categories = {
+    data: apis.filter(api => api.category === 'data'),
+    email: apis.filter(api => api.category === 'email'),
+    people: apis.filter(api => api.category === 'people'),
+    location: apis.filter(api => api.category === 'location' || api.category === 'maps'),
+    ai: apis.filter(api => api.category === 'ai'),
+    messaging: apis.filter(api => api.category === 'messaging'),
+    search: apis.filter(api => api.category === 'search'),
+    scraping: apis.filter(api => api.category === 'scraping'),
+  };
 
   return (
     <Card className="glass-card">
@@ -50,34 +76,49 @@ export function SystemHealthPanel() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-muted-foreground">Sistemas Online</span>
-            <span className="text-2xl font-bold">
-              {onlineCount}/{apis.length}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div>
+              <span className="text-sm text-muted-foreground">Sistemas Configurados</span>
+              <p className="text-xs text-muted-foreground mt-1">
+                {summary.percentage}% das integrações ativas
+              </p>
+            </div>
+            <span className="text-3xl font-bold text-primary">
+              {summary.online}/{summary.total}
             </span>
           </div>
 
-          <div className="space-y-2">
-            {apis.map((api, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg border bg-card/50">
-                <div className="flex items-center gap-2">
-                  {api.status === 'online' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                  {api.status === 'offline' && <XCircle className="h-4 w-4 text-red-600" />}
-                  {api.status === 'degraded' && <AlertCircle className="h-4 w-4 text-orange-600" />}
-                  <span className="text-sm font-medium">{api.name}</span>
+          <div className="space-y-3">
+            {Object.entries(categories).map(([category, categoryApis]) => {
+              if (categoryApis.length === 0) return null;
+              
+              return (
+                <div key={category} className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {category}
+                  </p>
+                  {categoryApis.map((api, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                      <div className="flex items-center gap-2">
+                        {api.status === 'online' ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                        <span className="text-sm font-medium">{api.name}</span>
+                      </div>
+                      <Badge
+                        variant={api.status === 'online' ? 'default' : 'destructive'}
+                        className="text-xs"
+                      >
+                        {api.status === 'online' ? '🟢 Ativo' : '🔴 Inativo'}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-                <Badge
-                  variant={
-                    api.status === 'online' ? 'default' :
-                    api.status === 'degraded' ? 'secondary' : 'destructive'
-                  }
-                  className="text-xs"
-                >
-                  {api.status}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardContent>

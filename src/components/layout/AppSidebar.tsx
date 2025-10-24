@@ -173,6 +173,18 @@ const menuItems = [
     description: "Gerencie buyer personas com perfis comportamentais, dores e estratégias de abordagem personalizadas"
   },
   {
+    title: "Metas de Vendas",
+    icon: Target,
+    url: "/goals",
+    description: "Defina e acompanhe metas mensais, trimestrais e anuais com comparação de resultados em tempo real"
+  },
+  {
+    title: "Log de Atividades",
+    icon: CheckCircle2,
+    url: "/activities",
+    description: "Registre todas as interações com clientes: ligações, reuniões, e-mails e acompanhamento de follow-ups"
+  },
+  {
     title: "Migração de Dados",
     icon: Database,
     url: "/data-migration",
