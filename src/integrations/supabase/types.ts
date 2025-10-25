@@ -2429,61 +2429,40 @@ export type Database = {
       }
       pricing_rules: {
         Row: {
-          action: Json
           active: boolean | null
           conditions: Json
           created_at: string | null
-          created_by: string | null
-          customer_segments: string[] | null
+          discount_percentage: number | null
           id: string
-          max_quantity: number | null
-          metadata: Json | null
-          min_quantity: number | null
           name: string
+          price_multiplier: number | null
           priority: number | null
-          product_categories: string[] | null
           rule_type: string
           updated_at: string | null
-          valid_from: string | null
-          valid_until: string | null
         }
         Insert: {
-          action?: Json
           active?: boolean | null
-          conditions?: Json
+          conditions: Json
           created_at?: string | null
-          created_by?: string | null
-          customer_segments?: string[] | null
+          discount_percentage?: number | null
           id?: string
-          max_quantity?: number | null
-          metadata?: Json | null
-          min_quantity?: number | null
           name: string
+          price_multiplier?: number | null
           priority?: number | null
-          product_categories?: string[] | null
           rule_type: string
           updated_at?: string | null
-          valid_from?: string | null
-          valid_until?: string | null
         }
         Update: {
-          action?: Json
           active?: boolean | null
           conditions?: Json
           created_at?: string | null
-          created_by?: string | null
-          customer_segments?: string[] | null
+          discount_percentage?: number | null
           id?: string
-          max_quantity?: number | null
-          metadata?: Json | null
-          min_quantity?: number | null
           name?: string
+          price_multiplier?: number | null
           priority?: number | null
-          product_categories?: string[] | null
           rule_type?: string
           updated_at?: string | null
-          valid_from?: string | null
-          valid_until?: string | null
         }
         Relationships: []
       }
@@ -3874,6 +3853,78 @@ export type Database = {
           id?: string
           query?: string
           results_count?: number | null
+        }
+        Relationships: []
+      }
+      totvs_products: {
+        Row: {
+          active: boolean | null
+          base_price: number
+          category: string
+          config_options: Json | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          id: string
+          is_configurable: boolean | null
+          max_employees: number | null
+          max_price: number | null
+          max_quantity: number | null
+          min_employees: number | null
+          min_price: number
+          min_quantity: number | null
+          name: string
+          recommended_with: string[] | null
+          sku: string
+          target_company_size: string[] | null
+          target_sectors: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          base_price: number
+          category: string
+          config_options?: Json | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_configurable?: boolean | null
+          max_employees?: number | null
+          max_price?: number | null
+          max_quantity?: number | null
+          min_employees?: number | null
+          min_price: number
+          min_quantity?: number | null
+          name: string
+          recommended_with?: string[] | null
+          sku: string
+          target_company_size?: string[] | null
+          target_sectors?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          base_price?: number
+          category?: string
+          config_options?: Json | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_configurable?: boolean | null
+          max_employees?: number | null
+          max_price?: number | null
+          max_quantity?: number | null
+          min_employees?: number | null
+          min_price?: number
+          min_quantity?: number | null
+          name?: string
+          recommended_with?: string[] | null
+          sku?: string
+          target_company_size?: string[] | null
+          target_sectors?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
