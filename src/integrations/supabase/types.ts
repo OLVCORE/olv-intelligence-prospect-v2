@@ -2582,6 +2582,39 @@ export type Database = {
           },
         ]
       }
+      sdr_api_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          key: string
+          last_used_at: string | null
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key: string
+          last_used_at?: string | null
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          last_used_at?: string | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sdr_audit: {
         Row: {
           action: string
@@ -2804,6 +2837,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sdr_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       sdr_opportunities: {
         Row: {
@@ -3220,6 +3286,80 @@ export type Database = {
           subject?: string | null
           updated_at?: string | null
           variables?: string[] | null
+        }
+        Relationships: []
+      }
+      sdr_webhook_logs: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          response_body: string | null
+          status_code: number | null
+          success: boolean | null
+          webhook_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          status_code?: number | null
+          success?: boolean | null
+          webhook_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          status_code?: number | null
+          success?: boolean | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_webhooks: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          is_active: boolean | null
+          secret: string | null
+          updated_at: string | null
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          secret?: string | null
+          updated_at?: string | null
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          secret?: string | null
+          updated_at?: string | null
+          url?: string
+          user_id?: string | null
         }
         Relationships: []
       }
