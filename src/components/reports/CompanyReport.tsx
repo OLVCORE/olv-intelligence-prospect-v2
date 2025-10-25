@@ -328,7 +328,19 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Calculado com base em: Maturidade Digital (40%), Sinais de Compra (30%) e Estrutura de Decisores (30%)</p>
+                    <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      <li>• <strong>Maturidade Digital:</strong> {report.metrics.componentes.maturidade_digital}/100 (peso 40%)</li>
+                      <li>• <strong>Sinais de Compra:</strong> {report.metrics.componentes.sinais_compra}/100 (peso 15%)</li>
+                      <li>• <strong>Estrutura Decisores:</strong> {report.metrics.componentes.estrutura_decisores}/100 (peso 15%)</li>
+                      {report.metrics.componentes?.financeiro !== undefined && (
+                        <li>• <strong>Financeiro:</strong> {report.metrics.componentes.financeiro}/100 (peso 15%)</li>
+                      )}
+                      {report.metrics.componentes?.juridico !== undefined && (
+                        <li>• <strong>Jurídico:</strong> {report.metrics.componentes.juridico}/100 (peso 15%)</li>
+                      )}
+                    </ul>
+                    <p className="text-xs text-muted-foreground bg-muted p-1 rounded">Score = soma ponderada dos componentes</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -355,7 +367,15 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Análise da presença digital da empresa: website, redes sociais e tecnologias utilizadas</p>
+                    <p className="font-semibold mb-2">Base de Cálculo:</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      <li>• <strong>Presença Digital:</strong> website, redes sociais</li>
+                      <li>• <strong>Tech Stack:</strong> tecnologias utilizadas</li>
+                      <li>• <strong>Engajamento:</strong> métricas de social media</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground bg-muted p-1 rounded">
+                      Fonte: tabela <code>digital_presence</code>
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -372,7 +392,15 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-primary transition-colors hover:shadow-md"
+            onClick={() => {
+              const fitTab = document.querySelector('[value="fit"]') as HTMLElement;
+              if (fitTab) fitTab.click();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            title="Clique para ver produtos detalhados na aba Fit TOTVS"
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 Ticket Estimado
@@ -381,20 +409,26 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p><strong>Critérios:</strong> Produtos TOTVS filtrados por porte ({report.financials.porte}), setor ({report.activity.setor}) e maturidade digital ({report.metrics.componentes.maturidade_digital}/100)</p>
-                    {report.metrics.potencial_negocio.ticket_estimado.produtos_base && (
-                      <div className="mt-2">
-                        <p className="font-semibold">Produtos sugeridos:</p>
+                    <p className="font-semibold mb-2">Critérios de Cálculo:</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      <li>• <strong>Porte:</strong> {report.financials.porte} ({report.structure.total_funcionarios} funcionários)</li>
+                      <li>• <strong>Setor:</strong> {report.activity.setor}</li>
+                      <li>• <strong>Maturidade:</strong> {report.metrics.componentes.maturidade_digital}/100</li>
+                    </ul>
+                    {report.metrics.potencial_negocio.ticket_estimado.produtos_base && report.metrics.potencial_negocio.ticket_estimado.produtos_base.length > 0 && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded">
+                        <p className="font-semibold">{report.metrics.potencial_negocio.ticket_estimado.produtos_base.length} Produtos sugeridos:</p>
                         <ul className="text-xs list-disc pl-4 mt-1">
                           {report.metrics.potencial_negocio.ticket_estimado.produtos_base.map((p: any) => (
                             <li key={p.sku}>{p.nome} - R$ {(p.preco_base / 1000).toFixed(0)}k</li>
                           ))}
                         </ul>
                         {report.metrics.potencial_negocio.ticket_estimado.desconto_aplicado > 0 && (
-                          <p className="text-xs mt-1 text-green-600">Desconto aplicado: {report.metrics.potencial_negocio.ticket_estimado.desconto_aplicado}%</p>
+                          <p className="text-xs mt-1 text-green-600 font-semibold">✓ Desconto: {report.metrics.potencial_negocio.ticket_estimado.desconto_aplicado}%</p>
                         )}
                       </div>
                     )}
+                    <p className="text-xs text-blue-600 font-semibold mt-2 bg-blue-50 p-1 rounded">💡 Clique no card para ver recomendações na aba "Fit TOTVS"</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -408,9 +442,9 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 R$ {(report.metrics.potencial_negocio.ticket_estimado.maximo / 1000).toFixed(0)}k
               </p>
               {report.metrics.potencial_negocio.ticket_estimado.produtos_base && report.metrics.potencial_negocio.ticket_estimado.produtos_base.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {report.metrics.potencial_negocio.ticket_estimado.produtos_base.length} produto(s) sugerido(s)
-                </p>
+                <Badge variant="secondary" className="mt-2 text-xs">
+                  {report.metrics.potencial_negocio.ticket_estimado.produtos_base.length} produtos → Ver Fit TOTVS
+                </Badge>
               )}
             </CardContent>
           </Card>
@@ -424,7 +458,18 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                     <HelpCircle className="h-3 w-3 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Baseado no tamanho da empresa ({report.structure.total_funcionarios} funcionários) e gap de maturidade digital ({100 - report.metrics.componentes.maturidade_digital}%)</p>
+                    <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
+                    <ul className="text-xs space-y-1 mb-2">
+                      <li>• <strong>Base:</strong> 150% ROI</li>
+                      <li>• <strong>Multiplicador Tamanho:</strong> log10({report.structure.total_funcionarios} + 1) × 50</li>
+                      <li>• <strong>Gap Maturidade:</strong> (100 - {report.metrics.componentes.maturidade_digital}) / 100 × 100</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground bg-muted p-1 rounded mt-2">
+                      ROI = Base + (Tamanho × 50) + (Gap × 100)
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      💡 Quanto maior o gap de maturidade, maior o potencial de retorno
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -525,18 +570,61 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               Estrutura Corporativa
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Fontes de Dados:</p>
+                  <ul className="text-xs space-y-1">
+                    <li>• Funcionários: tabela <code>companies.employees</code></li>
+                    <li>• Decisores: tabela <code>decision_makers</code></li>
+                    <li>• Enriquecimento: Apollo.io, PhantomBuster, LinkedIn</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Total de Funcionários</p>
-              <p className="text-2xl font-bold">{report.structure.total_funcionarios}</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                Total de Funcionários
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Dados de LinkedIn, Receita Federal ou enriquecimento via Apollo/PhantomBuster</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="text-2xl font-bold">{report.structure.total_funcionarios || 'N/A'}</p>
               <Badge variant="secondary" className="mt-1">{report.structure.faixa_funcionarios}</Badge>
+              {(!report.structure.total_funcionarios || report.structure.total_funcionarios === 0) && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  Executar enriquecimento
+                </Badge>
+              )}
             </div>
             <Separator />
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Decisores Identificados</p>
-              <p className="text-xl font-bold">{report.structure.total_decisores}</p>
+              <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                Decisores Identificados
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Decisores mapeados via LinkedIn (PhantomBuster), Apollo.io e Hunter.io</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="text-xl font-bold">{report.structure.total_decisores || 0}</p>
+              {report.structure.total_decisores === 0 && (
+                <Badge variant="outline" className="mt-1 text-xs">
+                  Nenhum decisor mapeado
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -546,19 +634,73 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
               Indicadores Financeiros
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Fontes de Dados:</p>
+                  <ul className="text-xs space-y-1">
+                    <li>• <strong>Porte:</strong> nº funcionários (MICRO ≤10, PEQUENO ≤50, MÉDIO ≤200, GRANDE &gt;200)</li>
+                    <li>• <strong>Receita:</strong> Receita Federal ou raw_data.receita_anual</li>
+                    <li>• <strong>Capacidade:</strong> porte + histórico financeiro</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Porte</p>
-              <Badge variant="outline" className="text-base">{report.financials.porte}</Badge>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                Porte
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Classificação: MICRO (≤10), PEQUENO (≤50), MÉDIO (≤200), GRANDE (&gt;200 funcionários)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <Badge variant="outline" className="text-base">{report.financials.porte || 'N/A'}</Badge>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Receita Anual</p>
-              <p className="font-semibold">{report.financials.receita_anual}</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                Receita Anual
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Fonte: Receita Federal (raw_data.receita_anual) ou estimativa baseada em porte/setor</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="font-semibold">{report.financials.receita_anual || 'Não disponível'}</p>
+              {!report.financials.receita_anual && (
+                <Badge variant="outline" className="mt-1 text-xs">
+                  Executar enriquecimento premium
+                </Badge>
+              )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Capacidade de Investimento</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                Capacidade de Investimento
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs mb-1">Cálculo:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>• &gt;500 func: MUITO ALTA</li>
+                      <li>• &gt;200 func: ALTA</li>
+                      <li>• &gt;50 func: MÉDIA</li>
+                      <li>• Demais: BAIXA</li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
               <Badge variant="outline" className="text-base">{report.financials.capacidade_investimento}</Badge>
             </div>
           </CardContent>
