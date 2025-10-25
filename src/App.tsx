@@ -50,6 +50,7 @@ const SDRPipelinePage = lazy(() => import("./pages/SDRPipelinePage"));
 const SDRSequencesPage = lazy(() => import("./pages/SDRSequencesPage"));
 const SDRTasksPage = lazy(() => import("./pages/SDRTasksPage"));
 const SDRIntegrationsPage = lazy(() => import("./pages/SDRIntegrationsPage"));
+const SDRBitrixConfigPage = lazy(() => import("./pages/SDRBitrixConfigPage"));
 const SDRAnalyticsPage = lazy(() => import("./pages/SDRAnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
@@ -354,6 +355,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SDRIntegrationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/integrations/bitrix24"
+              element={
+                <ProtectedRoute>
+                  <SDRBitrixConfigPage />
                 </ProtectedRoute>
               }
             />

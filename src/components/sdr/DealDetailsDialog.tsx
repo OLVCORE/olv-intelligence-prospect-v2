@@ -22,6 +22,7 @@ import { DealQuickActions } from '@/components/sdr/DealQuickActions';
 import { VideoCallInterface } from '@/components/sdr/VideoCallInterface';
 import { CommunicationTimeline } from '@/components/sdr/CommunicationTimeline';
 import { WhatsAppQuickSend } from '@/components/sdr/WhatsAppQuickSend';
+import { EnhancedWhatsAppInterface } from '@/components/sdr/EnhancedWhatsAppInterface';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 interface DealDetailsDialogProps {
@@ -315,10 +316,11 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
                       <MessageSquare className="h-5 w-5 text-green-600" />
                       WhatsApp Business
                     </h3>
-                    <WhatsAppQuickSend
+                    <EnhancedWhatsAppInterface
                       contactPhone={primaryContact?.phone}
                       contactName={primaryContact?.name}
                       companyId={currentDeal.company_id}
+                      dealId={deal.id}
                     />
                   </Card>
 

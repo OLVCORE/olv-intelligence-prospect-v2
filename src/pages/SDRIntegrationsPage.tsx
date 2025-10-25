@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -105,7 +105,7 @@ const ALL_INTEGRATIONS = [
   
   // CRM
   { id: 'kommo', name: 'Kommo', category: 'crm', provider: 'kommo', available: false, description: 'CRM e vendas' },
-  { id: 'bitrix24', name: 'Bitrix24', category: 'crm', provider: 'bitrix24', available: false, description: 'CRM completo' },
+  { id: 'bitrix24', name: 'Bitrix24', category: 'crm', provider: 'bitrix24', available: true, description: 'Sincronização bidirecional de deals' },
   { id: 'hubspot', name: 'HubSpot', category: 'crm', provider: 'hubspot', available: false, description: 'Marketing & Vendas' },
   { id: 'pipedrive', name: 'Pipedrive', category: 'crm', provider: 'pipedrive', available: false, description: 'Pipeline de vendas' },
   { id: 'salesforce', name: 'Salesforce', category: 'crm', provider: 'salesforce', available: false, description: 'CRM Enterprise' },
@@ -243,6 +243,7 @@ function WebhookSetupInstructions() {
 
 export default function SDRIntegrationsPage() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
@@ -491,19 +492,35 @@ export default function SDRIntegrationsPage() {
                               </div>
                             </button>
                           </DialogTrigger>
-                          {item.available && (
+                           {item.available && (
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Configurar {item.name}</DialogTitle>
                                 <DialogDescription>
-                                  Conecte sua conta {item.name}
+                                  {item.id === 'bitrix24' ? (
+                                    <div className="space-y-3 pt-4">
+                                      <p>Sincronize seus deals automaticamente com o Bitrix24 de forma bidirecional</p>
+                                      <Button 
+                                        onClick={() => navigate('/sdr/integrations/bitrix24')}
+                                        className="w-full gap-2"
+                                        size="lg"
+                                      >
+                                        <Settings className="h-4 w-4" />
+                                        Configurar Bitrix24
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    `Conecte sua conta ${item.name}`
+                                  )}
                                 </DialogDescription>
                               </DialogHeader>
-                              <IntegrationForm 
-                                defaultChannel={item.category}
-                                defaultProvider={item.provider}
-                                onSuccess={loadIntegrations} 
-                              />
+                              {item.id !== 'bitrix24' && (
+                                <IntegrationForm 
+                                  defaultChannel={item.category}
+                                  defaultProvider={item.provider}
+                                  onSuccess={loadIntegrations} 
+                                />
+                              )}
                             </DialogContent>
                           )}
                         </Dialog>
