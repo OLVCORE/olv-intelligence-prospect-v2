@@ -919,12 +919,86 @@ Seja conciso, direto e focado em ROI. Máximo 200 palavras.`
       console.error('❌ AI pitch error:', error);
     }
 
+    // ========================================
+    // 8️⃣ PERSISTIR DADOS 360° EM company_enrichment (PADRÃO RECEITA FEDERAL)
+    // ========================================
+    console.log('💾 Persisting 360° enrichment data in company_enrichment...');
+    
+    const enrichment360Data = {
+      receitaws: receitaData,
+      tech_stack: techStack,
+      social_media: socialMediaData,
+      digital_presence_score: digitalPresenceScore,
+      decision_makers_count: decisionMakers.length,
+      enriched_at: new Date().toISOString()
+    };
+    
+    // UPSERT em company_enrichment (igual ao padrão da Receita)
+    const { error: enrichmentError } = await supabase
+      .from('company_enrichment')
+      .upsert({
+        company_id,
+        source: '360_completo',
+        data: enrichment360Data
+      }, { onConflict: 'company_id,source' });
+    
+    if (enrichmentError) {
+      console.error('❌ ERRO CRÍTICO ao persistir 360°:', enrichmentError);
+      throw new Error(`Falha na persistência: ${enrichmentError.message}`);
+    }
+    
+    console.log('✅ 360° data persistido com SUCESSO em company_enrichment');
+
+    // ========================================
+    // 9️⃣ ATUALIZAR TABELA COMPANIES COM CAMPOS CHAVE (PADRÃO RECEITA FEDERAL)
+    // ========================================
+    console.log('💾 Updating companies table with key fields...');
+    
+    const companyUpdateFields: any = {
+      digital_maturity_score: digitalPresenceScore.overall,
+      technologies: techStack.length > 0 ? techStack : company.technologies,
+      raw_data: {
+        ...company.raw_data,
+        last_360_enrichment: {
+          scores: digitalPresenceScore,
+          social_platforms: Object.keys(socialMediaData).filter(k => socialMediaData[k as keyof typeof socialMediaData] !== null),
+          enriched_at: new Date().toISOString()
+        }
+      }
+    };
+    
+    const { error: companyUpdateError } = await supabase
+      .from('companies')
+      .update(companyUpdateFields)
+      .eq('id', company_id);
+    
+    if (companyUpdateError) {
+      console.error('❌ ERRO CRÍTICO ao atualizar companies:', companyUpdateError);
+      throw new Error(`Falha na atualização da empresa: ${companyUpdateError.message}`);
+    }
+    
+    console.log('✅ Companies table updated with digital_maturity_score:', digitalPresenceScore.overall);
+
+    // ========================================
+    // 🔟 REGENERAR RELATÓRIO COMPLETO (AUTOMÁTICO, IGUAL RECEITA FEDERAL)
+    // ========================================
+    console.log('📊 Regenerating company report automatically...');
+    
+    try {
+      await supabase.functions.invoke('generate-company-report', {
+        body: { companyId: company_id }
+      });
+      console.log('✅ Relatório regenerado automaticamente com dados 360°');
+    } catch (reportError) {
+      console.error('⚠️ Erro ao regenerar relatório (não crítico):', reportError);
+    }
+
     console.log('🎉 360° enrichment completed successfully!');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Enrichment 360° completed with real data',
+        message: '✅ 360° enrichment COMPLETO com persistência e regeneração de relatório',
         company_id,
         enriched_data: {
           digital_presence: true,
@@ -934,7 +1008,10 @@ Seja conciso, direto e focado em ROI. Máximo 200 palavras.`
           tech_stack: techStack,
           decision_makers: decisionMakers.length,
           ai_insights: true,
-          ai_pitch: true
+          ai_pitch: true,
+          persisted_in_company_enrichment: true,
+          companies_table_updated: true,
+          report_regenerated: true
         }
       }),
       {

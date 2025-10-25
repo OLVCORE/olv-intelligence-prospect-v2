@@ -1192,6 +1192,41 @@ export type Database = {
         }
         Relationships: []
       }
+      company_enrichment: {
+        Row: {
+          company_id: string
+          created_at: string
+          data: Json
+          id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          data: Json
+          id?: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_enrichment_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_previews: {
         Row: {
           cnpj: string | null
