@@ -55,10 +55,11 @@ serve(async (req) => {
     sourcesSucceeded.push('companies');
 
     // 3. Buscar dados relacionados em paralelo
-    const [decisorsRes, presenceRes, signalsRes] = await Promise.all([
+    const [decisorsRes, presenceRes, signalsRes, maturityRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
       supabase.from('digital_presence').select('*').eq('company_id', companyId).maybeSingle(),
-      supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false })
+      supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false }),
+      supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle()
     ]);
 
     if (!decisorsRes.error) sourcesSucceeded.push('decision_makers');
@@ -70,9 +71,13 @@ serve(async (req) => {
     if (!signalsRes.error) sourcesSucceeded.push('governance_signals');
     else sourcesFailed.push('governance_signals');
 
+    if (!maturityRes.error) sourcesSucceeded.push('digital_maturity');
+    else sourcesFailed.push('digital_maturity');
+
     const decisors = decisorsRes.data || [];
-    const maturity = presenceRes.data;
+    const presence = presenceRes.data;
     const signals = signalsRes.data || [];
+    const maturity = maturityRes.data;
 
     // 4. Calcular métricas (agora assíncrono)
     const metrics = await calculateCompanyMetrics(company, decisors, maturity, signals, supabase);
@@ -89,7 +94,7 @@ serve(async (req) => {
       activity: buildActivity(company),
       structure: buildStructure(company, decisors),
       financials: buildFinancials(company),
-      digitalPresence: buildDigitalPresence(company, maturity),
+      digitalPresence: buildDigitalPresence(company, maturity, presence),
       metrics,
       insights,
       decisors,
@@ -252,12 +257,17 @@ function buildFinancials(company: any) {
   };
 }
 
-function buildDigitalPresence(company: any, maturity: any) {
+function buildDigitalPresence(company: any, maturity: any, presence: any) {
   return {
     website_status: company.website ? 'ATIVO' : 'NÃO ENCONTRADO',
     tecnologias: company.technologies || [],
     maturidade_digital: maturity?.overall_score || 0,
-    classificacao_maturidade: maturity ? getMaturityClassification(maturity.overall_score) : 'N/A'
+    classificacao_maturidade: maturity ? getMaturityClassification(maturity.overall_score) : 'N/A',
+    social_media: {
+      linkedin: presence?.linkedin_data || null,
+      instagram: presence?.instagram_data || null,
+      facebook: presence?.facebook_data || null
+    }
   };
 }
 
