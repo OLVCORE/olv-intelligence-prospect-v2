@@ -2,13 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText, Sparkles, FileSpreadsheet, Image } from "lucide-react";
+import { Building2, MapPin, Users, TrendingUp, Target, Download, FileText, Sparkles, FileSpreadsheet, Image, RefreshCw, HelpCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PremiumReportRequest } from "./PremiumReportRequest";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CompanyReportProps {
   companyId: string;
@@ -30,7 +31,7 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
     }
   });
 
-  const { data: report, isLoading } = useQuery({
+  const { data: report, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['company-report', companyId],
     queryFn: async () => {
       // Primeiro buscar relatório persistido
@@ -64,6 +65,25 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
     },
     staleTime: 300000, // Cache por 5 minutos
   });
+
+  const handleRefreshReport = async () => {
+    toast.info("Atualizando relatório...", { description: "Buscando novos dados" });
+    try {
+      // Forçar geração de novo relatório
+      const { data, error } = await supabase.functions.invoke('generate-company-report', {
+        body: { companyId }
+      });
+      
+      if (error) throw error;
+      
+      // Refetch para atualizar a UI
+      await refetch();
+      toast.success("Relatório atualizado com sucesso!");
+    } catch (error) {
+      console.error('Error refreshing report:', error);
+      toast.error("Erro ao atualizar relatório");
+    }
+  };
 
   const handleExportPDF = async () => {
     toast.info("Gerando PDF...", { description: "Aguarde alguns segundos" });
@@ -158,7 +178,18 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                   Gerado em {new Date((company.raw_data as any).premium_report_generated_at).toLocaleString('pt-BR')}
                 </CardDescription>
               </div>
-              <Badge className="bg-primary text-primary-foreground">Premium</Badge>
+              <div className="flex gap-2">
+                <Badge className="bg-primary text-primary-foreground">Premium</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshReport}
+                  disabled={isRefetching}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -285,76 +316,128 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
       </Card>
 
       {/* Métricas Principais */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Score Global
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-primary">
-              {report.metrics.score_global}
-              <span className="text-lg">/100</span>
-            </div>
-            <Progress value={report.metrics.score_global} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              Classificação: <Badge variant="outline">{report.metrics.potencial_negocio.classificacao}</Badge>
-            </p>
-          </CardContent>
-        </Card>
+      <TooltipProvider>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Score Global
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Calculado com base em: Maturidade Digital (40%), Sinais de Compra (30%) e Estrutura de Decisores (30%)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">
+                {report.metrics.score_global}
+                <span className="text-lg">/100</span>
+              </div>
+              <Progress value={report.metrics.score_global} className="mt-2" />
+              <p className="text-xs text-muted-foreground mt-2">
+                Classificação: <Badge variant="outline">{report.metrics.potencial_negocio.classificacao}</Badge>
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Maturidade Digital
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {report.metrics.componentes.maturidade_digital}
-              <span className="text-lg">/100</span>
-            </div>
-            <Progress value={report.metrics.componentes.maturidade_digital} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {report.digitalPresence.classificacao_maturidade}
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Maturidade Digital
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Análise da presença digital da empresa: website, redes sociais e tecnologias utilizadas</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {report.metrics.componentes.maturidade_digital}
+                <span className="text-lg">/100</span>
+              </div>
+              <Progress value={report.metrics.componentes.maturidade_digital} className="mt-2" />
+              <p className="text-xs text-muted-foreground mt-2">
+                {report.digitalPresence.classificacao_maturidade}
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Ticket Estimado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              R$ {(report.metrics.potencial_negocio.ticket_estimado.medio / 1000).toFixed(0)}k
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Range: R$ {(report.metrics.potencial_negocio.ticket_estimado.minimo / 1000).toFixed(0)}k - 
-              R$ {(report.metrics.potencial_negocio.ticket_estimado.maximo / 1000).toFixed(0)}k
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Ticket Estimado
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p><strong>Critérios:</strong> Produtos TOTVS filtrados por porte ({report.financials.porte}), setor ({report.activity.setor}) e maturidade digital ({report.metrics.componentes.maturidade_digital}/100)</p>
+                    {report.metrics.potencial_negocio.ticket_estimado.produtos_base && (
+                      <div className="mt-2">
+                        <p className="font-semibold">Produtos sugeridos:</p>
+                        <ul className="text-xs list-disc pl-4 mt-1">
+                          {report.metrics.potencial_negocio.ticket_estimado.produtos_base.map((p: any) => (
+                            <li key={p.sku}>{p.nome} - R$ {(p.preco_base / 1000).toFixed(0)}k</li>
+                          ))}
+                        </ul>
+                        {report.metrics.potencial_negocio.ticket_estimado.desconto_aplicado > 0 && (
+                          <p className="text-xs mt-1 text-green-600">Desconto aplicado: {report.metrics.potencial_negocio.ticket_estimado.desconto_aplicado}%</p>
+                        )}
+                      </div>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {(report.metrics.potencial_negocio.ticket_estimado.medio / 1000).toFixed(0)}k
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Range: R$ {(report.metrics.potencial_negocio.ticket_estimado.minimo / 1000).toFixed(0)}k - 
+                R$ {(report.metrics.potencial_negocio.ticket_estimado.maximo / 1000).toFixed(0)}k
+              </p>
+              {report.metrics.potencial_negocio.ticket_estimado.produtos_base && report.metrics.potencial_negocio.ticket_estimado.produtos_base.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {report.metrics.potencial_negocio.ticket_estimado.produtos_base.length} produto(s) sugerido(s)
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              ROI Esperado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
-              {report.metrics.priorizacao.roi_esperado}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Urgência: <Badge variant="outline">{report.metrics.priorizacao.urgencia}</Badge>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                ROI Esperado
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Baseado no tamanho da empresa ({report.structure.total_funcionarios} funcionários) e gap de maturidade digital ({100 - report.metrics.componentes.maturidade_digital}%)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600">
+                {report.metrics.priorizacao.roi_esperado}%
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Urgência: <Badge variant="outline">{report.metrics.priorizacao.urgencia}</Badge>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </TooltipProvider>
 
       {/* Identificação e Localização */}
       <div className="grid gap-6 md:grid-cols-2">

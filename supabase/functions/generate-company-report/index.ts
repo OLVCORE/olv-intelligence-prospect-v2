@@ -204,12 +204,20 @@ function buildIdentification(company: any) {
 }
 
 function buildLocation(company: any) {
-  const location = company.location || {};
+  // Location pode estar em diferentes formatos no JSON
+  const loc = company.location || {};
+  
+  // Tentar extrair do formato aninhado também
+  const address = loc.address || loc.formatted_address || loc.endereco || '';
+  const city = loc.city || loc.cidade || loc.locality || '';
+  const state = loc.state || loc.estado || loc.administrative_area_level_1 || '';
+  const country = loc.country || loc.pais || 'Brasil';
+  
   return {
-    endereco: location.address || 'N/A',
-    cidade: location.city || 'N/A',
-    estado: location.state || 'N/A',
-    pais: location.country || 'Brasil'
+    endereco: address || 'Não informado',
+    cidade: city || 'Não informado',
+    estado: state || 'Não informado',
+    pais: country
   };
 }
 

@@ -3876,6 +3876,7 @@ export type Database = {
           name: string
           recommended_with: string[] | null
           sku: string
+          submodules: Json | null
           target_company_size: string[] | null
           target_sectors: Json | null
           updated_at: string | null
@@ -3899,6 +3900,7 @@ export type Database = {
           name: string
           recommended_with?: string[] | null
           sku: string
+          submodules?: Json | null
           target_company_size?: string[] | null
           target_sectors?: Json | null
           updated_at?: string | null
@@ -3922,6 +3924,7 @@ export type Database = {
           name?: string
           recommended_with?: string[] | null
           sku?: string
+          submodules?: Json | null
           target_company_size?: string[] | null
           target_sectors?: Json | null
           updated_at?: string | null
