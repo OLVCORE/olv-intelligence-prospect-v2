@@ -257,13 +257,51 @@ export default function SDRIntegrationsPage() {
   const loadIntegrations = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Load from integration_configs (old)
+      const { data: oldIntegrations, error: oldError } = await supabase
         .from('integration_configs')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setIntegrations((data || []) as Integration[]);
+      if (oldError && oldError.code !== 'PGRST116') throw oldError;
+
+      // Load from sdr_integrations (new - WhatsApp)
+      const { data: sdrIntegrations, error: sdrError } = await supabase
+        .from('sdr_integrations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (sdrError && sdrError.code !== 'PGRST116') throw sdrError;
+
+      // Combine and normalize both sources
+      const combined: Integration[] = [
+        ...(oldIntegrations || []).map((i: any) => ({
+          id: i.id,
+          channel: i.channel,
+          provider: i.provider,
+          status: i.status,
+          health_status: i.health_status,
+          last_health_check: i.last_health_check,
+          config: i.config || {},
+          credentials: i.credentials || {}
+        })),
+        ...(sdrIntegrations || []).map((i: any) => ({
+          id: i.id,
+          channel: i.integration_name === 'whatsapp' ? 'social' : i.integration_name,
+          provider: i.provider || i.integration_name,
+          status: i.is_active ? 'active' : 'inactive',
+          health_status: null,
+          last_health_check: i.last_sync_at,
+          config: i.config || {},
+          credentials: {}
+        }))
+      ];
+
+      setIntegrations(combined);
     } catch (error: any) {
       console.error('Error loading integrations:', error);
       toast({
@@ -409,7 +447,10 @@ export default function SDRIntegrationsPage() {
                                 <p className="text-sm font-semibold truncate capitalize">{integration.provider}</p>
                                 <p className="text-xs text-muted-foreground capitalize">{integration.channel}</p>
                               </div>
-                              <Badge variant={integration.status === 'active' ? 'default' : 'destructive'} className="text-[10px] h-5">
+                              <Badge 
+                                variant={integration.status === 'active' ? 'default' : 'destructive'} 
+                                className={`text-[10px] h-5 ${integration.status === 'active' ? 'bg-[hsl(var(--chart-2))] hover:bg-[hsl(var(--chart-2))]/80' : ''}`}
+                              >
                                 {integration.status === 'active' ? 'Ativo' : 'Erro'}
                               </Badge>
                             </div>
