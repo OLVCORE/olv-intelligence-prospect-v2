@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export interface CopilotSuggestion {
   id: string;
@@ -16,6 +17,9 @@ export interface CopilotSuggestion {
   metadata?: {
     dealId?: string;
     companyId?: string;
+    companyName?: string;
+    cnpj?: string;
+    score?: number;
     reason?: string;
     confidence?: number;
   };
@@ -42,6 +46,7 @@ export interface CopilotContext {
  */
 export function useAICopilot(context: CopilotContext) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Buscar sugestões do copilot
   const { data: suggestions, isLoading } = useQuery({
@@ -77,9 +82,14 @@ export function useAICopilot(context: CopilotContext) {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, suggestion) => {
+    onSuccess: (data, suggestion) => {
       toast.success(`Ação executada: ${suggestion.action?.label}`);
       queryClient.invalidateQueries({ queryKey: ['ai-copilot-suggestions'] });
+      
+      // Navegar se a ação retornou uma URL
+      if (data?.result?.url) {
+        navigate(data.result.url);
+      }
     },
     onError: (error: any) => {
       toast.error('Erro ao executar ação: ' + error.message);

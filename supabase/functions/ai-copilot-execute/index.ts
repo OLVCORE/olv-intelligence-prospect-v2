@@ -65,8 +65,49 @@ serve(async (req) => {
         break;
 
       case 'navigate':
-        // Navegação é tratada no frontend
-        result = { success: true, url: action.payload.url };
+        // Se for criar deal, criar o deal antes de navegar
+        if (action.payload.url?.includes('create_deal=')) {
+          const urlParams = new URLSearchParams(action.payload.url.split('?')[1]);
+          const companyId = urlParams.get('create_deal');
+          
+          if (companyId) {
+            // Buscar dados da empresa
+            const { data: company } = await supabase
+              .from('companies')
+              .select('name, cnpj')
+              .eq('id', companyId)
+              .single();
+
+            if (company) {
+              // Criar o deal
+              const { data: deal, error: dealError } = await supabase
+                .from('sdr_deals')
+                .insert({
+                  company_id: companyId,
+                  title: `Oportunidade - ${company.name || company.cnpj}`,
+                  stage: 'prospecting',
+                  status: 'open',
+                  probability: 20,
+                  value: 0,
+                  expected_close_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .select()
+                .single();
+
+              if (dealError) throw dealError;
+              
+              // Retornar URL para o deal criado
+              result = { 
+                success: true, 
+                url: `/sdr/workspace?deal=${deal.id}`,
+                dealId: deal.id 
+              };
+            }
+          }
+        } else {
+          // Navegação simples
+          result = { success: true, url: action.payload.url };
+        }
         break;
 
       case 'create_proposal':

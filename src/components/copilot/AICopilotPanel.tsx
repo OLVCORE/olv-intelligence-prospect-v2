@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, X, ChevronRight, AlertCircle, TrendingUp, Zap, Lightbulb } from 'lucide-react';
 import { useCopilotAlerts, CopilotSuggestion } from '@/hooks/useAICopilot';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
 
 const ICON_MAP = {
   action: Zap,
@@ -17,10 +18,17 @@ const ICON_MAP = {
 
 const PRIORITY_COLORS = {
   urgent: 'destructive',
-  high: 'destructive',
-  medium: 'default',
-  low: 'secondary'
+  high: 'default',
+  medium: 'secondary',
+  low: 'outline'
 } as const;
+
+const PRIORITY_LABELS: Record<string, string> = {
+  urgent: 'Urgente',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa'
+};
 
 export function AICopilotPanel() {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -117,6 +125,13 @@ interface SuggestionCardProps {
 
 function SuggestionCard({ suggestion, onExecute, onDismiss }: SuggestionCardProps) {
   const Icon = ICON_MAP[suggestion.type];
+  const navigate = useNavigate();
+  
+  const handleCompanyClick = () => {
+    if (suggestion.metadata?.companyId) {
+      navigate(`/companies/${suggestion.metadata.companyId}`);
+    }
+  };
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -135,13 +150,41 @@ function SuggestionCard({ suggestion, onExecute, onDismiss }: SuggestionCardProp
                 variant={PRIORITY_COLORS[suggestion.priority]}
                 className="text-xs shrink-0"
               >
-                {suggestion.priority}
+                {PRIORITY_LABELS[suggestion.priority] || suggestion.priority}
               </Badge>
             </div>
             
             <p className="text-xs text-muted-foreground mb-3">
               {suggestion.description}
             </p>
+
+            {/* Info da empresa se disponível */}
+            {suggestion.metadata?.companyName && (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={handleCompanyClick}
+                className="h-auto p-0 mb-2 text-xs font-medium hover:underline"
+              >
+                🏢 {suggestion.metadata.companyName}
+                {suggestion.metadata.cnpj && (
+                  <span className="text-muted-foreground ml-1">
+                    • {suggestion.metadata.cnpj}
+                  </span>
+                )}
+              </Button>
+            )}
+
+            {suggestion.metadata?.score !== undefined && (
+              <div className="mb-2">
+                <Badge 
+                  variant={suggestion.metadata.score >= 70 ? 'default' : 'secondary'}
+                  className="text-xs"
+                >
+                  Score: {suggestion.metadata.score}/100
+                </Badge>
+              </div>
+            )}
 
             {suggestion.metadata?.confidence && (
               <div className="mb-3">

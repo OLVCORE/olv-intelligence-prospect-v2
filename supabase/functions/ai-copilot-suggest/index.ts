@@ -314,7 +314,11 @@ serve(async (req) => {
     const { data: enrichedCompanies } = await supabase
       .from('companies')
       .select(`
-        *,
+        id,
+        name,
+        cnpj,
+        digital_maturity_score,
+        updated_at,
         sdr_deals!left(id)
       `)
       .not('digital_maturity_score', 'is', null)
@@ -324,12 +328,21 @@ serve(async (req) => {
 
     if (enrichedCompanies && enrichedCompanies.length > 0) {
       for (const company of enrichedCompanies) {
+        const companyName = company.name || company.cnpj || 'Empresa';
+        const score = company.digital_maturity_score || 0;
+        
+        // Calcular prioridade baseada no score
+        let priority: 'urgent' | 'high' | 'medium' | 'low' = 'low';
+        if (score >= 80) priority = 'urgent';
+        else if (score >= 70) priority = 'high';
+        else if (score >= 50) priority = 'medium';
+        
         suggestions.push({
           id: `new-opportunity-${company.id}`,
           type: 'opportunity',
-          priority: company.digital_maturity_score > 70 ? 'high' : 'medium',
-          title: `Nova oportunidade: ${company.name}`,
-          description: `Empresa enriquecida com score ${company.digital_maturity_score}/100. Potencial cliente!`,
+          priority,
+          title: `Nova oportunidade: ${companyName}`,
+          description: `Empresa enriquecida com score ${score}/100. ${score >= 70 ? 'Alto potencial!' : 'Potencial cliente!'}`,
           action: {
             label: 'Criar Deal',
             type: 'navigate',
@@ -339,8 +352,11 @@ serve(async (req) => {
           },
           metadata: {
             companyId: company.id,
+            companyName,
+            cnpj: company.cnpj,
+            score,
             reason: 'recently_enriched',
-            confidence: company.digital_maturity_score / 100
+            confidence: score / 100
           },
           createdAt: new Date()
         });
