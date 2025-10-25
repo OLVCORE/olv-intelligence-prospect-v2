@@ -134,6 +134,20 @@ serve(async (req) => {
           throw updateError;
         }
 
+        // Persistir também em company_enrichment e regenerar relatório
+        const { error: enrErr } = await supabase
+          .from('company_enrichment')
+          .upsert({ company_id: company.id, source: 'receitaws', data: receitaData }, { onConflict: 'company_id,source' });
+        if (enrErr) {
+          console.warn('⚠️ Failed to upsert company_enrichment (receitaws):', enrErr.message);
+        }
+
+        try {
+          await supabase.functions.invoke('generate-company-report', { body: { companyId: company.id } });
+        } catch (genErr) {
+          console.warn('⚠️ Failed to regenerate report:', genErr);
+        }
+
         results.enriched++;
         results.details.push({
           company_id: company.id,

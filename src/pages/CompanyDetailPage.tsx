@@ -179,7 +179,7 @@ export default function CompanyDetailPage() {
     
     try {
       const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
-        body: { cnpj: company.cnpj }
+        body: { cnpj: company.cnpj, company_id: id }
       });
       if (error) throw error;
 

@@ -1,6 +1,7 @@
 // ✅ Edge Function para buscar dados cadastrais via ReceitaWS
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cnpj } = await req.json();
+    const { cnpj, company_id } = await req.json();
 
     if (!cnpj) {
       return new Response(
@@ -113,9 +114,61 @@ serve(async (req) => {
       }
     }
 
-    // Success response
+    // Success + optional persistence if company_id provided
+    try {
+      if (company_id) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const sb = createClient(supabaseUrl, supabaseKey);
+
+        // Buscar empresa para merge seguro
+        const { data: company } = await sb
+          .from('companies')
+          .select('id, raw_data')
+          .eq('id', company_id)
+          .single();
+
+        const existingRaw = (company?.raw_data && typeof company.raw_data === 'object') ? company.raw_data : {};
+        const mergedRaw = {
+          ...existingRaw,
+          receita: data,
+          enriched_at: new Date().toISOString(),
+          ...(existingRaw.apollo && { apollo: existingRaw.apollo }),
+          ...(existingRaw.segment && { segment: existingRaw.segment }),
+          ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
+        };
+
+        const updatePayload: any = { raw_data: mergedRaw };
+        if (data?.atividade_principal?.[0]?.text) {
+          updatePayload.industry = data.atividade_principal[0].text;
+        }
+        if (data?.municipio && data?.uf) {
+          updatePayload.location = {
+            city: data.municipio,
+            state: data.uf,
+            country: 'Brasil',
+            address: [data.logradouro, data.numero, data.complemento, data.bairro, data.cep].filter(Boolean).join(', ')
+          };
+        }
+
+        const { error: updErr } = await sb
+          .from('companies')
+          .update(updatePayload)
+          .eq('id', company_id);
+        if (updErr) console.warn('ENRICH_RECEITAWS update companies warning:', updErr.message);
+
+        // Persistir histórico em company_enrichment (blindagem)
+        const { error: enrErr } = await sb
+          .from('company_enrichment')
+          .upsert({ company_id, source: 'receitaws', data }, { onConflict: 'company_id,source' });
+        if (enrErr) console.warn('ENRICH_RECEITAWS upsert enrichment warning:', enrErr.message);
+      }
+    } catch (persistErr) {
+      console.error('ENRICH_RECEITAWS persistence error:', persistErr);
+    }
+
     return new Response(
-      JSON.stringify({ data }),
+      JSON.stringify({ data, persisted: !!company_id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

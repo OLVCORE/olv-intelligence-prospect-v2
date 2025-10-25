@@ -156,7 +156,7 @@ export default function CompaniesManagementPage() {
 
       // Chama a função que retorna os dados da Receita (não grava no banco)
       const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
-        body: { cnpj: company.cnpj }
+        body: { cnpj: company.cnpj, company_id: companyId }
       });
 
       if (error) throw error as any;
