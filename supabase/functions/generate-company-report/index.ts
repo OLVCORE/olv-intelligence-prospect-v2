@@ -57,11 +57,11 @@ serve(async (req) => {
     // 3. Buscar dados relacionados em paralelo
     const [decisorsRes, presenceRes, signalsRes, maturityRes, financialRes, legalRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
-      supabase.from('digital_presence').select('*').eq('company_id', companyId).maybeSingle(),
+      supabase.from('digital_presence').select('*').eq('company_id', companyId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false }),
-      supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle(),
-      supabase.from('financial_data').select('*').eq('company_id', companyId).maybeSingle(),
-      supabase.from('legal_data').select('*').eq('company_id', companyId).maybeSingle()
+      supabase.from('digital_maturity').select('*').eq('company_id', companyId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('financial_data').select('*').eq('company_id', companyId).order('last_updated', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('legal_data').select('*').eq('company_id', companyId).order('last_checked', { ascending: false }).limit(1).maybeSingle()
     ]);
 
     if (!decisorsRes.error) sourcesSucceeded.push('decision_makers');
