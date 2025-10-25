@@ -329,12 +329,21 @@ export function AppSidebar() {
                                            <Tooltip>
                                              <TooltipTrigger asChild>
                                                <div>
-                                                 <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url} className="touch-manipulation active:scale-95 py-2.5 md:py-2">
-                                                   <Link to={subItem.url}>
-                                                     <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                                                     <span className="text-xs md:text-xs">{subItem.title}</span>
-                                                   </Link>
-                                                 </SidebarMenuSubButton>
+                                                  <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url} className="touch-manipulation active:scale-95 py-2.5 md:py-2">
+                                                    {(() => {
+                                                      const sp = new URLSearchParams(location.search);
+                                                      const company = sp.get('company');
+                                                      const base = subItem.url as string;
+                                                      const isAS = base.startsWith('/account-strategy');
+                                                      const url = isAS && company ? `${base}${base.includes('?') ? '&' : '?'}company=${company}` : base;
+                                                      return (
+                                                        <Link to={url}>
+                                                          <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                                                          <span className="text-xs md:text-xs">{subItem.title}</span>
+                                                        </Link>
+                                                      );
+                                                    })()}
+                                                  </SidebarMenuSubButton>
                                                </div>
                                              </TooltipTrigger>
                                              <TooltipContent side="right" className="max-w-[250px] hidden md:block">

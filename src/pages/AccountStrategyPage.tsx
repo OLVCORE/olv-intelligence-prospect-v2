@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGenerateAccountStrategy } from '@/hooks/useAccountStrategies';
 import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalculator';
 import { QuoteConfigurator } from '@/components/cpq/QuoteConfigurator';
+import { ProductCatalogManager } from '@/components/cpq/ProductCatalogManager';
 import { ScenarioComparison } from '@/components/scenarios/ScenarioComparison';
 import { ProposalManager } from '@/components/proposals/ProposalManager';
 import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
@@ -214,9 +215,13 @@ export default function AccountStrategyPage() {
               }} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="roi">ROI</TabsTrigger>
                 <TabsTrigger value="cpq">CPQ</TabsTrigger>
+                <TabsTrigger value="scenarios">Cenários</TabsTrigger>
+                <TabsTrigger value="proposals">Propostas</TabsTrigger>
+                <TabsTrigger value="competitive">Competitivo</TabsTrigger>
+                <TabsTrigger value="value">Valor</TabsTrigger>
               </TabsList>
               <TabsContent value="roi" className="space-y-4">
                 <InteractiveROICalculator
@@ -226,10 +231,33 @@ export default function AccountStrategyPage() {
                 />
               </TabsContent>
               <TabsContent value="cpq" className="space-y-4">
+                <ProductCatalogManager />
                 <QuoteConfigurator
                   companyId={companyId!}
                   accountStrategyId={activeStrategy?.id}
                 />
+              </TabsContent>
+              <TabsContent value="scenarios" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Análise de Cenários</CardTitle>
+                    <CardDescription>Crie uma estratégia para habilitar geração automática de cenários com IA.</CardDescription>
+                  </CardHeader>
+                </Card>
+              </TabsContent>
+              <TabsContent value="proposals" className="space-y-4">
+                <ProposalManager companyId={companyId!} />
+              </TabsContent>
+              <TabsContent value="competitive" className="space-y-4">
+                <BattleCardViewer />
+              </TabsContent>
+              <TabsContent value="value" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Value Realization</CardTitle>
+                    <CardDescription>Crie uma estratégia para iniciar o tracking de valor.</CardDescription>
+                  </CardHeader>
+                </Card>
               </TabsContent>
             </Tabs>
           </>
@@ -410,6 +438,7 @@ export default function AccountStrategyPage() {
 
             {/* CPQ Tab */}
             <TabsContent value="cpq" className="space-y-4">
+              <ProductCatalogManager />
               <QuoteConfigurator
                 companyId={companyId!}
                 accountStrategyId={activeStrategy.id}
