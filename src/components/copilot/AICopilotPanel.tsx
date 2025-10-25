@@ -129,7 +129,7 @@ function SuggestionCard({ suggestion, onExecute, onDismiss }: SuggestionCardProp
   
   const handleCompanyClick = () => {
     if (suggestion.metadata?.companyId) {
-      navigate(`/companies/${suggestion.metadata.companyId}`);
+      navigate(`/company/${suggestion.metadata.companyId}`);
     }
   };
 
