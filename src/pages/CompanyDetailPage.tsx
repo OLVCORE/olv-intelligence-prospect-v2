@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { DiagnosticUpload } from "@/components/sdr/DiagnosticUpload";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { useCompanyReport } from "@/hooks/useCompanyReport";
 export default function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -67,6 +67,8 @@ export default function CompanyDetailPage() {
     },
     staleTime: 0, // Força refresh para garantir dados atualizados
   });
+
+  const { data: execReport, isLoading: isReportLoading, refetch: refetchReport } = useCompanyReport(id);
 
   if (isLoading) {
     return (
@@ -398,6 +400,79 @@ export default function CompanyDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Resumo do Relatório */}
+          {(execReport as any) && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Score Global</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-primary">
+                    {(execReport as any).metrics?.score_global ?? '—'}
+                    {(execReport as any).metrics?.score_global !== undefined && <span className="text-lg">/100</span>}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Maturidade Digital</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">
+                    {(execReport as any).metrics?.componentes?.maturidade_digital ?? '—'}
+                    {(execReport as any).metrics?.componentes?.maturidade_digital !== undefined && <span className="text-lg">/100</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {(execReport as any).digitalPresence?.classificacao_maturidade}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Ticket Estimado</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Mín:</span>{" "}
+                    {typeof (execReport as any).metrics?.potencial_negocio?.ticket_estimado?.minimo === 'number'
+                      ? (execReport as any).metrics.potencial_negocio.ticket_estimado.minimo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      : '—'}
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {typeof (execReport as any).metrics?.potencial_negocio?.ticket_estimado?.medio === 'number'
+                      ? (execReport as any).metrics.potencial_negocio.ticket_estimado.medio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      : '—'}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Máx:</span>{" "}
+                    {typeof (execReport as any).metrics?.potencial_negocio?.ticket_estimado?.maximo === 'number'
+                      ? (execReport as any).metrics.potencial_negocio.ticket_estimado.maximo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      : '—'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Prioridade e ROI</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  <div className="text-2xl font-bold">
+                    {typeof (execReport as any).metrics?.priorizacao?.roi_esperado === 'number'
+                      ? `${(execReport as any).metrics.priorizacao.roi_esperado.toFixed(0)}%`
+                      : '—'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {(execReport as any).metrics?.priorizacao?.urgencia} • {(execReport as any).metrics?.priorizacao?.nivel_esforco}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         {/* Relatório Completo Tab - NOVO */}
