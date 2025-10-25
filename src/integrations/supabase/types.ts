@@ -1369,6 +1369,147 @@ export type Database = {
           },
         ]
       }
+      customer_onboarding: {
+        Row: {
+          assigned_csm: string | null
+          company_id: string
+          created_at: string | null
+          deal_id: string
+          go_live_date: string | null
+          id: string
+          implementation_plan: Json | null
+          kickoff_date: string | null
+          milestones: Json | null
+          notes: string | null
+          onboarding_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_csm?: string | null
+          company_id: string
+          created_at?: string | null
+          deal_id: string
+          go_live_date?: string | null
+          id?: string
+          implementation_plan?: Json | null
+          kickoff_date?: string | null
+          milestones?: Json | null
+          notes?: string | null
+          onboarding_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_csm?: string | null
+          company_id?: string
+          created_at?: string | null
+          deal_id?: string
+          go_live_date?: string | null
+          id?: string
+          implementation_plan?: Json | null
+          kickoff_date?: string | null
+          milestones?: Json | null
+          notes?: string | null
+          onboarding_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_onboarding_assigned_csm_fkey"
+            columns: ["assigned_csm"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_onboarding_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_onboarding_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_approvals: {
+        Row: {
+          approval_level: string | null
+          approved_by: string | null
+          created_at: string | null
+          deal_id: string
+          discount_requested: number
+          id: string
+          justification: string | null
+          quote_id: string | null
+          requested_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          approval_level?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          deal_id: string
+          discount_requested: number
+          id?: string
+          justification?: string | null
+          quote_id?: string | null
+          requested_by: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          approval_level?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          deal_id?: string
+          discount_requested?: number
+          id?: string
+          justification?: string | null
+          quote_id?: string | null
+          requested_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_approvals_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_approvals_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_approvals_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decision_makers: {
         Row: {
           company_id: string | null
@@ -2259,6 +2400,7 @@ export type Database = {
           competitive_position: string | null
           created_at: string | null
           created_by: string | null
+          deal_id: string | null
           id: string
           metadata: Json | null
           negotiation_history: Json | null
@@ -2288,6 +2430,7 @@ export type Database = {
           competitive_position?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_id?: string | null
           id?: string
           metadata?: Json | null
           negotiation_history?: Json | null
@@ -2317,6 +2460,7 @@ export type Database = {
           competitive_position?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_id?: string | null
           id?: string
           metadata?: Json | null
           negotiation_history?: Json | null
@@ -2349,6 +2493,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
             referencedColumns: ["id"]
           },
         ]
@@ -2688,6 +2839,7 @@ export type Database = {
       }
       sdr_deals: {
         Row: {
+          assigned_sales_rep: string | null
           assigned_to: string | null
           bitrix24_data: Json | null
           bitrix24_synced_at: string | null
@@ -2704,6 +2856,8 @@ export type Database = {
           pipeline_id: string | null
           priority: string | null
           probability: number | null
+          proposal_id: string | null
+          quote_id: string | null
           source: string | null
           stage: string
           stage_order: number | null
@@ -2715,6 +2869,7 @@ export type Database = {
           won_date: string | null
         }
         Insert: {
+          assigned_sales_rep?: string | null
           assigned_to?: string | null
           bitrix24_data?: Json | null
           bitrix24_synced_at?: string | null
@@ -2731,6 +2886,8 @@ export type Database = {
           pipeline_id?: string | null
           priority?: string | null
           probability?: number | null
+          proposal_id?: string | null
+          quote_id?: string | null
           source?: string | null
           stage?: string
           stage_order?: number | null
@@ -2742,6 +2899,7 @@ export type Database = {
           won_date?: string | null
         }
         Update: {
+          assigned_sales_rep?: string | null
           assigned_to?: string | null
           bitrix24_data?: Json | null
           bitrix24_synced_at?: string | null
@@ -2758,6 +2916,8 @@ export type Database = {
           pipeline_id?: string | null
           priority?: string | null
           probability?: number | null
+          proposal_id?: string | null
+          quote_id?: string | null
           source?: string | null
           stage?: string
           stage_order?: number | null
@@ -2770,6 +2930,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "sdr_deals_assigned_sales_rep_fkey"
+            columns: ["assigned_sales_rep"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sdr_deals_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
@@ -2781,6 +2948,20 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_deals_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "visual_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_deals_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_history"
             referencedColumns: ["id"]
           },
         ]
@@ -2834,6 +3015,67 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdr_handoffs: {
+        Row: {
+          accepted_at: string | null
+          checklist: Json | null
+          created_at: string | null
+          deal_id: string
+          from_sdr: string | null
+          handoff_date: string | null
+          handoff_notes: string | null
+          id: string
+          status: string | null
+          to_sales_rep: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          deal_id: string
+          from_sdr?: string | null
+          handoff_date?: string | null
+          handoff_notes?: string | null
+          id?: string
+          status?: string | null
+          to_sales_rep: string
+        }
+        Update: {
+          accepted_at?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          deal_id?: string
+          from_sdr?: string | null
+          handoff_date?: string | null
+          handoff_notes?: string | null
+          id?: string
+          status?: string | null
+          to_sales_rep?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_handoffs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_handoffs_from_sdr_fkey"
+            columns: ["from_sdr"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_handoffs_to_sales_rep_fkey"
+            columns: ["to_sales_rep"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
