@@ -47,23 +47,25 @@ export default function SDRWhatsAppConfigPage() {
   const loadConfig = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { data, error } = await supabase
-        .from('integration_configs')
+        .from('sdr_integrations')
         .select('*')
-        .eq('channel', 'whatsapp')
+        .eq('user_id', user.id)
+        .eq('integration_name', 'whatsapp')
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        const credentials = (data.credentials as any) || {};
-        const configData = (data.config as any) || {};
+        const credentials = (data.config as any) || {};
         setConfig({
           id: data.id,
-          provider: data.provider as WhatsAppProvider,
-          ...configData,
+          provider: (data.provider || 'twilio') as WhatsAppProvider,
           ...credentials,
-          status: data.status
+          status: data.is_active ? 'active' : 'inactive'
         });
       }
     } catch (error: any) {
@@ -84,49 +86,45 @@ export default function SDRWhatsAppConfigPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const configData: any = {
-        user_id: user.id,
-        channel: 'whatsapp',
-        provider: config.provider,
-        status: 'active',
-        config: {},
-        credentials: {}
-      };
+      const credentials: any = {};
 
       // Organize credentials by provider
       if (config.provider === 'twilio') {
-        configData.credentials = {
-          account_sid: config.account_sid,
-          auth_token: config.auth_token,
-          phone_number: config.phone_number
-        };
+        credentials.account_sid = config.account_sid;
+        credentials.auth_token = config.auth_token;
+        credentials.phone_number = config.phone_number;
       } else if (config.provider === 'meta360') {
-        configData.credentials = {
-          phone_number_id: config.phone_number_id,
-          access_token: config.access_token
-        };
+        credentials.phone_number_id = config.phone_number_id;
+        credentials.access_token = config.access_token;
       } else if (config.provider === 'zenvia') {
-        configData.credentials = {
-          api_key: config.api_key
-        };
+        credentials.api_key = config.api_key;
       }
+
+      const configData: any = {
+        user_id: user.id,
+        integration_name: 'whatsapp',
+        provider: config.provider,
+        is_active: true,
+        config: credentials,
+        last_sync_at: new Date().toISOString()
+      };
 
       if (config.id) {
         const { error } = await supabase
-          .from('integration_configs')
+          .from('sdr_integrations')
           .update(configData)
           .eq('id', config.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('integration_configs')
+          .from('sdr_integrations')
           .insert(configData)
           .select()
           .single();
 
         if (error) throw error;
-        setConfig({ ...config, id: data.id });
+        setConfig({ ...config, id: data.id, status: 'active' });
       }
 
       toast({
