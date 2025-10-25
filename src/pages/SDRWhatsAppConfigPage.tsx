@@ -88,19 +88,20 @@ export default function SDRWhatsAppConfigPage() {
 
       const credentials: any = {};
 
-      // Organize credentials by provider
+      // Organize credentials by provider (camelCase for edge function)
       if (config.provider === 'twilio') {
-        credentials.account_sid = config.account_sid;
-        credentials.auth_token = config.auth_token;
-        credentials.phone_number = config.phone_number;
+        credentials.accountSid = config.account_sid;
+        credentials.authToken = config.auth_token;
+        credentials.phoneNumber = config.phone_number;
       } else if (config.provider === 'meta360') {
-        credentials.phone_number_id = config.phone_number_id;
-        credentials.access_token = config.access_token;
+        credentials.phoneNumberId = config.phone_number_id;
+        credentials.accessToken = config.access_token;
       } else if (config.provider === 'zenvia') {
-        credentials.api_key = config.api_key;
+        credentials.apiKey = config.api_key;
       }
 
-      const configData: any = {
+      // Save to sdr_integrations
+      const sdrConfigData: any = {
         user_id: user.id,
         integration_name: 'whatsapp',
         provider: config.provider,
@@ -112,19 +113,49 @@ export default function SDRWhatsAppConfigPage() {
       if (config.id) {
         const { error } = await supabase
           .from('sdr_integrations')
-          .update(configData)
+          .update(sdrConfigData)
           .eq('id', config.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from('sdr_integrations')
-          .insert(configData)
+          .insert(sdrConfigData)
           .select()
           .single();
 
         if (error) throw error;
         setConfig({ ...config, id: data.id, status: 'active' });
+      }
+
+      // Also save to integration_configs for unified display
+      const integrationConfigData = {
+        user_id: user.id,
+        channel: 'whatsapp',
+        provider: config.provider,
+        config: {},
+        credentials,
+        status: 'active'
+      };
+
+      // Check if exists
+      const { data: existingConfig } = await supabase
+        .from('integration_configs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('channel', 'whatsapp')
+        .eq('provider', config.provider)
+        .maybeSingle();
+
+      if (existingConfig) {
+        await supabase
+          .from('integration_configs')
+          .update(integrationConfigData)
+          .eq('id', existingConfig.id);
+      } else {
+        await supabase
+          .from('integration_configs')
+          .insert(integrationConfigData);
       }
 
       toast({
@@ -146,19 +177,43 @@ export default function SDRWhatsAppConfigPage() {
   const testConnection = async () => {
     setTesting(true);
     try {
-      // Test by sending a test message or verifying credentials
       toast({
         title: 'Teste em andamento',
         description: 'Verificando conexão com WhatsApp...'
       });
 
-      // Simulate test - in production, call an edge function to verify
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare credentials in camelCase for edge function
+      const credentials: any = {};
+      if (config.provider === 'twilio') {
+        credentials.accountSid = config.account_sid;
+        credentials.authToken = config.auth_token;
+        credentials.phoneNumber = config.phone_number;
+      } else if (config.provider === 'meta360') {
+        credentials.phoneNumberId = config.phone_number_id;
+        credentials.accessToken = config.access_token;
+      } else if (config.provider === 'zenvia') {
+        credentials.apiKey = config.api_key;
+      }
 
-      toast({
-        title: 'Conexão testada',
-        description: 'WhatsApp configurado corretamente'
+      const { data, error } = await supabase.functions.invoke('integration-health-check', {
+        body: {
+          channel: 'whatsapp',
+          provider: config.provider,
+          config: {},
+          credentials
+        }
       });
+
+      if (error) throw error;
+
+      if (data?.health?.status === 'healthy') {
+        toast({
+          title: 'Conexão testada com sucesso!',
+          description: data.health.message || 'WhatsApp configurado corretamente'
+        });
+      } else {
+        throw new Error(data?.health?.message || 'Erro ao testar conexão');
+      }
     } catch (error: any) {
       toast({
         title: 'Erro no teste',

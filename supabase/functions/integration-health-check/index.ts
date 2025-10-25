@@ -153,16 +153,18 @@ async function checkEmailHealth(provider: string, config: any, credentials: any)
 async function checkWhatsAppHealth(provider: string, config: any, credentials: any) {
   console.log(`Checking ${provider} WhatsApp health`);
   console.log('Received credentials:', Object.keys(credentials || {}));
+  console.log('Received config:', Object.keys(config || {}));
 
   try {
     if (provider === 'twilio') {
       // Accept both classic Auth Token and API Key/Secret
-      const rawAccountSid = credentials?.accountSid as string | undefined;
-      const rawAuthToken = credentials?.authToken as string | undefined;
-      const rawApiKeySid = credentials?.apiKeySid as string | undefined; // e.g. SKxxxxxxxx
-      const rawApiKeySecret = credentials?.apiKeySecret as string | undefined;
-      const phoneNumber = credentials?.phoneNumber as string | undefined;
-      const region = (credentials?.region as string | undefined)?.trim(); // e.g. au1, ie1
+      // Support both camelCase (credentials) and snake_case (config)
+      const rawAccountSid = credentials?.accountSid || config?.account_sid as string | undefined;
+      const rawAuthToken = credentials?.authToken || config?.auth_token as string | undefined;
+      const rawApiKeySid = credentials?.apiKeySid || config?.api_key_sid as string | undefined;
+      const rawApiKeySecret = credentials?.apiKeySecret || config?.api_key_secret as string | undefined;
+      const phoneNumber = credentials?.phoneNumber || config?.phone_number as string | undefined;
+      const region = (credentials?.region || config?.region as string | undefined)?.trim();
 
       const accountSid = typeof rawAccountSid === 'string' ? rawAccountSid.trim() : undefined;
       const authToken = typeof rawAuthToken === 'string' ? rawAuthToken.trim() : undefined;
@@ -170,7 +172,8 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
       const apiKeySecret = typeof rawApiKeySecret === 'string' ? rawApiKeySecret.trim() : undefined;
 
       if (!accountSid) {
-        throw new Error('Twilio: Account SID ausente.');
+        console.error('Account SID not found in credentials or config');
+        throw new Error('Twilio: Account SID ausente. Verifique as credenciais.');
       }
 
       // Build Basic auth header
