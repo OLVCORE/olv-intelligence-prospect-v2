@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,9 +22,12 @@ import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
 import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
 
 export default function AccountStrategyPage() {
-  const { companyId } = useParams<{ companyId: string }>();
+  const params = useParams<{ companyId: string }>();
+  const [searchParams] = useSearchParams();
+  const companyId = params.companyId || searchParams.get('company') || undefined;
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
   const [selectedDecisionMakerId, setSelectedDecisionMakerId] = useState<string>('');
+  const [tab, setTab] = useState<string>(searchParams.get('tab') || 'overview');
   
   const { data: strategies, isLoading } = useAccountStrategies(companyId);
   const { data: personas } = useBuyerPersonas();
@@ -74,6 +77,24 @@ export default function AccountStrategyPage() {
         <div className="space-y-6">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-96 w-full" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!companyId) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Selecione uma empresa</CardTitle>
+              <CardDescription>Abra a estratégia de uma empresa específica para acessar ROI, CPQ, Cenários e mais.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => window.location.assign('/companies')}>Ir para Base de Empresas</Button>
+            </CardContent>
+          </Card>
         </div>
       </AppLayout>
     );
@@ -160,7 +181,7 @@ export default function AccountStrategyPage() {
             </CardHeader>
           </Card>
         ) : (
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps</TabsTrigger>

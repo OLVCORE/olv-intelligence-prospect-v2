@@ -227,6 +227,7 @@ serve(async (req) => {
           metadata: {
             dealId: deal.id,
             companyId: deal.company_id,
+            companyName: (deal as any).companies?.name,
             reason: 'no_recent_activity',
             confidence: 0.95
           },
@@ -262,6 +263,7 @@ serve(async (req) => {
           metadata: {
             dealId: deal.id,
             companyId: deal.company_id,
+            companyName: (deal as any).companies?.name,
             reason: 'high_probability_no_proposal',
             confidence: 0.88
           },
@@ -292,13 +294,13 @@ serve(async (req) => {
           priority: 'medium',
           title: 'Identificar decisor',
           description: `${deal.title} ainda não tem decisor mapeado. Crucial para avançar.`,
-          action: {
-            label: 'Buscar Decisores',
-            type: 'navigate',
-            payload: {
-              url: `/companies/${deal.company_id}`
-            }
-          },
+            action: {
+              label: 'Buscar Decisores',
+              type: 'navigate',
+              payload: {
+                url: `/company/${deal.company_id}`
+              }
+            },
           metadata: {
             dealId: deal.id,
             companyId: deal.company_id,

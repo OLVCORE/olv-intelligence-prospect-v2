@@ -401,7 +401,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/account-strategy" element={<Navigate to="/companies" replace />} />
+            <Route
+              path="/account-strategy"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <AccountStrategyPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/error-500" element={<Error500 />} />
             <Route path="/offline" element={<OfflinePage />} />
             <Route path="*" element={<NotFound />} />
