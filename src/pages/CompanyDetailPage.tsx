@@ -72,6 +72,15 @@ export default function CompanyDetailPage() {
 
   const { data: execReport, isLoading: isReportLoading, refetch: refetchReport } = useCompanyReport(id);
 
+  // Sincroniza a aba via query param (?tab=fit) - DEVE estar antes dos returns condicionais
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['overview','relatorio','fit','receita','scores','digital','decisores','maturity','actions'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
   if (isLoading) {
     return (
       <div className="p-8 space-y-6">
@@ -89,15 +98,6 @@ export default function CompanyDetailPage() {
       </div>
     );
   }
-
-  // Sincroniza a aba via query param (?tab=fit)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    if (tab && ['overview','relatorio','fit','receita','scores','digital','decisores','maturity','actions'].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [location.search]);
 
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
