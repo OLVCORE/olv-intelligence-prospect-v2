@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { SequenceDialog } from '@/components/sdr/SequenceDialog';
 import { 
   Plus, Zap, Mail, MessageSquare, Clock, 
   Play, Pause, Edit, Copy, Trash2, Users
@@ -35,6 +36,7 @@ export default function SDRSequencesPage() {
   const { toast } = useToast();
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     loadSequences();
@@ -123,10 +125,16 @@ export default function SDRSequencesPage() {
             <h1 className="text-3xl font-bold">Sequências de Cadência</h1>
             <p className="text-muted-foreground">Automação de follow-ups e engajamento</p>
           </div>
-          <Button>
+          <Button onClick={() => setIsDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Sequência
           </Button>
+          
+          <SequenceDialog 
+            open={isDialogOpen} 
+            onOpenChange={setIsDialogOpen}
+            onSuccess={loadSequences}
+          />
         </div>
 
         {/* Stats */}

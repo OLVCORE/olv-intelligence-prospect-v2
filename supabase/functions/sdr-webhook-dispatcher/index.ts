@@ -33,9 +33,10 @@ async function sendWebhook(url: string, payload: WebhookPayload, secret?: string
       body: await response.text(),
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return {
       success: false,
-      error: error.message,
+      error: errorMessage,
     }
   }
 }
@@ -113,8 +114,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[Webhook Dispatcher] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

@@ -371,20 +371,35 @@ export default function SDRTasksPage() {
                   <Select
                     value={newTask.contact_id}
                     onValueChange={(value) => setNewTask({ ...newTask, contact_id: value })}
+                    disabled={!newTask.company_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecionar contato (opcional)" />
+                      <SelectValue placeholder={
+                        !newTask.company_id 
+                          ? "Selecione uma empresa primeiro" 
+                          : contacts.filter(c => c.company_id === newTask.company_id).length === 0
+                          ? "Nenhum contato para esta empresa"
+                          : "Selecionar contato (opcional)"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
                       {contacts
-                        .filter(c => !newTask.company_id || c.company_id === newTask.company_id)
+                        .filter(c => c.company_id === newTask.company_id)
                         .map((contact) => (
                           <SelectItem key={contact.id} value={contact.id}>
                             {contact.name}
                           </SelectItem>
                         ))}
+                      {newTask.company_id && contacts.filter(c => c.company_id === newTask.company_id).length === 0 && (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Nenhum contato cadastrado para esta empresa
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {!newTask.company_id ? 'Selecione uma empresa para filtrar contatos' : ''}
+                  </p>
                 </div>
 
                 <div>
