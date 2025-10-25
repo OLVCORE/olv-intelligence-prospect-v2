@@ -51,33 +51,41 @@ serve(async (req) => {
     const industry = company.industry || 'Não especificado';
     const employees = company.employees || 0;
 
+    // Buscar catálogo real de produtos TOTVS
+    const { data: products, error: productsError } = await supabase
+      .from('totvs_products')
+      .select('*')
+      .eq('active', true)
+      .order('category', { ascending: true });
+
+    if (productsError) {
+      console.error('[TOTVS Fit] Erro ao buscar produtos:', productsError);
+    }
+
+    // Organizar produtos por categoria
+    const productsByCategory = (products || []).reduce((acc: any, product: any) => {
+      if (!acc[product.category]) acc[product.category] = [];
+      acc[product.category].push(product);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Preparar lista de produtos para a IA
+    const productsDescription = Object.entries(productsByCategory)
+      .map(([category, items]) => {
+        const productsList = (items as any[]).map(p => 
+          `- ${p.name} (${p.sku}): ${p.description} | Preço: R$ ${p.base_price.toLocaleString('pt-BR')} | Setores: ${JSON.parse(p.target_sectors || '[]').join(', ')}`
+        ).join('\n');
+        return `**${category}:**\n${productsList}`;
+      }).join('\n\n');
+
     // Preparar contexto para IA
     const systemPrompt = `Você é um especialista em análise de fit de produtos TOTVS para empresas brasileiras.
 
-**Produtos TOTVS disponíveis:**
+**Catálogo REAL de Produtos TOTVS:**
 
-**BÁSICO (Empresas com baixa maturidade):**
-- TOTVS Protheus: ERP completo, ideal para estruturar processos básicos
-- Fluig: Plataforma de gestão de processos e documentos
-- TOTVS Backoffice: Gestão administrativa simplificada
+${productsDescription}
 
-**INTERMEDIÁRIO (Empresas em crescimento):**
-- TOTVS BI: Business Intelligence e Analytics
-- TOTVS RH: Gestão completa de recursos humanos
-- TOTVS Procurement: Gestão de compras e suprimentos
-- TOTVS Manufatura: Gestão industrial e produção
-
-**AVANÇADO (Empresas maduras digitalmente):**
-- Carol AI: Plataforma de Inteligência Artificial
-- TOTVS Advanced Analytics: Analytics preditiva e prescritiva
-- TOTVS Data Platform: Plataforma de dados unificada
-
-**ESPECIALIZADOS:**
-- TOTVS Techfin: Soluções financeiras
-- TOTVS Varejo: Gestão para varejo
-- TOTVS Agro: Gestão para agronegócio
-
-Sua tarefa é analisar as tecnologias atuais, maturidade digital e necessidades da empresa para recomendar os produtos TOTVS mais adequados.`;
+Sua tarefa é analisar as tecnologias atuais, maturidade digital e necessidades da empresa para recomendar os produtos TOTVS mais adequados do catálogo acima.`;
 
     const userPrompt = `Analise esta empresa e gere recomendações de produtos TOTVS:
 

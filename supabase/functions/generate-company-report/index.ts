@@ -74,8 +74,8 @@ serve(async (req) => {
     const maturity = presenceRes.data;
     const signals = signalsRes.data || [];
 
-    // 4. Calcular métricas
-    const metrics = calculateCompanyMetrics(company, decisors, maturity, signals);
+    // 4. Calcular métricas (agora assíncrono)
+    const metrics = await calculateCompanyMetrics(company, decisors, maturity, signals, supabase);
 
     // 5. Gerar insights com IA
     const insights = await generateInsightsWithAI(company, metrics, maturity);
@@ -247,7 +247,7 @@ function buildDigitalPresence(company: any, maturity: any) {
   };
 }
 
-function calculateCompanyMetrics(company: any, decisors: any[], maturity: any, signals: any[]) {
+async function calculateCompanyMetrics(company: any, decisors: any[], maturity: any, signals: any[], supabaseClient: any) {
   const maturityScore = maturity?.overall_score || 0;
   const signalsScore = signals.length * 10;
   const decisorsScore = decisors.length * 5;
@@ -264,7 +264,7 @@ function calculateCompanyMetrics(company: any, decisors: any[], maturity: any, s
     potencial_negocio: {
       score: Math.round(scoreGlobal),
       classificacao: getClassification(scoreGlobal),
-      ticket_estimado: estimateTicket(company, maturity)
+      ticket_estimado: await estimateTicket(company, maturity, supabaseClient)
     },
     priorizacao: {
       urgencia: getUrgency(signals),
@@ -401,16 +401,137 @@ function getClassification(score: number): string {
   return 'D';
 }
 
-function estimateTicket(company: any, maturity: any) {
-  const employees = company.employees || 0;
-  const baseTicket = employees * 100;
-  const multiplier = maturity?.overall_score ? (maturity.overall_score / 100) + 1 : 1;
-  
-  return {
-    minimo: Math.round(baseTicket * 0.5 * multiplier),
-    medio: Math.round(baseTicket * multiplier),
-    maximo: Math.round(baseTicket * 2 * multiplier)
-  };
+async function estimateTicket(company: any, maturity: any, supabase: any) {
+  try {
+    // Buscar produtos que se encaixam no perfil da empresa
+    const employees = company.employees || 0;
+    const porte = getPorte(employees);
+    
+    const { data: products } = await supabase
+      .from('totvs_products')
+      .select('*')
+      .eq('active', true)
+      .order('base_price', { ascending: true });
+
+    if (!products || products.length === 0) {
+      // Fallback caso não tenha produtos
+      const baseTicket = employees * 100;
+      const multiplier = maturity?.overall_score ? (maturity.overall_score / 100) + 1 : 1;
+      
+      return {
+        minimo: Math.round(baseTicket * 0.5 * multiplier),
+        medio: Math.round(baseTicket * multiplier),
+        maximo: Math.round(baseTicket * 2 * multiplier)
+      };
+    }
+
+    // Filtrar produtos adequados ao porte da empresa
+    const suitableProducts = products.filter((p: any) => {
+      if (!p.target_company_size || p.target_company_size.length === 0) return true;
+      return p.target_company_size.includes(porte);
+    });
+
+    // Filtrar por setor se disponível
+    let recommendedProducts = suitableProducts;
+    if (company.industry) {
+      const sectorProducts = suitableProducts.filter((p: any) => {
+        const sectors = JSON.parse(p.target_sectors || '[]');
+        return sectors.includes('Todos') || sectors.some((s: string) => 
+          company.industry.toLowerCase().includes(s.toLowerCase())
+        );
+      });
+      if (sectorProducts.length > 0) {
+        recommendedProducts = sectorProducts;
+      }
+    }
+
+    // Buscar regras de desconto aplicáveis
+    const { data: rules } = await supabase
+      .from('pricing_rules')
+      .select('*')
+      .eq('active', true)
+      .order('priority', { ascending: false });
+
+    let discount = 0;
+    
+    // Aplicar descontos por porte
+    const sizeRule = rules?.find((r: any) => 
+      r.rule_type === 'company_size' && 
+      JSON.parse(r.conditions).size === porte
+    );
+    if (sizeRule) discount += sizeRule.discount_percentage || 0;
+
+    // Aplicar descontos por setor
+    if (company.industry) {
+      const sectorRule = rules?.find((r: any) => {
+        if (r.rule_type !== 'sector') return false;
+        const sectors = JSON.parse(r.conditions).sectors || [];
+        return sectors.some((s: string) => 
+          company.industry.toLowerCase().includes(s.toLowerCase())
+        );
+      });
+      if (sectorRule) discount += sectorRule.discount_percentage || 0;
+    }
+
+    // Selecionar produtos baseados na maturidade
+    const maturityScore = maturity?.overall_score || 0;
+    let selectedProducts: any[] = [];
+    
+    if (maturityScore < 40) {
+      // Baixa maturidade: produtos BÁSICOS
+      selectedProducts = recommendedProducts.filter((p: any) => p.category === 'BÁSICO').slice(0, 2);
+    } else if (maturityScore < 70) {
+      // Média maturidade: BÁSICO + INTERMEDIÁRIO
+      selectedProducts = [
+        ...recommendedProducts.filter((p: any) => p.category === 'BÁSICO').slice(0, 1),
+        ...recommendedProducts.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 2)
+      ];
+    } else {
+      // Alta maturidade: INTERMEDIÁRIO + AVANÇADO
+      selectedProducts = [
+        ...recommendedProducts.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 1),
+        ...recommendedProducts.filter((p: any) => p.category === 'AVANÇADO').slice(0, 2)
+      ];
+    }
+
+    // Se não encontrou produtos adequados, pegar os mais básicos
+    if (selectedProducts.length === 0) {
+      selectedProducts = products.slice(0, 2);
+    }
+
+    // Calcular ticket baseado nos produtos selecionados
+    const productPrices = selectedProducts.map((p: any) => p.base_price);
+    const minPrice = Math.min(...productPrices);
+    const avgPrice = productPrices.reduce((sum: number, price: number) => sum + price, 0) / productPrices.length;
+    const maxPrice = productPrices.reduce((sum: number, price: number) => sum + price, 0);
+
+    // Aplicar descontos
+    const discountMultiplier = 1 - (discount / 100);
+
+    return {
+      minimo: Math.round(minPrice * discountMultiplier),
+      medio: Math.round(avgPrice * discountMultiplier),
+      maximo: Math.round(maxPrice * discountMultiplier),
+      produtos_base: selectedProducts.map((p: any) => ({
+        sku: p.sku,
+        nome: p.name,
+        preco_base: p.base_price
+      })),
+      desconto_aplicado: discount
+    };
+  } catch (error) {
+    console.error('[Estimate Ticket] Error:', error);
+    // Fallback em caso de erro
+    const employees = company.employees || 0;
+    const baseTicket = employees * 100;
+    const multiplier = maturity?.overall_score ? (maturity.overall_score / 100) + 1 : 1;
+    
+    return {
+      minimo: Math.round(baseTicket * 0.5 * multiplier),
+      medio: Math.round(baseTicket * multiplier),
+      maximo: Math.round(baseTicket * 2 * multiplier)
+    };
+  }
 }
 
 function getUrgency(signals: any[]): string {
