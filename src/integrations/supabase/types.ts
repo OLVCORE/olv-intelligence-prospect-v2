@@ -3292,6 +3292,42 @@ export type Database = {
           },
         ]
       }
+      sdr_integrations: {
+        Row: {
+          config: Json
+          created_at: string | null
+          id: string
+          integration_name: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          provider: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string | null
+          id?: string
+          integration_name: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          provider?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          id?: string
+          integration_name?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          provider?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sdr_notifications: {
         Row: {
           created_at: string | null
