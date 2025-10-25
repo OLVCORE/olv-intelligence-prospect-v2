@@ -54,6 +54,23 @@ serve(async (req) => {
     }
     sourcesSucceeded.push('companies');
 
+    // 2.5 BUSCAR DADOS DE company_enrichment (FONTE PRINCIPAL DE VERDADE)
+    const { data: enrichments } = await supabase
+      .from('company_enrichment')
+      .select('source, data')
+      .eq('company_id', companyId);
+    
+    const enrichmentMap = new Map<string, any>();
+    if (enrichments) {
+      enrichments.forEach(e => enrichmentMap.set(e.source, e.data));
+      console.log('📦 Enrichments loaded from company_enrichment:', Array.from(enrichmentMap.keys()));
+    }
+    
+    // Extrair dados enriquecidos para uso no relatório
+    const receitaEnriched = enrichmentMap.get('receitaws');
+    const data360Enriched = enrichmentMap.get('360_completo');
+    const juridicoEnriched = enrichmentMap.get('juridico');
+
     // 3. Buscar dados relacionados em paralelo
     const [decisorsRes, presenceRes, signalsRes, maturityRes, financialRes, legalRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
@@ -97,14 +114,14 @@ serve(async (req) => {
     if (insights) sourcesSucceeded.push('ai');
     else sourcesFailed.push('ai');
 
-    // 6. Compilar relatório
+    // 6. Compilar relatório USANDO DADOS DE company_enrichment
     const report = {
       identification: buildIdentification(company),
-      location: buildLocation(company),
-      activity: buildActivity(company),
+      location: buildLocation(company, receitaEnriched),
+      activity: buildActivity(company, receitaEnriched),
       structure: buildStructure(company, decisors),
-      financials: buildFinancials(company),
-      digitalPresence: buildDigitalPresence(company, maturity, presence),
+      financials: buildFinancials(company, receitaEnriched),
+      digitalPresence: buildDigitalPresence(company, maturity, presence, data360Enriched),
       metrics,
       insights,
       decisors,
@@ -218,16 +235,16 @@ function buildIdentification(company: any) {
   };
 }
 
-function buildLocation(company: any) {
-  // Location pode estar em diferentes formatos no JSON e também na Receita Federal
+function buildLocation(company: any, receitaEnriched?: any) {
+  // PRIORIDADE: dados de company_enrichment > raw_data > company.location
   const loc = company.location || {};
-  const receita = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
+  const receita = receitaEnriched?.receitaws || (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
 
   // Extrair de possíveis formatos
-  const address = loc.address || loc.formatted_address || loc.endereco || receita?.logradouro || '';
+  const address = receita?.logradouro || loc.address || loc.formatted_address || loc.endereco || '';
   const number = receita?.numero || '';
-  const city = loc.city || loc.cidade || loc.locality || receita?.municipio || '';
-  const state = loc.state || loc.estado || loc.administrative_area_level_1 || receita?.uf || '';
+  const city = receita?.municipio || loc.city || loc.cidade || loc.locality || '';
+  const state = receita?.uf || loc.state || loc.estado || loc.administrative_area_level_1 || '';
   const country = loc.country || loc.pais || 'Brasil';
 
   const endereco = address
@@ -242,13 +259,14 @@ function buildLocation(company: any) {
   };
 }
 
-function buildActivity(company: any) {
-  const receita = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
+function buildActivity(company: any, receitaEnriched?: any) {
+  // PRIORIDADE: dados de company_enrichment > raw_data > company.industry
+  const receita = receitaEnriched?.receitaws || (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
   const cnaeText = receita?.atividade_principal?.[0]?.text as string | undefined;
   const atividade = cnaeText || company.industry || 'N/A';
   return {
-    setor: company.industry || cnaeText || 'N/A',
-    segmento: company.industry || cnaeText || 'N/A',
+    setor: cnaeText || company.industry || 'N/A',
+    segmento: cnaeText || company.industry || 'N/A',
     atividade_principal: atividade
   };
 }
@@ -262,21 +280,30 @@ function buildStructure(company: any, decisors: any[]) {
   };
 }
 
-function buildFinancials(company: any) {
+function buildFinancials(company: any, receitaEnriched?: any) {
+  const receita = receitaEnriched?.receitaws;
+  const porte = receita?.porte || getPorte(company.employees);
+  const capitalSocial = receita?.capital_social;
+  
   return {
-    receita_anual: company.revenue || 'N/A',
-    porte: getPorte(company.employees),
+    receita_anual: capitalSocial || company.revenue || 'N/A',
+    porte,
     capacidade_investimento: calculateInvestmentCapacity(company)
   };
 }
 
-function buildDigitalPresence(company: any, maturity: any, presence: any) {
+function buildDigitalPresence(company: any, maturity: any, presence: any, data360Enriched?: any) {
+  // PRIORIDADE: dados de company_enrichment.360_completo > tabelas antigas
+  const technologies = data360Enriched?.tech_stack || company.technologies || [];
+  const websiteStatus = company.website ? 'ATIVO' : 'NÃO ENCONTRADO';
+  const maturityScore = data360Enriched?.digital_presence_score?.overall || maturity?.overall_score || company.digital_maturity_score || 0;
+  
   return {
-    website_status: company.website ? 'ATIVO' : 'NÃO ENCONTRADO',
-    tecnologias: company.technologies || [],
-    maturidade_digital: maturity?.overall_score || 0,
-    classificacao_maturidade: maturity ? getMaturityClassification(maturity.overall_score) : 'N/A',
-    social_media: {
+    website_status: websiteStatus,
+    tecnologias: technologies,
+    maturidade_digital: maturityScore,
+    classificacao_maturidade: maturity ? getMaturityClassification(maturityScore) : 'N/A',
+    social_media: data360Enriched?.social_media || {
       linkedin: presence?.linkedin_data || null,
       instagram: presence?.instagram_data || null,
       facebook: presence?.facebook_data || null
