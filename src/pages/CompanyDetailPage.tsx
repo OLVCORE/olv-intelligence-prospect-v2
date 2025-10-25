@@ -209,10 +209,23 @@ export default function CompanyDetailPage() {
 
       toast.success("Dados da Receita atualizados!", { description: "Informações cadastrais foram salvas" });
 
+      // CRÍTICO: Recalcular scores e relatório após enriquecer
+      toast.info('Recalculando scores...', { description: 'Aguarde' });
+      try {
+        await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
+        await supabase.functions.invoke('generate-company-report', { body: { companyId: id } });
+        toast.success('Análise completa atualizada!');
+      } catch (e) {
+        console.warn('Failed to update scores', e);
+      }
+
       // Refresh company data
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['company-report', id] });
     } catch (error: any) {
-      toast.error("Erro ao atualizar dados da Receita", { description: error.message });
+      toast.error("Erro ao atualizar dados da Receita", { 
+        description: error.message || 'Verifique o CNPJ e tente novamente'
+      });
     } finally {
       setIsUpdatingReceita(false);
     }

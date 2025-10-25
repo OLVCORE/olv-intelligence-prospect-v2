@@ -41,21 +41,27 @@ serve(async (req) => {
 
     // Try primary provider (ReceitaWS) if token is available
     if (hasToken) {
-      const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`, {
-        headers: { 'Authorization': `Bearer ${apiToken}` }
-      });
+      try {
+        const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`, {
+          headers: { 'Authorization': `Bearer ${apiToken}` }
+        });
 
-      if (response.ok) {
-        const d = await response.json();
-        if (d?.status !== 'ERROR') {
-          data = d;
+        if (response.ok) {
+          const d = await response.json();
+          if (d?.status !== 'ERROR') {
+            data = d;
+            console.log('ENRICH_RECEITAWS', 'Company data fetched (ReceitaWS)', { nome: data.nome });
+          } else {
+            primaryError = d?.message || 'Erro desconhecido na ReceitaWS';
+            console.warn('ENRICH_RECEITAWS', 'ReceitaWS returned ERROR status:', primaryError);
+          }
         } else {
-          primaryError = d?.message || 'Erro desconhecido na ReceitaWS';
-          console.error('ENRICH_RECEITAWS', 'API Error:', primaryError);
+          primaryError = `ReceitaWS HTTP ${response.status}`;
+          console.warn('ENRICH_RECEITAWS', 'HTTP Error:', primaryError);
         }
-      } else {
-        primaryError = `ReceitaWS HTTP ${response.status}`;
-        console.error('ENRICH_RECEITAWS', 'HTTP Error:', primaryError);
+      } catch (e) {
+        primaryError = `ReceitaWS exception: ${e instanceof Error ? e.message : String(e)}`;
+        console.warn('ENRICH_RECEITAWS', 'Exception:', primaryError);
       }
     } else {
       console.warn('ENRICH_RECEITAWS', 'RECEITAWS_API_TOKEN not configured - using fallback provider');
@@ -64,6 +70,7 @@ serve(async (req) => {
     // Fallback to BrasilAPI if primary failed or not configured
     if (!data) {
       try {
+        console.log('ENRICH_RECEITAWS', 'Trying BrasilAPI fallback...');
         const br = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`);
         if (br.ok) {
           const b = await br.json();
@@ -88,15 +95,17 @@ serve(async (req) => {
             abertura: b.data_inicio_atividade,
             situacao: b.descricao_situacao_cadastral || b.situacao_cadastral || undefined,
             capital_social: b.capital_social,
+            porte: b.porte || undefined,
           };
-          console.log('ENRICH_RECEITAWS', 'Company data fetched (fallback)', { nome: data.nome });
+          console.log('ENRICH_RECEITAWS', 'Company data fetched (BrasilAPI fallback)', { nome: data.nome });
         } else {
           const t = await br.text();
           throw new Error(`BrasilAPI HTTP ${br.status}: ${t}`);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        const errorMsg = primaryError || msg || 'Erro desconhecido';
+        const errorMsg = primaryError ? `${primaryError} | Fallback: ${msg}` : msg;
+        console.error('ENRICH_RECEITAWS', 'All providers failed:', errorMsg);
         return new Response(
           JSON.stringify({ error: errorMsg, data: null }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,7 +114,6 @@ serve(async (req) => {
     }
 
     // Success response
-    console.log('ENRICH_RECEITAWS', 'Company data fetched', { nome: data.nome });
     return new Response(
       JSON.stringify({ data }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

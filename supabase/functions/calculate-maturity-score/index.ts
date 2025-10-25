@@ -55,7 +55,7 @@ serve(async (req) => {
     // 6. Roadmap de evolução
     const roadmap = generateMaturityRoadmap(gaps, scores);
 
-    // 7. Salvar no banco
+    // 7. Salvar no banco + ATUALIZAR digital_maturity_score na companies
     const { error: upsertError } = await supabase
       .from('digital_maturity')
       .upsert({
@@ -70,6 +70,12 @@ serve(async (req) => {
       });
 
     if (upsertError) throw upsertError;
+
+    // CRÍTICO: Atualizar o campo digital_maturity_score na tabela companies
+    await supabase
+      .from('companies')
+      .update({ digital_maturity_score: Math.round(overallScore) })
+      .eq('id', companyId);
 
     return new Response(JSON.stringify({
       overallScore: Math.round(overallScore),

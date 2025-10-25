@@ -182,13 +182,28 @@ export default function CompaniesManagementPage() {
           })
           .eq('id', companyId);
         if (updError) throw updError;
-      }
 
-      toast.success('Dados da Receita Federal atualizados!');
-      await refetch();
+        toast.success('Dados da Receita Federal atualizados!');
+        
+        // CRÍTICO: Após enriquecer Receita, recalcular Maturity e Relatório
+        toast.info('Recalculando scores...', { description: 'Aguarde' });
+        try {
+          await supabase.functions.invoke('calculate-maturity-score', { body: { companyId } });
+          await supabase.functions.invoke('generate-company-report', { body: { companyId } });
+          toast.success('Análise completa atualizada!');
+        } catch (e) {
+          console.warn('Failed to update scores', e);
+        }
+        
+        await refetch();
+      } else {
+        toast.error('Nenhum dado retornado', { description: 'Verifique o CNPJ' });
+      }
     } catch (error) {
       console.error('Error enriching ReceitaWS:', error);
-      toast.error('Erro ao enriquecer com Receita Federal');
+      toast.error('Erro ao enriquecer com Receita Federal', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
     } finally {
       setEnrichingReceitaId(null);
     }
