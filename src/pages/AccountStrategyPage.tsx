@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,11 @@ export default function AccountStrategyPage() {
   const [tab, setTab] = useState<string>(searchParams.get('tab') || 'overview');
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
 
+  // Sync tab with URL query param changes (fixes sidebar navigation to tabs)
+  React.useEffect(() => {
+    const t = searchParams.get('tab') || 'roi';
+    if (t !== tab) setTab(t);
+  }, [searchParams, tab]);
   const { data: strategies, isLoading } = useAccountStrategies(companyId);
   const { data: personas } = useBuyerPersonas();
   const { data: decisionMakers } = useDecisionMakers(companyId);
@@ -262,7 +267,7 @@ export default function AccountStrategyPage() {
                 </Card>
               </TabsContent>
               <TabsContent value="consulting" className="space-y-4">
-                <ConsultoriaOLVPanel />
+                <ConsultoriaOLVPanel companyId={companyId!} accountStrategyId={activeStrategy?.id} />
               </TabsContent>
             </Tabs>
           </>

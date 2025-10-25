@@ -1265,6 +1265,135 @@ export type Database = {
         }
         Relationships: []
       }
+      consultant_rates: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          experience_years_max: number | null
+          experience_years_min: number | null
+          hourly_rate_max: number
+          hourly_rate_min: number
+          id: string
+          level: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          experience_years_max?: number | null
+          experience_years_min?: number | null
+          hourly_rate_max: number
+          hourly_rate_min: number
+          id?: string
+          level: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          experience_years_max?: number | null
+          experience_years_min?: number | null
+          hourly_rate_max?: number
+          hourly_rate_min?: number
+          id?: string
+          level?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      consulting_services: {
+        Row: {
+          active: boolean | null
+          base_hourly_rate: number | null
+          base_project_price: number | null
+          category: string
+          complexity_factors: Json | null
+          consultant_level: string | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          estimated_hours_max: number | null
+          estimated_hours_min: number | null
+          id: string
+          implementation_cost: number | null
+          is_configurable: boolean | null
+          max_hourly_rate: number | null
+          max_project_price: number | null
+          min_hourly_rate: number | null
+          min_project_price: number | null
+          name: string
+          pricing_models: Json | null
+          recommended_with: string[] | null
+          requires_platforms: Json | null
+          sku: string
+          target_sectors: Json | null
+          training_cost: number | null
+          travel_daily_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          base_hourly_rate?: number | null
+          base_project_price?: number | null
+          category: string
+          complexity_factors?: Json | null
+          consultant_level?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_hours_max?: number | null
+          estimated_hours_min?: number | null
+          id?: string
+          implementation_cost?: number | null
+          is_configurable?: boolean | null
+          max_hourly_rate?: number | null
+          max_project_price?: number | null
+          min_hourly_rate?: number | null
+          min_project_price?: number | null
+          name: string
+          pricing_models?: Json | null
+          recommended_with?: string[] | null
+          requires_platforms?: Json | null
+          sku: string
+          target_sectors?: Json | null
+          training_cost?: number | null
+          travel_daily_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          base_hourly_rate?: number | null
+          base_project_price?: number | null
+          category?: string
+          complexity_factors?: Json | null
+          consultant_level?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_hours_max?: number | null
+          estimated_hours_min?: number | null
+          id?: string
+          implementation_cost?: number | null
+          is_configurable?: boolean | null
+          max_hourly_rate?: number | null
+          max_project_price?: number | null
+          min_hourly_rate?: number | null
+          min_project_price?: number | null
+          name?: string
+          pricing_models?: Json | null
+          recommended_with?: string[] | null
+          requires_platforms?: Json | null
+          sku?: string
+          target_sectors?: Json | null
+          training_cost?: number | null
+          travel_daily_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           channel: Json | null
