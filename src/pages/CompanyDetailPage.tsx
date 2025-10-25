@@ -249,11 +249,18 @@ export default function CompanyDetailPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" onClick={handleSmartRefresh} disabled={isSmartRefreshing} aria-label="Atualizar dados da empresa">
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={handleSmartRefresh}
+                        disabled={isSmartRefreshing}
+                        aria-label="Atualizar dados da empresa"
+                      >
                         {isSmartRefreshing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
                         ) : (
-                          <RefreshCw className="h-4 w-4" />
+                          <RefreshCw className="h-4 w-4 text-primary-foreground" />
                         )}
                       </Button>
                     </TooltipTrigger>

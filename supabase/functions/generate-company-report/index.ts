@@ -204,17 +204,23 @@ function buildIdentification(company: any) {
 }
 
 function buildLocation(company: any) {
-  // Location pode estar em diferentes formatos no JSON
+  // Location pode estar em diferentes formatos no JSON e também na Receita Federal
   const loc = company.location || {};
-  
-  // Tentar extrair do formato aninhado também
-  const address = loc.address || loc.formatted_address || loc.endereco || '';
-  const city = loc.city || loc.cidade || loc.locality || '';
-  const state = loc.state || loc.estado || loc.administrative_area_level_1 || '';
+  const receita = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
+
+  // Extrair de possíveis formatos
+  const address = loc.address || loc.formatted_address || loc.endereco || receita?.logradouro || '';
+  const number = receita?.numero || '';
+  const city = loc.city || loc.cidade || loc.locality || receita?.municipio || '';
+  const state = loc.state || loc.estado || loc.administrative_area_level_1 || receita?.uf || '';
   const country = loc.country || loc.pais || 'Brasil';
-  
+
+  const endereco = address
+    ? `${address}${number ? ", " + number : ''}`
+    : 'Não informado';
+
   return {
-    endereco: address || 'Não informado',
+    endereco,
     cidade: city || 'Não informado',
     estado: state || 'Não informado',
     pais: country
@@ -275,7 +281,7 @@ async function calculateCompanyMetrics(company: any, decisors: any[], maturity: 
       ticket_estimado: await estimateTicket(company, maturity, supabaseClient)
     },
     priorizacao: {
-      urgencia: getUrgency(signals),
+      urgencia: getUrgency(signals, maturityScore),
       nivel_esforco: getEffortLevel(maturityScore),
       roi_esperado: calculateROI(company, maturity)
     }
@@ -411,21 +417,20 @@ function getClassification(score: number): string {
 
 async function estimateTicket(company: any, maturity: any, supabase: any) {
   try {
-    // Buscar produtos que se encaixam no perfil da empresa
-    const employees = company.employees || 0;
-    const porte = getPorte(employees);
-    
+    const maturityScore = maturity?.overall_score || 0;
+
+    // Buscar catálogo de produtos padronizado
     const { data: products } = await supabase
-      .from('totvs_products')
+      .from('product_catalog')
       .select('*')
       .eq('active', true)
       .order('base_price', { ascending: true });
 
     if (!products || products.length === 0) {
       // Fallback caso não tenha produtos
+      const employees = company.employees || 0;
       const baseTicket = employees * 100;
-      const multiplier = maturity?.overall_score ? (maturity.overall_score / 100) + 1 : 1;
-      
+      const multiplier = maturityScore ? (maturityScore / 100) + 1 : 1;
       return {
         minimo: Math.round(baseTicket * 0.5 * multiplier),
         medio: Math.round(baseTicket * multiplier),
@@ -433,27 +438,27 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
       };
     }
 
-    // Filtrar produtos adequados ao porte da empresa
-    const suitableProducts = products.filter((p: any) => {
-      if (!p.target_company_size || p.target_company_size.length === 0) return true;
-      return p.target_company_size.includes(porte);
-    });
-
-    // Filtrar por setor se disponível
-    let recommendedProducts = suitableProducts;
-    if (company.industry) {
-      const sectorProducts = suitableProducts.filter((p: any) => {
-        const sectors = JSON.parse(p.target_sectors || '[]');
-        return sectors.includes('Todos') || sectors.some((s: string) => 
-          company.industry.toLowerCase().includes(s.toLowerCase())
-        );
-      });
-      if (sectorProducts.length > 0) {
-        recommendedProducts = sectorProducts;
-      }
+    // Selecionar produtos por maturidade (categorias: BÁSICO, INTERMEDIÁRIO, AVANÇADO, ESPECIALIZADO)
+    let selectedProducts: any[] = [];
+    if (maturityScore < 40) {
+      selectedProducts = products.filter((p: any) => p.category === 'BÁSICO').slice(0, 3);
+    } else if (maturityScore < 70) {
+      selectedProducts = [
+        ...products.filter((p: any) => p.category === 'BÁSICO').slice(0, 2),
+        ...products.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 2),
+      ];
+    } else {
+      selectedProducts = [
+        ...products.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 2),
+        ...products.filter((p: any) => p.category === 'AVANÇADO').slice(0, 2),
+      ];
     }
 
-    // Buscar regras de desconto aplicáveis
+    if (selectedProducts.length === 0) {
+      selectedProducts = products.slice(0, 3);
+    }
+
+    // Regras de preço/discount (se existirem)
     const { data: rules } = await supabase
       .from('pricing_rules')
       .select('*')
@@ -461,51 +466,16 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
       .order('priority', { ascending: false });
 
     let discount = 0;
-    
-    // Aplicar descontos por porte
+
+    // Exemplo simples: aplicar desconto por porte quando disponível nas regras
+    const employees = company.employees || 0;
+    const porte = getPorte(employees);
+
     const sizeRule = rules?.find((r: any) => 
       r.rule_type === 'company_size' && 
-      JSON.parse(r.conditions).size === porte
+      JSON.parse(r.conditions || '{}').size === porte
     );
     if (sizeRule) discount += sizeRule.discount_percentage || 0;
-
-    // Aplicar descontos por setor
-    if (company.industry) {
-      const sectorRule = rules?.find((r: any) => {
-        if (r.rule_type !== 'sector') return false;
-        const sectors = JSON.parse(r.conditions).sectors || [];
-        return sectors.some((s: string) => 
-          company.industry.toLowerCase().includes(s.toLowerCase())
-        );
-      });
-      if (sectorRule) discount += sectorRule.discount_percentage || 0;
-    }
-
-    // Selecionar produtos baseados na maturidade
-    const maturityScore = maturity?.overall_score || 0;
-    let selectedProducts: any[] = [];
-    
-    if (maturityScore < 40) {
-      // Baixa maturidade: produtos BÁSICOS
-      selectedProducts = recommendedProducts.filter((p: any) => p.category === 'BÁSICO').slice(0, 2);
-    } else if (maturityScore < 70) {
-      // Média maturidade: BÁSICO + INTERMEDIÁRIO
-      selectedProducts = [
-        ...recommendedProducts.filter((p: any) => p.category === 'BÁSICO').slice(0, 1),
-        ...recommendedProducts.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 2)
-      ];
-    } else {
-      // Alta maturidade: INTERMEDIÁRIO + AVANÇADO
-      selectedProducts = [
-        ...recommendedProducts.filter((p: any) => p.category === 'INTERMEDIÁRIO').slice(0, 1),
-        ...recommendedProducts.filter((p: any) => p.category === 'AVANÇADO').slice(0, 2)
-      ];
-    }
-
-    // Se não encontrou produtos adequados, pegar os mais básicos
-    if (selectedProducts.length === 0) {
-      selectedProducts = products.slice(0, 2);
-    }
 
     // Calcular ticket baseado nos produtos selecionados
     const productPrices = selectedProducts.map((p: any) => p.base_price);
@@ -523,9 +493,9 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
       produtos_base: selectedProducts.map((p: any) => ({
         sku: p.sku,
         nome: p.name,
-        preco_base: p.base_price
+        preco_base: p.base_price,
       })),
-      desconto_aplicado: discount
+      desconto_aplicado: discount,
     };
   } catch (error) {
     console.error('[Estimate Ticket] Error:', error);
@@ -533,7 +503,6 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
     const employees = company.employees || 0;
     const baseTicket = employees * 100;
     const multiplier = maturity?.overall_score ? (maturity.overall_score / 100) + 1 : 1;
-    
     return {
       minimo: Math.round(baseTicket * 0.5 * multiplier),
       medio: Math.round(baseTicket * multiplier),
@@ -542,11 +511,17 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
   }
 }
 
-function getUrgency(signals: any[]): string {
-  if (signals.length >= 5) return 'CRÍTICA';
-  if (signals.length >= 3) return 'ALTA';
-  if (signals.length >= 1) return 'MÉDIA';
-  return 'BAIXA';
+function getUrgency(signals: any[], maturityScore: number): string {
+  // Base pela quantidade de sinais
+  let level = 0; // 0=BAIXA,1=MÉDIA,2=ALTA,3=CRÍTICA
+  if (signals.length >= 5) level = 3;
+  else if (signals.length >= 3) level = 2;
+  else if (signals.length >= 1) level = 1;
+
+  // Aumentar urgência para baixa maturidade digital
+  if (maturityScore < 30) level = Math.min(3, level + 1);
+
+  return level === 3 ? 'CRÍTICA' : level === 2 ? 'ALTA' : level === 1 ? 'MÉDIA' : 'BAIXA';
 }
 
 function getEffortLevel(maturityScore: number): string {
