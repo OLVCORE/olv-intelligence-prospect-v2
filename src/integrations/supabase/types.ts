@@ -521,6 +521,89 @@ export type Database = {
           },
         ]
       }
+      bitrix_sync_config: {
+        Row: {
+          auto_sync: boolean | null
+          created_at: string | null
+          domain: string | null
+          field_mapping: Json | null
+          id: string
+          last_sync: string | null
+          status: string | null
+          sync_direction: string
+          sync_interval_minutes: number | null
+          updated_at: string | null
+          user_id: string
+          webhook_url: string
+        }
+        Insert: {
+          auto_sync?: boolean | null
+          created_at?: string | null
+          domain?: string | null
+          field_mapping?: Json | null
+          id?: string
+          last_sync?: string | null
+          status?: string | null
+          sync_direction: string
+          sync_interval_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+          webhook_url: string
+        }
+        Update: {
+          auto_sync?: boolean | null
+          created_at?: string | null
+          domain?: string | null
+          field_mapping?: Json | null
+          id?: string
+          last_sync?: string | null
+          status?: string | null
+          sync_direction?: string
+          sync_interval_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      bitrix_sync_log: {
+        Row: {
+          config_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          records_synced: number | null
+          status: string
+          sync_direction: string
+        }
+        Insert: {
+          config_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          records_synced?: number | null
+          status: string
+          sync_direction: string
+        }
+        Update: {
+          config_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          records_synced?: number | null
+          status?: string
+          sync_direction?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bitrix_sync_log_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "bitrix_sync_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_cases: {
         Row: {
           accepted_at: string | null

@@ -108,13 +108,21 @@ export function EnhancedWhatsAppInterface({
       if (error) throw error;
 
       if (data) {
-        const formattedMessages = data.map(msg => ({
-          id: msg.id,
-          text: msg.body,
-          direction: msg.direction,
-          timestamp: new Date(msg.created_at),
-          status: msg.metadata?.status || 'delivered'
-        }));
+        const formattedMessages: Message[] = data.map(msg => {
+          const metadata = typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as any : {};
+          const direction: 'in' | 'out' = msg.direction === 'out' ? 'out' : 'in';
+          const status: 'sent' | 'delivered' | 'read' | 'failed' = 
+            metadata.status === 'sent' || metadata.status === 'delivered' || metadata.status === 'read' || metadata.status === 'failed' 
+              ? metadata.status 
+              : 'delivered';
+          return {
+            id: msg.id,
+            text: msg.body,
+            direction,
+            timestamp: new Date(msg.created_at),
+            status
+          };
+        });
         setMessages(formattedMessages);
       }
     } catch (error) {

@@ -72,10 +72,11 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('[Bitrix Test] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao testar conexão';
     return new Response(
       JSON.stringify({
         success: false,
-        message: error.message || 'Erro ao testar conexão',
+        message: errorMessage,
         error: 'connection_failed'
       }),
       {

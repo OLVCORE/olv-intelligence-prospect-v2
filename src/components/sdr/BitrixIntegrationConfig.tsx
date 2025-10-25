@@ -63,7 +63,7 @@ export function BitrixIntegrationConfig() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('bitrix_sync_config')
+        .from('bitrix_sync_config' as any)
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
@@ -71,17 +71,20 @@ export function BitrixIntegrationConfig() {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setConfig({
-          id: data.id,
-          webhook_url: data.webhook_url,
-          domain: data.domain || '',
-          sync_direction: data.sync_direction,
-          auto_sync: data.auto_sync,
-          sync_interval_minutes: data.sync_interval_minutes,
-          field_mapping: data.field_mapping || config.field_mapping,
-          last_sync: data.last_sync,
-          status: data.status
-        });
+        const record = data as Record<string, any>;
+        if ('id' in record) {
+          setConfig({
+            id: record.id,
+            webhook_url: record.webhook_url,
+            domain: record.domain || '',
+            sync_direction: record.sync_direction,
+            auto_sync: record.auto_sync,
+            sync_interval_minutes: record.sync_interval_minutes,
+            field_mapping: record.field_mapping || config.field_mapping,
+            last_sync: record.last_sync,
+            status: record.status
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error loading config:', error);
@@ -158,20 +161,25 @@ export function BitrixIntegrationConfig() {
 
       if (config.id) {
         const { error } = await supabase
-          .from('bitrix_sync_config')
+          .from('bitrix_sync_config' as any)
           .update(configData)
           .eq('id', config.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('bitrix_sync_config')
+          .from('bitrix_sync_config' as any)
           .insert(configData)
           .select()
           .single();
 
         if (error) throw error;
-        setConfig(prev => ({ ...prev, id: data.id, status: 'active' }));
+        if (data) {
+          const record = data as Record<string, any>;
+          if ('id' in record) {
+            setConfig(prev => ({ ...prev, id: record.id, status: 'active' }));
+          }
+        }
       }
 
       toast({ title: '✅ Configuração salva com sucesso!' });
