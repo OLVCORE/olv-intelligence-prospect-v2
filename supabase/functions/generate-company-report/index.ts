@@ -27,7 +27,7 @@ serve(async (req) => {
         company_id: companyId,
         run_type: 'manual',
         status: 'running',
-        sources_attempted: ['companies', 'decision_makers', 'digital_presence', 'governance_signals', 'ai']
+        sources_attempted: ['companies', 'decision_makers', 'digital_presence', 'governance_signals', 'digital_maturity', 'financial_data', 'legal_data', 'ai']
       })
       .select()
       .single();
@@ -55,11 +55,13 @@ serve(async (req) => {
     sourcesSucceeded.push('companies');
 
     // 3. Buscar dados relacionados em paralelo
-    const [decisorsRes, presenceRes, signalsRes, maturityRes] = await Promise.all([
+    const [decisorsRes, presenceRes, signalsRes, maturityRes, financialRes, legalRes] = await Promise.all([
       supabase.from('decision_makers').select('*').eq('company_id', companyId),
       supabase.from('digital_presence').select('*').eq('company_id', companyId).maybeSingle(),
       supabase.from('governance_signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false }),
-      supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle()
+      supabase.from('digital_maturity').select('*').eq('company_id', companyId).maybeSingle(),
+      supabase.from('financial_data').select('*').eq('company_id', companyId).maybeSingle(),
+      supabase.from('legal_data').select('*').eq('company_id', companyId).maybeSingle()
     ]);
 
     if (!decisorsRes.error) sourcesSucceeded.push('decision_makers');
@@ -74,13 +76,21 @@ serve(async (req) => {
     if (!maturityRes.error) sourcesSucceeded.push('digital_maturity');
     else sourcesFailed.push('digital_maturity');
 
+    if (!financialRes.error) sourcesSucceeded.push('financial_data');
+    else sourcesFailed.push('financial_data');
+
+    if (!legalRes.error) sourcesSucceeded.push('legal_data');
+    else sourcesFailed.push('legal_data');
+
     const decisors = decisorsRes.data || [];
     const presence = presenceRes.data;
     const signals = signalsRes.data || [];
     const maturity = maturityRes.data;
+    const financial = financialRes.data;
+    const legal = legalRes.data;
 
     // 4. Calcular métricas (agora assíncrono)
-    const metrics = await calculateCompanyMetrics(company, decisors, maturity, signals, supabase);
+    const metrics = await calculateCompanyMetrics(company, decisors, maturity, signals, financial, legal, supabase);
 
     // 5. Gerar insights com IA
     const insights = await generateInsightsWithAI(company, metrics, maturity);
@@ -271,22 +281,32 @@ function buildDigitalPresence(company: any, maturity: any, presence: any) {
   };
 }
 
-async function calculateCompanyMetrics(company: any, decisors: any[], maturity: any, signals: any[], supabaseClient: any) {
+async function calculateCompanyMetrics(company: any, decisors: any[], maturity: any, signals: any[], financial: any, legal: any, supabaseClient: any) {
   const maturityScore = maturity?.overall_score || 0;
-  const signalsScore = signals.length * 10;
-  const decisorsScore = decisors.length * 5;
-  
-  const scoreGlobal = Math.min(100, (maturityScore * 0.4) + (signalsScore * 0.3) + (decisorsScore * 0.3));
+  const signalsScore = Math.min(100, (signals.length || 0) * 10);
+  const decisorsScore = Math.min(100, (decisors.length || 0) * 5);
+  const financialScore = Math.min(100, Math.max(0,
+    typeof financial?.predictive_risk_score === 'number'
+      ? financial.predictive_risk_score
+      : (financial?.credit_score ? Math.round((financial.credit_score / 1000) * 100) : 0)
+  ));
+  const legalScore = Math.min(100, Math.max(0, legal?.legal_health_score || 0));
+
+  // Pesos: Maturidade 40%, Sinais 15%, Decisores 15%, Financeiro 15%, Jurídico 15%
+  const weighted = (maturityScore * 0.4) + (signalsScore * 0.15) + (decisorsScore * 0.15) + (financialScore * 0.15) + (legalScore * 0.15);
+  const scoreGlobal = Math.round(Math.min(100, weighted));
   
   return {
-    score_global: Math.round(scoreGlobal),
+    score_global: scoreGlobal,
     componentes: {
       maturidade_digital: Math.round(maturityScore),
-      sinais_compra: Math.min(100, signalsScore),
-      estrutura_decisores: Math.min(100, decisorsScore)
+      sinais_compra: Math.round(signalsScore),
+      estrutura_decisores: Math.round(decisorsScore),
+      financeiro: Math.round(financialScore),
+      juridico: Math.round(legalScore)
     },
     potencial_negocio: {
-      score: Math.round(scoreGlobal),
+      score: scoreGlobal,
       classificacao: getClassification(scoreGlobal),
       ticket_estimado: await estimateTicket(company, maturity, supabaseClient)
     },

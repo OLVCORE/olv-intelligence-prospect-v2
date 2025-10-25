@@ -189,9 +189,11 @@ export default function CompanyDetailPage() {
   const handleSmartRefresh = async () => {
     setIsSmartRefreshing(true);
     try {
-      toast.info("Atualizando dados da empresa...", { description: "Receita + 360° + Maturidade + Relatório" });
+      toast.info("Atualizando dados da empresa...", { description: "Receita + Financeiro + Jurídico + 360° + Maturidade + Relatório" });
       if (company?.cnpj) {
         await supabase.functions.invoke('enrich-receitaws', { body: { cnpj: company.cnpj } });
+        await supabase.functions.invoke('enrich-financial', { body: { company_id: id, cnpj: company.cnpj } });
+        await supabase.functions.invoke('enrich-legal', { body: { company_id: id, cnpj: company.cnpj } });
       }
       await supabase.functions.invoke('enrich-company-360', { body: { companyId: id } });
       await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
