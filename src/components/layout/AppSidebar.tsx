@@ -123,12 +123,14 @@ const menuGroups = [
         special: true,
         description: "Central estratégica: ROI, CPQ, Cenários, Propostas e Valor",
         submenu: [
-          { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy", description: "Visão geral da conta e estratégia" },
+          { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy?tab=overview", description: "Visão geral da conta e estratégia" },
           { title: "ROI & TCO Calculator", icon: DollarSign, url: "/account-strategy?tab=roi", description: "Calculadora interativa de retorno" },
           { title: "CPQ & Pricing Intelligence", icon: Sparkles, url: "/account-strategy?tab=cpq", description: "Configure-Price-Quote com IA" },
           { title: "Cenários & Propostas", icon: Layers, url: "/account-strategy?tab=scenarios", description: "Análise Best/Expected/Worst case" },
+          { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração de propostas comerciais" },
           { title: "Competitive Intelligence", icon: Shield, url: "/account-strategy?tab=competitive", description: "Posicionamento competitivo" },
           { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
+          { title: "Consultoria Premium OLV", icon: Award, url: "/account-strategy?tab=consulting", description: "Serviços de implementação e PMO" },
         ],
       },
       {
@@ -329,21 +331,28 @@ export function AppSidebar() {
                                            <Tooltip>
                                              <TooltipTrigger asChild>
                                                <div>
-                                                  <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url} className="touch-manipulation active:scale-95 py-2.5 md:py-2">
-                                                    {(() => {
-                                                      const sp = new URLSearchParams(location.search);
-                                                      const company = sp.get('company');
-                                                      const base = subItem.url as string;
-                                                      const isAS = base.startsWith('/account-strategy');
-                                                      const url = isAS && company ? `${base}${base.includes('?') ? '&' : '?'}company=${company}` : base;
-                                                      return (
-                                                        <Link to={url}>
-                                                          <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                                                          <span className="text-xs md:text-xs">{subItem.title}</span>
-                                                        </Link>
-                                                      );
-                                                    })()}
-                                                  </SidebarMenuSubButton>
+                                                   <SidebarMenuSubButton 
+                                                     asChild 
+                                                     isActive={
+                                                       location.pathname === subItem.url.split('?')[0] && 
+                                                       (!subItem.url.includes('?tab=') || location.search.includes(subItem.url.split('?tab=')[1]))
+                                                     } 
+                                                     className="touch-manipulation active:scale-95 py-2.5 md:py-2"
+                                                   >
+                                                     {(() => {
+                                                       const sp = new URLSearchParams(location.search);
+                                                       const company = sp.get('company');
+                                                       const base = subItem.url as string;
+                                                       const isAS = base.startsWith('/account-strategy');
+                                                       const url = isAS && company ? `${base}${base.includes('?') ? '&' : '?'}company=${company}` : base;
+                                                       return (
+                                                         <Link to={url}>
+                                                           <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                                                           <span className="text-xs md:text-xs">{subItem.title}</span>
+                                                         </Link>
+                                                       );
+                                                     })()}
+                                                   </SidebarMenuSubButton>
                                                </div>
                                              </TooltipTrigger>
                                              <TooltipContent side="right" className="max-w-[250px] hidden md:block">

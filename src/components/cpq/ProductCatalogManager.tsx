@@ -60,6 +60,9 @@ export function ProductCatalogManager() {
         description,
         base_price: 0,
         min_price: 0,
+        implementation_cost: 0,
+        training_cost: 0,
+        annual_maintenance: 0,
         is_configurable: false,
         config_options: {},
         dependencies: [],
@@ -161,6 +164,9 @@ function NewProductDialog({ onSaved }: { onSaved: () => Promise<void> | void }) 
   const [description, setDescription] = useState('');
   const [basePrice, setBasePrice] = useState<number>(0);
   const [minPrice, setMinPrice] = useState<number>(0);
+  const [implementationCost, setImplementationCost] = useState<number>(0);
+  const [trainingCost, setTrainingCost] = useState<number>(0);
+  const [annualMaintenance, setAnnualMaintenance] = useState<number>(0);
   const [minQty, setMinQty] = useState<number>(1);
   const [maxQty, setMaxQty] = useState<number | undefined>(undefined);
   const [dependencies, setDependencies] = useState('');
@@ -178,6 +184,9 @@ function NewProductDialog({ onSaved }: { onSaved: () => Promise<void> | void }) 
         description,
         base_price: Number(basePrice) || 0,
         min_price: Number(minPrice) || 0,
+        implementation_cost: Number(implementationCost) || 0,
+        training_cost: Number(trainingCost) || 0,
+        annual_maintenance: Number(annualMaintenance) || 0,
         is_configurable: Boolean(configOptions && configOptions.trim()),
         config_options: safeJson(configOptions),
         dependencies: parseArray(dependencies),
@@ -226,6 +235,20 @@ function NewProductDialog({ onSaved }: { onSaved: () => Promise<void> | void }) 
           <div>
             <Label>Preço Mínimo (R$)</Label>
             <Input type="number" value={minPrice} onChange={e => setMinPrice(parseFloat(e.target.value))} />
+          </div>
+          <div>
+            <Label>Custo Implementação (R$)</Label>
+            <Input type="number" value={implementationCost} onChange={e => setImplementationCost(parseFloat(e.target.value))} />
+          </div>
+          <div>
+            <Label>Custo Treinamento (R$)</Label>
+            <Input type="number" value={trainingCost} onChange={e => setTrainingCost(parseFloat(e.target.value))} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Manutenção Anual (R$)</Label>
+            <Input type="number" value={annualMaintenance} onChange={e => setAnnualMaintenance(parseFloat(e.target.value))} />
           </div>
           <div>
             <Label>Qtde Mínima</Label>
