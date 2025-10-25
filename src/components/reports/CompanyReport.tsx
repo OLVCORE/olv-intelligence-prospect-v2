@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { PremiumReportRequest } from "./PremiumReportRequest";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import LocationMap from "@/components/map/LocationMap";
 
 interface CompanyReportProps {
   companyId: string;
@@ -338,9 +339,10 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 <span className="text-lg">/100</span>
               </div>
               <Progress value={report.metrics.score_global} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                Classificação: <Badge variant="outline">{report.metrics.potencial_negocio.classificacao}</Badge>
-              </p>
+              <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                <span>Classificação:</span>
+                <Badge variant="outline">{report.metrics.potencial_negocio.classificacao}</Badge>
+              </div>
             </CardContent>
           </Card>
 
@@ -431,9 +433,10 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
               <div className="text-3xl font-bold text-blue-600">
                 {report.metrics.priorizacao.roi_esperado}%
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Urgência: <Badge variant="outline">{report.metrics.priorizacao.urgencia}</Badge>
-              </p>
+              <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                <span>Urgência:</span>
+                <Badge variant="outline">{report.metrics.priorizacao.urgencia}</Badge>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -459,10 +462,14 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Website</p>
-              <a href={report.identification.website} target="_blank" rel="noopener noreferrer" 
-                 className="text-primary hover:underline">
-                {report.identification.website}
-              </a>
+              {report.identification.website ? (
+                <a href={report.identification.website} target="_blank" rel="noopener noreferrer" 
+                   className="text-primary hover:underline">
+                  {report.identification.website}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">N/A</span>
+              )}
             </div>
             {report.identification.linkedin_url && (
               <div>
@@ -497,6 +504,15 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 <p className="text-sm text-muted-foreground">Estado</p>
                 <p className="font-semibold">{report.location.estado}</p>
               </div>
+            </div>
+            <div className="mt-4">
+              <LocationMap
+                address={(company?.raw_data as any)?.receita?.logradouro || report.location.endereco}
+                numero={(company?.raw_data as any)?.receita?.numero}
+                municipio={(company?.raw_data as any)?.receita?.municipio || report.location.cidade}
+                estado={(company?.raw_data as any)?.receita?.uf || report.location.estado}
+                cep={(company?.raw_data as any)?.receita?.cep}
+              />
             </div>
           </CardContent>
         </Card>

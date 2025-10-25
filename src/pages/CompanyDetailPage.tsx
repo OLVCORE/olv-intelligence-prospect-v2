@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
-  CheckCircle, TrendingUp, Activity, Trash2, Loader2
+  CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { DiagnosticUpload } from "@/components/sdr/DiagnosticUpload";
 import { CompanyReport } from "@/components/reports/CompanyReport";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -35,6 +36,7 @@ export default function CompanyDetailPage() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
   const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
+  const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -182,6 +184,29 @@ export default function CompanyDetailPage() {
     }
   };
 
+  const handleSmartRefresh = async () => {
+    setIsSmartRefreshing(true);
+    try {
+      toast.info("Atualizando dados da empresa...", { description: "Receita + 360° + Maturidade + Relatório" });
+      if (company?.cnpj) {
+        await supabase.functions.invoke('enrich-receitaws', { body: { cnpj: company.cnpj } });
+      }
+      await supabase.functions.invoke('enrich-company-360', { body: { companyId: id } });
+      await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
+      await supabase.functions.invoke('generate-company-report', { body: { companyId: id } });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
+        queryClient.invalidateQueries({ queryKey: ['company-report', id] }),
+      ]);
+      toast.success("Dados atualizados com sucesso!");
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Falha ao atualizar dados", { description: error.message });
+    } finally {
+      setIsSmartRefreshing(false);
+    }
+  };
+
   const receitaData = (company.raw_data as any)?.receita;
   const maturity = company.digital_maturity?.[0];
   const analysisData = maturity?.analysis_data as any;
@@ -209,17 +234,35 @@ export default function CompanyDetailPage() {
                   <p className="text-sm text-muted-foreground">Score Digital</p>
                 </div>
               )}
-              <Badge 
-                className={`${
-                  receitaData?.situacao === 'ATIVA' 
-                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
-                    : receitaData?.situacao === 'ALERTA'
-                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
-                    : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
-                }`}
-              >
-                {receitaData?.situacao || 'Status desconhecido'}
-              </Badge>
+              <div className="flex items-center justify-end gap-2">
+                <Badge 
+                  className={`${
+                    receitaData?.situacao === 'ATIVA' 
+                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+                      : receitaData?.situacao === 'ALERTA'
+                      ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
+                      : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
+                  }`}
+                >
+                  {receitaData?.situacao || 'Status desconhecido'}
+                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={handleSmartRefresh} disabled={isSmartRefreshing} aria-label="Atualizar dados da empresa">
+                        {isSmartRefreshing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Atualizar dados (Receita + 360° + Maturidade + Relatório)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
         </CardHeader>
