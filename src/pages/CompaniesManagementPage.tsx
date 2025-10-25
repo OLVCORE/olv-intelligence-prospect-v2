@@ -31,7 +31,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
 
 export default function CompaniesManagementPage() {

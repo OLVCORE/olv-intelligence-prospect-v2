@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,15 +20,18 @@ import { ScenarioComparison } from '@/components/scenarios/ScenarioComparison';
 import { ProposalManager } from '@/components/proposals/ProposalManager';
 import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
 import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
+import { CompanySelectDialog } from '@/components/common/CompanySelectDialog';
 
 export default function AccountStrategyPage() {
   const params = useParams<{ companyId: string }>();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const companyId = params.companyId || searchParams.get('company') || undefined;
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
   const [selectedDecisionMakerId, setSelectedDecisionMakerId] = useState<string>('');
   const [tab, setTab] = useState<string>(searchParams.get('tab') || 'overview');
-  
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+
   const { data: strategies, isLoading } = useAccountStrategies(companyId);
   const { data: personas } = useBuyerPersonas();
   const { data: decisionMakers } = useDecisionMakers(companyId);
@@ -91,10 +94,29 @@ export default function AccountStrategyPage() {
               <CardTitle>Selecione uma empresa</CardTitle>
               <CardDescription>Abra a estratégia de uma empresa específica para acessar ROI, CPQ, Cenários e mais.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button onClick={() => window.location.assign('/companies')}>Ir para Base de Empresas</Button>
+            <CardContent className="flex gap-3">
+              <Button onClick={() => setCompanyDialogOpen(true)}>Selecionar Empresa</Button>
+              <Button variant="outline" onClick={() => navigate(`/companies?selectFor=account-strategy&tab=${tab}`)}>
+                Ir para Base de Empresas
+              </Button>
             </CardContent>
           </Card>
+
+          <CompanySelectDialog
+            open={companyDialogOpen}
+            onOpenChange={setCompanyDialogOpen}
+            mode="single"
+            title="Escolha a empresa para analisar"
+            confirmLabel="Usar nesta estratégia"
+            onConfirm={async (ids) => {
+              const id = ids[0];
+              const sp = new URLSearchParams(searchParams);
+              sp.set('company', id);
+              if (tab) sp.set('tab', tab);
+              setSearchParams(sp, { replace: true });
+              navigate(`/account-strategy?company=${id}&tab=${tab || 'roi'}`);
+            }}
+          />
         </div>
       </AppLayout>
     );
@@ -171,16 +193,47 @@ export default function AccountStrategyPage() {
           )}
         </div>
 
-        {!activeStrategy ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Nenhuma estratégia criada</CardTitle>
-              <CardDescription>
-                Crie sua primeira Account Strategy para começar a vender de forma estratégica
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : (
+        {!activeStrategy ? (<>
+            <Card>
+              <CardHeader>
+                <CardTitle>Nenhuma estratégia criada</CardTitle>
+                <CardDescription>
+                  Você já pode usar ROI e CPQ para esta empresa. Gere a estratégia a qualquer momento.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Tabs 
+              value={tab} 
+              onValueChange={(v) => {
+                setTab(v);
+                const sp = new URLSearchParams(searchParams);
+                sp.set('tab', v);
+                if (companyId) sp.set('company', companyId);
+                setSearchParams(sp, { replace: true });
+              }} 
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="roi">ROI</TabsTrigger>
+                <TabsTrigger value="cpq">CPQ</TabsTrigger>
+              </TabsList>
+              <TabsContent value="roi" className="space-y-4">
+                <InteractiveROICalculator
+                  companyId={companyId!}
+                  accountStrategyId={activeStrategy?.id}
+                  initialData={{}}
+                />
+              </TabsContent>
+              <TabsContent value="cpq" className="space-y-4">
+                <QuoteConfigurator
+                  companyId={companyId!}
+                  accountStrategyId={activeStrategy?.id}
+                />
+              </TabsContent>
+            </Tabs>
+          </>
+) : (
+
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
