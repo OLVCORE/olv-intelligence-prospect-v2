@@ -90,13 +90,14 @@ export function EnhancedCompanyInputForm() {
       if (error) throw error;
 
       if (data) {
-        form.setValue('razao_social', data.nome || '');
-        form.setValue('nome_fantasia', data.fantasia || '');
-        form.setValue('cnae', data.atividade_principal?.[0]?.code || '');
+        const receita: any = (data as any)?.data ?? data; // aceita ambos formatos
+        form.setValue('razao_social', receita?.nome || '');
+        form.setValue('nome_fantasia', receita?.fantasia || '');
+        form.setValue('cnae', receita?.atividade_principal?.[0]?.code || '');
         
         toast({
           title: 'Dados carregados',
-          description: 'Dados da Receita Federal carregados com sucesso.',
+          description: 'Dados oficiais carregados com sucesso.',
         });
       }
     } catch (error) {

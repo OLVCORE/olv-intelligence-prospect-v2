@@ -216,21 +216,48 @@ export default function CompanyDetailPage() {
 
   const handleSmartRefresh = async () => {
     setIsSmartRefreshing(true);
+    toast.info("Atualizando dados da empresa...", { description: "Receita + Financeiro + Jurídico + 360° + Maturidade + Relatório" });
     try {
-      toast.info("Atualizando dados da empresa...", { description: "Receita + Financeiro + Jurídico + 360° + Maturidade + Relatório" });
       if (company?.cnpj) {
-        await supabase.functions.invoke('enrich-receitaws', { body: { cnpj: company.cnpj } });
-        await supabase.functions.invoke('enrich-financial', { body: { company_id: id, cnpj: company.cnpj } });
-        await supabase.functions.invoke('enrich-legal', { body: { company_id: id, cnpj: company.cnpj } });
+        try {
+          await supabase.functions.invoke('enrich-receitaws', { body: { cnpj: company.cnpj } });
+          toast.success("Receita Federal atualizada");
+        } catch (e: any) {
+          console.warn('ReceitaWS falhou, seguindo com demais etapas', e);
+          toast.warning("Receita Federal indisponível", { description: "Seguiremos com outras fontes" });
+        }
+        try {
+          await supabase.functions.invoke('enrich-financial', { body: { company_id: id, cnpj: company.cnpj } });
+        } catch (e: any) {
+          console.warn('Enrich financial failed', e);
+        }
+        try {
+          await supabase.functions.invoke('enrich-legal', { body: { company_id: id, cnpj: company.cnpj } });
+        } catch (e: any) {
+          console.warn('Enrich legal failed', e);
+        }
       }
-      await supabase.functions.invoke('enrich-company-360', { body: { company_id: id } });
-      await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
-      await supabase.functions.invoke('generate-company-report', { body: { companyId: id } });
+      try {
+        await supabase.functions.invoke('enrich-company-360', { body: { company_id: id } });
+      } catch (e: any) {
+        console.warn('Enrich 360 failed', e);
+      }
+      try {
+        await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
+      } catch (e: any) {
+        console.warn('Maturity score failed', e);
+      }
+      try {
+        await supabase.functions.invoke('generate-company-report', { body: { companyId: id } });
+      } catch (e: any) {
+        console.warn('Generate report failed', e);
+      }
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
         queryClient.invalidateQueries({ queryKey: ['company-report', id] }),
       ]);
-      toast.success("Dados atualizados com sucesso!");
+      toast.success("Dados atualizados (com tolerância a falhas)");
     } catch (error: any) {
       console.error(error);
       toast.error("Falha ao atualizar dados", { description: error.message });
