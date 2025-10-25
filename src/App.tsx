@@ -51,6 +51,7 @@ const SDRSequencesPage = lazy(() => import("./pages/SDRSequencesPage"));
 const SDRTasksPage = lazy(() => import("./pages/SDRTasksPage"));
 const SDRIntegrationsPage = lazy(() => import("./pages/SDRIntegrationsPage"));
 const SDRBitrixConfigPage = lazy(() => import("./pages/SDRBitrixConfigPage"));
+const SDRWhatsAppConfigPage = lazy(() => import("./pages/SDRWhatsAppConfigPage"));
 const SDRAnalyticsPage = lazy(() => import("./pages/SDRAnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
@@ -363,6 +364,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SDRBitrixConfigPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/integrations/whatsapp"
+              element={
+                <ProtectedRoute>
+                  <SDRWhatsAppConfigPage />
                 </ProtectedRoute>
               }
             />

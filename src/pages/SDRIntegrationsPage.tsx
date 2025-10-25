@@ -96,7 +96,7 @@ const ALL_INTEGRATIONS = [
   { id: 'custom', name: 'Outro Email', category: 'email', provider: 'custom', available: true, description: 'Servidor customizado' },
   
   // Social
-  { id: 'whatsapp', name: 'WhatsApp', category: 'social', provider: 'whatsapp', available: false, description: 'Mensagens WhatsApp' },
+  { id: 'whatsapp', name: 'WhatsApp', category: 'social', provider: 'whatsapp', available: true, description: 'Mensagens WhatsApp' },
   { id: 'telegram', name: 'Telegram', category: 'social', provider: 'telegram', available: false, description: 'Mensagens Telegram' },
   { id: 'linkedin', name: 'LinkedIn', category: 'social', provider: 'linkedin', available: false, description: 'Rede profissional' },
   { id: 'instagram', name: 'Instagram', category: 'social', provider: 'instagram', available: false, description: 'Direct Messages' },
@@ -509,12 +509,24 @@ export default function SDRIntegrationsPage() {
                                         Configurar Bitrix24
                                       </Button>
                                     </div>
+                                  ) : item.id === 'whatsapp' ? (
+                                    <div className="space-y-3 pt-4">
+                                      <p>Configure WhatsApp Business API para enviar e receber mensagens</p>
+                                      <Button 
+                                        onClick={() => navigate('/sdr/integrations/whatsapp')}
+                                        className="w-full gap-2"
+                                        size="lg"
+                                      >
+                                        <MessageSquare className="h-4 w-4" />
+                                        Configurar WhatsApp
+                                      </Button>
+                                    </div>
                                   ) : (
                                     `Conecte sua conta ${item.name}`
                                   )}
                                 </DialogDescription>
                               </DialogHeader>
-                              {item.id !== 'bitrix24' && (
+                              {item.id !== 'bitrix24' && item.id !== 'whatsapp' && (
                                 <IntegrationForm 
                                   defaultChannel={item.category}
                                   defaultProvider={item.provider}
