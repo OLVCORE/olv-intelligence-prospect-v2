@@ -176,3 +176,9 @@ verify_jwt = false
 
   [functions.analyze-competitive-deal]
   verify_jwt = false
+
+  [functions.enrich-reputation]
+  verify_jwt = true
+
+  [functions.enrich-financial-market]
+  verify_jwt = true
