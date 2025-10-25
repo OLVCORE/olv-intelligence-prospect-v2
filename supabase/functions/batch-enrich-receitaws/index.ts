@@ -44,7 +44,7 @@ serve(async (req) => {
     for (const company of companies) {
       try {
         // Verificar se já tem dados da ReceitaWS
-        const hasReceitaData = company.raw_data?.receitaws || 
+        const hasReceitaData = company.raw_data?.receita || 
                               (company.industry && company.industry.length > 10);
         
         if (hasReceitaData) {
@@ -94,10 +94,15 @@ serve(async (req) => {
           updateData.industry = receitaData.atividade_principal[0].text;
         }
 
+        // Merge seguro preservando dados existentes
+        const existingRaw = (company.raw_data && typeof company.raw_data === 'object') ? company.raw_data : {};
         updateData.raw_data = {
-          ...company.raw_data,
-          receitaws: receitaData,
-          enriched_at: new Date().toISOString()
+          ...existingRaw,
+          receita: receitaData,
+          enriched_at: new Date().toISOString(),
+          ...(existingRaw.apollo && { apollo: existingRaw.apollo }),
+          ...(existingRaw.segment && { segment: existingRaw.segment }),
+          ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
         };
 
         // Construir localização
