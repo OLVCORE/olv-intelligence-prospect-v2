@@ -147,11 +147,39 @@ export default function CompaniesManagementPage() {
       setEnrichingReceitaId(companyId);
       toast.info('Enriquecendo dados da Receita Federal...');
 
-      const { error } = await supabase.functions.invoke('enrich-receitaws', {
-        body: { company_id: companyId }
+      // Buscar CNPJ da empresa selecionada
+      const company = companies.find((c: any) => c.id === companyId);
+      if (!company?.cnpj) {
+        toast.error('CNPJ não disponível', { description: 'Não é possível atualizar dados sem CNPJ' });
+        return;
+      }
+
+      // Chama a função que retorna os dados da Receita (não grava no banco)
+      const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
+        body: { cnpj: company.cnpj }
       });
 
-      if (error) throw error;
+      if (error) throw error as any;
+
+      const receita = (data as any)?.data;
+      if (receita) {
+        // Merge seguro preservando dados já existentes em raw_data
+        const existingRaw = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any) : {};
+        const mergedRaw = {
+          ...existingRaw,
+          receita,
+          ...(existingRaw.apollo && { apollo: existingRaw.apollo }),
+          ...(existingRaw.segment && { segment: existingRaw.segment }),
+          ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
+        };
+
+        const { error: updError } = await supabase
+          .from('companies')
+          .update({ raw_data: mergedRaw })
+          .eq('id', companyId);
+        if (updError) throw updError;
+      }
+
       toast.success('Dados da Receita Federal atualizados!');
       refetch();
     } catch (error) {
