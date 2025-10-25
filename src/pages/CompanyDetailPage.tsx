@@ -1,6 +1,6 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackButton } from "@/components/common/BackButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,8 @@ export default function CompanyDetailPage() {
   const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
   const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
   const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const location = useLocation();
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -87,6 +89,15 @@ export default function CompanyDetailPage() {
       </div>
     );
   }
+
+  // Sincroniza a aba via query param (?tab=fit)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['overview','relatorio','fit','receita','scores','digital','decisores','maturity','actions'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
@@ -279,7 +290,7 @@ export default function CompanyDetailPage() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)} className="space-y-6">
         <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="relatorio">Relatório Completo</TabsTrigger>

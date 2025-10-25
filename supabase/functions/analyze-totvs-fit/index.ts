@@ -80,7 +80,8 @@ serve(async (req) => {
           } catch {
             sectors = p.target_sectors || 'Todos';
           }
-          return `- ${p.name} (${p.sku}): ${p.description} | Preço: R$ ${p.base_price.toLocaleString('pt-BR')} | Setores: ${sectors}`;
+          const priceStr = typeof p.base_price === 'number' ? `R$ ${p.base_price.toLocaleString('pt-BR')}` : 'Preço sob consulta';
+          return `- ${p.name} (${p.sku}): ${p.description} | Preço: ${priceStr} | Setores: ${sectors}`;
         }).join('\n');
         return `**${category}:**\n${productsList}`;
       }).join('\n\n');

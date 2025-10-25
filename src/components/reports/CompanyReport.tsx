@@ -11,12 +11,15 @@ import { PremiumReportRequest } from "./PremiumReportRequest";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LocationMap from "@/components/map/LocationMap";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface CompanyReportProps {
   companyId: string;
 }
 
 export function CompanyReport({ companyId }: CompanyReportProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   // Buscar dados da empresa para verificar se tem relatório premium
   const { data: company } = useQuery({
     queryKey: ['company', companyId],
@@ -321,13 +324,13 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                Score Global
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex">
-                      <HelpCircle className="h-3 w-3 cursor-help" />
-                    </button>
+                    <div className="flex items-center gap-1 cursor-help">
+                      <span>Score Global</span>
+                      <HelpCircle className="h-3 w-3" />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
@@ -362,13 +365,13 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                Maturidade Digital
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex">
-                      <HelpCircle className="h-3 w-3 cursor-help" />
-                    </button>
+                    <div className="flex items-center gap-1 cursor-help">
+                      <span>Maturidade Digital</span>
+                      <HelpCircle className="h-3 w-3" />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Base de Cálculo:</p>
@@ -399,20 +402,19 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
           <Card
             className="cursor-pointer hover:border-primary transition-colors hover:shadow-md"
             onClick={() => {
-              const fitTab = document.querySelector('[value="fit"]') as HTMLElement;
-              if (fitTab) fitTab.click();
+              navigate(`/company/${companyId}?tab=fit`);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             title="Clique para ver produtos detalhados na aba Fit TOTVS"
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                Ticket Estimado
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex" onClick={(e) => e.stopPropagation()}>
-                      <HelpCircle className="h-3 w-3 cursor-help" />
-                    </button>
+                    <div className="flex items-center gap-1 cursor-help" onClick={(e) => e.stopPropagation()}>
+                      <span>Ticket Estimado</span>
+                      <HelpCircle className="h-3 w-3" />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Critérios de Cálculo:</p>
@@ -457,13 +459,13 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                ROI Esperado
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex">
-                      <HelpCircle className="h-3 w-3 cursor-help" />
-                    </button>
+                    <div className="flex items-center gap-1 cursor-help">
+                      <span>ROI Esperado</span>
+                      <HelpCircle className="h-3 w-3" />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
