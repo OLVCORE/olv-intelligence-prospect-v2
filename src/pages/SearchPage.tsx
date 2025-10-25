@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus, AlertTriangle, XCircle, CheckCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -371,10 +371,32 @@ export default function SearchPage() {
       setPreviewData(data);
       setShowPreview(true);
       
-      toast({
-        title: "Empresa encontrada!",
-        description: `Revise os dados de ${data.company.name} antes de confirmar`,
-      });
+      // Exibir alerta de status do CNPJ imediatamente
+      if (data.cnpj_status) {
+        if (data.cnpj_status === 'inexistente') {
+          toast({
+            title: "❌ CNPJ Inexistente",
+            description: data.cnpj_status_message || "CNPJ não encontrado na Receita Federal",
+            variant: "destructive",
+          });
+        } else if (data.cnpj_status === 'inativo') {
+          toast({
+            title: "⚠️ CNPJ Inativo",
+            description: data.cnpj_status_message || "Empresa inativa/suspensa/baixada na Receita Federal",
+            variant: "destructive",
+          });
+        } else if (data.cnpj_status === 'ativo') {
+          toast({
+            title: "✅ CNPJ Válido e Ativo",
+            description: data.cnpj_status_message || "Empresa encontrada e ativa na Receita Federal",
+          });
+        }
+      } else {
+        toast({
+          title: "Empresa encontrada!",
+          description: `Revise os dados de ${data.company.name} antes de confirmar`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro na busca",
@@ -1083,24 +1105,33 @@ export default function SearchPage() {
             <DialogTitle className="text-2xl flex items-center gap-3">
               <Building2 className="h-6 w-6 text-primary" />
               Preview Completo dos Dados
-              {previewData?.company.raw_data?.receita?.situacao && (
-                <Badge 
-                  className={`ml-2 ${
-                    previewData.company.raw_data.receita.situacao === 'ATIVA' 
-                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
-                      : previewData.company.raw_data.receita.situacao === 'ALERTA'
-                      ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
-                      : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
-                  }`}
-                >
-                  {previewData.company.raw_data.receita.situacao === 'ATIVA' ? '✓ CNPJ ATIVO' : 
-                   previewData.company.raw_data.receita.situacao === 'ALERTA' ? '⚠ ALERTA' : 
-                   '✕ CNPJ INATIVO'}
+              {/* Badge de Status do CNPJ */}
+              {previewData?.cnpj_status === 'ativo' && (
+                <Badge className="ml-2 bg-green-500 hover:bg-green-600 text-white border-green-600 gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  CNPJ ATIVO
+                </Badge>
+              )}
+              {previewData?.cnpj_status === 'inativo' && (
+                <Badge className="ml-2 bg-orange-500 hover:bg-orange-600 text-white border-orange-600 gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  CNPJ INATIVO
+                </Badge>
+              )}
+              {previewData?.cnpj_status === 'inexistente' && (
+                <Badge variant="destructive" className="ml-2 gap-1">
+                  <XCircle className="h-3 w-3" />
+                  CNPJ INEXISTENTE
                 </Badge>
               )}
             </DialogTitle>
             <DialogDescription>
               Revise as informações completas antes de confirmar o cadastro no funil de vendas
+              {previewData?.cnpj_status_message && (
+                <span className="block mt-2 font-medium">
+                  {previewData.cnpj_status_message}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           

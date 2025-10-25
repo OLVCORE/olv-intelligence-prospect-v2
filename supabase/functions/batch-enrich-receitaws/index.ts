@@ -67,21 +67,29 @@ serve(async (req) => {
 
         // Buscar dados da ReceitaWS
         const { data: response } = await supabase.functions.invoke('enrich-receitaws', {
-          body: { cnpj: company.cnpj }
+          body: { cnpj: company.cnpj, company_id: company.id }
         });
 
         if (!response?.data) {
           results.errors++;
+          
+          // Marcar como inexistente se API retornou erro
+          await supabase
+            .from('companies')
+            .update({ cnpj_status: 'inexistente' })
+            .eq('id', company.id);
+          
           results.details.push({
             company_id: company.id,
             company_name: company.name,
             status: 'error',
-            reason: response?.error || 'No data returned from ReceitaWS'
+            reason: response?.error || 'CNPJ não encontrado na Receita Federal'
           });
           continue;
         }
 
         const receitaData = response.data;
+        const cnpjStatus = response.cnpj_status || 'pendente';
 
         // Atualizar a empresa com os dados obtidos
         const updateData: any = {};
@@ -125,6 +133,9 @@ serve(async (req) => {
           };
         }
 
+        // Adicionar status do CNPJ ao update
+        updateData.cnpj_status = cnpjStatus;
+        
         const { error: updateError } = await supabase
           .from('companies')
           .update(updateData)

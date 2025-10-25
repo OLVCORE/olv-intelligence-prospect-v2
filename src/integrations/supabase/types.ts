@@ -1141,6 +1141,7 @@ export type Database = {
       companies: {
         Row: {
           cnpj: string | null
+          cnpj_status: string | null
           created_at: string
           digital_maturity_score: number | null
           domain: string | null
@@ -1158,6 +1159,7 @@ export type Database = {
         }
         Insert: {
           cnpj?: string | null
+          cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
           domain?: string | null
@@ -1175,6 +1177,7 @@ export type Database = {
         }
         Update: {
           cnpj?: string | null
+          cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
           domain?: string | null

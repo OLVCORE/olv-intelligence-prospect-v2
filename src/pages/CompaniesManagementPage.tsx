@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
@@ -427,6 +427,7 @@ export default function CompaniesManagementPage() {
                         <ArrowUpDown className="h-3 w-3" />
                       </Button>
                     </TableHead>
+                    <TableHead>Status CNPJ</TableHead>
                     <TableHead>
                       <Button
                         variant="ghost"
@@ -474,6 +475,32 @@ export default function CompaniesManagementPage() {
                           <Badge variant="outline">{company.cnpj}</Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {(company as any).cnpj_status === 'ativo' && (
+                          <Badge variant="default" className="gap-1 bg-green-500">
+                            <CheckCircle className="w-3 h-3" />
+                            Ativo
+                          </Badge>
+                        )}
+                        {(company as any).cnpj_status === 'inativo' && (
+                          <Badge variant="secondary" className="gap-1 bg-orange-500 text-white">
+                            <AlertTriangle className="w-3 h-3" />
+                            Inativo
+                          </Badge>
+                        )}
+                        {(company as any).cnpj_status === 'inexistente' && (
+                          <Badge variant="destructive" className="gap-1">
+                            <XCircle className="w-3 h-3" />
+                            Inexistente
+                          </Badge>
+                        )}
+                        {(!( company as any).cnpj_status || (company as any).cnpj_status === 'pendente') && (
+                          <Badge variant="outline" className="gap-1">
+                            <Clock className="w-3 h-3" />
+                            Pendente
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>

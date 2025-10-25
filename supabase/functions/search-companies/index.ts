@@ -158,11 +158,34 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Buscar dados da ReceitaWS (se CNPJ fornecido)
+    // 1. Buscar dados da ReceitaWS (se CNPJ fornecido) + Validar Status
     let receitaData = null;
+    let cnpjStatus = 'pendente';
+    let cnpjStatusMessage = '';
+    
     if (cnpj) {
       receitaData = await fetchReceitaWSData(cnpj);
-      console.log('[Search] ReceitaWS:', receitaData ? '✅' : '❌');
+      
+      if (receitaData) {
+        console.log('[Search] ReceitaWS: ✅');
+        
+        // Validar status do CNPJ
+        const situacao = receitaData.situacao?.toLowerCase() || '';
+        if (situacao.includes('ativa')) {
+          cnpjStatus = 'ativo';
+          cnpjStatusMessage = '✅ CNPJ ativo na Receita Federal';
+        } else if (situacao.includes('inapta') || situacao.includes('suspensa')) {
+          cnpjStatus = 'inativo';
+          cnpjStatusMessage = '⚠️ CNPJ inativo/suspenso na Receita Federal';
+        } else if (situacao.includes('baixada')) {
+          cnpjStatus = 'inativo';
+          cnpjStatusMessage = '❌ CNPJ baixado na Receita Federal';
+        }
+      } else {
+        console.log('[Search] ReceitaWS: ❌ - CNPJ não encontrado');
+        cnpjStatus = 'inexistente';
+        cnpjStatusMessage = '❌ CNPJ não encontrado na Receita Federal';
+      }
     }
 
     // 2. Buscar dados do Apollo.io
@@ -275,6 +298,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         company: companyPayload,
+        cnpj_status: cnpjStatus,
+        cnpj_status_message: cnpjStatusMessage,
         decision_makers: decisorsPayload,
         digital_maturity: maturityData,
         segment: segmentData, // Incluir análise de segmento via IA

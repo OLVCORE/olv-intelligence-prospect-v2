@@ -115,6 +115,19 @@ serve(async (req) => {
     }
 
     // Success + optional persistence if company_id provided
+    // Determinar status do CNPJ
+    let cnpjStatus = 'inexistente';
+    if (data.situacao) {
+      const situacao = data.situacao.toLowerCase();
+      if (situacao.includes('ativa')) {
+        cnpjStatus = 'ativo';
+      } else if (situacao.includes('inapta') || situacao.includes('suspensa') || situacao.includes('baixada')) {
+        cnpjStatus = 'inativo';
+      }
+    }
+    
+    console.log('[ReceitaWS] Status do CNPJ:', cnpjStatus);
+    
     try {
       if (company_id) {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -138,7 +151,10 @@ serve(async (req) => {
           ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
         };
 
-        const updatePayload: any = { raw_data: mergedRaw };
+        const updatePayload: any = { 
+          raw_data: mergedRaw,
+          cnpj_status: cnpjStatus
+        };
         if (data?.atividade_principal?.[0]?.text) {
           updatePayload.industry = data.atividade_principal[0].text;
         }
@@ -168,14 +184,39 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ data, persisted: !!company_id }),
+      JSON.stringify({ 
+        data, 
+        cnpj_status: cnpjStatus,
+        persisted: !!company_id 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('ENRICH_RECEITAWS', 'Error:', error);
+    
+    // Marcar como inexistente se fornecido company_id
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        if (body.company_id) {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+          const sb = createClient(supabaseUrl, supabaseKey);
+          
+          await sb
+            .from('companies')
+            .update({ cnpj_status: 'inexistente' })
+            .eq('id', body.company_id);
+        }
+      } catch (e) {
+        console.error('Failed to mark as inexistente:', e);
+      }
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Erro desconhecido',
+        cnpj_status: 'inexistente',
         data: null
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
