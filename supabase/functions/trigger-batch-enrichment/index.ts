@@ -35,7 +35,7 @@ serve(async (req) => {
         digital_maturity (id)
       `)
       .not('cnpj', 'is', null)
-      .limit(50); // Processa 50 por vez para não sobrecarregar
+      .limit(10); // Processa 10 por vez para evitar timeouts
 
     if (fetchError) {
       throw fetchError;
@@ -89,9 +89,7 @@ serve(async (req) => {
         results.processed++;
         console.log(`✅ ${company.name} enriched successfully`);
 
-        // Aguarda 2 segundos entre cada empresa para não sobrecarregar APIs
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
+        // Sem atraso para evitar timeout de execução
       } catch (error) {
         results.failed++;
         const errorMsg = `Failed to enrich ${company.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
