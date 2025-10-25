@@ -17,9 +17,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('🔄 Starting batch enrichment for all companies without analysis...');
+    const { force_refresh } = await req.json().catch(() => ({ force_refresh: false }));
+    console.log('🔄 Starting batch enrichment for all companies...', force_refresh ? '(FORCE REFRESH MODE)' : '');
 
-    // Busca empresas que não têm análise completa
+    // Busca empresas com CNPJ
     const { data: companies, error: fetchError } = await supabaseClient
       .from('companies')
       .select(`
@@ -31,7 +32,7 @@ serve(async (req) => {
         digital_maturity_score,
         digital_maturity (id)
       `)
-      .is('digital_maturity_score', null)
+      .not('cnpj', 'is', null)
       .limit(50); // Processa 50 por vez para não sobrecarregar
 
     if (fetchError) {
@@ -43,13 +44,34 @@ serve(async (req) => {
     const results = {
       total: companies?.length || 0,
       processed: 0,
+      skipped: 0,
       failed: 0,
       errors: [] as string[],
+      details: [] as any[]
     };
 
     // Processa cada empresa
     for (const company of companies || []) {
       try {
+        // Verificar se já tem análise completa
+        const hasAnalysis = company.digital_maturity_score !== null;
+        
+        if (hasAnalysis && !force_refresh) {
+          console.log(`⏭️ Skipping ${company.name} (already has 360° analysis)`);
+          results.skipped++;
+          results.details.push({
+            company_id: company.id,
+            company_name: company.name,
+            status: 'skipped',
+            reason: 'Already has 360° analysis'
+          });
+          continue;
+        }
+
+        if (hasAnalysis && force_refresh) {
+          console.log(`🔄 Force refreshing ${company.name} (already had analysis)`);
+        }
+
         console.log(`🚀 Enriching: ${company.name}`);
         
         const { data, error: enrichError } = await supabaseClient.functions.invoke('enrich-company-360', {
@@ -76,7 +98,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`🎉 Batch enrichment completed: ${results.processed} success, ${results.failed} failed`);
+    console.log(`🎉 Batch enrichment completed: ${results.processed} success, ${results.skipped} skipped, ${results.failed} failed`);
 
     return new Response(
       JSON.stringify(results),

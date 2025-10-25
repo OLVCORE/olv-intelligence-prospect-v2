@@ -224,17 +224,24 @@ export default function CompaniesManagementPage() {
   const handleBatchEnrich360 = async () => {
     try {
       setIsBatchEnriching360(true);
-      toast.info('Iniciando enriquecimento 360° em todas as empresas...');
+      toast.info('Iniciando enriquecimento 360° completo...', {
+        description: 'Apenas empresas sem análise completa serão processadas'
+      });
 
       const { data, error } = await supabase.functions.invoke('trigger-batch-enrichment', {
-        body: {}
+        body: { force_refresh: false }
       });
 
       if (error) throw error;
 
-      toast.success(
-        `Enriquecimento 360° iniciado! ${data?.processed || 0} empresas sendo processadas.`
-      );
+      const summary = data;
+      if (summary) {
+        toast.success(
+          `Enriquecimento 360° concluído! ${summary.processed} empresas processadas, ${summary.skipped} já tinham análise, ${summary.failed} erros.`
+        );
+      } else {
+        toast.success('Enriquecimento 360° concluído!');
+      }
 
       refetch();
     } catch (error) {
