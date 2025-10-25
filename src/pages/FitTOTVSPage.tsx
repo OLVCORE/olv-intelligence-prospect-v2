@@ -254,30 +254,75 @@ export default function FitTOTVSPage() {
                           <CheckCircle2 className="h-4 w-4 text-green-600" />
                           <span className="text-sm font-semibold">Produtos Recomendados</span>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {aiAnalysis.recommendations?.map((rec: any, idx: number) => (
-                            <div key={idx} className="border rounded-lg p-3 space-y-2">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <Badge variant="outline" className="mb-2">{rec.category}</Badge>
-                                  <p className="font-semibold">{rec.product}</p>
+                            <Card key={idx} className="border-l-4 border-l-primary">
+                              <CardContent className="pt-4 space-y-3">
+                                {/* Header */}
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">{rec.category}</Badge>
+                                      <Badge variant={rec.priority === 'ALTA' ? 'destructive' : rec.priority === 'MÉDIA' ? 'default' : 'secondary'}>
+                                        {rec.priority}
+                                      </Badge>
+                                    </div>
+                                    <h3 className="font-bold text-lg">{rec.product}</h3>
+                                    {rec.sku && <p className="text-xs text-muted-foreground">{rec.sku}</p>}
+                                  </div>
                                 </div>
-                                <Badge variant={rec.priority === 'ALTA' ? 'destructive' : 'secondary'}>
-                                  {rec.priority}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">{rec.reason}</p>
-                              <div className="grid grid-cols-2 gap-2 pt-2">
-                                <div className="text-xs">
-                                  <span className="font-medium">Impacto:</span>
-                                  <p className="text-muted-foreground mt-1">{rec.impact}</p>
+
+                                {/* Pain Point (Dor) */}
+                                {rec.painPoint && (
+                                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                                    <div className="flex items-start gap-2">
+                                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                      <div>
+                                        <p className="text-xs font-semibold text-destructive mb-1">🚨 DOR IDENTIFICADA</p>
+                                        <p className="text-sm">{rec.painPoint}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Solution (Remédio) */}
+                                {rec.solution && (
+                                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                                    <div className="flex items-start gap-2">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                      <div>
+                                        <p className="text-xs font-semibold text-green-900 dark:text-green-100 mb-1">💊 SOLUÇÃO</p>
+                                        <p className="text-sm text-green-900 dark:text-green-100">{rec.solution}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Reason */}
+                                <div className="text-sm text-muted-foreground">
+                                  <span className="font-medium text-foreground">Por que este produto: </span>
+                                  {rec.reason}
                                 </div>
-                                <div className="text-xs">
-                                  <span className="font-medium">Implementação:</span>
-                                  <p className="text-muted-foreground mt-1">{rec.implementation}</p>
+
+                                {/* Impact & Implementation */}
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                  <div className="border rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <TrendingUp className="h-4 w-4 text-primary" />
+                                      <span className="text-xs font-semibold">Impacto Esperado</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{rec.impact}</p>
+                                  </div>
+                                  <div className="border rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Clock className="h-4 w-4 text-blue-600" />
+                                      <span className="text-xs font-semibold">Implementação</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{rec.implementation}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              </CardContent>
+                            </Card>
                           ))}
                         </div>
                       </div>

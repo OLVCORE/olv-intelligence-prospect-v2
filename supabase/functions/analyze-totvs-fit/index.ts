@@ -72,9 +72,16 @@ serve(async (req) => {
     // Preparar lista de produtos para a IA
     const productsDescription = Object.entries(productsByCategory)
       .map(([category, items]) => {
-        const productsList = (items as any[]).map(p => 
-          `- ${p.name} (${p.sku}): ${p.description} | Preço: R$ ${p.base_price.toLocaleString('pt-BR')} | Setores: ${JSON.parse(p.target_sectors || '[]').join(', ')}`
-        ).join('\n');
+        const productsList = (items as any[]).map(p => {
+          let sectors = 'Não especificado';
+          try {
+            const parsed = JSON.parse(p.target_sectors || '[]');
+            sectors = Array.isArray(parsed) && parsed.length > 0 ? parsed.join(', ') : 'Todos';
+          } catch {
+            sectors = p.target_sectors || 'Todos';
+          }
+          return `- ${p.name} (${p.sku}): ${p.description} | Preço: R$ ${p.base_price.toLocaleString('pt-BR')} | Setores: ${sectors}`;
+        }).join('\n');
         return `**${category}:**\n${productsList}`;
       }).join('\n\n');
 
@@ -103,15 +110,19 @@ Sua tarefa é analisar as tecnologias atuais, maturidade digital e necessidades 
 - Inovação: ${maturity?.innovation_score || 0}/10
 
 **INSTRUÇÕES:**
-1. Analise as tecnologias atuais e identifique gaps
-2. Considere o nível de maturidade digital
-3. Recomende 3-5 produtos TOTVS específicos
-4. Para cada produto, explique:
-   - Por que é indicado
-   - Que problema resolve
-   - Impacto esperado
+1. Analise as tecnologias atuais e identifique gaps e dores específicas
+2. Considere o nível de maturidade digital da empresa
+3. Recomende 3-5 produtos TOTVS específicos do catálogo
+4. Para CADA produto recomendado, forneça:
+   - **painPoint**: Qual é a DOR específica do cliente (problema atual, ineficiência, risco)
+   - **solution**: Como este produto RESOLVE essa dor (benefício direto)
+   - **reason**: Por que este produto é o mais indicado para este perfil
+   - **impact**: Resultado mensurável esperado (ex: "Redução de 40% em retrabalho")
+   - **implementation**: Prazo e complexidade de implementação
 5. Sugira uma estratégia de implementação (curto/médio/longo prazo)
 6. Calcule um score de FIT (0-100) baseado na aderência total
+
+**IMPORTANTE:** Seja específico nas dores e soluções. Evite genéricos.
 
 Retorne APENAS um JSON válido com esta estrutura:
 {
@@ -119,14 +130,17 @@ Retorne APENAS um JSON válido com esta estrutura:
   "recommendations": [
     {
       "product": "TOTVS Protheus",
+      "sku": "TOT-PROT-001",
       "category": "BÁSICO",
       "priority": "ALTA",
-      "reason": "Empresa precisa estruturar processos básicos de ERP",
-      "impact": "Redução de 40% em retrabalho operacional",
+      "painPoint": "Falta de controle financeiro integrado causa retrabalho manual e erros de conciliação",
+      "solution": "ERP unificado que integra financeiro, estoque e vendas em tempo real",
+      "reason": "Empresa sem ERP precisa estruturar processos básicos antes de evoluir",
+      "impact": "Redução de 40% em retrabalho operacional e 30% menos erros",
       "implementation": "Curto prazo (3-6 meses)"
     }
   ],
-  "gaps": ["Falta de ERP integrado", "Processos manuais"],
+  "gaps": ["Falta de ERP integrado", "Processos manuais", "Sem visibilidade financeira"],
   "strategy": {
     "shortTerm": ["Implementar Protheus Core"],
     "mediumTerm": ["Adicionar módulos de BI"],
@@ -157,8 +171,12 @@ Retorne APENAS um JSON válido com esta estrutura:
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('[TOTVS Fit] Erro AI:', errorText);
-      throw new Error(`Erro ao chamar IA: ${aiResponse.status}`);
+      console.error('[TOTVS Fit] Erro AI completo:', {
+        status: aiResponse.status,
+        statusText: aiResponse.statusText,
+        body: errorText
+      });
+      throw new Error(`Erro ao chamar IA: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
