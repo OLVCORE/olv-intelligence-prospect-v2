@@ -195,7 +195,7 @@ export default function CompanyDetailPage() {
         await supabase.functions.invoke('enrich-financial', { body: { company_id: id, cnpj: company.cnpj } });
         await supabase.functions.invoke('enrich-legal', { body: { company_id: id, cnpj: company.cnpj } });
       }
-      await supabase.functions.invoke('enrich-company-360', { body: { companyId: id } });
+      await supabase.functions.invoke('enrich-company-360', { body: { company_id: id } });
       await supabase.functions.invoke('calculate-maturity-score', { body: { companyId: id } });
       await supabase.functions.invoke('generate-company-report', { body: { companyId: id } });
       await Promise.all([

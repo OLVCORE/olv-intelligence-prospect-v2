@@ -501,10 +501,10 @@ async function estimateTicket(company: any, maturity: any, supabase: any) {
     const employees = company.employees || 0;
     const porte = getPorte(employees);
 
-    const sizeRule = rules?.find((r: any) => 
-      r.rule_type === 'company_size' && 
-      JSON.parse(r.conditions || '{}').size === porte
-    );
+    const sizeRule = rules?.find((r: any) => {
+      const cond = typeof r.conditions === 'string' ? JSON.parse(r.conditions) : (r.conditions || {});
+      return r.rule_type === 'company_size' && cond.size === porte;
+    });
     if (sizeRule) discount += sizeRule.discount_percentage || 0;
 
     // Calcular ticket baseado nos produtos selecionados
