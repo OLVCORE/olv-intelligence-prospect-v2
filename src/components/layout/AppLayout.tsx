@@ -5,6 +5,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { InsightsDock } from "@/components/insights/InsightsDock";
+import { AICopilotPanel } from "@/components/copilot/AICopilotPanel";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 
@@ -53,6 +54,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <InsightsDock open={insightsOpen} onOpenChange={setInsightsOpen} />
+        <AICopilotPanel />
       </div>
     </SidebarProvider>
   );
