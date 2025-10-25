@@ -298,6 +298,10 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
               )}
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleRefreshReport} title="Atualizar" disabled={isRefetching}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportPDF} title="Exportar para PDF">
                 <FileText className="h-4 w-4 mr-2" />
                 PDF

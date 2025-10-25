@@ -243,10 +243,13 @@ function buildLocation(company: any) {
 }
 
 function buildActivity(company: any) {
+  const receita = (company.raw_data && typeof company.raw_data === 'object') ? (company.raw_data as any).receita : undefined;
+  const cnaeText = receita?.atividade_principal?.[0]?.text as string | undefined;
+  const atividade = cnaeText || company.industry || 'N/A';
   return {
-    setor: company.industry || 'N/A',
-    segmento: company.industry || 'N/A',
-    atividade_principal: company.industry || 'N/A'
+    setor: company.industry || cnaeText || 'N/A',
+    segmento: company.industry || cnaeText || 'N/A',
+    atividade_principal: atividade
   };
 }
 

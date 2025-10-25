@@ -196,9 +196,13 @@ export default function CompanyDetailPage() {
           ...(existingRaw.refinamentos && { refinamentos: existingRaw.refinamentos })
         };
         
+        const industryFromReceita = receita?.atividade_principal?.[0]?.text as string | undefined;
         const { error: updError } = await supabase
           .from('companies')
-          .update({ raw_data: mergedRaw })
+          .update({ 
+            raw_data: mergedRaw,
+            ...(industryFromReceita ? { industry: industryFromReceita } : {})
+          })
           .eq('id', id);
         if (updError) throw updError;
       }
