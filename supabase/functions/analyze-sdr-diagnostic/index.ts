@@ -20,10 +20,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY não configurada');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY não configurada');
     }
 
     console.log('[Analyze Diagnostic] Analisando diagnóstico:', { companyId, fileName });
@@ -71,15 +71,15 @@ ${diagnosticText}
 
 Retorne uma análise estruturada em JSON.`;
 
-    // Chamar Lovable AI com estruturação via tool calling
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Chamar OpenAI com estruturação via tool calling
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
