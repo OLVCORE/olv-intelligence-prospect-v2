@@ -1,7 +1,13 @@
 project_id = "ioaxzpwlurpduanzkfrt"
  
- [functions.ai-forecast-pipeline]
- verify_jwt = false
+[functions.ai-forecast-pipeline]
+verify_jwt = false
+
+[functions.sdr-api-public]
+verify_jwt = false
+
+[functions.sdr-webhook-dispatcher]
+verify_jwt = false
 
  [functions.api-health]
  verify_jwt = false
