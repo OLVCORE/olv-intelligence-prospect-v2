@@ -317,7 +317,7 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
       </Card>
 
       {/* Métricas Principais */}
-      <TooltipProvider>
+      <TooltipProvider delayDuration={200}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-3">
@@ -325,9 +325,11 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 Score Global
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 cursor-help" />
+                    <button type="button" className="inline-flex">
+                      <HelpCircle className="h-3 w-3 cursor-help" />
+                    </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
+                  <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
                     <ul className="text-xs space-y-1 mb-2">
                       <li>• <strong>Maturidade Digital:</strong> {report.metrics.componentes.maturidade_digital}/100 (peso 40%)</li>
@@ -364,9 +366,11 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 Maturidade Digital
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 cursor-help" />
+                    <button type="button" className="inline-flex">
+                      <HelpCircle className="h-3 w-3 cursor-help" />
+                    </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
+                  <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Base de Cálculo:</p>
                     <ul className="text-xs space-y-1 mb-2">
                       <li>• <strong>Presença Digital:</strong> website, redes sociais</li>
@@ -406,9 +410,11 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 Ticket Estimado
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 cursor-help" />
+                    <button type="button" className="inline-flex" onClick={(e) => e.stopPropagation()}>
+                      <HelpCircle className="h-3 w-3 cursor-help" />
+                    </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
+                  <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Critérios de Cálculo:</p>
                     <ul className="text-xs space-y-1 mb-2">
                       <li>• <strong>Porte:</strong> {report.financials.porte} ({report.structure.total_funcionarios} funcionários)</li>
@@ -455,9 +461,11 @@ export function CompanyReport({ companyId }: CompanyReportProps) {
                 ROI Esperado
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 cursor-help" />
+                    <button type="button" className="inline-flex">
+                      <HelpCircle className="h-3 w-3 cursor-help" />
+                    </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
+                  <TooltipContent className="max-w-xs z-50 bg-popover">
                     <p className="font-semibold mb-2">Fórmula de Cálculo:</p>
                     <ul className="text-xs space-y-1 mb-2">
                       <li>• <strong>Base:</strong> 150% ROI</li>

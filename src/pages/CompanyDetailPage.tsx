@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
-  CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw
+  CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw, Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -280,9 +280,10 @@ export default function CompanyDetailPage() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="relatorio">Relatório Completo</TabsTrigger>
+          <TabsTrigger value="fit">Fit TOTVS</TabsTrigger>
           <TabsTrigger value="receita">Receita Federal</TabsTrigger>
           <TabsTrigger value="scores">Scores</TabsTrigger>
           <TabsTrigger value="digital">Presença Digital</TabsTrigger>
@@ -480,6 +481,79 @@ export default function CompanyDetailPage() {
         {/* Relatório Completo Tab - NOVO */}
         <TabsContent value="relatorio" className="space-y-6">
           <CompanyReport companyId={id!} />
+        </TabsContent>
+
+        {/* Fit TOTVS Tab - NOVO */}
+        <TabsContent value="fit" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Análise de Fit TOTVS
+              </CardTitle>
+              <CardDescription>
+                Recomendações de produtos baseadas em análise inteligente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button
+                  onClick={handleAnalyzeFit}
+                  disabled={isAnalyzingFit}
+                  className="w-full"
+                >
+                  {isAnalyzingFit ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analisando Fit TOTVS...
+                    </>
+                  ) : (
+                    'Gerar Análise de Fit TOTVS'
+                  )}
+                </Button>
+
+                {execReport?.metrics?.potencial_negocio?.ticket_estimado?.produtos_base && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-4">Produtos Recomendados</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {execReport.metrics.potencial_negocio.ticket_estimado.produtos_base.map((produto: any) => (
+                        <Card key={produto.sku} className="border-primary/20">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-base">{produto.nome}</CardTitle>
+                                <Badge variant="outline" className="mt-1">{produto.sku}</Badge>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-green-600">
+                                  R$ {(produto.preco_base / 1000).toFixed(0)}k
+                                </p>
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
+                    
+                    {execReport.metrics.potencial_negocio.ticket_estimado.desconto_aplicado > 0 && (
+                      <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-sm font-semibold text-green-700">
+                          ✓ Desconto Aplicado: {execReport.metrics.potencial_negocio.ticket_estimado.desconto_aplicado}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!execReport?.metrics?.potencial_negocio?.ticket_estimado?.produtos_base && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Clique em "Gerar Análise de Fit TOTVS" para ver os produtos recomendados</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Receita Federal Tab */}
