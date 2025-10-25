@@ -113,14 +113,14 @@ export function useCompanyReport(companyId: string | undefined) {
       if (existingReport?.content) {
         const content = typeof existingReport.content === 'object' ? existingReport.content : {};
         return {
-          ...(content as CompanyReport),
+          ...(content as any),
           _metadata: {
             dataQualityScore: existingReport.data_quality_score,
             sourcesUsed: existingReport.sources_used,
             runId: existingReport.run_id,
             lastUpdated: existingReport.updated_at
           }
-        } as CompanyReport;
+        };
       }
 
       // Se não existir, gerar novo
