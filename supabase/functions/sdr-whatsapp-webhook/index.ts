@@ -23,14 +23,26 @@ serve(async (req) => {
     const provider = Deno.env.get('WHATSAPP_PROVIDER') || 'twilio';
     console.log(`[WhatsApp Webhook] Provider: ${provider}`);
 
-    const rawBody = await req.text();
-    const payload = JSON.parse(rawBody);
+    const contentType = req.headers.get('content-type') || '';
+    let payload: any;
+    let rawBody = '';
+
+    // Twilio sends form-urlencoded, Meta/Zenvia send JSON
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await req.formData();
+      payload = Object.fromEntries(formData.entries());
+      console.log(`[WhatsApp Webhook] Form data received:`, payload);
+    } else {
+      rawBody = await req.text();
+      payload = JSON.parse(rawBody);
+      console.log(`[WhatsApp Webhook] JSON received:`, payload);
+    }
 
     // Verify webhook signature
     const signature = req.headers.get('x-twilio-signature') || 
                      req.headers.get('x-hub-signature-256');
     
-    if (signature && !verifySignature(rawBody, signature, provider)) {
+    if (signature && rawBody && !verifySignature(rawBody, signature, provider)) {
       console.error('[WhatsApp Webhook] Invalid signature');
       return new Response(
         JSON.stringify({ error: 'Invalid signature' }),
