@@ -158,13 +158,14 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
   try {
     if (provider === 'twilio') {
       // Accept both classic Auth Token and API Key/Secret
-      // Support both camelCase (credentials) and snake_case (config)
-      const rawAccountSid = credentials?.accountSid || config?.account_sid as string | undefined;
-      const rawAuthToken = credentials?.authToken || config?.auth_token as string | undefined;
-      const rawApiKeySid = credentials?.apiKeySid || config?.api_key_sid as string | undefined;
-      const rawApiKeySecret = credentials?.apiKeySecret || config?.api_key_secret as string | undefined;
-      const phoneNumber = credentials?.phoneNumber || config?.phone_number as string | undefined;
-      const region = (credentials?.region || config?.region as string | undefined)?.trim();
+      // Support both camelCase (credentials) and snake_case (config). Fallback to backend secrets when missing.
+      const rawAccountSid = (credentials?.accountSid || config?.account_sid || Deno.env.get('TWILIO_ACCOUNT_SID')) as string | undefined;
+      const rawAuthToken = (credentials?.authToken || config?.auth_token || Deno.env.get('TWILIO_AUTH_TOKEN')) as string | undefined;
+      const rawApiKeySid = (credentials?.apiKeySid || config?.api_key_sid || Deno.env.get('TWILIO_API_KEY_SID')) as string | undefined;
+      const rawApiKeySecret = (credentials?.apiKeySecret || config?.api_key_secret || Deno.env.get('TWILIO_API_KEY_SECRET')) as string | undefined;
+      const phoneNumber = (credentials?.phoneNumber || config?.phone_number || Deno.env.get('TWILIO_PHONE_NUMBER')) as string | undefined;
+      const regionRaw = (credentials?.region || config?.region || Deno.env.get('TWILIO_REGION')) as string | undefined;
+      const region = typeof regionRaw === 'string' ? regionRaw.trim() : undefined;
 
       const accountSid = typeof rawAccountSid === 'string' ? rawAccountSid.trim() : undefined;
       const authToken = typeof rawAuthToken === 'string' ? rawAuthToken.trim() : undefined;

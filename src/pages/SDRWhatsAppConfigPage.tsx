@@ -15,7 +15,7 @@ import {
   AlertCircle, ExternalLink, Copy, RefreshCw 
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { Switch } from '@/components/ui/switch';
 type WhatsAppProvider = 'twilio' | 'meta360' | 'zenvia';
 
 interface WhatsAppConfig {
@@ -27,18 +27,22 @@ interface WhatsAppConfig {
   phone_number_id?: string;
   access_token?: string;
   api_key?: string;
+  api_key_sid?: string;
+  api_key_secret?: string;
+  region?: string;
   status?: 'active' | 'inactive';
 }
 
 export default function SDRWhatsAppConfigPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [config, setConfig] = useState<WhatsAppConfig>({
-    provider: 'twilio'
-  });
+const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);
+const [testing, setTesting] = useState(false);
+const [useBackendSecrets, setUseBackendSecrets] = useState(false);
+const [config, setConfig] = useState<WhatsAppConfig>({
+  provider: 'twilio'
+});
 
   useEffect(() => {
     loadConfig();
@@ -88,17 +92,20 @@ export default function SDRWhatsAppConfigPage() {
 
       const credentials: any = {};
 
-      // Organize credentials by provider (camelCase for edge function)
-      if (config.provider === 'twilio') {
-        credentials.accountSid = config.account_sid;
-        credentials.authToken = config.auth_token;
-        credentials.phoneNumber = config.phone_number;
-      } else if (config.provider === 'meta360') {
-        credentials.phoneNumberId = config.phone_number_id;
-        credentials.accessToken = config.access_token;
-      } else if (config.provider === 'zenvia') {
-        credentials.apiKey = config.api_key;
-      }
+// Organize credentials by provider (camelCase for edge function)
+if (config.provider === 'twilio') {
+  credentials.accountSid = config.account_sid;
+  credentials.authToken = config.auth_token;
+  credentials.phoneNumber = config.phone_number;
+  if (config.api_key_sid) credentials.apiKeySid = config.api_key_sid;
+  if (config.api_key_secret) credentials.apiKeySecret = config.api_key_secret;
+  if (config.region) credentials.region = config.region;
+} else if (config.provider === 'meta360') {
+  credentials.phoneNumberId = config.phone_number_id;
+  credentials.accessToken = config.access_token;
+} else if (config.provider === 'zenvia') {
+  credentials.apiKey = config.api_key;
+}
 
       // Save to sdr_integrations
       const sdrConfigData: any = {
@@ -195,14 +202,14 @@ export default function SDRWhatsAppConfigPage() {
         credentials.apiKey = config.api_key;
       }
 
-      const { data, error } = await supabase.functions.invoke('integration-health-check', {
-        body: {
-          channel: 'whatsapp',
-          provider: config.provider,
-          config: {},
-          credentials
-        }
-      });
+const { data, error } = await supabase.functions.invoke('integration-health-check', {
+  body: {
+    channel: 'whatsapp',
+    provider: config.provider,
+    config: {},
+    credentials: useBackendSecrets ? {} : credentials
+  }
+});
 
       if (error) throw error;
 
@@ -353,11 +360,48 @@ export default function SDRWhatsAppConfigPage() {
                         Formato: +[código país][número]
                       </p>
                     </div>
+                    <div>
+                      <Label htmlFor="api_key_sid">API Key SID (opcional)</Label>
+                      <Input
+                        id="api_key_sid"
+                        type="text"
+                        placeholder="SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={config.api_key_sid || ''}
+                        onChange={(e) => setConfig({ ...config, api_key_sid: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="api_key_secret">API Key Secret (opcional)</Label>
+                      <Input
+                        id="api_key_secret"
+                        type="password"
+                        placeholder="••••••••••••••••••••••••••••••••"
+                        value={config.api_key_secret || ''}
+                        onChange={(e) => setConfig({ ...config, api_key_secret: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="region">Região/Edge (opcional)</Label>
+                      <Input
+                        id="region"
+                        type="text"
+                        placeholder="us1, br1, ie1, sg1..."
+                        value={config.region || ''}
+                        onChange={(e) => setConfig({ ...config, region: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <p className="text-sm font-medium">Usar secrets do backend</p>
+                        <p className="text-xs text-muted-foreground">Testar usando TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN salvos no backend</p>
+                      </div>
+                      <Switch checked={useBackendSecrets} onCheckedChange={setUseBackendSecrets} />
+                    </div>
 
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-xs">
-                        <strong>Onde encontrar:</strong> Console Twilio → WhatsApp Sandbox ou WhatsApp Business
+                        <strong>Onde encontrar:</strong> Console Twilio → WhatsApp Business / Senders
                         <a 
                           href="https://console.twilio.com/us1/develop/sms/whatsapp/senders" 
                           target="_blank" 
