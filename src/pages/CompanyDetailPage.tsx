@@ -72,6 +72,23 @@ export default function CompanyDetailPage() {
 
   const { data: execReport, isLoading: isReportLoading, refetch: refetchReport } = useCompanyReport(id);
 
+  // Última análise de Fit TOTVS salva (para exibir racional da IA)
+  const { data: fitSignal } = useQuery({
+    queryKey: ['fit-analysis', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('governance_signals')
+        .select('raw_data')
+        .eq('company_id', id!)
+        .eq('signal_type', 'totvs_fit_analysis')
+        .order('detected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return (data as any)?.raw_data || null;
+    },
+  });
+
   // Sincroniza a aba via query param (?tab=fit) - DEVE estar antes dos returns condicionais
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -556,7 +573,86 @@ export default function CompanyDetailPage() {
                   </div>
                 )}
 
-                {!execReport?.metrics?.potencial_negocio?.ticket_estimado?.produtos_base && (
+                {fitSignal && (
+                  <div className="mt-6 space-y-4">
+                    <h3 className="text-lg font-semibold">Racional da IA</h3>
+
+                    {fitSignal.summary && (
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground">{fitSignal.summary}</p>
+                      </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {fitSignal.recommendations?.map((rec: any, idx: number) => (
+                        <Card key={idx} className="border-l-4 border-l-primary">
+                          <CardContent className="pt-4 space-y-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                {rec.category && <Badge variant="outline">{rec.category}</Badge>}
+                                {rec.priority && (
+                                  <Badge variant={rec.priority === 'ALTA' ? 'destructive' : rec.priority === 'MÉDIA' ? 'default' : 'secondary'}>
+                                    {rec.priority}
+                                  </Badge>
+                                )}
+                              </div>
+                              <h3 className="font-bold text-lg">{rec.product}</h3>
+                              {rec.sku && <p className="text-xs text-muted-foreground">{rec.sku}</p>}
+                            </div>
+
+                            {rec.painPoint && (
+                              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-xs font-semibold text-destructive mb-1">DOR IDENTIFICADA</p>
+                                    <p className="text-sm">{rec.painPoint}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {rec.solution && (
+                              <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-xs font-semibold text-green-900 dark:text-green-100 mb-1">SOLUÇÃO</p>
+                                    <p className="text-sm text-green-900 dark:text-green-100">{rec.solution}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">Por que este produto: </span>
+                              {rec.reason}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                              <div className="border rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <TrendingUp className="h-4 w-4 text-primary" />
+                                  <span className="text-xs font-semibold">Impacto Esperado</span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{rec.impact}</p>
+                              </div>
+                              <div className="border rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Calendar className="h-4 w-4 text-blue-600" />
+                                  <span className="text-xs font-semibold">Implementação</span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{rec.implementation}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!execReport?.metrics?.potencial_negocio?.ticket_estimado?.produtos_base && !fitSignal && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Clique em "Gerar Análise de Fit TOTVS" para ver os produtos recomendados</p>
