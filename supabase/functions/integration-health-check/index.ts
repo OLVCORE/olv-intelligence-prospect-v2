@@ -191,6 +191,13 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
 
       const host = region ? `https://api.${region}.twilio.com` : 'https://api.twilio.com';
       console.log(`Testing Twilio Account: ${accountSid.substring(0, 10)}..., region=${region || 'default'}, method=${authMethod}`);
+      console.log('Credentials validation:', {
+        accountSidLength: accountSid?.length,
+        accountSidPrefix: accountSid?.substring(0, 2),
+        authTokenLength: authToken?.length,
+        authTokenPrefix: authToken?.substring(0, 4) + '...',
+        authHeaderLength: authHeader.length
+      });
 
       const response = await fetch(
         `${host}/2010-04-01/Accounts/${accountSid}.json`,
@@ -199,7 +206,14 @@ async function checkWhatsAppHealth(provider: string, config: any, credentials: a
 
       if (!response.ok) {
         const text = await response.text();
-        console.log('Twilio API Response:', response.status, text);
+        console.log('❌ Twilio API Response:', response.status, text);
+        console.log('🔍 DIAGNÓSTICO:');
+        console.log('   Account SID informado:', accountSid);
+        console.log('   Auth Token (primeiros 8 chars):', authToken?.substring(0, 8) + '...');
+        console.log('   📋 AÇÃO NECESSÁRIA: Acesse https://console.twilio.com/');
+        console.log('   ✓ Copie o Account SID exatamente como aparece');
+        console.log('   ✓ Use o Auth Token "Live", não "Test"');
+        console.log('   ✓ Se alterou recentemente, gere um novo Auth Token');
         try {
           const j = JSON.parse(text);
           if (response.status === 401) {
