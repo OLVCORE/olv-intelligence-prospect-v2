@@ -35,7 +35,170 @@ serve(async (req) => {
     console.log('[AI Copilot] Gerando sugestões para contexto:', context);
 
     const suggestions = [];
+    const currentPage = context.currentPage || '/';
 
+    // ========================================
+    // SUGESTÕES CONTEXTUAIS POR PÁGINA/FASE
+    // ========================================
+
+    // FASE 1: PROSPECÇÃO & QUALIFICAÇÃO
+    if (currentPage === '/dashboard' || currentPage === '/') {
+      // Verificar se tem empresas cadastradas
+      const { count: companiesCount } = await supabase
+        .from('companies')
+        .select('*', { count: 'exact', head: true });
+
+      if (!companiesCount || companiesCount === 0) {
+        suggestions.push({
+          id: 'start-prospecting',
+          type: 'action',
+          priority: 'high',
+          title: '🎯 Começar Prospecção',
+          description: 'Você ainda não tem empresas cadastradas. Vamos começar identificando potenciais clientes!',
+          action: {
+            label: 'Ir para Busca Global',
+            type: 'navigate',
+            payload: { url: '/search' }
+          },
+          metadata: {
+            reason: 'no_companies',
+            confidence: 1.0
+          },
+          createdAt: new Date()
+        });
+      }
+
+      // Empresas qualificadas sem deal
+      const { data: qualifiedWithoutDeal } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          sdr_deals!left(id)
+        `)
+        .gte('digital_maturity_score', 70)
+        .is('sdr_deals.id', null)
+        .limit(3);
+
+      if (qualifiedWithoutDeal && qualifiedWithoutDeal.length > 0) {
+        suggestions.push({
+          id: 'qualified-no-deal',
+          type: 'opportunity',
+          priority: 'high',
+          title: `📊 ${qualifiedWithoutDeal.length} empresas qualificadas sem deal`,
+          description: `Empresas com alto score aguardando criação de deal. Não perca essas oportunidades!`,
+          action: {
+            label: 'Ver Lista',
+            type: 'navigate',
+            payload: { url: '/companies' }
+          },
+          metadata: {
+            reason: 'qualified_no_deal',
+            confidence: 0.92
+          },
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Página de Empresas
+    if (currentPage === '/companies') {
+      // Empresas sem enriquecimento
+      const { data: unenrichedCompanies } = await supabase
+        .from('companies')
+        .select('*')
+        .is('digital_maturity_score', null)
+        .limit(5);
+
+      if (unenrichedCompanies && unenrichedCompanies.length > 0) {
+        suggestions.push({
+          id: 'enrich-companies',
+          type: 'action',
+          priority: 'medium',
+          title: `🔄 ${unenrichedCompanies.length} empresas sem enriquecimento`,
+          description: 'Enriqueça dados para obter insights de fit, maturidade e tech stack.',
+          action: {
+            label: 'Enriquecer Agora',
+            type: 'navigate',
+            payload: { url: '/companies' }
+          },
+          metadata: {
+            reason: 'unenriched_companies',
+            confidence: 0.88
+          },
+          createdAt: new Date()
+        });
+      }
+
+      // Dados desatualizados (>30 dias)
+      const { data: outdatedCompanies } = await supabase
+        .from('companies')
+        .select('*')
+        .lt('updated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .not('digital_maturity_score', 'is', null)
+        .limit(5);
+
+      if (outdatedCompanies && outdatedCompanies.length > 0) {
+        suggestions.push({
+          id: 'outdated-data',
+          type: 'warning',
+          priority: 'medium',
+          title: `⚠️ ${outdatedCompanies.length} empresas com dados desatualizados`,
+          description: 'Dados com mais de 30 dias. Atualize para manter análises precisas.',
+          action: {
+            label: 'Atualizar Dados',
+            type: 'navigate',
+            payload: { url: '/companies' }
+          },
+          metadata: {
+            reason: 'outdated_data',
+            confidence: 0.75
+          },
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // FASE 2: ESTRATÉGIA & VENDAS
+    if (currentPage.includes('/account-strategy')) {
+      // Deals sem estratégia
+      const { data: dealsWithoutStrategy } = await supabase
+        .from('sdr_deals')
+        .select(`
+          *,
+          companies(*),
+          account_strategies!left(id)
+        `)
+        .eq('status', 'open')
+        .gte('probability', 50)
+        .is('account_strategies.id', null)
+        .limit(3);
+
+      if (dealsWithoutStrategy && dealsWithoutStrategy.length > 0) {
+        for (const deal of dealsWithoutStrategy) {
+          suggestions.push({
+            id: `create-strategy-${deal.id}`,
+            type: 'opportunity',
+            priority: 'high',
+            title: `💼 Criar estratégia para ${deal.title}`,
+            description: `Deal com ${deal.probability}% de probabilidade mas sem planejamento estratégico.`,
+            action: {
+              label: 'Criar Estratégia',
+              type: 'navigate',
+              payload: { url: `/account-strategy?company=${deal.company_id}` }
+            },
+            metadata: {
+              dealId: deal.id,
+              companyId: deal.company_id,
+              reason: 'high_prob_no_strategy',
+              confidence: 0.87
+            },
+            createdAt: new Date()
+          });
+        }
+      }
+    }
+
+    // FASE 3: EXECUÇÃO (SDR)
     // 1. ANALISAR DEALS ESTAGNADOS
     const { data: staleDeals } = await supabase
       .from('sdr_deals')
@@ -234,6 +397,67 @@ serve(async (req) => {
           },
           createdAt: new Date()
         });
+      }
+    }
+
+    // FASE 4: RESULTADOS & ANALYTICS
+    if (currentPage.includes('/goals') || currentPage.includes('/analytics')) {
+      // Análise de metas
+      const { data: openDeals } = await supabase
+        .from('sdr_deals')
+        .select('value, probability')
+        .eq('status', 'open');
+
+      if (openDeals && openDeals.length > 0) {
+        const pipelineValue = openDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+        const weightedValue = openDeals.reduce((sum, d) => sum + (d.value || 0) * (d.probability || 0) / 100, 0);
+
+        suggestions.push({
+          id: 'pipeline-projection',
+          type: 'insight',
+          priority: 'medium',
+          title: '📊 Projeção de Pipeline',
+          description: `Pipeline total: R$ ${(pipelineValue / 1000).toFixed(0)}K | Projeção: R$ ${(weightedValue / 1000).toFixed(0)}K`,
+          metadata: {
+            reason: 'pipeline_analysis',
+            confidence: 0.82
+          },
+          createdAt: new Date()
+        });
+      }
+
+      // Bottlenecks de conversão
+      const { data: allDeals } = await supabase
+        .from('sdr_deals')
+        .select('stage, status')
+        .in('status', ['open', 'won', 'lost']);
+
+      if (allDeals) {
+        const stageCount: Record<string, number> = {};
+        allDeals.forEach(d => {
+          stageCount[d.stage] = (stageCount[d.stage] || 0) + 1;
+        });
+
+        const maxStage = Object.entries(stageCount).sort((a, b) => b[1] - a[1])[0];
+        if (maxStage && maxStage[1] > 5) {
+          suggestions.push({
+            id: 'bottleneck-detected',
+            type: 'warning',
+            priority: 'high',
+            title: `🚧 Bottleneck em ${maxStage[0]}`,
+            description: `${maxStage[1]} deals acumulados neste estágio. Revise processo.`,
+            action: {
+              label: 'Analisar Pipeline',
+              type: 'navigate',
+              payload: { url: '/sdr/pipeline' }
+            },
+            metadata: {
+              reason: 'stage_bottleneck',
+              confidence: 0.78
+            },
+            createdAt: new Date()
+          });
+        }
       }
     }
 
