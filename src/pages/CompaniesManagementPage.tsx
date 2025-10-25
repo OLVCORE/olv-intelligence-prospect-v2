@@ -37,6 +37,7 @@ import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
 export default function CompaniesManagementPage() {
   logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
   const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'created_at'>('created_at');
@@ -447,7 +448,7 @@ export default function CompaniesManagementPage() {
                           <span className="text-xs text-muted-foreground">N/A</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
@@ -464,6 +465,18 @@ export default function CompaniesManagementPage() {
                             title="Editar/Salvar Dados"
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              const params = new URLSearchParams(location.search);
+                              const returnTab = params.get('tab') || 'roi';
+                              navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
+                            }}
+                            title="Usar no Account Strategy Hub"
+                          >
+                            <Zap className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"

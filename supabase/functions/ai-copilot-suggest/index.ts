@@ -330,7 +330,9 @@ serve(async (req) => {
 
     if (enrichedCompanies && enrichedCompanies.length > 0) {
       for (const company of enrichedCompanies) {
-        const companyName = company.name || company.cnpj || 'Empresa';
+        const companyName = company.name || '';
+        const cnpj = company.cnpj || '';
+        const displayName = companyName || cnpj || 'Empresa';
         const score = company.digital_maturity_score || 0;
         
         // Calcular prioridade baseada no score
@@ -343,7 +345,7 @@ serve(async (req) => {
           id: `new-opportunity-${company.id}`,
           type: 'opportunity',
           priority,
-          title: `Nova oportunidade: ${companyName}`,
+          title: `Nova oportunidade: ${displayName}`,
           description: `Empresa enriquecida com score ${score}/100. ${score >= 70 ? 'Alto potencial!' : 'Potencial cliente!'}`,
           action: {
             label: 'Criar Deal',
@@ -354,8 +356,8 @@ serve(async (req) => {
           },
           metadata: {
             companyId: company.id,
-            companyName,
-            cnpj: company.cnpj,
+            companyName: companyName || undefined,
+            cnpj: cnpj || undefined,
             score,
             reason: 'recently_enriched',
             confidence: score / 100

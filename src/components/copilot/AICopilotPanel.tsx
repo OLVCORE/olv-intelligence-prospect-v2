@@ -159,20 +159,22 @@ function SuggestionCard({ suggestion, onExecute, onDismiss }: SuggestionCardProp
             </p>
 
             {/* Info da empresa se disponível */}
-            {suggestion.metadata?.companyName && (
-              <Button
-                variant="link"
-                size="sm"
-                onClick={handleCompanyClick}
-                className="h-auto p-0 mb-2 text-xs font-medium hover:underline"
-              >
-                🏢 {suggestion.metadata.companyName}
-                {suggestion.metadata.cnpj && (
-                  <span className="text-muted-foreground ml-1">
-                    • {suggestion.metadata.cnpj}
-                  </span>
+            {(suggestion.metadata?.companyName || suggestion.metadata?.cnpj) && (
+              <div className="mb-2">
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={handleCompanyClick}
+                  className="h-auto p-0 text-xs font-medium hover:underline"
+                >
+                  🏢 {suggestion.metadata.companyName || suggestion.metadata.cnpj}
+                </Button>
+                {suggestion.metadata.cnpj && suggestion.metadata.companyName && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    CNPJ: {suggestion.metadata.cnpj}
+                  </p>
                 )}
-              </Button>
+              </div>
             )}
 
             {suggestion.metadata?.score !== undefined && (

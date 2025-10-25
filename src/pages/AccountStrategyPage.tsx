@@ -193,7 +193,8 @@ export default function AccountStrategyPage() {
           )}
         </div>
 
-        {!activeStrategy ? (<>
+        {!activeStrategy ? (
+          <>
             <Card>
               <CardHeader>
                 <CardTitle>Nenhuma estratégia criada</CardTitle>
@@ -232,7 +233,7 @@ export default function AccountStrategyPage() {
               </TabsContent>
             </Tabs>
           </>
-) : (
+        ) : (
 
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="grid w-full grid-cols-10">
