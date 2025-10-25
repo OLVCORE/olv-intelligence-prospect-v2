@@ -130,7 +130,6 @@ const menuGroups = [
           { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração de propostas comerciais" },
           { title: "Competitive Intelligence", icon: Shield, url: "/account-strategy?tab=competitive", description: "Posicionamento competitivo" },
           { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
-          { title: "Consultoria Premium OLV", icon: Award, url: "/account-strategy?tab=consulting", description: "Serviços de implementação e PMO" },
         ],
       },
       {
@@ -220,6 +219,12 @@ const menuGroups = [
         icon: Database,
         url: "/data-migration",
         description: "Limpeza e preparação de dados"
+      },
+      {
+        title: "Consultoria OLV",
+        icon: Award,
+        url: "/consultoria-olv",
+        description: "Catálogo e simulador de serviços de consultoria"
       },
       {
         title: "Configurações",

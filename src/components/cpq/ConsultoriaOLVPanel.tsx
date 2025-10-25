@@ -85,7 +85,7 @@ export function ConsultoriaOLVPanel({ companyId, accountStrategyId }: Props) {
 
           <TabsContent value="value" className="space-y-4">
             {companyId ? (
-              <ValueRealizationDashboard companyId={companyId} />
+              <ValueRealizationDashboard companyId={companyId} accountStrategyId={accountStrategyId} />
             ) : (
               <Card>
                 <CardHeader>

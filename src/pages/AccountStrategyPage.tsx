@@ -22,7 +22,6 @@ import { ProposalManager } from '@/components/proposals/ProposalManager';
 import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
 import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
 import { CompanySelectDialog } from '@/components/common/CompanySelectDialog';
-import { ConsultoriaOLVPanel } from '@/components/cpq/ConsultoriaOLVPanel';
 
 export default function AccountStrategyPage() {
   const params = useParams<{ companyId: string }>();
@@ -221,14 +220,13 @@ export default function AccountStrategyPage() {
               }} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-1">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1">
                 <TabsTrigger value="roi">ROI</TabsTrigger>
                 <TabsTrigger value="cpq">CPQ</TabsTrigger>
                 <TabsTrigger value="scenarios">Cenários</TabsTrigger>
                 <TabsTrigger value="proposals">Propostas</TabsTrigger>
                 <TabsTrigger value="competitive">Competitivo</TabsTrigger>
                 <TabsTrigger value="value">Valor</TabsTrigger>
-                <TabsTrigger value="consulting">Consultoria</TabsTrigger>
               </TabsList>
               <TabsContent value="roi" className="space-y-4">
                 <InteractiveROICalculator
@@ -265,9 +263,6 @@ export default function AccountStrategyPage() {
                     <CardDescription>Crie uma estratégia para iniciar o tracking de valor.</CardDescription>
                   </CardHeader>
                 </Card>
-              </TabsContent>
-              <TabsContent value="consulting" className="space-y-4">
-                <ConsultoriaOLVPanel companyId={companyId!} accountStrategyId={activeStrategy?.id} />
               </TabsContent>
             </Tabs>
           </>

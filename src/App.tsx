@@ -38,6 +38,7 @@ const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage")
 const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
 const CanvasPage = lazy(() => import("./pages/CanvasPage"));
+const ConsultoriaOLVPage = lazy(() => import("./pages/ConsultoriaOLVPage"));
 const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const DigitalPresencePage = lazy(() => import("./pages/DigitalPresencePage"));
@@ -407,6 +408,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <AccountStrategyPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/consultoria-olv"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ConsultoriaOLVPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
