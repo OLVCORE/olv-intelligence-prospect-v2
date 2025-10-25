@@ -17,7 +17,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('🚀 Starting batch ReceitaWS enrichment...');
+    const { force_refresh } = await req.json().catch(() => ({ force_refresh: false }));
+    console.log('🚀 Starting batch ReceitaWS enrichment...', force_refresh ? '(FORCE REFRESH MODE)' : '');
 
     // Buscar todas as empresas com CNPJ que ainda não têm dados da ReceitaWS
     const { data: companies, error: fetchError } = await supabase
@@ -43,11 +44,10 @@ serve(async (req) => {
     // Processar cada empresa
     for (const company of companies) {
       try {
-        // Verificar se já tem dados da ReceitaWS
-        const hasReceitaData = company.raw_data?.receita || 
-                              (company.industry && company.industry.length > 10);
+        // Verificar se já tem dados da ReceitaWS (ambos os formatos)
+        const hasReceitaData = company.raw_data?.receita || company.raw_data?.receitaws;
         
-        if (hasReceitaData) {
+        if (hasReceitaData && !force_refresh) {
           console.log(`⏭️ Skipping ${company.name} (already has ReceitaWS data)`);
           results.skipped++;
           results.details.push({
@@ -57,6 +57,10 @@ serve(async (req) => {
             reason: 'Already has ReceitaWS data'
           });
           continue;
+        }
+
+        if (hasReceitaData && force_refresh) {
+          console.log(`🔄 Force refreshing ${company.name} (already had data)`);
         }
 
         console.log(`🔄 Enriching ${company.name} (${company.cnpj})...`);

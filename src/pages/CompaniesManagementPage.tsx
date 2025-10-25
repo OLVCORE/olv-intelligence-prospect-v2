@@ -193,10 +193,12 @@ export default function CompaniesManagementPage() {
   const handleBatchEnrichReceitaWS = async () => {
     try {
       setIsBatchEnriching(true);
-      toast.info('Iniciando enriquecimento em lote com Receita Federal...');
+      toast.info('Iniciando enriquecimento em lote com Receita Federal...', {
+        description: 'Apenas empresas sem dados serão processadas'
+      });
 
       const { data, error } = await supabase.functions.invoke('batch-enrich-receitaws', {
-        body: {}
+        body: { force_refresh: false }
       });
 
       if (error) throw error;
