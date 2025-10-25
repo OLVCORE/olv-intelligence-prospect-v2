@@ -112,7 +112,7 @@ verify_jwt = false
  verify_jwt = false
  
  [functions.trigger-batch-enrichment]
- verify_jwt = true
+ verify_jwt = false
  
  [functions.global-search]
  verify_jwt = false
