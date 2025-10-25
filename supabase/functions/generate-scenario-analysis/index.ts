@@ -66,12 +66,12 @@ serve(async (req) => {
     const worst_cumulative = worst_benefit * project_years - worst_investment;
 
     // IA: Análise estratégica dos cenários
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     let key_insights: string[] = [];
     let risk_factors: any[] = [];
     let assumptions: string[] = [];
 
-    if (LOVABLE_API_KEY) {
+    if (OPENAI_API_KEY) {
       try {
         const aiPrompt = `Analise estes cenários de investimento para ${company?.name || 'empresa'}:
 
@@ -98,14 +98,14 @@ PIOR CASO:
 
 Forneça análise estruturada com insights-chave, fatores de risco e premissas.`;
 
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o-mini',
             messages: [
               {
                 role: 'system',
