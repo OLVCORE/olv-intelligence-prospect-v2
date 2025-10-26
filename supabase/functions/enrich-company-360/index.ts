@@ -678,8 +678,9 @@ serve(async (req) => {
         const { data: apolloData } = await supabase.functions.invoke('enrich-apollo', {
           body: { 
             type: 'people',
-            organizationName: company.name,
-            ...(company.domain && { domain: company.domain })
+            organizationName: searchName,
+            ...(company.domain && { domain: company.domain }),
+            titles: ['CEO','CTO','CFO','CIO','Diretor','Diretora','Gerente','VP','Head','TI','Tecnologia','Financeiro','Compras','Procurement','Operations','COO']
           }
         });
 

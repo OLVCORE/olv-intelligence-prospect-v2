@@ -53,37 +53,113 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Buscar decisores
-      const requestBody = {
-        api_key: apolloApiKey,
-        q_organization_name: organizationName,
-        page: 1,
-        per_page: 10,
-        ...(domain && { q_organization_domains: [domain] })
+      // Buscar decisores com múltiplas estratégias (domínio, ID da organização, variações de nome)
+      const titlesList = Array.isArray(titles) && titles.length > 0
+        ? titles
+        : ['CEO','CTO','CFO','CIO','Diretor','Diretora','Gerente','VP','Head','TI','Tecnologia','Financeiro','Compras','Procurement','Operations','COO'];
+
+      // 1) Tentar por domínio diretamente (mais preciso)
+      const tryByDomain = async (): Promise<any[]> => {
+        if (!domain) return [];
+        const body = {
+          api_key: apolloApiKey,
+          page: 1,
+          per_page: 10,
+          q_organization_domains: [domain],
+          person_titles: titlesList.join(',')
+        };
+        const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          console.error('ENRICH_APOLLO domain search error', resp.status, t);
+          return [];
+        }
+        const data = await resp.json();
+        return data.people || [];
       };
 
-      console.log('ENRICH_APOLLO', 'Request body', { ...requestBody, api_key: '[REDACTED]' });
-
-      const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        body: JSON.stringify(requestBody)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('ENRICH_APOLLO', 'Apollo API error', { 
-          status: response.status, 
-          body: errorText 
+      // 2) Tentar obter ID da organização e buscar por ID
+      const tryByOrganizationId = async (): Promise<any[]> => {
+        const params = new URLSearchParams({
+          api_key: apolloApiKey,
+          q_organization_name: organizationName,
+          ...(domain ? { q_organization_domains: domain } : {}) as any
         });
-        throw new Error(`Apollo API error: ${response.status} - ${errorText}`);
-      }
+        const orgResp = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+        if (!orgResp.ok) {
+          const t = await orgResp.text();
+          console.error('ENRICH_APOLLO org search error', orgResp.status, t);
+          return [];
+        }
+        const orgData = await orgResp.json();
+        const org = orgData.organizations?.[0];
+        if (!org?.id) return [];
 
-      const data = await response.json();
-      const people = data.people || [];
+        const body = {
+          api_key: apolloApiKey,
+          page: 1,
+          per_page: 10,
+          organization_ids: [org.id],
+          person_titles: titlesList.join(',')
+        };
+        const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          console.error('ENRICH_APOLLO id search error', resp.status, t);
+          return [];
+        }
+        const data = await resp.json();
+        return data.people || [];
+      };
+
+      // 3) Tentar por variações de nome (remover parênteses, usar primeira parte)
+      const tryByNameVariants = async (): Promise<any[]> => {
+        const baseName = (organizationName || '').trim();
+        const noParens = baseName.replace(/\([^)]*\)/g, '').trim();
+        const firstPart = noParens.split(' - ')[0].trim();
+        const candidates = Array.from(new Set([baseName, noParens, firstPart])).filter(Boolean);
+
+        for (const name of candidates) {
+          const body = {
+            api_key: apolloApiKey,
+            page: 1,
+            per_page: 10,
+            q_organization_name: name,
+            person_titles: titlesList.join(',')
+          };
+          const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if ((data.people || []).length > 0) return data.people;
+          } else {
+            const t = await resp.text();
+            console.error('ENRICH_APOLLO name search error', resp.status, t);
+          }
+        }
+        return [];
+      };
+
+      let people: any[] = [];
+      try {
+        people = await tryByDomain();
+        if (people.length === 0) people = await tryByOrganizationId();
+        if (people.length === 0) people = await tryByNameVariants();
+      } catch (e) {
+        console.error('ENRICH_APOLLO search flow error', e);
+        people = [];
+      }
 
       console.log('ENRICH_APOLLO', 'People result', { count: people.length });
 
