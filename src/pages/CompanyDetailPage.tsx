@@ -35,6 +35,7 @@ import DecisionMakerAddDialog from "@/components/companies/DecisionMakerAddDialo
 import { DecisorsCollaboratorsCard } from "@/components/companies/DecisorsCollaboratorsCard";
 import { RichContactsCard } from "@/components/companies/RichContactsCard";
 import { FinancialDebtCard } from "@/components/companies/FinancialDebtCard";
+import { EconodataEnrichButton } from "@/components/companies/EconodataEnrichButton";
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -1205,11 +1206,21 @@ export default function CompanyDetailPage() {
                 <CardDescription>Buscar decisores e enriquecer informações</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <EconodataEnrichButton 
+                  companyId={id!}
+                  cnpj={company.cnpj}
+                  variant="default"
+                  size="default"
+                  className="w-full"
+                />
+                
+                <Separator />
+                
                 <Button
                   onClick={handleSmartRefresh}
                   disabled={isSmartRefreshing}
                   className="w-full justify-start"
-                  variant="default"
+                  variant="secondary"
                 >
                   {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Atualização Inteligente (360°)

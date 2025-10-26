@@ -184,3 +184,6 @@ verify_jwt = false
 
   [functions.batch-enrich-360]
   verify_jwt = false
+  
+  [functions.enrich-econodata]
+  verify_jwt = true
