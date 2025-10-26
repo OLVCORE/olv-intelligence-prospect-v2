@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Save } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-export interface TOTVSProduct {
+export interface TOTVSSubModule {
   id: string;
   name: string;
   licenseCost: number;
@@ -18,13 +18,37 @@ export interface TOTVSProduct {
   users: number;
 }
 
+export interface TOTVSProduct {
+  id: string;
+  name: string;
+  licenseCost: number;
+  implementationCost: number;
+  maintenanceCost: number;
+  users: number;
+  subModules?: TOTVSSubModule[];
+}
+
 interface TOTVSProductSelectorProps {
   selectedProducts: TOTVSProduct[];
   onProductsChange: (products: TOTVSProduct[]) => void;
 }
 
+// Sub-módulos de Inteligência Artificial
+const IA_SUB_MODULES = [
+  { id: 'ia-auditoria-folha', name: 'Auditoria de Folha Protheus', defaultCost: 15000 },
+  { id: 'ia-supervisao-compras', name: 'Supervisão de Compras', defaultCost: 12000 },
+  { id: 'ia-supervisao-financeira', name: 'Supervisão Financeira', defaultCost: 18000 },
+  { id: 'ia-dilligence-check', name: 'Dilligence Check', defaultCost: 20000 },
+  { id: 'ia-contract-chat', name: 'Contract Chat', defaultCost: 10000 },
+  { id: 'ia-consultor-dados', name: 'Consultor de Dados Financeiros', defaultCost: 25000 },
+  { id: 'ia-target-talk', name: 'Target Talk', defaultCost: 8000 },
+  { id: 'ia-analise-leads', name: 'Análise de Leads', defaultCost: 12000 },
+  { id: 'ia-ropa-legal', name: 'RoPA Legal', defaultCost: 15000 },
+  { id: 'ia-conselheiro-feedbacks', name: 'Conselheiro de Feedbacks', defaultCost: 9000 },
+];
+
 const AVAILABLE_PRODUCTS = [
-  { id: 'ia', name: 'Inteligência Artificial' },
+  { id: 'ia', name: 'Inteligência Artificial', hasSubModules: true },
   { id: 'erp', name: 'ERP' },
   { id: 'analytics', name: 'Analytics' },
   { id: 'assinatura', name: 'Assinatura Eletrônica' },
@@ -42,6 +66,7 @@ const AVAILABLE_PRODUCTS = [
 
 export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOTVSProductSelectorProps) {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [expandedSubModules, setExpandedSubModules] = useState<Set<string>>(new Set());
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<number>(0);
 
@@ -53,18 +78,32 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
     if (isProductSelected(productId)) {
       onProductsChange(selectedProducts.filter(p => p.id !== productId));
     } else {
-      onProductsChange([
-        ...selectedProducts,
-        {
-          id: productId,
-          name: productName,
-          licenseCost: 0,
-          implementationCost: 0,
-          maintenanceCost: 0,
-          users: 0,
-        }
-      ]);
+      const newProduct: TOTVSProduct = {
+        id: productId,
+        name: productName,
+        licenseCost: 0,
+        implementationCost: 0,
+        maintenanceCost: 0,
+        users: 0,
+      };
+
+      // Se for IA, inicializar com sub-módulos
+      if (productId === 'ia') {
+        newProduct.subModules = IA_SUB_MODULES.map(sm => ({
+          id: sm.id,
+          name: sm.name,
+          licenseCost: sm.defaultCost,
+          implementationCost: Math.round(sm.defaultCost * 0.3),
+          maintenanceCost: Math.round(sm.defaultCost * 0.2),
+          users: 10,
+        }));
+      }
+
+      onProductsChange([...selectedProducts, newProduct]);
       setExpandedProducts(prev => new Set([...prev, productId]));
+      if (productId === 'ia') {
+        setExpandedSubModules(prev => new Set([...prev, productId]));
+      }
     }
   };
 
@@ -73,6 +112,22 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
       selectedProducts.map(p =>
         p.id === productId ? { ...p, [field]: value } : p
       )
+    );
+  };
+
+  const updateSubModule = (productId: string, subModuleId: string, field: keyof TOTVSSubModule, value: number) => {
+    onProductsChange(
+      selectedProducts.map(p => {
+        if (p.id === productId && p.subModules) {
+          return {
+            ...p,
+            subModules: p.subModules.map(sm =>
+              sm.id === subModuleId ? { ...sm, [field]: value } : sm
+            )
+          };
+        }
+        return p;
+      })
     );
   };
 
@@ -109,11 +164,38 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
   };
 
   const getTotalCosts = () => {
-    return selectedProducts.reduce((acc, p) => ({
-      licenses: acc.licenses + p.licenseCost,
-      implementation: acc.implementation + p.implementationCost,
-      maintenance: acc.maintenance + p.maintenanceCost,
-    }), { licenses: 0, implementation: 0, maintenance: 0 });
+    return selectedProducts.reduce((acc, p) => {
+      let productLicenses = p.licenseCost;
+      let productImplementation = p.implementationCost;
+      let productMaintenance = p.maintenanceCost;
+
+      // Somar sub-módulos
+      if (p.subModules) {
+        p.subModules.forEach(sm => {
+          productLicenses += sm.licenseCost;
+          productImplementation += sm.implementationCost;
+          productMaintenance += sm.maintenanceCost;
+        });
+      }
+
+      return {
+        licenses: acc.licenses + productLicenses,
+        implementation: acc.implementation + productImplementation,
+        maintenance: acc.maintenance + productMaintenance,
+      };
+    }, { licenses: 0, implementation: 0, maintenance: 0 });
+  };
+
+  const toggleSubModulesSection = (productId: string) => {
+    setExpandedSubModules(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
   };
 
   const totals = getTotalCosts();
@@ -391,6 +473,249 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
                       </div>
                     </CardContent>
                   </CollapsibleContent>
+
+                  {/* Sub-módulos (apenas para IA) */}
+                  {product.id === 'ia' && product.subModules && (
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        <Collapsible
+                          open={expandedSubModules.has(product.id)}
+                          onOpenChange={() => toggleSubModulesSection(product.id)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full mb-3">
+                              {expandedSubModules.has(product.id) ? (
+                                <>
+                                  <ChevronUp className="h-4 w-4 mr-2" />
+                                  Ocultar Sub-Módulos ({product.subModules.length})
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-4 w-4 mr-2" />
+                                  Ver Sub-Módulos ({product.subModules.length})
+                                </>
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="space-y-3 pl-4 border-l-2 border-primary/30">
+                              {product.subModules.map(subModule => (
+                                <Card key={subModule.id} className="bg-muted/30 border-primary/10">
+                                  <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                      {subModule.name}
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Licenças (R$)</Label>
+                                      {editingField === `${subModule.id}-licenseCost` ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                            autoFocus
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              updateSubModule(product.id, subModule.id, 'licenseCost', editingValue);
+                                              setEditingField(null);
+                                              toast.success('Valor atualizado');
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Save className="h-3 w-3 text-green-600" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={subModule.licenseCost || ''}
+                                            onChange={(e) => updateSubModule(product.id, subModule.id, 'licenseCost', parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setEditingField(`${subModule.id}-licenseCost`);
+                                              setEditingValue(subModule.licenseCost);
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Implementação (R$)</Label>
+                                      {editingField === `${subModule.id}-implementationCost` ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                            autoFocus
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              updateSubModule(product.id, subModule.id, 'implementationCost', editingValue);
+                                              setEditingField(null);
+                                              toast.success('Valor atualizado');
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Save className="h-3 w-3 text-green-600" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={subModule.implementationCost || ''}
+                                            onChange={(e) => updateSubModule(product.id, subModule.id, 'implementationCost', parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setEditingField(`${subModule.id}-implementationCost`);
+                                              setEditingValue(subModule.implementationCost);
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Manutenção (R$)</Label>
+                                      {editingField === `${subModule.id}-maintenanceCost` ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                            autoFocus
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              updateSubModule(product.id, subModule.id, 'maintenanceCost', editingValue);
+                                              setEditingField(null);
+                                              toast.success('Valor atualizado');
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Save className="h-3 w-3 text-green-600" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={subModule.maintenanceCost || ''}
+                                            onChange={(e) => updateSubModule(product.id, subModule.id, 'maintenanceCost', parseFloat(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1000"
+                                            min="0"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setEditingField(`${subModule.id}-maintenanceCost`);
+                                              setEditingValue(subModule.maintenanceCost);
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Usuários</Label>
+                                      {editingField === `${subModule.id}-users` ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(parseInt(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1"
+                                            min="0"
+                                            autoFocus
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              updateSubModule(product.id, subModule.id, 'users', editingValue);
+                                              setEditingField(null);
+                                              toast.success('Valor atualizado');
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Save className="h-3 w-3 text-green-600" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            value={subModule.users || ''}
+                                            onChange={(e) => updateSubModule(product.id, subModule.id, 'users', parseInt(e.target.value) || 0)}
+                                            className="h-8 text-sm"
+                                            step="1"
+                                            min="0"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                              setEditingField(`${subModule.id}-users`);
+                                              setEditingValue(subModule.users);
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </CardContent>
+                    </CollapsibleContent>
+                  )}
                 </Card>
               </Collapsible>
             ))}
