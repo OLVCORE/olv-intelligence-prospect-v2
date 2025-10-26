@@ -54,14 +54,14 @@ const MAINTENANCE_OPTIONS = [
 ];
 
 const CONSULTING_OPTIONS = [
-  { id: 'diagnostico', name: 'Diagnóstico Empresarial', category: 'consulting' as const },
-  { id: 'operacional', name: 'Consultoria Operacional', category: 'consulting' as const },
-  { id: 'estrategico', name: 'Consultoria Estratégica', category: 'consulting' as const },
-  { id: 'tecnologia', name: 'Consultoria de Tecnologia', category: 'consulting' as const },
-  { id: 'compliance', name: 'Compliance e Governança', category: 'consulting' as const },
-  { id: 'capacitacao', name: 'Capacitação e Treinamento', category: 'consulting' as const },
-  { id: 'implantacao', name: 'Implantação de Sistemas', category: 'consulting' as const },
-  { id: 'customizacao', name: 'Customização e Desenvolvimento', category: 'consulting' as const },
+  { id: 'cons_ext_diagnostico', name: 'Diagnóstico Empresarial Externo', category: 'consulting' as const },
+  { id: 'cons_ext_operacional', name: 'Consultoria Operacional Externa', category: 'consulting' as const },
+  { id: 'cons_ext_estrategica', name: 'Consultoria Estratégica Externa', category: 'consulting' as const },
+  { id: 'cons_ext_tecnologia', name: 'Consultoria de TI Externa', category: 'consulting' as const },
+  { id: 'cons_ext_compliance', name: 'Compliance e Auditoria Externa', category: 'consulting' as const },
+  { id: 'cons_ext_capacitacao', name: 'Treinamento e Capacitação Externa', category: 'consulting' as const },
+  { id: 'cons_ext_implantacao', name: 'Implantação de Sistemas Externa', category: 'consulting' as const },
+  { id: 'cons_ext_desenvolvimento', name: 'Desenvolvimento Customizado Externo', category: 'consulting' as const },
 ];
 
 export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCostsSelectorProps) {
@@ -151,7 +151,7 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCo
       case 'software': return 'Software Atual';
       case 'personnel': return 'Custos de Pessoal';
       case 'maintenance': return 'Manutenção';
-      case 'consulting': return 'Outsourcing/Consultoria';
+      case 'consulting': return 'Consultoria Externa Atual';
     }
   };
 
@@ -160,7 +160,7 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCo
       case 'software': return 'Sistemas e ferramentas que você utiliza atualmente';
       case 'personnel': return 'Custos com pessoal em processos manuais';
       case 'maintenance': return 'Custos de manutenção e suporte técnico';
-      case 'consulting': return 'Serviços de consultoria e outsourcing';
+      case 'consulting': return 'Consultorias externas e outsourcing que você já contrata';
     }
   };
 

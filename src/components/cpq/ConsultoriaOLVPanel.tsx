@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { InteractiveROICalculator } from "@/components/roi/InteractiveROICalculator";
 import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
 import { ValueRealizationDashboard } from "@/components/value/ValueRealizationDashboard";
-import { ConsultingCatalogManager } from "@/components/consulting/ConsultingCatalogManager";
-import { ConsultingSimulator } from "@/components/consulting/ConsultingSimulator";
-import { Award, Mail, Phone } from "lucide-react";
+import { Award, Mail, Phone, ExternalLink } from "lucide-react";
 
 type Props = {
   companyId?: string;
@@ -16,17 +15,31 @@ type Props = {
 };
 
 export function ConsultoriaOLVPanel({ companyId, accountStrategyId }: Props) {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Consultoria Premium OLV</CardTitle>
-        <CardDescription>Precificação especializada, simulador de proposta e gestão de serviços</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Consultoria de Implementação TOTVS</CardTitle>
+            <CardDescription>Diagnóstico, mapeamento e consultoria focada na implementação</CardDescription>
+          </div>
+          <Button
+            variant="default"
+            className="gap-2"
+            onClick={() => navigate('/consultoria-olv')}
+          >
+            <ExternalLink className="h-4 w-4" />
+            Ver Consultoria Premium OLV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs defaultValue="cpq" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="roi">ROI</TabsTrigger>
-            <TabsTrigger value="cpq">CPQ</TabsTrigger>
+            <TabsTrigger value="cpq">Implementação</TabsTrigger>
             <TabsTrigger value="scenarios">Cenários</TabsTrigger>
             <TabsTrigger value="proposals">Propostas</TabsTrigger>
             <TabsTrigger value="competitive">Competitivo</TabsTrigger>
@@ -47,8 +60,28 @@ export function ConsultoriaOLVPanel({ companyId, accountStrategyId }: Props) {
           </TabsContent>
 
           <TabsContent value="cpq" className="space-y-4">
-            <ConsultingCatalogManager />
-            <ConsultingSimulator />
+            <Card>
+              <CardHeader>
+                <CardTitle>Consultoria de Implementação</CardTitle>
+                <CardDescription>
+                  Configure os serviços de diagnóstico, mapeamento e consultoria para o projeto TOTVS
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Use o seletor detalhado na aba ROI para configurar todos os custos de consultoria de implementação.
+                </p>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => navigate('/consultoria-olv')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Para consultoria estratégica premium (Supply Chain, Comex, Expansão Global), 
+                  acesse a página dedicada
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="scenarios" className="space-y-4">

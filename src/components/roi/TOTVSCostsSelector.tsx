@@ -41,14 +41,14 @@ const TRAINING_OPTIONS = [
 ];
 
 const CONSULTING_OPTIONS = [
-  { id: 'cons_diagnostico', name: 'Diagnóstico Empresarial', category: 'consulting' as const },
-  { id: 'cons_mapeamento_processos', name: 'Mapeamento de Processos', category: 'consulting' as const },
-  { id: 'cons_otimizacao', name: 'Otimização de Processos', category: 'consulting' as const },
-  { id: 'cons_gestao_mudanca', name: 'Gestão de Mudança', category: 'consulting' as const },
-  { id: 'cons_governanca', name: 'Governança e Compliance', category: 'consulting' as const },
-  { id: 'cons_estrategica', name: 'Consultoria Estratégica', category: 'consulting' as const },
-  { id: 'cons_tecnologia', name: 'Consultoria de Tecnologia', category: 'consulting' as const },
-  { id: 'cons_capacitacao', name: 'Capacitação Continuada', category: 'consulting' as const },
+  { id: 'cons_impl_diagnostico', name: 'Diagnóstico de Implementação', category: 'consulting' as const },
+  { id: 'cons_impl_mapeamento', name: 'Mapeamento de Processos TOTVS', category: 'consulting' as const },
+  { id: 'cons_impl_otimizacao', name: 'Otimização de Processos', category: 'consulting' as const },
+  { id: 'cons_impl_change', name: 'Gestão de Mudança (Change Management)', category: 'consulting' as const },
+  { id: 'cons_impl_governanca', name: 'Governança de Dados e BI', category: 'consulting' as const },
+  { id: 'cons_impl_integracao', name: 'Consultoria de Integração', category: 'consulting' as const },
+  { id: 'cons_impl_pmo', name: 'PMO de Implementação', category: 'consulting' as const },
+  { id: 'cons_impl_pos_golive', name: 'Acompanhamento Pós Go-Live', category: 'consulting' as const },
 ];
 
 const INFRASTRUCTURE_OPTIONS = [
@@ -157,7 +157,7 @@ export function TOTVSCostsSelector({ selectedCosts, onCostsChange }: TOTVSCostsS
     switch (category) {
       case 'implementation': return 'Implementação';
       case 'training': return 'Treinamento';
-      case 'consulting': return 'Consultoria OLV';
+      case 'consulting': return 'Consultoria de Implementação e Diagnóstico';
       case 'infrastructure': return 'Infraestrutura';
       case 'support': return 'Suporte e Manutenção';
     }
@@ -167,7 +167,7 @@ export function TOTVSCostsSelector({ selectedCosts, onCostsChange }: TOTVSCostsS
     switch (category) {
       case 'implementation': return 'Custos de implementação e configuração';
       case 'training': return 'Treinamento e capacitação de equipes';
-      case 'consulting': return 'Serviços de consultoria especializada OLV';
+      case 'consulting': return 'Diagnóstico, mapeamento e consultoria focada na implementação TOTVS';
       case 'infrastructure': return 'Infraestrutura e tecnologia necessária';
       case 'support': return 'Suporte técnico e manutenção contínua';
     }
