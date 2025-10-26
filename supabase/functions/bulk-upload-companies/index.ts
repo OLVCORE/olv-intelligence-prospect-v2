@@ -137,6 +137,24 @@ serve(async (req) => {
           }
         };
 
+        // Copia campos ricos (87 colunas Econodata) para raw_data
+        const econoKeys = [
+          'assertividade','melhor_telefone','segundo_melhor_telefone','telefones_alta_assertividade','telefones_media_assertividade','telefones_baixa_assertividade','telefones_matriz','telefones_filiais','celulares','melhor_celular','fixos','pat_telefone','whatsapp',
+          'setor_amigavel','atividade_economica','cod_atividade_economica','atividades_secundarias','cod_atividades_secundarias','cod_ncms_primarios','ncms_primarios',
+          'recebimentos_governo_federal','enquadramento_porte','funcionarios_presumido_matriz_cnpj','funcionarios_presumido_este_cnpj','faturamento_presumido_matriz_cnpj','faturamento_presumido_este_cnpj','crescimento_empresa','qtd_filiais','socios_administradores','decisores_cargos','decisores_linkedin','colaboradores_cargos','colaboradores_linkedin',
+          'emails_validados_departamentos','emails_validados_socios','emails_validados_decisores','emails_validados_colaboradores','email_pat','email_receita_federal','emails_publicos',
+          'porte_estimado','importacao','exportacao','pat_funcionarios','regime_tributario','situacao_cadastral',
+          'sites','melhor_site','segundo_melhor_site','instagram','facebook','linkedin','twitter','youtube','outras','tecnologias','ferramentas','tags','notas','nivel_atividade',
+          'perc_dividas_cnpj_sobre_faturamento','perc_dividas_cnpj_socios_sobre_faturamento','total_dividas_cnpj_uniao','total_dividas_cnpj_socios_uniao','dividas_gerais_cnpj_uniao','dividas_gerais_cnpj_socios_uniao','dividas_cnpj_fgts','dividas_cnpj_socios_fgts','dividas_cnpj_previdencia','dividas_cnpj_socios_previdencia',
+          'microrregiao','mesorregiao','tipo_unidade'
+        ];
+        const econoData: Record<string, any> = {};
+        for (const k of econoKeys) {
+          const v = (row as any)[k];
+          if (v !== undefined && v !== '') econoData[k] = v;
+        }
+        companyData.raw_data = { ...companyData.raw_data, ...econoData };
+
         // Website e domínio
         if (website) {
           companyData.website = website.startsWith('http') ? website : `https://${website}`;

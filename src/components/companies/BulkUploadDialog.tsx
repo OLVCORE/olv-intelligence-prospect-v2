@@ -215,30 +215,91 @@ export function BulkUploadDialog() {
       'Latitude': ['latitude', 'lat'],
       'Longitude': ['longitude', 'lng', 'long'],
       
+      // Regiões
+      'microrregiao': ['microrregiao','microrregião'],
+      'mesorregiao': ['mesorregiao','mesorregião'],
+      
       // Contato
       'Telefone': ['telefone', 'phone', 'tel', 'fone'],
       'Email': ['email', 'e-mail', 'mail'],
       'Email Verificado': ['email verificado', 'verified email'],
+      
+      // Contatos ricos (Econodata)
+      'assertividade': ['assertividade'],
+      'melhor_telefone': ['melhor telefone'],
+      'segundo_melhor_telefone': ['segundo melhor telefone'],
+      'telefones_alta_assertividade': ['telefones de alta assertividade','telefones alta assertividade'],
+      'telefones_media_assertividade': ['telefones de media assertividade','telefones média assertividade','telefones media assertividade'],
+      'telefones_baixa_assertividade': ['telefones de baixa assertividade','telefones baixa assertividade'],
+      'telefones_matriz': ['telefones - matriz','telefones matriz'],
+      'telefones_filiais': ['telefones- filiais','telefones - filiais','telefones filiais'],
+      'celulares': ['celulares'],
+      'melhor_celular': ['melhor celular'],
+      'fixos': ['fixos'],
+      'pat_telefone': ['pat - telefone','pat telefone'],
+      'whatsapp': ['whatsapp','wa'],
       
       // CNAEs
       'CNAE Principal Código': ['cnae principal codigo', 'cnae principal', 'cnae codigo'],
       'CNAE Principal Descrição': ['cnae principal descricao', 'cnae descricao'],
       'CNAEs Secundários Quantidade': ['cnaes secundarios quantidade', 'qtd cnaes'],
       'CNAEs Secundários': ['cnaes secundarios', 'cnaes sec'],
+      'atividades_secundarias': ['atividades secundarias','atividades secundárias'],
+      'cod_atividades_secundarias': ['cod atividades secundarias','cod atividades secundárias'],
+      'atividade_economica': ['atividade economica','atividade econômica'],
+      'cod_atividade_economica': ['cod atividade economica','cnae codigo primario','cnae codigo principal'],
+      'setor_amigavel': ['setor amigavel','setor amigável'],
+      
+      // Tributário e porte
+      'regime_tributario': ['regime tributario','regime tributário'],
+      'porte_estimado': ['porte estimado'],
+      'tipo_unidade': ['tipo unidade','tipo da unidade'],
+      
+      // Comércio exterior
+      'importacao': ['importacao','importação'],
+      'exportacao': ['exportacao','exportação'],
+      
+      // Sites e presença web
+      'sites': ['sites','websites'],
+      'melhor_site': ['melhor site'],
+      'segundo_melhor_site': ['segundo melhor site'],
+      
+      // Emails ricos
+      'emails_validados_departamentos': ['e-mails validados de departamentos','emails validados de departamentos'],
+      'emails_validados_socios': ['e-mails validados de socios','emails validados de sócios'],
+      'emails_validados_decisores': ['e-mails validados de decisores','emails validados de decisores'],
+      'emails_validados_colaboradores': ['e-mails validados de colaboradores','emails validados de colaboradores'],
+      'email_pat': ['email pat'],
+      'email_receita_federal': ['email receita federal'],
+      'emails_publicos': ['emails publicos','e-mails publicos','e-mails públicos'],
+      
+      // NCMs
+      'cod_ncms_primarios': ['cod ncms primarios','codigos ncms primarios','cód ncms primários'],
+      'ncms_primarios': ['ncms primarios','ncms primários'],
       
       // Quadro societário
       'Quadro Societário Quantidade': ['quadro societario quantidade', 'qtd socios'],
       'Sócios': ['socios', 'quadro societario', 'qsa'],
+      'socios_administradores': ['sócios e administradores','socios e administradores'],
+      
+      // Estrutura
+      'funcionarios_presumido_matriz_cnpj': ['funcionarios presumido para matriz + cnpj','funcionários presumido para matriz + cnpj'],
+      'funcionarios_presumido_este_cnpj': ['funcionarios presumido para este cnpj','funcionários presumido para este cnpj'],
+      'pat_funcionarios': ['pat - funcionarios','pat - funcionários','pat funcionarios'],
+      'qtd_filiais': ['qtd. filiais','qtd filiais','quantidade de filiais'],
       
       // Scores
       'Score Maturidade Digital': ['score maturidade digital', 'score digital', 'maturidade'],
       'Score Fit TOTVS': ['score fit totvs', 'fit totvs', 'fit'],
       'Score Análise': ['score analise', 'score'],
+      'nivel_atividade': ['nível de atividade','nivel de atividade'],
       
       // Tecnologia
       'Tech Stack': ['tech stack', 'tecnologias', 'stack'],
       'ERP Atual': ['erp atual', 'erp', 'sistema erp'],
       'CRM Atual': ['crm atual', 'crm', 'sistema crm'],
+      'tecnologias': ['tecnologias (livre)', 'tecnologias usadas'],
+      'ferramentas': ['ferramentas'],
       
       // Produtos
       'Produto Principal': ['produto principal', 'produto', 'main product'],
@@ -246,23 +307,11 @@ export function BulkUploadDialog() {
       'Link Produto/Marketplace': ['link produto', 'marketplace', 'link', 'product link'],
       'Categoria': ['categoria', 'category'],
       
-      // Decisores
-      'Decisores Quantidade': ['decisores quantidade', 'qtd decisores'],
-      'Decisor 1 Nome': ['decisor 1 nome', 'decisor1 nome'],
-      'Decisor 1 Cargo': ['decisor 1 cargo', 'decisor1 cargo'],
-      'Decisor 1 Email': ['decisor 1 email', 'decisor1 email'],
-      'Decisor 1 Telefone': ['decisor 1 telefone', 'decisor1 telefone'],
-      'Decisor 1 LinkedIn': ['decisor 1 linkedin', 'decisor1 linkedin'],
-      'Decisor 2 Nome': ['decisor 2 nome', 'decisor2 nome'],
-      'Decisor 2 Cargo': ['decisor 2 cargo', 'decisor2 cargo'],
-      'Decisor 2 Email': ['decisor 2 email', 'decisor2 email'],
-      'Decisor 2 Telefone': ['decisor 2 telefone', 'decisor2 telefone'],
-      'Decisor 2 LinkedIn': ['decisor 2 linkedin', 'decisor2 linkedin'],
-      'Decisor 3 Nome': ['decisor 3 nome', 'decisor3 nome'],
-      'Decisor 3 Cargo': ['decisor 3 cargo', 'decisor3 cargo'],
-      'Decisor 3 Email': ['decisor 3 email', 'decisor3 email'],
-      'Decisor 3 Telefone': ['decisor 3 telefone', 'decisor3 telefone'],
-      'Decisor 3 LinkedIn': ['decisor 3 linkedin', 'decisor3 linkedin'],
+      // Decisores/Colaboradores (listas)
+      'decisores_cargos': ['decisores - cargos','decisores cargos'],
+      'decisores_linkedin': ['decisores - linkedin','decisores linkedin'],
+      'colaboradores_cargos': ['colaboradores - cargos','colaboradores cargos'],
+      'colaboradores_linkedin': ['colaboradores - linkedin','colaboradores linkedin'],
       
       // Enriquecimento
       'Enriquecido Receita': ['enriquecido receita', 'receita'],
