@@ -197,3 +197,6 @@ verify_jwt = false
   
   [functions.enrich-econodata]
   verify_jwt = true
+
+  [functions.ai-qualification-analysis]
+  verify_jwt = false
