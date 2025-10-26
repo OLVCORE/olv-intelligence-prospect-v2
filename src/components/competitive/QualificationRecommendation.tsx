@@ -15,11 +15,13 @@ import {
   AlertCircle,
   ArrowRight,
   XCircle,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  Zap
 } from "lucide-react";
 import { useCreateDeal } from "@/hooks/useDeals";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface QualificationRecommendationProps {
@@ -27,53 +29,68 @@ interface QualificationRecommendationProps {
     id: string;
     name: string;
     totvs_detection_score?: number;
+    totvs_last_checked_at?: string;
   };
   intentScore: number;
+  hasIntentCheck: boolean;
 }
 
 export function QualificationRecommendation({ 
   company, 
-  intentScore 
+  intentScore,
+  hasIntentCheck 
 }: QualificationRecommendationProps) {
   const { mutate: createDeal, isPending } = useCreateDeal();
   const [dealCreated, setDealCreated] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(true);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [rawContext, setRawContext] = useState<any>(null);
   
   const totvsScore = company.totvs_detection_score || 0;
 
-  // Carregar análise de IA 360°
-  useEffect(() => {
-    const loadAIAnalysis = async () => {
-      setIsLoadingAnalysis(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('ai-qualification-analysis', {
-          body: {
-            company_id: company.id,
-            company_name: company.name,
-            totvs_score: totvsScore,
-            intent_score: intentScore,
-          }
-        });
+  // Verificar se as duas fases foram concluídas
+  const canGenerateAnalysis = company.totvs_last_checked_at && hasIntentCheck;
 
-        if (error) throw error;
-        
-        if (data?.analysis) {
-          setAiAnalysis(data.analysis);
-          setRawContext(data.raw_context);
-          console.log('[AI Analysis] Loaded:', data.analysis);
+  // Função para disparar análise IA 360°
+  const handleGenerateAnalysis = async () => {
+    setIsLoadingAnalysis(true);
+    setAiAnalysis(null);
+    setRawContext(null);
+    
+    try {
+      console.log('[AI 360°] Starting analysis for:', company.name);
+      
+      const { data, error } = await supabase.functions.invoke('ai-qualification-analysis', {
+        body: {
+          company_id: company.id,
+          company_name: company.name,
+          totvs_score: totvsScore,
+          intent_score: intentScore,
         }
-      } catch (error) {
-        console.error('[AI Analysis] Error:', error);
-        toast.error('Erro ao carregar análise de IA');
-      } finally {
-        setIsLoadingAnalysis(false);
-      }
-    };
+      });
 
-    loadAIAnalysis();
-  }, [company.id, company.name, totvsScore, intentScore]);
+      if (error) {
+        console.error('[AI 360°] Function error:', error);
+        throw error;
+      }
+      
+      if (data?.analysis) {
+        setAiAnalysis(data.analysis);
+        setRawContext(data.raw_context);
+        console.log('[AI 360°] Analysis complete:', data.analysis);
+        toast.success('Análise 360° gerada com sucesso!');
+      } else {
+        throw new Error('Resposta inválida da função');
+      }
+    } catch (error) {
+      console.error('[AI 360°] Error:', error);
+      toast.error('Não foi possível gerar análise', {
+        description: error instanceof Error ? error.message : 'Tente novamente em instantes'
+      });
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   // Lógica de recomendação
   const getRecommendation = () => {
@@ -198,13 +215,74 @@ export function QualificationRecommendation({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {isLoadingAnalysis ? (
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-32 w-full" />
+        {/* Botão CHAMATIVO para gerar análise */}
+        {!aiAnalysis && !isLoadingAnalysis && (
+          <div className="text-center py-8 space-y-6">
+            {!canGenerateAnalysis ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <p className="font-semibold mb-2">Complete as etapas obrigatórias primeiro:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {!company.totvs_last_checked_at && (
+                      <li>Execute a <strong>Detecção de Uso de TOTVS</strong></li>
+                    )}
+                    {!hasIntentCheck && (
+                      <li>Execute a <strong>Detecção de Sinais de Intenção</strong></li>
+                    )}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold">🚀 Pronto para Análise Profunda!</h3>
+                  <p className="text-muted-foreground">
+                    Todas as fontes foram consultadas. Clique abaixo para gerar sua análise 360° com IA.
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={handleGenerateAnalysis}
+                  size="lg"
+                  className="h-16 px-8 text-lg font-bold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all"
+                  disabled={isLoadingAnalysis}
+                >
+                  <Zap className="h-6 w-6 mr-2 animate-pulse" />
+                  Gerar Qualificação 360° Powered by IA
+                  <Sparkles className="h-5 w-5 ml-2" />
+                </Button>
+
+                <p className="text-xs text-muted-foreground">
+                  ✅ Análise gerada por IA com base em múltiplas fontes de dados
+                </p>
+              </>
+            )}
           </div>
-        ) : aiAnalysis ? (
+        )}
+
+        {/* Loading state */}
+        {isLoadingAnalysis && (
+          <div className="space-y-4 py-8">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <div className="text-center space-y-2">
+                <p className="font-semibold text-lg">Gerando Análise 360°...</p>
+                <p className="text-sm text-muted-foreground">
+                  Analisando fontes TOTVS, sinais de intenção, notícias e dados públicos
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        )}
+
+        {/* Análise gerada */}
+        {aiAnalysis && (
           <>
             {/* Recomendação IA */}
             <Alert 

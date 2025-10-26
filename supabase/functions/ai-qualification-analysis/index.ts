@@ -16,36 +16,71 @@ serve(async (req) => {
     const { company_id, company_name, totvs_score, intent_score } = await req.json();
 
     if (!company_id || !company_name) {
+      console.error('[AI Qualification] Missing required fields');
       throw new Error('company_id and company_name are required');
     }
 
-    console.log(`[AI Qualification] Analyzing: ${company_name}`);
+    console.log(`[AI Qualification] Starting analysis for: ${company_name}`);
+    console.log(`[AI Qualification] Scores - TOTVS: ${totvs_score}, Intent: ${intent_score}`);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[AI Qualification] Missing Supabase credentials');
+      throw new Error('Supabase configuration error');
+    }
+
+    if (!lovableApiKey) {
+      console.error('[AI Qualification] Missing LOVABLE_API_KEY');
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 1. Buscar dados da empresa
-    const { data: company } = await supabase
+    console.log('[AI Qualification] Fetching company data...');
+    const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('*')
       .eq('id', company_id)
       .single();
 
-    // 2. Buscar fontes de detecção TOTVS
-    const totvsources = company?.totvs_detection_sources || [];
+    if (companyError) {
+      console.error('[AI Qualification] Error fetching company:', companyError);
+      throw new Error('Failed to fetch company data');
+    }
+
+    // 2. Buscar fontes de detecção TOTVS (filtrar links da própria TOTVS)
+    const rawTotvsources = company?.totvs_detection_sources || [];
+    const totvsources = rawTotvsources.filter((source: any) => {
+      const url = source.url?.toLowerCase() || '';
+      const isTotvsDomain = url.includes('totvs.com') || 
+                           url.includes('produtos.totvs.com') ||
+                           url.includes('tecnologia.totvs.com');
+      return !isTotvsDomain;
+    });
+
+    console.log(`[AI Qualification] TOTVS sources: ${rawTotvsources.length} raw, ${totvsources.length} filtered`);
 
     // 3. Buscar sinais de intenção
-    const { data: intentSignals } = await supabase
+    console.log('[AI Qualification] Fetching intent signals...');
+    const { data: intentSignals, error: signalsError } = await supabase
       .from('intent_signals')
       .select('*')
       .eq('company_id', company_id)
       .order('detected_at', { ascending: false })
       .limit(10);
 
+    if (signalsError) {
+      console.error('[AI Qualification] Error fetching signals:', signalsError);
+    }
+
+    console.log(`[AI Qualification] Intent signals found: ${intentSignals?.length || 0}`);
+
     // 4. Buscar competitive intelligence
+    console.log('[AI Qualification] Fetching monitoring data...');
     const { data: competitors } = await supabase
       .from('company_monitoring')
       .select('*')
@@ -138,11 +173,8 @@ ${competitors ? `
 - Pense como um SDR experiente: contexto, timing, fit, urgência`;
 
     // Chamar IA
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
     console.log('[AI Qualification] Calling Lovable AI for deep analysis...');
+    console.log('[AI Qualification] Context length:', context.length, 'characters');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -164,13 +196,27 @@ ${competitors ? `
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('[AI Qualification] AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      
+      if (aiResponse.status === 429) {
+        throw new Error('Rate limit excedido. Aguarde alguns instantes e tente novamente.');
+      }
+      if (aiResponse.status === 402) {
+        throw new Error('Créditos de IA esgotados. Adicione créditos no workspace.');
+      }
+      
+      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
+    
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      console.error('[AI Qualification] Invalid AI response structure:', aiData);
+      throw new Error('Invalid AI response structure');
+    }
+
     const aiContent = aiData.choices[0].message.content;
 
-    console.log('[AI Qualification] AI response received');
+    console.log('[AI Qualification] AI response received, length:', aiContent.length);
 
     // Parse resposta da IA
     let analysis;
