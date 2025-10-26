@@ -93,8 +93,8 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
     await save();
   };
 
-  const updateQuantity = (sku: string, quantity: number) => {
-    setSelectedProducts(selectedProducts.map(p => {
+  const updateQuantity = async (sku: string, quantity: number) => {
+    const updated = selectedProducts.map(p => {
       if (p.sku === sku) {
         const newQuantity = Math.max(1, quantity);
         return {
@@ -104,7 +104,11 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
         };
       }
       return p;
-    }));
+    });
+    setSelectedProducts(updated);
+    // Persistir imediatamente no draft para evitar perda ao trocar de aba
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: updated, priceOverrides }));
+    await save();
   };
 
   const updatePrice = (sku: string, price: number) => {
@@ -151,11 +155,17 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
       return;
     }
 
+    // Garante que o estado atual esteja salvo antes de gerar
+    await save();
+
     await createQuote.mutateAsync({
       company_id: companyId,
       account_strategy_id: accountStrategyId,
       products: selectedProducts,
     });
+
+    // Salva novamente após gerar (inclui sugestões de pricing, se houver)
+    await save();
 
     if (onQuoteCreated) {
       onQuoteCreated('new-quote');
@@ -188,6 +198,12 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
   return (
     <div className="space-y-6">
       <UnsavedChangesWarning hasUnsavedChanges={hasUnsavedChanges} onSave={save} />
+      <div className="flex justify-end">
+        <Button size="sm" onClick={save} disabled={createQuote.isPending}>
+          <Save className="h-4 w-4 mr-2" />
+          Salvar CPQ
+        </Button>
+      </div>
       
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Catálogo de Produtos */}
