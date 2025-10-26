@@ -14,7 +14,7 @@ import {
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
   CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw, Target,
   UserPlus, TestTube, Phone, Mail, Eye, IdCard, MapPinned, ActivityIcon,
-  UsersIcon, Wallet, Monitor, Brain, FileSpreadsheet, Zap
+  UsersIcon, Wallet, Monitor, Brain, FileSpreadsheet, Zap, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -253,31 +253,71 @@ export default function CompanyDetailPage() {
                 <p className="text-lg text-muted-foreground">Nome Fantasia: {receitaData.fantasia}</p>
               )}
             </div>
-            <div className="text-right space-y-2">
-              <Badge variant={situacaoReceita === 'ATIVA' ? 'success' : (situacaoReceita && ['INAPTA','SUSPENSA','INATIVA','BAIXADA'].includes(situacaoReceita) ? 'warning' : 'destructive')}>
+              <div className="text-right space-y-2">
+              <Badge variant={situacaoReceita === 'ATIVA' ? 'success' : (situacaoReceita && ['INAPTA','SUSPENSA','INATIVA','BAIXADA'].includes(situacaoReceita) ? 'warning' : 'destructive')} className="bg-success text-success-foreground">
                 {situacaoReceita || 'Status desconhecido'}
               </Badge>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSmartRefresh}
-                  disabled={isSmartRefreshing}
-                >
-                  {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                  Atualizar
-                </Button>
-                <EnrichmentActionsCard
-                  compact
-                  onReceita={() => handleEnrichReceita(id!)}
-                  on360={() => handleFullEnrichment()}
-                  onEconodata={() => {
-                    // Will be implemented when Econodata API is available
-                    toast.info('Econodata será conectado em breve');
-                  }}
-                  isLoadingReceita={isEnrichingReceita}
-                  isLoading360={isEnriching}
-                />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={handleSmartRefresh}
+                        disabled={isSmartRefreshing}
+                      >
+                        {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Atualizar</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={() => handleEnrichReceita(id!)}
+                        disabled={isEnrichingReceita}
+                      >
+                        {isEnrichingReceita ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Receita Federal</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={handleFullEnrichment}
+                        disabled={isEnriching}
+                      >
+                        {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Enriquecimento 360° Completo + IA</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <EconodataEnrichButton
+                        companyId={id!}
+                        cnpj={company.cnpj || ''}
+                        variant="default"
+                        size="icon"
+                      />
+                    </TooltipTrigger>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
@@ -291,7 +331,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Eye className="h-4 w-4" />
                     Visão Geral
                   </TabsTrigger>
@@ -305,7 +345,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="identificacao" className="flex items-center gap-2">
+                  <TabsTrigger value="identificacao" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <IdCard className="h-4 w-4" />
                     Identificação
                   </TabsTrigger>
@@ -319,7 +359,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="localizacao" className="flex items-center gap-2">
+                  <TabsTrigger value="localizacao" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <MapPinned className="h-4 w-4" />
                     Localização
                   </TabsTrigger>
@@ -333,7 +373,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="atividade" className="flex items-center gap-2">
+                  <TabsTrigger value="atividade" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <ActivityIcon className="h-4 w-4" />
                     Atividade
                   </TabsTrigger>
@@ -347,7 +387,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="estrutura" className="flex items-center gap-2">
+                  <TabsTrigger value="estrutura" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <UsersIcon className="h-4 w-4" />
                     Estrutura
                   </TabsTrigger>
@@ -361,7 +401,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="financeiro" className="flex items-center gap-2">
+                  <TabsTrigger value="financeiro" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Wallet className="h-4 w-4" />
                     Financeiro
                   </TabsTrigger>
@@ -375,7 +415,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="digital" className="flex items-center gap-2">
+                  <TabsTrigger value="digital" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Monitor className="h-4 w-4" />
                     Digital
                   </TabsTrigger>
@@ -389,7 +429,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="inteligencia" className="flex items-center gap-2">
+                  <TabsTrigger value="inteligencia" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Brain className="h-4 w-4" />
                     Inteligência
                   </TabsTrigger>
@@ -403,7 +443,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="receita" className="flex items-center gap-2">
+                  <TabsTrigger value="receita" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <FileSpreadsheet className="h-4 w-4" />
                     Receita
                   </TabsTrigger>
@@ -417,7 +457,7 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="actions" className="flex items-center gap-2">
+                  <TabsTrigger value="actions" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     <Zap className="h-4 w-4" />
                     Ações
                   </TabsTrigger>

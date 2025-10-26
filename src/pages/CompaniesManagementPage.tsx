@@ -769,7 +769,7 @@ export default function CompaniesManagementPage() {
                     {isBatchEnrichingEconodata ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Database className="h-4 w-4" />
+                      <Zap className="h-4 w-4" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -1044,7 +1044,7 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="ghost"
+                                  variant="default"
                                   size="icon"
                                   onClick={() => navigate(`/company/${company.id}`)}
                                 >
@@ -1061,7 +1061,7 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="ghost"
+                                  variant="default"
                                   size="icon"
                                   onClick={() => navigate(`/search?companyId=${company.id}`)}
                                 >
@@ -1165,7 +1165,7 @@ export default function CompaniesManagementPage() {
                                   }}
                                   disabled={!company.cnpj}
                                 >
-                                  <Database className="h-4 w-4" />
+                                  <Zap className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -1178,13 +1178,12 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="ghost"
+                                  variant="destructive"
                                   size="icon"
                                   onClick={() => {
                                     setCompanyToDelete(company);
                                     setDeleteDialogOpen(true);
                                   }}
-                                  className="text-destructive hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>

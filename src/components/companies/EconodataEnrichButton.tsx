@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Database, Loader2 } from 'lucide-react';
+import { Zap, Loader2 } from 'lucide-react';
 import { useEconodataEnrichment } from '@/hooks/useEconodataEnrichment';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -47,8 +47,8 @@ export function EconodataEnrichButton({
               </>
             ) : (
               <>
-                <Database className="mr-2 h-4 w-4 text-primary-foreground" />
-                Enriquecer com Econodata
+                <Zap className="mr-2 h-4 w-4" />
+                Eco-Booster
               </>
             )}
           </Button>
