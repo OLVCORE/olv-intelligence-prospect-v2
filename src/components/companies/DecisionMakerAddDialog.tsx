@@ -63,13 +63,17 @@ export default function DecisionMakerAddDialog({ companyId, onAdded, trigger }: 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
+      {trigger ? (
+        <div onClick={() => setOpen(true)} role="button" aria-label="Abrir diálogo de adicionar decisor" className="inline-flex">
+          {trigger}
+        </div>
+      ) : (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="h-4 w-4 mr-2" /> Adicionar Decisor
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adicionar Decisor</DialogTitle>

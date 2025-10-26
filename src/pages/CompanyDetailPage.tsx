@@ -30,6 +30,8 @@ import { CompanyReport } from "@/components/reports/CompanyReport";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCompanyReport } from "@/hooks/useCompanyReport";
 import DecisionMakerAddDialog from "@/components/companies/DecisionMakerAddDialog";
+import apolloLogo from "@/assets/logos/apollo.ico";
+import phantomLogo from "@/assets/logos/phantombuster.png";
 export default function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,6 +43,7 @@ export default function CompanyDetailPage() {
   const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isTestingApollo, setIsTestingApollo] = useState(false);
+  const [isRunningPhantom, setIsRunningPhantom] = useState(false);
   const location = useLocation();
 
   const { data: company, isLoading } = useQuery({
@@ -339,6 +342,26 @@ export default function CompanyDetailPage() {
     }
   };
 
+  const handleRunPhantom = async () => {
+    setIsRunningPhantom(true);
+    try {
+      toast.info('Executando PhantomBuster...', { description: 'Caso não esteja configurado, será exibido um aviso.' });
+      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
+        body: { company_id: id }
+      });
+      if (error) throw error;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
+        queryClient.invalidateQueries({ queryKey: ['decision_makers', id] }),
+      ]);
+      toast.success('PhantomBuster executado (via enriquecimento 360°)');
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Falha ao executar PhantomBuster', { description: e.message });
+    } finally {
+      setIsRunningPhantom(false);
+    }
+  };
   return (
     <div className="p-8 space-y-6">
       <BackButton to="/companies" />
@@ -964,21 +987,14 @@ export default function CompanyDetailPage() {
                   <Users className="h-5 w-5" />
                   Decisores Mapeados
                 </CardTitle>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-col items-end gap-1">
                   {id && (
                     <DecisionMakerAddDialog
                       companyId={id}
                       trigger={
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <UserPlus className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Adicionar decisor manualmente</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Adicionar decisor">
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
                       }
                     />
                   )}
@@ -991,15 +1007,37 @@ export default function CompanyDetailPage() {
                           onClick={handleTestApollo}
                           disabled={isTestingApollo}
                           className="h-8 w-8"
+                          aria-label="Buscar decisores via Apollo"
                         >
                           {isTestingApollo ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <TestTube className="h-4 w-4" />
+                            <img src={apolloLogo} alt="Apollo.io logo" className="h-4 w-4" />
                           )}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Testar conexão Apollo</TooltipContent>
+                      <TooltipContent>Buscar decisores (Apollo)</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleRunPhantom}
+                          disabled={isRunningPhantom}
+                          className="h-8 w-8"
+                          aria-label="Buscar decisores via PhantomBuster"
+                        >
+                          {isRunningPhantom ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <img src={phantomLogo} alt="PhantomBuster logo" className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Buscar decisores (PhantomBuster)</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
