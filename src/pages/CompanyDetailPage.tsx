@@ -44,6 +44,22 @@ export default function CompanyDetailPage() {
   const [isTestingApollo, setIsTestingApollo] = useState(false);
   const [isRunningPhantom, setIsRunningPhantom] = useState(false);
 
+  // Função para parsear colaboradores/decisores do formato da planilha
+  const parseCollaborators = (cargosStr?: string, linkedinStr?: string) => {
+    if (!cargosStr) return [];
+    const cargos = cargosStr.split('\n').filter(c => c.trim());
+    const linkedins = linkedinStr ? linkedinStr.split('\n').filter(l => l.trim()) : [];
+    
+    return cargos.map((cargo, i) => {
+      const parts = cargo.split(' - ');
+      return {
+        name: parts[0]?.trim() || '',
+        role: parts.slice(1).join(' - ').trim() || '',
+        linkedin: linkedins[i]?.trim() || ''
+      };
+    });
+  };
+
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
     queryFn: async () => {
@@ -795,47 +811,81 @@ export default function CompanyDetailPage() {
             </Card>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Decisores</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Decisores - Cargos</p>
-                  <ScrollArea className="h-32 border rounded p-3">
-                    <p className="text-xs whitespace-pre-wrap">{rawData.decisores_cargos || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Decisores - LinkedIn</p>
-                  <ScrollArea className="h-32 border rounded p-3">
-                    <p className="text-xs whitespace-pre-wrap break-all">{rawData.decisores_linkedin || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Decisores da Planilha ({parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin).length})
+              </CardTitle>
+              <CardDescription>Decisores identificados pela Econodata</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96 border rounded p-4">
+                {parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin).length > 0 ? (
+                  <div className="grid gap-3">
+                    {parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin).map((decisor, i) => (
+                      <Card key={i} className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{decisor.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{decisor.role}</p>
+                          </div>
+                          {decisor.linkedin && (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={decisor.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                LinkedIn
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Nenhum decisor encontrado na planilha</p>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Colaboradores</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Colaboradores - Cargos</p>
-                  <ScrollArea className="h-32 border rounded p-3">
-                    <p className="text-xs whitespace-pre-wrap">{rawData.colaboradores_cargos || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Colaboradores - LinkedIn</p>
-                  <ScrollArea className="h-32 border rounded p-3">
-                    <p className="text-xs whitespace-pre-wrap break-all">{rawData.colaboradores_linkedin || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UsersIcon className="h-5 w-5" />
+                Colaboradores da Planilha ({parseCollaborators(rawData.colaboradores_cargos, rawData.colaboradores_linkedin).length})
+              </CardTitle>
+              <CardDescription>Colaboradores identificados pela Econodata - Use para buscar manualmente no LinkedIn</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96 border rounded p-4">
+                {parseCollaborators(rawData.colaboradores_cargos, rawData.colaboradores_linkedin).length > 0 ? (
+                  <div className="grid gap-3">
+                    {parseCollaborators(rawData.colaboradores_cargos, rawData.colaboradores_linkedin).map((colab, i) => (
+                      <Card key={i} className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{colab.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{colab.role}</p>
+                          </div>
+                          {colab.linkedin && (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={colab.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                LinkedIn
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Nenhum colaborador encontrado na planilha</p>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
 
           {/* Decisores cadastrados no sistema */}
           {decisors.length > 0 && (
@@ -1241,6 +1291,7 @@ export default function CompanyDetailPage() {
                           onClick={handleTestApollo}
                           disabled={isTestingApollo}
                           variant="outline"
+                          size="sm"
                           className="w-full justify-start"
                         >
                           {isTestingApollo ? (
@@ -1248,7 +1299,7 @@ export default function CompanyDetailPage() {
                           ) : (
                             <img src={apolloLogo} className="h-4 w-4 mr-2" alt="Apollo" />
                           )}
-                          Apollo.io - Buscar Decisores
+                          Apollo.io
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -1264,6 +1315,7 @@ export default function CompanyDetailPage() {
                           onClick={handleRunPhantom}
                           disabled={isRunningPhantom}
                           variant="outline"
+                          size="sm"
                           className="w-full justify-start"
                         >
                           {isRunningPhantom ? (
@@ -1271,7 +1323,7 @@ export default function CompanyDetailPage() {
                           ) : (
                             <img src={phantomLogo} className="h-4 w-4 mr-2" alt="PhantomBuster" />
                           )}
-                          PhantomBuster - Scraping LinkedIn
+                          PhantomBuster
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -1280,7 +1332,13 @@ export default function CompanyDetailPage() {
                     </Tooltip>
                   </TooltipProvider>
 
-                  <LinkedInEnrichButton companyId={id!} />
+                  <LinkedInEnrichButton 
+                    companyId={id!}
+                    linkedinUrl={digitalPresence?.linkedin || rawData.linkedin}
+                    variant="outline"
+                    size="sm"
+                    showLabel={true}
+                  />
 
                   <DecisionMakerAddDialog companyId={id!} />
                 </div>
