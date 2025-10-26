@@ -24,6 +24,11 @@ All colors MUST be HSL.
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+    /* Status tokens */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 74% 49%;
+    --warning-foreground: 222.2 84% 4.9%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
@@ -80,6 +85,11 @@ All colors MUST be HSL.
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+    /* Status tokens */
+    --success: 142 71% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 74% 45%;
+    --warning-foreground: 222.2 84% 4.9%;
     --border: 217.2 22% 28%;
     --input: 217.2 22% 28%;
     --ring: 217 91% 60%;

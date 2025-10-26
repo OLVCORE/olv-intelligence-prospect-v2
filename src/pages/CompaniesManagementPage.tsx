@@ -670,7 +670,7 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="default"
+                    variant="success"
                     onClick={() => setShowBulkUpload(true)}
                     className="gap-2"
                   >
@@ -931,13 +931,13 @@ export default function CompaniesManagementPage() {
                       </TableCell>
                       <TableCell>
                         {(company as any).cnpj_status === 'ativo' && (
-                          <Badge variant="default" className="gap-1 bg-green-500">
+                          <Badge variant="success" className="gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Ativo
                           </Badge>
                         )}
                         {(company as any).cnpj_status === 'inativo' && (
-                          <Badge variant="secondary" className="gap-1 bg-orange-500 text-white">
+                          <Badge variant="warning" className="gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             Inativo
                           </Badge>
@@ -949,7 +949,7 @@ export default function CompaniesManagementPage() {
                           </Badge>
                         )}
                         {(!( company as any).cnpj_status || (company as any).cnpj_status === 'pendente') && (
-                          <Badge variant="outline" className="gap-1">
+                          <Badge variant="secondary" className="gap-1">
                             <Clock className="w-3 h-3" />
                             Pendente
                           </Badge>

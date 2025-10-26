@@ -234,6 +234,7 @@ export default function CompanyDetailPage() {
   const decisors = (company as any)?.decision_makers || [];
   const digitalPresence = (company as any)?.digital_presence;
   const rawData = (company as any)?.raw_data || {};
+  const situacaoReceita: string | undefined = receitaData?.situacao;
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -253,8 +254,8 @@ export default function CompanyDetailPage() {
               )}
             </div>
             <div className="text-right space-y-2">
-              <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                {receitaData?.situacao || 'Status desconhecido'}
+              <Badge variant={situacaoReceita === 'ATIVA' ? 'success' : (situacaoReceita && ['INAPTA','SUSPENSA','INATIVA','BAIXADA'].includes(situacaoReceita) ? 'warning' : 'destructive')}>
+                {situacaoReceita || 'Status desconhecido'}
               </Badge>
               <div className="flex items-center gap-2">
                 <Button
