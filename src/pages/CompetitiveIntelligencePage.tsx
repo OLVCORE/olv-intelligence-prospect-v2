@@ -46,6 +46,24 @@ export default function CompetitiveIntelligencePage() {
 
   const { data: intentScore = 0 } = useCalculateIntentScore(companyId || undefined);
 
+  // Check if intent signals have been checked
+  const { data: intentSignals } = useQuery({
+    queryKey: ['intent-signals', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('intent_signals')
+        .select('id')
+        .eq('company_id', companyId)
+        .limit(1);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
+
+  const hasIntentCheck = (intentSignals?.length ?? 0) > 0;
+
   const wonDeals = winLossData?.filter(d => d.outcome === 'won').length || 0;
   const lostDeals = winLossData?.filter(d => d.outcome === 'lost').length || 0;
   const totalDeals = wonDeals + lostDeals;
@@ -213,6 +231,7 @@ export default function CompetitiveIntelligencePage() {
               <QualificationRecommendation 
                 company={company}
                 intentScore={intentScore}
+                hasIntentCheck={hasIntentCheck}
               />
             </TabsContent>
 

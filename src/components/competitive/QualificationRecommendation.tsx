@@ -200,7 +200,6 @@ export function QualificationRecommendation({
   };
 
   const IconComponent = recommendation.icon;
-  const alertVariant = recommendation.action === "disqualify" ? "destructive" : "default";
 
   return (
     <Card className="border-2">
@@ -487,39 +486,43 @@ export function QualificationRecommendation({
             </Accordion>
 
             {/* CTA Button */}
-            {!dealCreated && aiAnalysis.decision === 'GO' && (
+            <div className="flex gap-3">
+              {!dealCreated && aiAnalysis.decision === 'GO' && (
+                <Button
+                  onClick={handleAddToPipeline}
+                  disabled={isPending}
+                  size="lg"
+                  className="flex-1"
+                  variant={recommendation.buttonVariant}
+                >
+                  <IconComponent className="h-5 w-5 mr-2" />
+                  {recommendation.buttonLabel}
+                  {recommendation.action === 'contact_now' && <span className="ml-2">🔥</span>}
+                </Button>
+              )}
+
               <Button
-                onClick={handleAddToPipeline}
-                disabled={isPending}
-                variant="default"
+                onClick={handleGenerateAnalysis}
+                variant="outline"
                 size="lg"
-                className="w-full"
+                disabled={isLoadingAnalysis}
               >
-                <ArrowRight className="mr-2 h-5 w-5" />
-                {isPending ? 'Adicionando...' : 'Adicionar ao Pipeline'}
+                <Zap className="h-4 w-4 mr-2" />
+                Gerar Nova Análise
               </Button>
-            )}
-            
+            </div>
+
             {dealCreated && (
-              <Alert className="bg-green-500/10 border-green-500/20">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  <strong>✅ Deal criado com sucesso!</strong>
-                  <p className="text-xs mt-1">
-                    {company.name} foi adicionado ao pipeline. Acesse o SDR Dashboard para gerenciar.
-                  </p>
+              <Alert className="border-green-600 bg-green-50 dark:bg-green-950">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <AlertDescription>
+                  ✅ Deal criado com sucesso! Acesse o pipeline para dar continuidade.
                 </AlertDescription>
               </Alert>
             )}
           </>
-        ) : (
-          <div className="text-center py-8">
-            <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Não foi possível carregar a análise de IA. Tente novamente.
-            </p>
-          </div>
         )}
+
         {/* Metadata */}
         <div className="pt-3 border-t">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
