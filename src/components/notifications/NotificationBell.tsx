@@ -97,6 +97,14 @@ export function NotificationBell() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case "hot_lead":
+        return "🔥";
+      case "totvs_detected":
+        return "⛔";
+      case "totvs_change":
+        return "📊";
+      case "intent_change":
+        return "📈";
       case "deal_won":
         return "🎉";
       case "deal_lost":
@@ -161,6 +169,10 @@ export function NotificationBell() {
                   onClick={() => {
                     if (!notification.is_read) {
                       markAsRead.mutate(notification.id);
+                    }
+                    // Se tiver company_id no metadata, navegar para a página
+                    if (notification.metadata?.company_id) {
+                      window.location.href = `/competitive-intelligence?company=${notification.metadata.company_id}`;
                     }
                   }}
                 >

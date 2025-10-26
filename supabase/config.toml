@@ -1,5 +1,8 @@
 project_id = "ioaxzpwlurpduanzkfrt"
  
+[functions.company-monitoring-cron]
+verify_jwt = false
+
 [functions.ai-forecast-pipeline]
 verify_jwt = false
 
@@ -184,6 +187,13 @@ verify_jwt = false
 
   [functions.batch-enrich-360]
   verify_jwt = false
+
+  [functions.detect-totvs-usage]
+  verify_jwt = false
+
+  [functions.detect-intent-signals]
+  verify_jwt = false
+
   
   [functions.enrich-econodata]
   verify_jwt = true

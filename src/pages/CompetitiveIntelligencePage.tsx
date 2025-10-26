@@ -7,6 +7,8 @@ import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompet
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
 import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
+import { MonitoringToggleButton } from "@/components/competitive/MonitoringToggleButton";
+import { MonitoringDashboard } from "@/components/competitive/MonitoringDashboard";
 import { Badge } from "@/components/ui/badge";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus, Target, AlertCircle } from "lucide-react";
@@ -92,17 +94,25 @@ export default function CompetitiveIntelligencePage() {
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <CardTitle className="text-xl">{company.name}</CardTitle>
                   <CardDescription>{company.domain || company.city}</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowCompanySelector(true)}
-                >
-                  Trocar Empresa
-                </Button>
+                <div className="flex items-center gap-2">
+                  <MonitoringToggleButton 
+                    companyId={company.id}
+                    companyName={company.name}
+                    variant="outline"
+                    size="sm"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowCompanySelector(true)}
+                  >
+                    Trocar Empresa
+                  </Button>
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -215,6 +225,8 @@ export default function CompetitiveIntelligencePage() {
             </TabsContent>
 
             <TabsContent value="manage" className="space-y-4">
+              <MonitoringDashboard />
+              
               <div className="flex justify-end">
                 <CompetitorFormDialog />
               </div>
