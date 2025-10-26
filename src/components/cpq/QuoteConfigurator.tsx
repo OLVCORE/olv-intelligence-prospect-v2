@@ -60,7 +60,7 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
     }
   }, [selectedProducts, priceOverrides, updateData, draftData]);
 
-  const addProduct = (product: Product) => {
+  const addProduct = async (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);
     if (existing) {
       toast.info('Produto já adicionado. Ajuste a quantidade.');
@@ -79,11 +79,18 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
       final_price: effectivePrice * product.min_quantity,
     };
 
-    setSelectedProducts([...selectedProducts, newProduct]);
+    const updated = [...selectedProducts, newProduct];
+    setSelectedProducts(updated);
+    // Persistir imediatamente no draft para não perder dados ao trocar de aba
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: updated, priceOverrides }));
+    await save();
   };
 
-  const removeProduct = (sku: string) => {
-    setSelectedProducts(selectedProducts.filter(p => p.sku !== sku));
+  const removeProduct = async (sku: string) => {
+    const updated = selectedProducts.filter(p => p.sku !== sku);
+    setSelectedProducts(updated);
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: updated, priceOverrides }));
+    await save();
   };
 
   const updateQuantity = (sku: string, quantity: number) => {
@@ -225,21 +232,34 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
                         size="sm"
                         variant="ghost"
                         onClick={async () => {
-                          // Salva preço sobrescrito no catálogo (apenas sessão/draft)
-                          setPriceOverrides(prev => ({ ...prev, [product.sku]: editingPrice }));
-                          // Se já foi adicionado, atualiza também o item selecionado
+                          // Sobrescreve preço no catálogo e sincroniza seleção
+                          const overridePrice = editingPrice;
+                          setPriceOverrides(prev => ({ ...prev, [product.sku]: overridePrice }));
                           const alreadySelected = selectedProducts.some(p => p.sku === product.sku);
                           let newSelected = selectedProducts;
                           if (alreadySelected) {
                             newSelected = selectedProducts.map(p =>
                               p.sku === product.sku
-                                ? { ...p, base_price: editingPrice, final_price: editingPrice * p.quantity * (1 - p.discount / 100) }
+                                ? { ...p, base_price: overridePrice, final_price: overridePrice * p.quantity * (1 - p.discount / 100) }
                                 : p
                             );
-                            setSelectedProducts(newSelected);
+                          } else {
+                            // Se não estava selecionado, adiciona automaticamente para refletir no ROI
+                            const effectivePrice = overridePrice;
+                            const newProduct: QuoteProduct = {
+                              id: product.id,
+                              sku: product.sku,
+                              name: product.name,
+                              quantity: product.min_quantity,
+                              base_price: effectivePrice,
+                              discount: 0,
+                              final_price: effectivePrice * product.min_quantity,
+                            };
+                            newSelected = [...selectedProducts, newProduct];
                           }
+                          setSelectedProducts(newSelected);
                           // Persistir no draft imediatamente
-                          updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides: { ...(prev?.priceOverrides || {}), [product.sku]: editingPrice } }));
+                          updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides: { ...(prev?.priceOverrides || {}), [product.sku]: overridePrice } }));
                           await save();
                           setEditingPriceId(null);
                           toast.success('Preço atualizado no catálogo');
