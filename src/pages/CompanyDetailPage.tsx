@@ -928,8 +928,14 @@ export default function CompanyDetailPage() {
                       </div>
                       <div className="space-y-1 text-sm">
                         {decisor.email && <p>📧 {decisor.email}</p>}
+                        {decisor.phone && <p>📱 {decisor.phone}</p>}
                         {decisor.department && <p>🏢 {decisor.department}</p>}
                         {decisor.seniority && <p>📊 {decisor.seniority}</p>}
+                        {decisor.linkedin_url && (
+                          <a href={decisor.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                            🔗 LinkedIn
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -179,7 +179,7 @@ export default function AccountStrategyPage() {
                         <SelectItem value="">Nenhum</SelectItem>
                         {decisionMakers?.map((dm) => (
                           <SelectItem key={dm.id} value={dm.id}>
-                            {dm.name} - {dm.title}
+                            {dm.name} - {dm.title} {dm.email ? `(${dm.email})` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>

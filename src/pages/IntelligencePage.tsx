@@ -137,7 +137,15 @@ export default function IntelligencePage() {
                       {decisor.companies?.name} • {decisor.department}
                     </p>
                     {decisor.email && (
-                      <p className="text-xs font-mono">{decisor.email}</p>
+                      <p className="text-xs font-mono">📧 {decisor.email}</p>
+                    )}
+                    {decisor.phone && (
+                      <p className="text-xs font-mono">📱 {decisor.phone}</p>
+                    )}
+                    {decisor.linkedin_url && (
+                      <a href={decisor.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                        🔗 LinkedIn
+                      </a>
                     )}
                   </div>
                 ))}

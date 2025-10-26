@@ -687,15 +687,24 @@ serve(async (req) => {
           decisionMakers = apolloData.people;
           
           for (const person of decisionMakers.slice(0, 5)) {
+            // Mapear functions do Apollo para department
+            const department = person.functions?.[0] 
+              ? person.functions[0].charAt(0).toUpperCase() + person.functions[0].slice(1)
+              : null;
+            
+            // Pegar primeiro telefone se existir
+            const phone = person.phone_numbers?.[0]?.raw_number || null;
+            
             await supabase.from('decision_makers').upsert({
               company_id,
               name: person.name,
               title: person.title,
               email: person.email,
+              phone: phone,
               linkedin_url: person.linkedin_url,
               seniority: person.seniority,
-              department: person.department,
-              verified_email: !!person.email
+              department: department,
+              verified_email: person.email_status === 'verified'
             });
           }
         }

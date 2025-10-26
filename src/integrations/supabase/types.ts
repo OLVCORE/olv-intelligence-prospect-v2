@@ -1787,6 +1787,7 @@ export type Database = {
           id: string
           linkedin_url: string | null
           name: string
+          phone: string | null
           raw_data: Json | null
           seniority: string | null
           title: string | null
@@ -1801,6 +1802,7 @@ export type Database = {
           id?: string
           linkedin_url?: string | null
           name: string
+          phone?: string | null
           raw_data?: Json | null
           seniority?: string | null
           title?: string | null
@@ -1815,6 +1817,7 @@ export type Database = {
           id?: string
           linkedin_url?: string | null
           name?: string
+          phone?: string | null
           raw_data?: Json | null
           seniority?: string | null
           title?: string | null
