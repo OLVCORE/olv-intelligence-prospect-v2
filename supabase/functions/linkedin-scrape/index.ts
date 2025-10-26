@@ -16,8 +16,9 @@ serve(async (req) => {
   }
 
   try {
-    // Parse and validate input
-    const body = await req.json();
+    // Parse and validate input (+ alias support linkedinUrl)
+    const raw = await req.json();
+    const body = raw && raw.linkedinUrl && !raw.linkedin_url ? { ...raw, linkedin_url: raw.linkedinUrl } : raw;
     const validated = linkedinScrapeSchema.parse(body);
     const { linkedin_url, company_id } = validated;
     console.log('[LinkedIn Scrape] Iniciando:', linkedin_url);

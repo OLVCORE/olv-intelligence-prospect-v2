@@ -347,7 +347,7 @@ export default function CompanyDetailPage() {
     try {
       const dp = (company as any)?.digital_presence || {};
       const raw = (company as any)?.raw_data || {};
-      const linkedinUrl = dp.linkedin || raw.linkedin || raw?.social?.linkedin || null;
+      const linkedinUrl = dp.linkedin || raw.linkedin || raw?.social?.linkedin || (company as any)?.linkedin_url || null;
 
       if (!linkedinUrl) {
         toast.info('LinkedIn não encontrado', { description: 'Adicione a URL do LinkedIn da empresa para usar o PhantomBuster.' });
