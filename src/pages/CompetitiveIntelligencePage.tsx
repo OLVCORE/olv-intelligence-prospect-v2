@@ -6,7 +6,9 @@ import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDia
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
 import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
+import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { Badge } from "@/components/ui/badge";
+import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus, Target, AlertCircle } from "lucide-react";
 import { useWinLossAnalysis } from "@/hooks/useCompetitiveIntelligence";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -39,6 +41,8 @@ export default function CompetitiveIntelligencePage() {
     },
     enabled: !!companyId,
   });
+
+  const { data: intentScore = 0 } = useCalculateIntentScore(companyId || undefined);
 
   const wonDeals = winLossData?.filter(d => d.outcome === 'won').length || 0;
   const lostDeals = winLossData?.filter(d => d.outcome === 'lost').length || 0;
@@ -194,6 +198,12 @@ export default function CompetitiveIntelligencePage() {
                 <TOTVSDetectionCard company={company} />
                 <IntentSignalsCard company={company} />
               </div>
+
+              {/* AI Recommendation */}
+              <QualificationRecommendation 
+                company={company}
+                intentScore={intentScore}
+              />
             </TabsContent>
 
             <TabsContent value="battle-cards" className="space-y-4">

@@ -1,12 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, XCircle, Play, ExternalLink, Loader2, Briefcase, Search, Globe, Users, ChevronDown } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Play, ExternalLink, Loader2, Briefcase, Search, Globe, Users, ChevronDown, Copy } from "lucide-react";
 import { useTOTVSDetection } from "@/hooks/useTOTVSDetection";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface TOTVSDetectionCardProps {
   company: {
@@ -23,6 +24,18 @@ interface TOTVSDetectionCardProps {
 export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
   const { mutate: detectTOTVS, isPending } = useTOTVSDetection();
   const [showExplanation, setShowExplanation] = useState(false);
+
+  const handleLinkClick = async (url: string, e: React.MouseEvent) => {
+    // Copiar link para clipboard como fallback
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copiado!', {
+        description: 'O link foi copiado. Se não abrir automaticamente, cole no navegador.',
+      });
+    } catch (err) {
+      console.error('Erro ao copiar:', err);
+    }
+  };
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-destructive";
@@ -255,18 +268,33 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                               {source.evidence}
                             </p>
                             {source.url ? (
-                              <div className="space-y-1">
-                                <a
-                                  href={source.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  🔗 VER EVIDÊNCIA NA FONTE ORIGINAL
-                                </a>
-                                <p className="text-xs text-muted-foreground italic">
-                                  ⚠️ Nota: LinkedIn pode pedir verificação humana. Sites sem HTTPS podem ser bloqueados pelo navegador.
+                              <div className="space-y-2">
+                                <div className="flex gap-2">
+                                  <a
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => handleLinkClick(source.url, e)}
+                                    className="flex-1 text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    🔗 Abrir Link
+                                  </a>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-auto py-2 px-3"
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(source.url);
+                                      toast.success('Link copiado para área de transferência!');
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground italic bg-amber-500/10 p-2 rounded border border-amber-500/20">
+                                  💡 <strong>Dica:</strong> Se o link não abrir, use o botão de copiar e cole diretamente no navegador. 
+                                  LinkedIn pode pedir verificação humana.
                                 </p>
                               </div>
                             ) : (

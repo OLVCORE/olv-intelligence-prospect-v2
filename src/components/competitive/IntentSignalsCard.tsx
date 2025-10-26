@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Briefcase, Newspaper, Users, Search, ExternalLink, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { TrendingUp, Briefcase, Newspaper, Users, Search, ExternalLink, Play, Loader2, AlertCircle, ChevronDown, Copy } from "lucide-react";
 import { useIntentSignals, useDetectIntentSignals, useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface IntentSignalsCardProps {
   company: {
@@ -24,6 +25,18 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
   const { data: intentScore = 0 } = useCalculateIntentScore(company.id);
   const { mutate: detectSignals, isPending } = useDetectIntentSignals();
   const [showExplanation, setShowExplanation] = useState(false);
+
+  const handleLinkClick = async (url: string, e: React.MouseEvent) => {
+    // Copiar link para clipboard como fallback
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copiado!', {
+        description: 'O link foi copiado. Se não abrir automaticamente, cole no navegador.',
+      });
+    } catch (err) {
+      console.error('Erro ao copiar:', err);
+    }
+  };
 
   const getSignalIcon = (type: string) => {
     const icons: Record<string, any> = {
@@ -265,18 +278,33 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                       </Badge>
                     </div>
                     {signal.signal_url ? (
-                      <div className="space-y-1">
-                        <a
-                          href={signal.signal_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          🔗 VER EVIDÊNCIA NA FONTE ORIGINAL
-                        </a>
-                        <p className="text-xs text-muted-foreground italic">
-                          ⚠️ Nota: LinkedIn pode pedir verificação humana. Sites sem HTTPS podem ser bloqueados pelo navegador.
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <a
+                            href={signal.signal_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => handleLinkClick(signal.signal_url!, e)}
+                            className="flex-1 text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            🔗 Abrir Link
+                          </a>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-auto py-2 px-3"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(signal.signal_url!);
+                              toast.success('Link copiado para área de transferência!');
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground italic bg-amber-500/10 p-2 rounded border border-amber-500/20">
+                          💡 <strong>Dica:</strong> Se o link não abrir, use o botão de copiar e cole diretamente no navegador. 
+                          LinkedIn pode pedir verificação humana.
                         </p>
                       </div>
                     ) : (
