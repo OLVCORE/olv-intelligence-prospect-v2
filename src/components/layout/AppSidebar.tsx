@@ -16,6 +16,9 @@ import {
   Radio,
   MessageSquare,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   Zap,
   CheckCircle2,
   Globe,
@@ -490,7 +493,21 @@ export function AppSidebar() {
           
           {/* Toggle button - sempre visível */}
           <div className="pt-2 border-t border-sidebar-border/50">
-            <SidebarTrigger className="w-full h-10 flex items-center justify-center hover:bg-sidebar-accent rounded-md transition-colors" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(!open)}
+              className="w-full h-10 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border-primary/30 text-primary font-semibold transition-all"
+            >
+              {open ? (
+                <>
+                  <ChevronsLeft className="h-5 w-5" />
+                  {!isMobile && <span className="text-xs">Recolher</span>}
+                </>
+              ) : (
+                <ChevronsRight className="h-5 w-5" />
+              )}
+            </Button>
           </div>
         </div>
       </SidebarFooter>
