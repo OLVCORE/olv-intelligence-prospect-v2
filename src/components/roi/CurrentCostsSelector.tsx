@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Plus, Save } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export interface CurrentCostItem {
   id: string;
@@ -18,6 +19,7 @@ export interface CurrentCostItem {
 interface CurrentCostsSelectorProps {
   selectedCosts: CurrentCostItem[];
   onCostsChange: (costs: CurrentCostItem[]) => void;
+  onSaveCost?: () => Promise<void>;
 }
 
 const SOFTWARE_OPTIONS = [
@@ -64,7 +66,7 @@ const CONSULTING_OPTIONS = [
   { id: 'cons_ext_desenvolvimento', name: 'Desenvolvimento Customizado Externo', category: 'consulting' as const },
 ];
 
-export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCostsSelectorProps) {
+export function CurrentCostsSelector({ selectedCosts, onCostsChange, onSaveCost }: CurrentCostsSelectorProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     software: false,
     personnel: false,
@@ -78,11 +80,15 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCo
     return selectedCosts.some(cost => cost.id === costId);
   };
 
-  const toggleCost = (costId: string, costName: string, category: CurrentCostItem['category']) => {
+  const toggleCost = async (costId: string, costName: string, category: CurrentCostItem['category']) => {
     if (isCostSelected(costId)) {
       onCostsChange(selectedCosts.filter(cost => cost.id !== costId));
     } else {
       onCostsChange([...selectedCosts, { id: costId, name: costName, category, cost: 0 }]);
+      if (onSaveCost) {
+        await onSaveCost();
+        toast.success(`${costName} adicionado e salvo`);
+      }
     }
   };
 
@@ -243,15 +249,31 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange }: CurrentCo
                   <div key={cost.id} className="space-y-2 p-3 border rounded-lg bg-muted/30">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">{cost.name}</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => removeCost(cost.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={async () => {
+                            if (onSaveCost) {
+                              await onSaveCost();
+                              toast.success('Item salvo');
+                            }
+                          }}
+                        >
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeCost(cost.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Label className="text-xs whitespace-nowrap">Custo Mensal (R$)</Label>

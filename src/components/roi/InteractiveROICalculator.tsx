@@ -490,6 +490,7 @@ const cpqSignature = JSON.stringify({
                   setLocalState(prev => ({ ...prev, selectedProducts: products }));
                   updateData(prev => ({ ...prev, selectedProducts: products }));
                 }}
+                onSaveProduct={save}
           />
 
           {/* Custos Atuais - Seletor Detalhado */}
@@ -502,6 +503,7 @@ const cpqSignature = JSON.stringify({
               <CurrentCostsSelector
                 selectedCosts={currentCosts}
                 onCostsChange={(costs) => updateData(prev => ({ ...prev, currentCosts: costs }))}
+                onSaveCost={save}
               />
           </div>
 
@@ -515,6 +517,7 @@ const cpqSignature = JSON.stringify({
               <TOTVSCostsSelector
                 selectedCosts={totvsCosts}
                 onCostsChange={(costs) => updateData(prev => ({ ...prev, totvsCosts: costs }))}
+                onSaveCost={save}
               />
 
             <Card>

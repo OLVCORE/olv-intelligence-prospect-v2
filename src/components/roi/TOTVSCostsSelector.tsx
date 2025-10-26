@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Plus, Save } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export interface TOTVSCostItem {
   id: string;
@@ -18,6 +19,7 @@ export interface TOTVSCostItem {
 interface TOTVSCostsSelectorProps {
   selectedCosts: TOTVSCostItem[];
   onCostsChange: (costs: TOTVSCostItem[]) => void;
+  onSaveCost?: () => Promise<void>;
 }
 
 const IMPLEMENTATION_OPTIONS = [
@@ -69,7 +71,7 @@ const SUPPORT_OPTIONS = [
   { id: 'sup_helpdesk', name: 'Helpdesk Dedicado', category: 'support' as const },
 ];
 
-export function TOTVSCostsSelector({ selectedCosts, onCostsChange }: TOTVSCostsSelectorProps) {
+export function TOTVSCostsSelector({ selectedCosts, onCostsChange, onSaveCost }: TOTVSCostsSelectorProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     implementation: false,
     training: false,
@@ -84,11 +86,15 @@ export function TOTVSCostsSelector({ selectedCosts, onCostsChange }: TOTVSCostsS
     return selectedCosts.some(cost => cost.id === costId);
   };
 
-  const toggleCost = (costId: string, costName: string, category: TOTVSCostItem['category']) => {
+  const toggleCost = async (costId: string, costName: string, category: TOTVSCostItem['category']) => {
     if (isCostSelected(costId)) {
       onCostsChange(selectedCosts.filter(cost => cost.id !== costId));
     } else {
       onCostsChange([...selectedCosts, { id: costId, name: costName, category, cost: 0 }]);
+      if (onSaveCost) {
+        await onSaveCost();
+        toast.success(`${costName} adicionado e salvo`);
+      }
     }
   };
 
@@ -252,15 +258,31 @@ export function TOTVSCostsSelector({ selectedCosts, onCostsChange }: TOTVSCostsS
                   <div key={cost.id} className="space-y-2 p-3 border rounded-lg bg-muted/30">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">{cost.name}</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => removeCost(cost.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={async () => {
+                            if (onSaveCost) {
+                              await onSaveCost();
+                              toast.success('Item salvo');
+                            }
+                          }}
+                        >
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeCost(cost.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Label className="text-xs whitespace-nowrap">Valor (R$)</Label>

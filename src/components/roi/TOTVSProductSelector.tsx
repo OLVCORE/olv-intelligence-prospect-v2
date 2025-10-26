@@ -31,6 +31,7 @@ export interface TOTVSProduct {
 interface TOTVSProductSelectorProps {
   selectedProducts: TOTVSProduct[];
   onProductsChange: (products: TOTVSProduct[]) => void;
+  onSaveProduct?: () => Promise<void>;
 }
 
 // Sub-módulos de Inteligência Artificial
@@ -64,7 +65,7 @@ const AVAILABLE_PRODUCTS = [
   { id: 'sfa', name: 'SFA' },
 ];
 
-export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOTVSProductSelectorProps) {
+export function TOTVSProductSelector({ selectedProducts, onProductsChange, onSaveProduct }: TOTVSProductSelectorProps) {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [expandedSubModules, setExpandedSubModules] = useState<Set<string>>(new Set());
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
     return selectedProducts.some(p => p.id === productId);
   };
 
-  const toggleProduct = (productId: string, productName: string) => {
+  const toggleProduct = async (productId: string, productName: string) => {
     if (isProductSelected(productId)) {
       onProductsChange(selectedProducts.filter(p => p.id !== productId));
     } else {
@@ -103,6 +104,12 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
       setExpandedProducts(prev => new Set([...prev, productId]));
       if (productId === 'ia') {
         setExpandedSubModules(prev => new Set([...prev, productId]));
+      }
+      
+      // Salvar automaticamente após adicionar
+      if (onSaveProduct) {
+        await onSaveProduct();
+        toast.success(`${productName} adicionado e salvo`);
       }
     }
   };
@@ -158,10 +165,13 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
     setEditingValue(currentValue);
   };
 
-  const saveEditedField = (productId: string, field: keyof TOTVSProduct) => {
+  const saveEditedField = async (productId: string, field: keyof TOTVSProduct) => {
     updateProduct(productId, field, editingValue);
     setEditingField(null);
-    toast.success('Valor atualizado');
+    if (onSaveProduct) {
+      await onSaveProduct();
+    }
+    toast.success('Valor atualizado e salvo');
   };
 
   const toggleExpanded = (productId: string) => {
@@ -282,6 +292,21 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
                     <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (onSaveProduct) {
+                                await onSaveProduct();
+                                toast.success('Produto salvo');
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
