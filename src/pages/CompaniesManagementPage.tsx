@@ -247,7 +247,7 @@ export default function CompaniesManagementPage() {
         description: 'Apenas empresas sem análise completa serão processadas'
       });
 
-      const { data, error } = await supabase.functions.invoke('trigger-batch-enrichment', {
+      const { data, error } = await supabase.functions.invoke('batch-enrich-360', {
         body: { force_refresh: false }
       });
 

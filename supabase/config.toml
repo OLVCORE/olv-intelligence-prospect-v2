@@ -111,9 +111,8 @@ verify_jwt = false
  [functions.auto-enrich-company]
  verify_jwt = false
  
- [functions.trigger-batch-enrichment]
- verify_jwt = false
- 
+[functions.trigger-batch-enrichment]
+verify_jwt = false
  [functions.global-search]
  verify_jwt = false
  
@@ -182,3 +181,6 @@ verify_jwt = false
 
   [functions.enrich-financial-market]
   verify_jwt = true
+
+  [functions.batch-enrich-360]
+  verify_jwt = false

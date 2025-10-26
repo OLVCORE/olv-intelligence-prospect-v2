@@ -27,7 +27,7 @@ export function BatchEnrichmentButton() {
         description: "Analisando empresas em background. Isso pode levar alguns minutos...",
       });
 
-      const { data, error } = await supabase.functions.invoke('trigger-batch-enrichment');
+      const { data, error } = await supabase.functions.invoke('batch-enrich-360');
 
       if (error) throw error;
 
