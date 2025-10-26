@@ -29,7 +29,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image, Upload, Database } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
@@ -37,7 +38,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
-import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsCard';
+
 
 export default function CompaniesManagementPage() {
   logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
@@ -70,6 +71,8 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [enrichingReceitaId, setEnrichingReceitaId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [isBatchEnrichingEconodata, setIsBatchEnrichingEconodata] = useState(false);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -651,78 +654,97 @@ export default function CompaniesManagementPage() {
       <AppLayout>
         <div className="p-8 space-y-6" data-testid="companies-table">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <BackButton className="mb-2" />
-            <h1 className="text-3xl font-bold">Gerenciar Empresas</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Gerenciar Empresas
+            </h1>
+            <p className="text-muted-foreground mt-1">
               Visualize, edite, exclua e enriqueça empresas cadastradas
             </p>
           </div>
-          <div className="flex gap-2">
-            <BulkUploadDialog />
-            <Button 
-              variant="outline" 
-              onClick={handleBatchEnrichReceitaWS}
-              disabled={isBatchEnriching}
-            >
-              {isBatchEnriching ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Building2 className="h-4 w-4 mr-2" />
-              )}
-              Enriquecer com Receita Federal
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={handleBatchEnrich360}
-              disabled={isBatchEnriching360}
-            >
-              {isBatchEnriching360 ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
-              )}
-              Enriquecimento 360° Completo
-            </Button>
-            {selectedCompanies.length > 0 && (
-              <Button 
-                variant="destructive" 
-                onClick={handleBulkDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                Excluir {selectedCompanies.length} selecionada(s)
-              </Button>
-            )}
-            <Button size="lg" onClick={() => navigate('/search')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Empresa
-            </Button>
+          
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    onClick={() => setShowBulkUpload(true)}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload em Massa
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Importar múltiplas empresas via CSV ou Excel</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={handleBatchEnrichReceitaWS}
+                    disabled={isBatchEnriching}
+                    className="gap-2"
+                  >
+                    {isBatchEnriching ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Building2 className="h-4 w-4" />
+                    )}
+                    Enriquecer com Receita Federal
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Enriquece dados básicos da empresa via Receita Federal</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    onClick={handleBatchEnrich360}
+                    disabled={isBatchEnriching360}
+                    className="gap-2"
+                  >
+                    {isBatchEnriching360 ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    Enriquecimento 360° Completo
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Análise completa com IA: insights, sinais, recomendações</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    onClick={() => navigate('/search')}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nova Empresa
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Adicionar nova empresa manualmente</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
         {/* Google Sheets Sync Config removido desta página (agora na tela de Busca) */}
-
-        {/* Enrichment Actions */}
-        <EnrichmentActionsCard
-          onReceita={() => {
-            // Batch enrich all companies with Receita
-            toast.info('Enriquecimento em lote será implementado');
-          }}
-          on360={() => {
-            // Batch enrich all companies with 360
-            toast.info('Análise 360° em lote será implementada');
-          }}
-          onEconodata={() => {
-            // Batch enrich all companies with Econodata
-            toast.info('Enriquecimento Econodata em lote será implementado');
-          }}
-        />
 
         {/* Search */}
         <Card>
@@ -1065,11 +1087,13 @@ export default function CompaniesManagementPage() {
                 {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Excluir
               </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </AppLayout>
-    </ErrorBoundary>
-  );
-}
+             </AlertDialogFooter>
+           </AlertDialogContent>
+         </AlertDialog>
+
+         <BulkUploadDialog />
+       </div>
+     </AppLayout>
+     </ErrorBoundary>
+   );
+ }
