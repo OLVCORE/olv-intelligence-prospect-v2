@@ -19,6 +19,9 @@ import { ExportButton } from '@/components/export/ExportButton';
 import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
 import { UnsavedChangesWarning } from '@/components/common/UnsavedChangesWarning';
 import { useModuleDraft } from '@/hooks/useModuleDraft';
+import { useCrossModuleData } from '@/hooks/useCrossModuleData';
+import type { QuoteProduct } from '@/hooks/useQuotes';
+
 
 interface ROICalculatorProps {
   companyId: string;
@@ -129,6 +132,45 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
     title: `ROI - ${companyId || accountStrategyId}`,
     autoSaveInterval: 10000, // 10s
   });
+
+  // Carregar produtos do CPQ para sincronização
+  const { data: cpqData } = useCrossModuleData<{ selectedProducts: QuoteProduct[] }>({
+    sourceModule: 'cpq',
+    companyId,
+    accountStrategyId,
+  });
+
+  // Sincronizar produtos do CPQ para o ROI automaticamente
+  useEffect(() => {
+    if (cpqData?.selectedProducts && cpqData.selectedProducts.length > 0) {
+      // Converter produtos do CPQ para formato do ROI
+      const convertedProducts: TOTVSProduct[] = cpqData.selectedProducts.map(product => ({
+        id: product.sku,
+        name: product.name,
+        licenseCost: product.base_price * product.quantity,
+        implementationCost: 0, // Usuário pode editar depois
+        maintenanceCost: product.base_price * product.quantity * 0.2, // 20% do valor como manutenção (estimativa)
+        users: product.quantity,
+      }));
+
+      // Atualizar apenas se houver mudanças reais
+      const currentIds = selectedProducts.map(p => p.id).sort().join(',');
+      const newIds = convertedProducts.map(p => p.id).sort().join(',');
+      
+      if (currentIds !== newIds) {
+        updateData(prev => ({
+          ...prev,
+          selectedProducts: convertedProducts,
+        }));
+        
+        toast({
+          title: "📦 Produtos importados do CPQ",
+          description: `${convertedProducts.length} produto(s) carregados automaticamente`,
+        });
+      }
+    }
+  }, [cpqData?.selectedProducts]);
+
 
   // Sincronizar draftData com localState quando carrega
   useEffect(() => {
@@ -343,6 +385,12 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                 </>
               )}
               <div className="border-l pl-2 flex gap-2">
+                {cpqData?.selectedProducts && cpqData.selectedProducts.length > 0 && (
+                  <Badge variant="secondary" className="gap-1">
+                    <span className="text-xs">🔄</span>
+                    Sincronizado com CPQ
+                  </Badge>
+                )}
                 <Badge 
                   variant={mode === 'simple' ? 'default' : 'outline'}
                   className="cursor-pointer"
@@ -372,6 +420,24 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
         {/* Inputs Tab */}
         <TabsContent value="inputs" className="space-y-4">
+          {/* Nota de Sincronização com CPQ */}
+          {cpqData?.selectedProducts && cpqData.selectedProducts.length > 0 && (
+            <div className="p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-blue-600 dark:text-blue-400 text-xl">🔄</div>
+                <div className="flex-1">
+                  <p className="font-medium text-blue-900 dark:text-blue-100">
+                    Produtos Sincronizados com CPQ
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    Os produtos selecionados no módulo CPQ foram importados automaticamente. 
+                    Você pode ajustar os valores de implementação e manutenção abaixo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Seletor de Produtos TOTVS */}
           <TOTVSProductSelector
                 selectedProducts={selectedProducts}

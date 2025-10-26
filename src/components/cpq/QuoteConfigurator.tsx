@@ -152,16 +152,24 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {/* Catálogo de Produtos */}
-      <Card>
+    <div className="space-y-6">
+      <UnsavedChangesWarning hasUnsavedChanges={hasUnsavedChanges} onSave={save} />
+      
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Catálogo de Produtos */}
+        <Card>
         <CardHeader>
           <CardTitle>Catálogo de Produtos TOTVS</CardTitle>
-          <CardDescription>Selecione os produtos para a cotação</CardDescription>
+          <CardDescription>
+            Selecione os produtos para a cotação. Clique no ícone de edição para ajustar preços.
+            Os produtos selecionados serão sincronizados automaticamente com o módulo ROI.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {products?.map(product => (
+            {products?.map(product => {
+              const isEditing = editingPriceId === `catalog-${product.sku}`;
+              return (
               <div
                 key={product.id}
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
@@ -174,9 +182,49 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{product.description}</p>
-                  <p className="text-sm font-semibold text-primary mt-1">
-                    {formatCurrency(product.base_price)}
-                  </p>
+                  
+                  {isEditing ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">R$</span>
+                      <Input
+                        type="number"
+                        value={editingPrice}
+                        onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                        className="w-28 h-7 text-sm"
+                        step="0.01"
+                        min="0"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          // Update product in catalog temporarily for this session
+                          setEditingPriceId(null);
+                          toast.success('Preço atualizado no catálogo');
+                        }}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Save className="h-3 w-3 text-green-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm font-semibold text-primary">
+                        {formatCurrency(product.base_price)}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingPriceId(`catalog-${product.sku}`);
+                          setEditingPrice(product.base_price);
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <Button
                   size="sm"
@@ -186,7 +234,8 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -331,6 +380,8 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
           </Card>
         )}
       </div>
+      </div>
+      
       <ScrollToTopButton />
     </div>
   );
