@@ -1219,16 +1219,21 @@ export type Database = {
           cnpj_status: string | null
           created_at: string
           digital_maturity_score: number | null
+          disqualification_reason: string | null
           domain: string | null
           employees: number | null
           id: string
           industry: string | null
+          is_disqualified: boolean | null
           linkedin_url: string | null
           location: Json | null
           name: string
           raw_data: Json | null
           revenue: string | null
           technologies: string[] | null
+          totvs_detection_score: number | null
+          totvs_detection_sources: Json | null
+          totvs_last_checked_at: string | null
           updated_at: string
           website: string | null
         }
@@ -1237,16 +1242,21 @@ export type Database = {
           cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
+          disqualification_reason?: string | null
           domain?: string | null
           employees?: number | null
           id?: string
           industry?: string | null
+          is_disqualified?: boolean | null
           linkedin_url?: string | null
           location?: Json | null
           name: string
           raw_data?: Json | null
           revenue?: string | null
           technologies?: string[] | null
+          totvs_detection_score?: number | null
+          totvs_detection_sources?: Json | null
+          totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -1255,16 +1265,21 @@ export type Database = {
           cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
+          disqualification_reason?: string | null
           domain?: string | null
           employees?: number | null
           id?: string
           industry?: string | null
+          is_disqualified?: boolean | null
           linkedin_url?: string | null
           location?: Json | null
           name?: string
           raw_data?: Json | null
           revenue?: string | null
           technologies?: string[] | null
+          totvs_detection_score?: number | null
+          totvs_detection_sources?: Json | null
+          totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -2323,6 +2338,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      intent_signals: {
+        Row: {
+          company_id: string
+          confidence_score: number
+          created_at: string
+          detected_at: string
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          signal_description: string | null
+          signal_source: string
+          signal_title: string
+          signal_type: string
+          signal_url: string | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number
+          created_at?: string
+          detected_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          signal_description?: string | null
+          signal_source: string
+          signal_title: string
+          signal_type: string
+          signal_url?: string | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number
+          created_at?: string
+          detected_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          signal_description?: string | null
+          signal_source?: string
+          signal_title?: string
+          signal_type?: string
+          signal_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_signals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_data: {
         Row: {
@@ -4492,9 +4560,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_intent_score: {
+        Args: { company_uuid: string }
+        Returns: number
+      }
       create_canvas_version: {
         Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
         Returns: string
+      }
+      get_hot_leads: {
+        Args: { min_intent_score?: number }
+        Returns: {
+          company_id: string
+          company_name: string
+          intent_score: number
+          signal_count: number
+          totvs_score: number
+        }[]
       }
       get_next_report_version: {
         Args: { p_company_id: string; p_report_type: string }

@@ -4,12 +4,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
+import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
+import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
 import { Badge } from "@/components/ui/badge";
-import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus } from "lucide-react";
+import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus, Target } from "lucide-react";
 import { useWinLossAnalysis } from "@/hooks/useCompetitiveIntelligence";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CompetitiveIntelligencePage() {
+  const [searchParams] = useSearchParams();
+  const companyId = searchParams.get('company');
+  
   const { data: winLossData } = useWinLossAnalysis();
+  
+  const { data: company } = useQuery({
+    queryKey: ['company', companyId],
+    queryFn: async () => {
+      if (!companyId) return null;
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+      if (error) throw error;
+      return data as any; // Cast to avoid JSON type issues with detection sources
+    },
+    enabled: !!companyId,
+  });
 
   const wonDeals = winLossData?.filter(d => d.outcome === 'won').length || 0;
   const lostDeals = winLossData?.filter(d => d.outcome === 'lost').length || 0;
@@ -78,8 +101,14 @@ export default function CompetitiveIntelligencePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="battle-cards" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue={company ? "lead-qualification" : "battle-cards"} className="w-full">
+          <TabsList className={company ? "grid w-full grid-cols-5" : "grid w-full grid-cols-4"}>
+            {company && (
+              <TabsTrigger value="lead-qualification">
+                <Target className="mr-2 h-4 w-4" />
+                Qualificação
+              </TabsTrigger>
+            )}
             <TabsTrigger value="battle-cards">
               <Shield className="mr-2 h-4 w-4" />
               Battle Cards
@@ -97,6 +126,15 @@ export default function CompetitiveIntelligencePage() {
               Win/Loss
             </TabsTrigger>
           </TabsList>
+
+          {company && (
+            <TabsContent value="lead-qualification" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <TOTVSDetectionCard company={company} />
+                <IntentSignalsCard company={company} />
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="battle-cards" className="space-y-4">
             <BattleCardViewer />
