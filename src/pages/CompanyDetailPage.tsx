@@ -1057,9 +1057,7 @@ export default function CompanyDetailPage() {
                           {isRunningPhantom ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
-                              <img src={phantomLogo} alt="PhantomBuster" className="h-5 w-5" />
-                            </div>
+                            <img src={phantomLogo} alt="PhantomBuster" className="h-5 w-5 object-contain" />
                           )}
                         </Button>
                       </TooltipTrigger>
