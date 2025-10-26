@@ -54,21 +54,32 @@ serve(async (req) => {
       );
     } else {
       // Buscar decisores
-      const defaultTitles = titles && titles.length > 0 
-        ? titles.join(',')
-        : 'CEO,CTO,CFO,CIO,Director,VP,Head,Manager,Gerente,Diretor';
-
-      const params = new URLSearchParams({
+      const requestBody = {
         api_key: apolloApiKey,
         q_organization_name: organizationName,
-        per_page: '10',
-        person_titles: defaultTitles
-      });
+        page: 1,
+        per_page: 10,
+        ...(domain && { q_organization_domains: [domain] })
+      };
 
-      const response = await fetch(`https://api.apollo.io/v1/people/search?${params}`);
+      console.log('ENRICH_APOLLO', 'Request body', { ...requestBody, api_key: '[REDACTED]' });
+
+      const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify(requestBody)
+      });
       
       if (!response.ok) {
-        throw new Error(`Apollo API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('ENRICH_APOLLO', 'Apollo API error', { 
+          status: response.status, 
+          body: errorText 
+        });
+        throw new Error(`Apollo API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
