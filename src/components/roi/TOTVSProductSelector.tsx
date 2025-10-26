@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -107,6 +107,28 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
     }
   };
 
+  useEffect(() => {
+    // Se IA já estiver selecionada mas sem sub-módulos (dados antigos), inicializa agora
+    const iaSelected = selectedProducts.find(p => p.id === 'ia' && !p.subModules);
+    if (iaSelected) {
+      const enriched = selectedProducts.map(p => p.id === 'ia'
+        ? {
+            ...p,
+            subModules: IA_SUB_MODULES.map(sm => ({
+              id: sm.id,
+              name: sm.name,
+              licenseCost: sm.defaultCost,
+              implementationCost: Math.round(sm.defaultCost * 0.3),
+              maintenanceCost: Math.round(sm.defaultCost * 0.2),
+              users: 10,
+            }))
+          }
+        : p
+      );
+      onProductsChange(enriched);
+      setExpandedSubModules(prev => new Set([...prev, 'ia']));
+    }
+  }, [selectedProducts]);
   const updateProduct = (productId: string, field: keyof TOTVSProduct, value: number) => {
     onProductsChange(
       selectedProducts.map(p =>

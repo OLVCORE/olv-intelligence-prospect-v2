@@ -192,9 +192,21 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
   // Auto-calculate when products or costs change
   useEffect(() => {
-    const totalLicenses = selectedProducts.reduce((sum, p) => sum + (p.licenseCost || 0), 0);
-    const totalImplementation = selectedProducts.reduce((sum, p) => sum + (p.implementationCost || 0), 0);
-    const totalMaintenance = selectedProducts.reduce((sum, p) => sum + (p.maintenanceCost || 0), 0);
+    const totalLicenses = selectedProducts.reduce((sum, p) => {
+      const base = (p.licenseCost || 0);
+      const subs = (p.subModules || []).reduce((s, sm) => s + (sm.licenseCost || 0), 0);
+      return sum + base + subs;
+    }, 0);
+    const totalImplementation = selectedProducts.reduce((sum, p) => {
+      const base = (p.implementationCost || 0);
+      const subs = (p.subModules || []).reduce((s, sm) => s + (sm.implementationCost || 0), 0);
+      return sum + base + subs;
+    }, 0);
+    const totalMaintenance = selectedProducts.reduce((sum, p) => {
+      const base = (p.maintenanceCost || 0);
+      const subs = (p.subModules || []).reduce((s, sm) => s + (sm.maintenanceCost || 0), 0);
+      return sum + base + subs;
+    }, 0);
     
     const totalTotvsCosts = totvsCosts.reduce((sum, c) => sum + (c.cost || 0), 0);
 
@@ -452,7 +464,10 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
           {/* Seletor de Produtos TOTVS */}
           <TOTVSProductSelector
                 selectedProducts={selectedProducts}
-                onProductsChange={(products) => updateData(prev => ({ ...prev, selectedProducts: products }))}
+                onProductsChange={(products) => {
+                  setLocalState(prev => ({ ...prev, selectedProducts: products }));
+                  updateData(prev => ({ ...prev, selectedProducts: products }));
+                }}
           />
 
           {/* Custos Atuais - Seletor Detalhado */}
