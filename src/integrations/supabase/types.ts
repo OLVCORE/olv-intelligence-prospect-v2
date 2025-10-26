@@ -126,6 +126,63 @@ export type Database = {
           },
         ]
       }
+      account_strategy_modules: {
+        Row: {
+          account_strategy_id: string | null
+          company_id: string | null
+          created_at: string
+          data: Json
+          id: string
+          is_draft: boolean
+          module: string
+          title: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          account_strategy_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          is_draft?: boolean
+          module: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          account_strategy_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          is_draft?: boolean
+          module?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_strategy_modules_account_strategy_id_fkey"
+            columns: ["account_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "account_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_strategy_modules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_touchpoints: {
         Row: {
           account_strategy_id: string | null

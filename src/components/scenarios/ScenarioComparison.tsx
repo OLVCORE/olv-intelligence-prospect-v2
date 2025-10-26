@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ExportButton } from "@/components/export/ExportButton";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
 
 interface ScenarioComparisonProps {
   companyId: string;
@@ -157,6 +158,7 @@ export function ScenarioComparison({
 
   return (
     <div className="space-y-6">
+      <ScrollToTopButton />
       {/* Header com botões */}
       <Card>
         <CardHeader>

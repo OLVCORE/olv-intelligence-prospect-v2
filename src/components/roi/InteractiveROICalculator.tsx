@@ -16,6 +16,9 @@ import { TOTVSProductSelector, type TOTVSProduct } from './TOTVSProductSelector'
 import { CurrentCostsSelector, type CurrentCostItem } from './CurrentCostsSelector';
 import { TOTVSCostsSelector, type TOTVSCostItem } from './TOTVSCostsSelector';
 import { ExportButton } from '@/components/export/ExportButton';
+import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
+import { UnsavedChangesWarning } from '@/components/common/UnsavedChangesWarning';
+import { useModuleDraft } from '@/hooks/useModuleDraft';
 
 interface ROICalculatorProps {
   companyId: string;
@@ -76,38 +79,63 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
-  const [selectedProducts, setSelectedProducts] = useState<TOTVSProduct[]>([]);
-  const [currentCosts, setCurrentCosts] = useState<CurrentCostItem[]>([]);
-  const [totvsCosts, setTotvsCosts] = useState<TOTVSCostItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-  
-  const [inputs, setInputs] = useState<ROIInputs>({
-    currentCosts: {
-      software: initialData?.currentCosts?.software || 0,
-      personnel: initialData?.currentCosts?.personnel || 0,
-      maintenance: initialData?.currentCosts?.maintenance || 0,
-      outsourcing: initialData?.currentCosts?.outsourcing || 0,
-    },
-    proposedInvestment: {
-      licenses: initialData?.proposedInvestment?.licenses || 0,
-      implementation: initialData?.proposedInvestment?.implementation || 0,
-      training: initialData?.proposedInvestment?.training || 0,
-      firstYearMaintenance: initialData?.proposedInvestment?.firstYearMaintenance || 0,
-    },
-    expectedBenefits: {
-      timeReductionPercent: initialData?.expectedBenefits?.timeReductionPercent || 0,
-      errorReductionPercent: initialData?.expectedBenefits?.errorReductionPercent || 0,
-      revenueIncreasePercent: initialData?.expectedBenefits?.revenueIncreasePercent || 0,
-      employeesAffected: initialData?.expectedBenefits?.employeesAffected || 0,
-      avgSalary: initialData?.expectedBenefits?.avgSalary || 0,
-    },
-    projectYears: 3,
-    discountRate: 10,
+
+  // Estado completo para draft
+  const [localState, setLocalState] = useState({
+    selectedProducts: [] as TOTVSProduct[],
+    currentCosts: [] as CurrentCostItem[],
+    totvsCosts: [] as TOTVSCostItem[],
+    inputs: {
+      currentCosts: {
+        software: initialData?.currentCosts?.software || 0,
+        personnel: initialData?.currentCosts?.personnel || 0,
+        maintenance: initialData?.currentCosts?.maintenance || 0,
+        outsourcing: initialData?.currentCosts?.outsourcing || 0,
+      },
+      proposedInvestment: {
+        licenses: initialData?.proposedInvestment?.licenses || 0,
+        implementation: initialData?.proposedInvestment?.implementation || 0,
+        training: initialData?.proposedInvestment?.training || 0,
+        firstYearMaintenance: initialData?.proposedInvestment?.firstYearMaintenance || 0,
+      },
+      expectedBenefits: {
+        timeReductionPercent: initialData?.expectedBenefits?.timeReductionPercent || 0,
+        errorReductionPercent: initialData?.expectedBenefits?.errorReductionPercent || 0,
+        revenueIncreasePercent: initialData?.expectedBenefits?.revenueIncreasePercent || 0,
+        employeesAffected: initialData?.expectedBenefits?.employeesAffected || 0,
+        avgSalary: initialData?.expectedBenefits?.avgSalary || 0,
+      },
+      projectYears: 3 as 1 | 3 | 5,
+      discountRate: 10,
+    } as ROIInputs,
+    results: null as ROIOutput | null,
   });
 
-  const [results, setResults] = useState<ROIOutput | null>(null);
+  const { selectedProducts, currentCosts, totvsCosts, inputs, results } = localState;
+
+  // Hook para salvamento progressivo
+  const {
+    data: draftData,
+    hasUnsavedChanges,
+    isSaving,
+    save,
+    updateData,
+  } = useModuleDraft(localState, {
+    module: 'roi',
+    companyId,
+    accountStrategyId,
+    title: `ROI - ${companyId || accountStrategyId}`,
+    autoSaveInterval: 10000, // 10s
+  });
+
+  // Sincronizar draftData com localState quando carrega
+  useEffect(() => {
+    if (draftData && Object.keys(draftData).length > 0) {
+      setLocalState(draftData);
+    }
+  }, [draftData]);
 
   // Auto-calculate when products or costs change
   useEffect(() => {
@@ -117,16 +145,19 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
     
     const totalTotvsCosts = totvsCosts.reduce((sum, c) => sum + (c.cost || 0), 0);
 
-    setInputs(prev => ({
+    updateData(prev => ({
       ...prev,
-      proposedInvestment: {
-        ...prev.proposedInvestment,
-        licenses: totalLicenses,
-        implementation: totalImplementation + totalTotvsCosts,
-        firstYearMaintenance: totalMaintenance,
+      inputs: {
+        ...prev.inputs,
+        proposedInvestment: {
+          ...prev.inputs.proposedInvestment,
+          licenses: totalLicenses,
+          implementation: totalImplementation + totalTotvsCosts,
+          firstYearMaintenance: totalMaintenance,
+        }
       }
     }));
-  }, [selectedProducts, totvsCosts]);
+  }, [selectedProducts, totvsCosts, updateData]);
 
   // Auto-calculate current costs when they change
   useEffect(() => {
@@ -146,16 +177,19 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
       .filter(c => c.category === 'consulting')
       .reduce((sum, c) => sum + (c.cost || 0), 0);
 
-    setInputs(prev => ({
+    updateData(prev => ({
       ...prev,
-      currentCosts: {
-        software: softwareCosts * 12, // Annual
-        personnel: personnelCosts * 12, // Annual
-        maintenance: maintenanceCosts * 12, // Annual
-        outsourcing: consultingCosts * 12, // Annual
+      inputs: {
+        ...prev.inputs,
+        currentCosts: {
+          software: softwareCosts * 12, // Annual
+          personnel: personnelCosts * 12, // Annual
+          maintenance: maintenanceCosts * 12, // Annual
+          outsourcing: consultingCosts * 12, // Annual
+        }
       }
     }));
-  }, [currentCosts]);
+  }, [currentCosts, updateData]);
 
   const calculateROI = async () => {
     setIsCalculating(true);
@@ -170,7 +204,7 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
       if (error) throw error;
 
-      setResults(data.results);
+      updateData(prev => ({ ...prev, results: data.results }));
       
       toast({
         title: "✅ ROI Calculado",
@@ -198,12 +232,15 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   };
 
   const updateInput = (category: keyof ROIInputs, field: string, value: number) => {
-    setInputs((prev) => ({
+    updateData(prev => ({
       ...prev,
-      [category]: {
-        ...(prev[category] as any),
-        [field]: value,
-      },
+      inputs: {
+        ...prev.inputs,
+        [category]: {
+          ...(prev.inputs[category] as any),
+          [field]: value,
+        },
+      }
     }));
   };
 
@@ -228,60 +265,17 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   };
 
   const handleSaveData = async () => {
-    setIsSaving(true);
-    try {
-      // Salvar no localStorage por enquanto (pode ser migrado para Supabase depois)
-      const dataToSave = {
-        companyId,
-        accountStrategyId,
-        selectedProducts,
-        currentCosts,
-        totvsCosts,
-        inputs,
-        results,
-        savedAt: new Date().toISOString(),
-      };
-      
-      localStorage.setItem(`roi_data_${companyId}`, JSON.stringify(dataToSave));
-      
-      toast({
-        title: "✅ Dados salvos com sucesso",
-        description: "Seus dados foram salvos e não serão perdidos ao trocar de aba.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao salvar dados",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    await save();
   };
 
   const handlePreview = () => {
     setShowPreview(!showPreview);
   };
 
-  // Carregar dados salvos ao montar o componente
-  useEffect(() => {
-    const savedData = localStorage.getItem(`roi_data_${companyId}`);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setSelectedProducts(parsed.selectedProducts || []);
-        setCurrentCosts(parsed.currentCosts || []);
-        setTotvsCosts(parsed.totvsCosts || []);
-        setInputs(parsed.inputs || inputs);
-        setResults(parsed.results || null);
-      } catch (error) {
-        console.error('Error loading saved data:', error);
-      }
-    }
-  }, [companyId]);
-
   return (
     <div className="space-y-6">
+      <UnsavedChangesWarning hasUnsavedChanges={hasUnsavedChanges} onSave={save} />
+      <ScrollToTopButton />
       {/* Header */}
       <Card>
         <CardHeader>
@@ -380,8 +374,8 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
         <TabsContent value="inputs" className="space-y-4">
           {/* Seletor de Produtos TOTVS */}
           <TOTVSProductSelector
-            selectedProducts={selectedProducts}
-            onProductsChange={setSelectedProducts}
+                selectedProducts={selectedProducts}
+                onProductsChange={(products) => updateData(prev => ({ ...prev, selectedProducts: products }))}
           />
 
           {/* Custos Atuais - Seletor Detalhado */}
@@ -391,10 +385,10 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
               Quanto você gasta hoje com sistemas e processos
             </p>
 
-            <CurrentCostsSelector
-              selectedCosts={currentCosts}
-              onCostsChange={setCurrentCosts}
-            />
+              <CurrentCostsSelector
+                selectedCosts={currentCosts}
+                onCostsChange={(costs) => updateData(prev => ({ ...prev, currentCosts: costs }))}
+              />
           </div>
 
           {/* Investimento Proposto TOTVS */}
@@ -404,10 +398,10 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
               Quanto custará a solução TOTVS
             </p>
 
-            <TOTVSCostsSelector
-              selectedCosts={totvsCosts}
-              onCostsChange={setTotvsCosts}
-            />
+              <TOTVSCostsSelector
+                selectedCosts={totvsCosts}
+                onCostsChange={(costs) => updateData(prev => ({ ...prev, totvsCosts: costs }))}
+              />
 
             <Card>
               <CardHeader>
