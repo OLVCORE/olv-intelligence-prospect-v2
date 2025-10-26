@@ -30,7 +30,7 @@ export default function AccountStrategyPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const companyId = params.companyId || searchParams.get('company') || undefined;
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('');
-  const [selectedDecisionMakerId, setSelectedDecisionMakerId] = useState<string>('');
+  const [selectedDecisionMakerId, setSelectedDecisionMakerId] = useState<string>('none');
   const [tab, setTab] = useState<string>(searchParams.get('tab') || 'overview');
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
 
@@ -77,7 +77,7 @@ export default function AccountStrategyPage() {
     await generateStrategy.mutateAsync({
       companyId,
       personaId: selectedPersonaId,
-      decisionMakerId: selectedDecisionMakerId || undefined,
+      decisionMakerId: selectedDecisionMakerId === 'none' ? undefined : selectedDecisionMakerId,
     });
   };
 
@@ -178,7 +178,7 @@ export default function AccountStrategyPage() {
                         <SelectValue placeholder="Selecione um decisor" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {decisionMakers?.map((dm) => (
                           <SelectItem key={dm.id} value={dm.id}>
                             {dm.name} - {dm.title} {dm.email ? `(${dm.email})` : ''}

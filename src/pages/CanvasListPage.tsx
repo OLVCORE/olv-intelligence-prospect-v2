@@ -23,8 +23,8 @@ export default function CanvasListPage() {
   const [isCreatingCanvas, setIsCreatingCanvas] = useState(false);
   const [newCanvasTitle, setNewCanvasTitle] = useState('');
   const [newCanvasPurpose, setNewCanvasPurpose] = useState('');
-  const [newCanvasTemplate, setNewCanvasTemplate] = useState('');
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [newCanvasTemplate, setNewCanvasTemplate] = useState('blank');
+  const [selectedCompanyId, setSelectedCompanyId] = useState('none');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: canvasList, isLoading, refetch } = useQuery({
@@ -69,10 +69,10 @@ export default function CanvasListPage() {
     try {
       const { data, error } = await supabase.functions.invoke('canvas-create', {
         body: {
-          companyId: selectedCompanyId || null,
+          companyId: selectedCompanyId === 'none' ? null : selectedCompanyId,
           title: newCanvasTitle,
           purpose: newCanvasPurpose || null,
-          template: newCanvasTemplate || null
+          template: newCanvasTemplate === 'blank' ? null : newCanvasTemplate
         }
       });
 
@@ -163,7 +163,7 @@ export default function CanvasListPage() {
                           <SelectValue placeholder="Selecione uma empresa..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Nenhuma empresa</SelectItem>
+                          <SelectItem value="none">Nenhuma empresa</SelectItem>
                           {companies?.map((company) => (
                             <SelectItem key={company.id} value={company.id}>
                               {company.name} {company.cnpj ? `(${company.cnpj})` : ''}
@@ -183,7 +183,7 @@ export default function CanvasListPage() {
                           <SelectValue placeholder="Escolha um template..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Canvas em branco</SelectItem>
+                          <SelectItem value="blank">Canvas em branco</SelectItem>
                           <SelectItem value="descoberta">🔍 Descoberta Inicial</SelectItem>
                           <SelectItem value="qualificacao">✅ Qualificação de Oportunidade</SelectItem>
                         </SelectContent>
