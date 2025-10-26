@@ -380,7 +380,7 @@ export function AppSidebar() {
                                                        location.pathname === subItem.url.split('?')[0] && 
                                                        (!subItem.url.includes('?tab=') || location.search.includes(subItem.url.split('?tab=')[1]))
                                                      } 
-                                                     className="touch-manipulation active:scale-95 py-2.5 px-3"
+                                                     className="touch-manipulation active:scale-95 py-3 px-3"
                                                    >
                                                      {(() => {
                                                        const sp = new URLSearchParams(location.search);
@@ -388,12 +388,12 @@ export function AppSidebar() {
                                                        const base = subItem.url as string;
                                                        const isAS = base.startsWith('/account-strategy');
                                                        const url = isAS && company ? `${base}${base.includes('?') ? '&' : '?'}company=${company}` : base;
-                                                       return (
-                                                         <Link to={url}>
-                                                           <subItem.icon className="h-4 w-4" />
-                                                           <span className="text-sm">{subItem.title}</span>
-                                                         </Link>
-                                                       );
+                                                        return (
+                                                          <Link to={url}>
+                                                            <subItem.icon className="h-5 w-5" />
+                                                            <span className="text-sm">{subItem.title}</span>
+                                                          </Link>
+                                                        );
                                                      })()}
                                                    </SidebarMenuSubButton>
                                                </div>
