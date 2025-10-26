@@ -37,7 +37,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
-import { EconodataEnrichButton } from '@/components/companies/EconodataEnrichButton';
+import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsCard';
 
 export default function CompaniesManagementPage() {
   logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
@@ -708,6 +708,22 @@ export default function CompaniesManagementPage() {
 
         {/* Google Sheets Sync Config removido desta página (agora na tela de Busca) */}
 
+        {/* Enrichment Actions */}
+        <EnrichmentActionsCard
+          onReceita={() => {
+            // Batch enrich all companies with Receita
+            toast.info('Enriquecimento em lote será implementado');
+          }}
+          on360={() => {
+            // Batch enrich all companies with 360
+            toast.info('Análise 360° em lote será implementada');
+          }}
+          onEconodata={() => {
+            // Batch enrich all companies with Econodata
+            toast.info('Enriquecimento Econodata em lote será implementado');
+          }}
+        />
+
         {/* Search */}
         <Card>
           <CardHeader>
@@ -974,38 +990,6 @@ export default function CompaniesManagementPage() {
                             title="Usar no Account Strategy Hub"
                           >
                             <Zap className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEnrichReceita(company.id)}
-                            disabled={enrichingReceitaId === company.id}
-                            title="Enriquecer Receita Federal"
-                          >
-                            {enrichingReceitaId === company.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Building2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <EconodataEnrichButton
-                            companyId={company.id}
-                            cnpj={company.cnpj}
-                            variant="outline"
-                            size="sm"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEnrich(company.id)}
-                            disabled={enrichingId === company.id}
-                            title="Executar análise 360°"
-                          >
-                            {enrichingId === company.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Sparkles className="h-4 w-4" />
-                            )}
                           </Button>
                           <Button
                             variant="ghost"

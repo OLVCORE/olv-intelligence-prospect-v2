@@ -36,6 +36,7 @@ import { DecisorsCollaboratorsCard } from "@/components/companies/DecisorsCollab
 import { RichContactsCard } from "@/components/companies/RichContactsCard";
 import { FinancialDebtCard } from "@/components/companies/FinancialDebtCard";
 import { EconodataEnrichButton } from "@/components/companies/EconodataEnrichButton";
+import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsCard';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -45,6 +46,8 @@ export default function CompanyDetailPage() {
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
+  const [isEnrichingReceita, setIsEnrichingReceita] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
   const [isTestingApollo, setIsTestingApollo] = useState(false);
   const [isRunningPhantom, setIsRunningPhantom] = useState(false);
 
@@ -130,6 +133,40 @@ export default function CompanyDetailPage() {
       toast.error('Erro na atualização', { description: error.message });
     } finally {
       setIsSmartRefreshing(false);
+    }
+  };
+
+  const handleEnrichReceita = async (companyId: string) => {
+    setIsEnrichingReceita(true);
+    try {
+      await supabase.functions.invoke('enrich-receitaws', {
+        body: { cnpj: company.cnpj, company_id: companyId }
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      toast.success('Dados da Receita Federal atualizados!');
+    } catch (error: any) {
+      toast.error('Erro ao enriquecer via Receita Federal', { description: error.message });
+    } finally {
+      setIsEnrichingReceita(false);
+    }
+  };
+
+  const handleFullEnrichment = async () => {
+    setIsEnriching(true);
+    try {
+      toast.info('Executando análise 360° completa...');
+      
+      await supabase.functions.invoke('batch-enrich-360', {
+        body: { companyId: id, cnpj: company.cnpj }
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      toast.success('Análise 360° concluída com sucesso!');
+    } catch (error: any) {
+      toast.error('Erro na análise 360°', { description: error.message });
+    } finally {
+      setIsEnriching(false);
     }
   };
 
@@ -219,24 +256,28 @@ export default function CompanyDetailPage() {
               <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
                 {receitaData?.situacao || 'Status desconhecido'}
               </Badge>
-                <div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSmartRefresh}
-                    disabled={isSmartRefreshing}
-                  >
-                    {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Atualizar
-                  </Button>
-                  <EconodataEnrichButton 
-                    companyId={id!}
-                    cnpj={company.cnpj}
-                    variant="default"
-                    size="sm"
-                    className="ml-2"
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSmartRefresh}
+                  disabled={isSmartRefreshing}
+                >
+                  {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Atualizar
+                </Button>
+                <EnrichmentActionsCard
+                  compact
+                  onReceita={() => handleEnrichReceita(id!)}
+                  on360={() => handleFullEnrichment()}
+                  onEconodata={() => {
+                    // Will be implemented when Econodata API is available
+                    toast.info('Econodata será conectado em breve');
+                  }}
+                  isLoadingReceita={isEnrichingReceita}
+                  isLoading360={isEnriching}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
