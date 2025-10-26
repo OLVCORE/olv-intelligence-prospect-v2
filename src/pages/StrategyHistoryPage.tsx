@@ -22,6 +22,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
 import {
   Select,
   SelectContent,
@@ -40,12 +41,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
 
 export default function StrategyHistoryPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [moduleFilter, setModuleFilter] = useState<string>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
 
   const { data: strategies, isLoading, refetch } = useQuery({
     queryKey: ['strategy-history', moduleFilter],
@@ -125,13 +126,24 @@ export default function StrategyHistoryPage() {
     return colors[module] || 'outline';
   };
 
+  // Get unique companies for filter
+  const companies = strategies?.reduce((acc: any[], strategy: any) => {
+    const company = strategy.companies;
+    if (company && !acc.find(c => c.id === company.id)) {
+      acc.push(company);
+    }
+    return acc;
+  }, []) || [];
+
   const filteredStrategies = strategies?.filter((strategy) => {
     const searchLower = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       strategy.title?.toLowerCase().includes(searchLower) ||
       strategy.companies?.name?.toLowerCase().includes(searchLower) ||
       strategy.companies?.cnpj?.includes(searchQuery)
     );
+    const matchesCompany = companyFilter === 'all' || strategy.company_id === companyFilter;
+    return matchesSearch && matchesCompany;
   });
 
   return (
@@ -169,6 +181,23 @@ export default function StrategyHistoryPage() {
                     className="pl-10"
                   />
                 </div>
+              </div>
+
+              <div className="min-w-[200px]">
+                <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                  <SelectTrigger>
+                    <Building2 className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Empresas</SelectItem>
+                    {companies.map((company: any) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="min-w-[200px]">

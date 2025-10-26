@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Trash2, TrendingUp, AlertCircle, CheckCircle, Edit2, Save } from "lucide-react";
 import { useProductCatalog, Product } from "@/hooks/useProductCatalog";
 import { useCreateQuote, QuoteProduct } from "@/hooks/useQuotes";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
   const { data: products, isLoading } = useProductCatalog();
   const createQuote = useCreateQuote();
   const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingPrice, setEditingPrice] = useState<number>(0);
 
   const addProduct = (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);
@@ -58,6 +60,30 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
       }
       return p;
     }));
+  };
+
+  const updatePrice = (sku: string, price: number) => {
+    setSelectedProducts(selectedProducts.map(p => {
+      if (p.sku === sku) {
+        return {
+          ...p,
+          base_price: price,
+          final_price: price * p.quantity * (1 - p.discount / 100),
+        };
+      }
+      return p;
+    }));
+  };
+
+  const startEditingPrice = (sku: string, currentPrice: number) => {
+    setEditingPriceId(sku);
+    setEditingPrice(currentPrice);
+  };
+
+  const saveEditedPrice = (sku: string) => {
+    updatePrice(sku, editingPrice);
+    setEditingPriceId(null);
+    toast.success('Preço atualizado');
   };
 
   const totalListPrice = selectedProducts.reduce((sum, p) => sum + (p.base_price * p.quantity), 0);
@@ -164,9 +190,40 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(product.base_price)} / unidade
-                        </p>
+                        {editingPriceId === product.sku ? (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-sm text-muted-foreground">R$</span>
+                            <Input
+                              type="number"
+                              value={editingPrice}
+                              onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                              className="w-32 h-8"
+                              step="0.01"
+                              min="0"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveEditedPrice(product.sku)}
+                            >
+                              <Save className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm text-muted-foreground">
+                              {formatCurrency(product.base_price)} / unidade
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingPrice(product.sku, product.base_price)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit2 className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <Button
                         variant="ghost"

@@ -24,6 +24,7 @@ import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
 import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
 import { CompanySelectDialog } from '@/components/common/CompanySelectDialog';
 import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
+import { CompanyStrategyHeader } from '@/components/common/CompanyStrategyHeader';
 
 export default function AccountStrategyPage() {
   const params = useParams<{ companyId: string }>();
@@ -134,6 +135,10 @@ export default function AccountStrategyPage() {
     <AppLayout>
       <div className="space-y-6">
         <BackButton />
+        
+        {/* Company Header */}
+        <CompanyStrategyHeader companyId={companyId} />
+        
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
