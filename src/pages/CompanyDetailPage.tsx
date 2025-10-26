@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import LocationMap from "@/components/map/LocationMap";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
   CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw, Target,
-  UserPlus, TestTube
+  UserPlus, TestTube, Phone, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -447,15 +449,16 @@ export default function CompanyDetailPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full auto-cols-fr overflow-x-auto scrollbar-hide" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="relatorio">Relatório Completo</TabsTrigger>
-          <TabsTrigger value="fit">Fit TOTVS</TabsTrigger>
-          <TabsTrigger value="receita">Receita Federal</TabsTrigger>
-          <TabsTrigger value="scores">Scores</TabsTrigger>
+          <TabsTrigger value="identificacao">Identificação</TabsTrigger>
+          <TabsTrigger value="localizacao">Localização & Contato</TabsTrigger>
+          <TabsTrigger value="atividade">Atividade Econômica</TabsTrigger>
+          <TabsTrigger value="estrutura">Estrutura</TabsTrigger>
+          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="digital">Presença Digital</TabsTrigger>
-          <TabsTrigger value="decisores">Decisores</TabsTrigger>
-          <TabsTrigger value="maturity">Maturidade</TabsTrigger>
+          <TabsTrigger value="inteligencia">Análise & IA</TabsTrigger>
+          <TabsTrigger value="receita">Receita Federal</TabsTrigger>
           <TabsTrigger value="actions">Ações</TabsTrigger>
         </TabsList>
 
@@ -645,7 +648,315 @@ export default function CompanyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Relatório Completo Tab - NOVO */}
+        {/* === IDENTIFICAÇÃO TAB === */}
+        <TabsContent value="identificacao" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Dados Cadastrais
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">CNPJ</p>
+                    <p className="font-mono text-lg font-semibold">{company.cnpj || 'N/A'}</p>
+                    <Badge className={`mt-1 ${
+                      company.cnpj_status === 'ativo' 
+                        ? 'bg-green-500 hover:bg-green-600' 
+                        : company.cnpj_status === 'inativo'
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-yellow-500 hover:bg-yellow-600'
+                    }`}>
+                      {company.cnpj_status || 'Pendente'}
+                    </Badge>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Razão Social</p>
+                    <p className="text-base font-semibold">{company.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Nome Fantasia</p>
+                    <p className="text-base">{receitaData?.fantasia || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Tipo de Unidade</p>
+                    <Badge variant="outline">{receitaData?.tipo || 'Matriz'}</Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Natureza Jurídica</p>
+                    <p className="text-base">{receitaData?.natureza_juridica || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Data de Abertura</p>
+                    <p className="text-base">{receitaData?.abertura || 'N/A'}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Situação Cadastral</p>
+                    <Badge className={`${
+                      receitaData?.situacao === 'ATIVA' 
+                        ? 'bg-green-500 hover:bg-green-600' 
+                        : 'bg-red-500 hover:bg-red-600'
+                    }`}>
+                      {receitaData?.situacao || 'N/A'}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {receitaData?.data_situacao || ''}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Regime Tributário</p>
+                    <Badge variant="secondary">
+                      {receitaData?.simples?.optante ? 'Simples Nacional' : 'Lucro Presumido/Real'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === LOCALIZAÇÃO & CONTATO TAB === */}
+        <TabsContent value="localizacao" className="space-y-6">
+          {/* Endereço Completo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Localização
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Logradouro</p>
+                    <p className="font-semibold">{receitaData?.logradouro || 'N/A'}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Número</p>
+                      <p>{receitaData?.numero || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">CEP</p>
+                      <p className="font-mono">{receitaData?.cep || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Complemento</p>
+                    <p>{receitaData?.complemento || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bairro</p>
+                    <p>{receitaData?.bairro || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cidade</p>
+                    <p className="font-semibold">{receitaData?.municipio || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">UF</p>
+                    <Badge>{receitaData?.uf || 'N/A'}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">País</p>
+                    <p>Brasil</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mapa */}
+              {receitaData && (
+                <div className="mt-6">
+                  <LocationMap 
+                    address={receitaData.logradouro}
+                    numero={receitaData.numero}
+                    municipio={receitaData.municipio}
+                    estado={receitaData.uf}
+                    cep={receitaData.cep}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Telefones */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5" />
+                Telefones & WhatsApp
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Melhor Telefone</p>
+                  <p className="font-mono font-semibold text-lg">{receitaData?.telefone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">WhatsApp</p>
+                  <Badge variant="outline" className="font-mono">
+                    {(company.raw_data as any)?.whatsapp || 'N/A'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Assertividade</p>
+                  <Badge variant="secondary">Alta</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* E-mails */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                E-mails
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">E-mail Receita Federal</p>
+                  <p className="font-mono text-sm">{receitaData?.email || 'N/A'}</p>
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">E-mails Validados</p>
+                  <div className="flex flex-wrap gap-2">
+                    {company.decision_makers && company.decision_makers.length > 0 ? (
+                      company.decision_makers
+                        .filter((d: any) => d.email)
+                        .map((d: any, idx: number) => (
+                          <Badge key={idx} variant="outline" className="font-mono text-xs">
+                            {d.email}
+                          </Badge>
+                        ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum e-mail validado disponível</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === ATIVIDADE ECONÔMICA TAB === */}
+        <TabsContent value="atividade" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Setor & Segmento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Setor Amigável</p>
+                  <Badge variant="default" className="text-sm">{company.industry || 'N/A'}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Segmento</p>
+                  <p className="text-sm">{(company.raw_data as any)?.segmento || 'N/A'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* CNAEs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Atividade Econômica (CNAE)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold mb-2 text-primary">Atividade Principal:</p>
+                {receitaData?.atividade_principal?.map((ativ: any, idx: number) => (
+                  <div key={idx} className="p-3 bg-primary/5 rounded-lg">
+                    <Badge variant="outline" className="mb-2">{ativ.code}</Badge>
+                    <p className="text-sm">{ativ.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold mb-2 text-muted-foreground">Atividades Secundárias:</p>
+                  <div className="space-y-2">
+                    {receitaData.atividades_secundarias.slice(0, 5).map((ativ: any, idx: number) => (
+                      <div key={idx} className="p-2 bg-muted/50 rounded text-xs">
+                        <Badge variant="secondary" className="text-xs mr-2">{ativ.code}</Badge>
+                        {ativ.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* NCMs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">NCMs (Produtos)</CardTitle>
+              <CardDescription>Nomenclatura Comum do Mercosul</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  Dados de NCMs disponíveis mediante integração com bases especializadas
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Importação/Exportação */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Importação
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="outline">
+                  {(company.raw_data as any)?.importacao ? 'Sim' : 'Não identificado'}
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Exportação
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="outline">
+                  {(company.raw_data as any)?.exportacao ? 'Sim' : 'Não identificado'}
+                </Badge>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Relatório Completo Tab - mantém o antigo */}
         <TabsContent value="relatorio" className="space-y-6">
           <CompanyReport companyId={id!} />
         </TabsContent>
