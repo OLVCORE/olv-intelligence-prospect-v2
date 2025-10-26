@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Database, Loader2, Sparkles } from 'lucide-react';
+import { Database, Loader2 } from 'lucide-react';
 import { useEconodataEnrichment } from '@/hooks/useEconodataEnrichment';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -47,7 +47,6 @@ export function EconodataEnrichButton({
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
                 <Database className="mr-2 h-4 w-4" />
                 Enriquecer com Econodata
               </>

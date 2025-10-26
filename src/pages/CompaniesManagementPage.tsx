@@ -73,6 +73,7 @@ export default function CompaniesManagementPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [isBatchEnrichingEconodata, setIsBatchEnrichingEconodata] = useState(false);
+  const hasSelection = selectedCompanies.length > 0;
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -722,6 +723,27 @@ export default function CompaniesManagementPage() {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Análise completa com IA: insights, sinais, recomendações</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    onClick={handleBatchEnrichEconodata}
+                    disabled={!hasSelection || isBatchEnrichingEconodata}
+                    className="gap-2"
+                  >
+                    {isBatchEnrichingEconodata ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4" />
+                    )}
+                    Econodata
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Enriquecer com Econodata (selecionadas)</p>
                 </TooltipContent>
               </Tooltip>
 

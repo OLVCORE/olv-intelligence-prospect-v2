@@ -9,15 +9,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, FileText, FileSpreadsheet, FileJson } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import type { ButtonProps } from "@/components/ui/button";
 
 interface ExportButtonProps {
   data: any;
   filename: string;
   type?: 'company' | 'maturity' | 'fit' | 'general';
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
 }
 
-export function ExportButton({ data, filename, type = 'general' }: ExportButtonProps) {
+export function ExportButton({ data, filename, type = 'general', variant = 'outline', size = 'sm' }: ExportButtonProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -165,7 +167,7 @@ export function ExportButton({ data, filename, type = 'general' }: ExportButtonP
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isExporting}>
+        <Button variant={variant} size={size} disabled={isExporting}>
           <Download className="h-4 w-4 mr-2" />
           {isExporting ? 'Exportando...' : 'Exportar'}
         </Button>

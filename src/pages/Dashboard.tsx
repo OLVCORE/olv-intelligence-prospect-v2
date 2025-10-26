@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { EnhancedBatchEnrichment } from "@/components/admin/EnhancedBatchEnrichment";
 import { EnrichmentMonitor } from "@/components/admin/EnrichmentMonitor";
 import { SystemHealthPanel } from "@/components/admin/SystemHealthPanel";
+import { ExportButton } from "@/components/export/ExportButton";
 import { useNavigate } from "react-router-dom";
 import {
   ComposedChart,
@@ -98,7 +99,8 @@ export default function Dashboard() {
                 Análise estratégica em tempo real com inteligência artificial avançada
               </p>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
+              <ExportButton data={data} filename={`dashboard_${new Date().toISOString().slice(0,10)}`} variant="attention" size="sm" />
               <EnhancedBatchEnrichment />
             </div>
           </div>
