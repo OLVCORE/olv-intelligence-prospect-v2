@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2, Target, Save, Eye, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { useScenarios, useGenerateScenarios, ScenarioCase } from "@/hooks/useScenarios";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/export/ExportButton";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ScenarioComparisonProps {
   companyId: string;
@@ -21,10 +25,38 @@ export function ScenarioComparison({
   baseInvestment,
   baseAnnualBenefit,
 }: ScenarioComparisonProps) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: scenarios, isLoading } = useScenarios(accountStrategyId);
   const generateScenarios = useGenerateScenarios();
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const activeScenario = scenarios?.[0];
+
+  const handleSaveData = async () => {
+    setIsSaving(true);
+    try {
+      localStorage.setItem(`scenarios_data_${companyId}`, JSON.stringify({
+        scenarios,
+        baseInvestment,
+        baseAnnualBenefit,
+        savedAt: new Date().toISOString(),
+      }));
+      toast({
+        title: "✅ Cenários salvos",
+        description: "Seus dados foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleGenerate = async () => {
     await generateScenarios.mutateAsync({
@@ -125,6 +157,44 @@ export function ScenarioComparison({
 
   return (
     <div className="space-y-6">
+      {/* Header com botões */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle>Análise de Cenários</CardTitle>
+              <CardDescription>
+                Compare diferentes cenários de implementação (Melhor Caso, Esperado, Pior Caso)
+              </CardDescription>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              {activeScenario && (
+                <>
+                  <Button variant="default" size="sm" onClick={handleSaveData} disabled={isSaving}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  <ExportButton
+                    data={activeScenario}
+                    filename={`scenarios_${companyId}`}
+                    variant="outline"
+                    size="sm"
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Resumo */}
       <Card>
         <CardHeader>

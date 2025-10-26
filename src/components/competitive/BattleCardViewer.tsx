@@ -1,14 +1,46 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Shield, AlertTriangle, Target, TrendingUp, Award, MessageSquare } from "lucide-react";
+import { Shield, AlertTriangle, Target, TrendingUp, Award, MessageSquare, Save, Eye, ArrowLeft } from "lucide-react";
 import { useCompetitors, useBattleCards } from "@/hooks/useCompetitiveIntelligence";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/export/ExportButton";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function BattleCardViewer() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: competitors, isLoading: loadingCompetitors } = useCompetitors();
   const { data: battleCards, isLoading: loadingCards } = useBattleCards();
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleSaveData = async () => {
+    setIsSaving(true);
+    try {
+      localStorage.setItem('competitive_data', JSON.stringify({
+        competitors,
+        battleCards,
+        savedAt: new Date().toISOString(),
+      }));
+      toast({
+        title: "✅ Battle Cards salvos",
+        description: "Seus dados foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (loadingCompetitors || loadingCards) {
     return <Skeleton className="h-96 w-full" />;
@@ -18,13 +50,41 @@ export function BattleCardViewer() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Battle Cards - Inteligência Competitiva
-          </CardTitle>
-          <CardDescription>
-            Estratégias para vencer contra principais competidores
-          </CardDescription>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Battle Cards - Inteligência Competitiva
+              </CardTitle>
+              <CardDescription>
+                Estratégias para vencer contra principais competidores
+              </CardDescription>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              {battleCards && battleCards.length > 0 && (
+                <>
+                  <Button variant="default" size="sm" onClick={handleSaveData} disabled={isSaving}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  <ExportButton
+                    data={{ competitors, battleCards }}
+                    filename="battle_cards"
+                    variant="outline"
+                    size="sm"
+                  />
+                </>
+              )}
+            </div>
+          </div>
         </CardHeader>
       </Card>
 

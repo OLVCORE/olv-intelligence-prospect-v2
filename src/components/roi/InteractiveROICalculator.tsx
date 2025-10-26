@@ -9,12 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TrendingUp, DollarSign, Calendar, AlertCircle, ArrowLeft, Download } from 'lucide-react';
+import { Loader2, TrendingUp, DollarSign, Calendar, AlertCircle, ArrowLeft, Download, Save, Eye, FileSpreadsheet } from 'lucide-react';
 import { CashFlowChart } from './charts/CashFlowChart';
 import { BenefitsBreakdown } from './charts/BenefitsBreakdown';
 import { TOTVSProductSelector, type TOTVSProduct } from './TOTVSProductSelector';
 import { CurrentCostsSelector, type CurrentCostItem } from './CurrentCostsSelector';
 import { TOTVSCostsSelector, type TOTVSCostItem } from './TOTVSCostsSelector';
+import { ExportButton } from '@/components/export/ExportButton';
 
 interface ROICalculatorProps {
   companyId: string;
@@ -75,10 +76,12 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
   const [selectedProducts, setSelectedProducts] = useState<TOTVSProduct[]>([]);
   const [currentCosts, setCurrentCosts] = useState<CurrentCostItem[]>([]);
   const [totvsCosts, setTotvsCosts] = useState<TOTVSCostItem[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   
   const [inputs, setInputs] = useState<ROIInputs>({
     currentCosts: {
@@ -224,12 +227,58 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
     return 'text-red-600 dark:text-red-400';
   };
 
-  const exportToPDF = () => {
-    toast({
-      title: "Exportação em desenvolvimento",
-      description: "A funcionalidade de exportação PDF será implementada em breve.",
-    });
+  const handleSaveData = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar no localStorage por enquanto (pode ser migrado para Supabase depois)
+      const dataToSave = {
+        companyId,
+        accountStrategyId,
+        selectedProducts,
+        currentCosts,
+        totvsCosts,
+        inputs,
+        results,
+        savedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(`roi_data_${companyId}`, JSON.stringify(dataToSave));
+      
+      toast({
+        title: "✅ Dados salvos com sucesso",
+        description: "Seus dados foram salvos e não serão perdidos ao trocar de aba.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar dados",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handlePreview = () => {
+    setShowPreview(!showPreview);
+  };
+
+  // Carregar dados salvos ao montar o componente
+  useEffect(() => {
+    const savedData = localStorage.getItem(`roi_data_${companyId}`);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setSelectedProducts(parsed.selectedProducts || []);
+        setCurrentCosts(parsed.currentCosts || []);
+        setTotvsCosts(parsed.totvsCosts || []);
+        setInputs(parsed.inputs || inputs);
+        setResults(parsed.results || null);
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      }
+    }
+  }, [companyId]);
 
   return (
     <div className="space-y-6">
@@ -246,7 +295,7 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                 Análise completa de retorno sobre investimento com projeções 3-5 anos
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -256,27 +305,65 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                 Voltar
               </Button>
               <Button
+                variant="default"
+                size="sm"
+                onClick={handleSaveData}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Salvar
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
-                onClick={exportToPDF}
+                onClick={handlePreview}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
               </Button>
-              <Button
-                variant={mode === 'simple' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMode('simple')}
-              >
-                Simples
-              </Button>
-              <Button
-                variant={mode === 'advanced' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMode('advanced')}
-              >
-                Avançado
-              </Button>
+              {results && (
+                <>
+                  <ExportButton
+                    data={results}
+                    filename={`roi_analysis_${companyId}`}
+                    variant="outline"
+                    size="sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <a 
+                      href={`data:application/vnd.ms-excel;base64,${btoa(JSON.stringify(results))}`}
+                      download={`roi_analysis_${companyId}.xlsx`}
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Excel
+                    </a>
+                  </Button>
+                </>
+              )}
+              <div className="border-l pl-2 flex gap-2">
+                <Badge 
+                  variant={mode === 'simple' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setMode('simple')}
+                >
+                  Simples {mode === 'simple' && '✓'}
+                </Badge>
+                <Badge
+                  variant={mode === 'advanced' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setMode('advanced')}
+                >
+                  Avançado {mode === 'advanced' && '✓'}
+                </Badge>
+              </div>
             </div>
           </div>
         </CardHeader>

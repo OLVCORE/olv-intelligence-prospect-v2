@@ -20,19 +20,36 @@ export function ConsultoriaOLVPanel({ companyId, accountStrategyId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Consultoria de Implementação TOTVS</CardTitle>
-            <CardDescription>Diagnóstico, mapeamento e consultoria focada na implementação</CardDescription>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Consultoria de Implementação TOTVS</CardTitle>
+              <CardDescription>Diagnóstico, mapeamento e consultoria focada na implementação</CardDescription>
+            </div>
           </div>
-          <Button
-            variant="default"
-            className="gap-2"
-            onClick={() => navigate('/consultoria-olv')}
-          >
-            <ExternalLink className="h-4 w-4" />
-            Ver Consultoria Premium OLV
-          </Button>
+          
+          {/* Botão Premium em destaque */}
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-2 border-primary/20 rounded-lg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <Award className="h-8 w-8 text-primary" />
+                <div>
+                  <h4 className="font-semibold text-lg">Consultoria Premium OLV</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Supply Chain, Comex, Expansão Global e Logística
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                className="gap-2 bg-primary hover:bg-primary/90 shadow-lg"
+                onClick={() => navigate('/consultoria-olv')}
+              >
+                <ExternalLink className="h-5 w-5" />
+                Acessar Consultoria Premium
+              </Button>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

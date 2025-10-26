@@ -2,12 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Eye, Download, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+import { FileText, Eye, Download, Send, CheckCircle, XCircle, Clock, Save, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { useProposals, useGenerateProposal, useUpdateProposalStatus, Proposal } from "@/hooks/useProposals";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { ExportButton } from "@/components/export/ExportButton";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ProposalManagerProps {
   companyId: string;
@@ -17,10 +20,35 @@ interface ProposalManagerProps {
 }
 
 export function ProposalManager({ companyId, accountStrategyId, quoteId, scenarioId }: ProposalManagerProps) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: proposals, isLoading } = useProposals(companyId);
   const generateProposal = useGenerateProposal();
   const updateStatus = useUpdateProposalStatus();
   const [newTitle, setNewTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    try {
+      localStorage.setItem(`proposals_data_${companyId}`, JSON.stringify({
+        proposals,
+        savedAt: new Date().toISOString(),
+      }));
+      toast({
+        title: "✅ Propostas salvas",
+        description: "Seus dados foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleGenerateProposal = async () => {
     await generateProposal.mutateAsync({
@@ -59,12 +87,31 @@ export function ProposalManager({ companyId, accountStrategyId, quoteId, scenari
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle>Propostas Comerciais</CardTitle>
               <CardDescription>Crie e gerencie propostas visuais profissionais</CardDescription>
             </div>
-            <Dialog>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              {proposals && proposals.length > 0 && (
+                <>
+                  <Button variant="default" size="sm" onClick={handleSaveAll} disabled={isSaving}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar Tudo
+                  </Button>
+                  <ExportButton
+                    data={proposals}
+                    filename={`proposals_${companyId}`}
+                    variant="outline"
+                    size="sm"
+                  />
+                </>
+              )}
+              <Dialog>
               <DialogTrigger asChild>
                 <Button>
                   <FileText className="mr-2 h-4 w-4" />
@@ -94,7 +141,8 @@ export function ProposalManager({ companyId, accountStrategyId, quoteId, scenari
                   </Button>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
       </Card>

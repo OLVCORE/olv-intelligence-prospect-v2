@@ -6,13 +6,37 @@ import { Button } from "@/components/ui/button";
 import { ConsultingCatalogManager } from "@/components/consulting/ConsultingCatalogManager";
 import { ConsultingSimulator } from "@/components/consulting/ConsultingSimulator";
 import { OLVPremiumServicesSelector, type OLVServiceItem } from "@/components/consulting/OLVPremiumServicesSelector";
-import { ArrowLeft, Download, Calculator, BookOpen, Briefcase } from "lucide-react";
+import { ArrowLeft, Download, Calculator, BookOpen, Briefcase, Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ExportButton } from "@/components/export/ExportButton";
 
 export default function ConsultoriaOLVPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedServices, setSelectedServices] = useState<OLVServiceItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleSaveData = () => {
+    setIsSaving(true);
+    try {
+      localStorage.setItem('consultoria_olv_data', JSON.stringify({
+        selectedServices,
+        savedAt: new Date().toISOString(),
+      }));
+      toast({
+        title: "✅ Dados salvos",
+        description: "Seus serviços foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Erro desconhecido",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleExportPDF = () => {
     toast({
@@ -38,7 +62,7 @@ export default function ConsultoriaOLVPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header com navegação */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Button
@@ -55,14 +79,43 @@ export default function ConsultoriaOLVPage() {
             Gestão estratégica, Supply Chain, Internacionalização e Novos Negócios
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={handleExportPDF}
-        >
-          <Download className="h-4 w-4" />
-          Exportar PDF
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          {selectedServices.length > 0 && (
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSaveData}
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salvar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPreview(!showPreview)}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <ExportButton
+                data={selectedServices}
+                filename="consultoria_olv_premium"
+                variant="outline"
+                size="sm"
+              />
+            </>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="services" className="w-full">

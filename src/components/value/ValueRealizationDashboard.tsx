@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Target, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Target, Calendar, Save, Eye, ArrowLeft } from "lucide-react";
 import { useValueTracking, useCreateValueTracking, ValueTracking } from "@/hooks/useValueTracking";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { ExportButton } from "@/components/export/ExportButton";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ValueRealizationDashboardProps {
   companyId: string;
@@ -22,10 +26,36 @@ export function ValueRealizationDashboard({
   promisedPayback = 12,
   promisedSavings = 0,
 }: ValueRealizationDashboardProps) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: trackings, isLoading } = useValueTracking(accountStrategyId);
   const createTracking = useCreateValueTracking();
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const activeTracking = trackings?.[0];
+
+  const handleSaveData = async () => {
+    setIsSaving(true);
+    try {
+      localStorage.setItem(`value_tracking_${companyId}`, JSON.stringify({
+        trackings,
+        savedAt: new Date().toISOString(),
+      }));
+      toast({
+        title: "✅ Tracking de valor salvo",
+        description: "Seus dados foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleStartTracking = async () => {
     await createTracking.mutateAsync({
@@ -109,21 +139,43 @@ export function ValueRealizationDashboard({
       {/* Header com Health Score */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle>Value Realization Tracking</CardTitle>
               <CardDescription>
                 Iniciado em {new Date(activeTracking.baseline_date).toLocaleDateString('pt-BR')}
               </CardDescription>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-1">Health Score</p>
-              <p className={`text-3xl font-bold ${getHealthColor(activeTracking.health_score)}`}>
-                {(activeTracking.health_score * 100).toFixed(0)}%
-              </p>
-              <Badge variant={activeTracking.health_score >= 0.8 ? 'default' : 'destructive'}>
-                {activeTracking.tracking_status}
-              </Badge>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Health Score</p>
+                <p className={`text-3xl font-bold ${getHealthColor(activeTracking.health_score)}`}>
+                  {(activeTracking.health_score * 100).toFixed(0)}%
+                </p>
+                <Badge variant={activeTracking.health_score >= 0.8 ? 'default' : 'destructive'}>
+                  {activeTracking.tracking_status}
+                </Badge>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+                <Button variant="default" size="sm" onClick={handleSaveData} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <ExportButton
+                  data={activeTracking}
+                  filename={`value_tracking_${companyId}`}
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
