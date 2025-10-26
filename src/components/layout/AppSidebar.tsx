@@ -112,7 +112,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Prospecção & Intelligence",
+    label: "Prospecção & Qualificação",
     icon: Crosshair,
     items: [
       {
@@ -140,7 +140,20 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Estratégia de Conta",
+    label: "Análise Competitiva",
+    icon: Shield,
+    items: [
+      {
+        title: "Competitive Intelligence",
+        icon: Shield,
+        url: "/competitive-intelligence",
+        competitive: true,
+        description: "Battle cards, win/loss analysis e monitoramento competitivo em tempo real"
+      },
+    ]
+  },
+  {
+    label: "Planejamento Estratégico",
     icon: Target,
     items: [
       {
@@ -157,41 +170,6 @@ const menuGroups: MenuGroup[] = [
           { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração automatizada de propostas comerciais" },
           { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Acompanhamento de valor entregue ao cliente" },
           { title: "Histórico de Estratégias", icon: History, url: "/account-strategy/history", description: "Todas as estratégias criadas e seus resultados" },
-        ],
-      },
-    ]
-  },
-  {
-    label: "Competitive Intelligence",
-    icon: Shield,
-    items: [
-      {
-        title: "Intelligence Center",
-        icon: Shield,
-        url: "/competitive-intelligence",
-        competitive: true,
-        description: "Battle cards, win/loss analysis e monitoramento competitivo em tempo real"
-      },
-    ]
-  },
-  {
-    label: "Execução Comercial",
-    icon: Rocket,
-    items: [
-      {
-        title: "SDR Sales Suite",
-        icon: MessageSquare,
-        url: "/sdr/workspace",
-        highlighted: true,
-        description: "Plataforma completa de automação de prospecção e vendas",
-        submenu: [
-          { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
-          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
-          { title: "Pipeline Kanban", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades em progresso" },
-          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
-          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
-          { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
-          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e ferramentas externas" },
         ],
       },
       {
@@ -215,7 +193,29 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Performance & Resultados",
+    label: "Execução & Prospecção Ativa",
+    icon: Rocket,
+    items: [
+      {
+        title: "SDR Sales Suite",
+        icon: MessageSquare,
+        url: "/sdr/workspace",
+        highlighted: true,
+        description: "Plataforma completa de automação de prospecção e vendas",
+        submenu: [
+          { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
+          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
+          { title: "Pipeline Kanban", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades em progresso" },
+          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
+          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
+          { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
+          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e ferramentas externas" },
+        ],
+      },
+    ]
+  },
+  {
+    label: "Métricas & Performance",
     icon: BarChart3,
     items: [
       {
@@ -231,7 +231,7 @@ const menuGroups: MenuGroup[] = [
         description: "Métricas detalhadas de conversão e análise preditiva"
       },
       {
-        title: "Relatórios",
+        title: "Relatórios Executivos",
         icon: FileText,
         url: "/reports",
         description: "Biblioteca completa de relatórios executivos e análises"
