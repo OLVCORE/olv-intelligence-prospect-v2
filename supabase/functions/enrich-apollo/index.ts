@@ -14,6 +14,7 @@ serve(async (req) => {
 
   try {
     const { type, organizationName, domain, titles } = await req.json();
+    const cleanDomain = domain ? String(domain).replace(/^https?:\/\//i, '').split('/')[0].toLowerCase() : undefined;
 
     if (!organizationName) {
       return new Response(
@@ -33,7 +34,7 @@ serve(async (req) => {
       // Buscar organização
       const params = new URLSearchParams({
         q_organization_name: organizationName,
-        ...(domain && { q_organization_domains: domain })
+        ...(cleanDomain && { q_organization_domains: cleanDomain })
       });
 
       const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`, {
@@ -67,7 +68,7 @@ serve(async (req) => {
         const body = {
           page: 1,
           per_page: 10,
-          q_organization_domains: [domain],
+          q_organization_domains: cleanDomain ? [cleanDomain] : [],
           person_titles: titlesList.join(',')
         };
         const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
@@ -88,7 +89,7 @@ serve(async (req) => {
       const tryByOrganizationId = async (): Promise<any[]> => {
         const params = new URLSearchParams({
           q_organization_name: organizationName,
-          ...(domain ? { q_organization_domains: domain } : {}) as any
+          ...(cleanDomain ? { q_organization_domains: cleanDomain } : {}) as any
         });
         const orgResp = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`, {
           headers: { 'X-Api-Key': apolloApiKey }

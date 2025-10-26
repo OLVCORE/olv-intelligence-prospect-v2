@@ -365,8 +365,15 @@ export default function CompanyDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
         queryClient.invalidateQueries({ queryKey: ['decision_makers', id] }),
       ]);
-      const found = Array.isArray((data as any)?.profiles) ? (data as any).profiles.length : undefined;
-      toast.success('PhantomBuster concluído', { description: found ? `${found} perfil(is) encontrado(s)` : 'Execução finalizada' });
+      const res: any = data;
+      const found = Array.isArray(res?.profiles) ? res.profiles.length : Array.isArray(res?.data?.profiles) ? res.data.profiles.length : undefined;
+      const success = typeof res?.success === 'boolean' ? res.success : undefined;
+      const message = typeof res?.message === 'string' ? res.message : undefined;
+      if (success === false) {
+        toast.info('PhantomBuster não executou', { description: message || 'Verifique as credenciais do PhantomBuster.' });
+      } else {
+        toast.success('PhantomBuster concluído', { description: found ? `${found} perfil(is) encontrado(s)` : (message || 'Execução iniciada') });
+      }
     } catch (e: any) {
       console.error(e);
       toast.error('Falha ao executar PhantomBuster', { description: e.message });

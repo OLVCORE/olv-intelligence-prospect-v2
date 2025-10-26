@@ -23,8 +23,22 @@ serve(async (req) => {
     console.log('[LinkedIn Scrape] Iniciando:', linkedin_url);
 
     const phantomApiKey = Deno.env.get('PHANTOMBUSTER_API_KEY');
-    if (!phantomApiKey) {
-      throw new Error('PHANTOMBUSTER_API_KEY não configurada');
+    const phantomAgentId = Deno.env.get('PHANTOMBUSTER_AGENT_ID');
+    const phantomSessionCookie = Deno.env.get('PHANTOMBUSTER_SESSION_COOKIE');
+    if (!phantomApiKey || !phantomAgentId || !phantomSessionCookie) {
+      console.error('[LinkedIn Scrape] Configuração ausente', { hasKey: !!phantomApiKey, hasAgent: !!phantomAgentId });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'PhantomBuster não configurado (Agent ID/Session Cookie ausentes).',
+          missing: {
+            apiKey: !phantomApiKey,
+            agentId: !phantomAgentId,
+            sessionCookie: !phantomSessionCookie
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
     }
 
     // Iniciar PhantomBuster
@@ -35,9 +49,9 @@ serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        id: 'your-phantom-id', // Precisa ser configurado
+        id: phantomAgentId,
         argument: {
-          sessionCookie: 'your-session-cookie', // Precisa ser configurado
+          sessionCookie: phantomSessionCookie,
           profileUrls: [linkedin_url]
         }
       })
