@@ -669,12 +669,15 @@ serve(async (req) => {
     console.log('✅ Digital presence saved');
 
     // ========================================
-    // 4️⃣ BUSCAR DECISORES REAIS (Apollo)
+    // 4️⃣ BUSCAR DECISORES REAIS (Apollo + PhantomBuster Fallback)
     // ========================================
     let decisionMakers: any[] = [];
+    let decisorsSource = 'none';
+    
     if (company.domain || company.name) {
+      // 🎯 ESTRATÉGIA 1: Tentar Apollo primeiro
       try {
-        console.log('👥 Fetching decision makers via Apollo...');
+        console.log('👥 [1/2] Fetching decision makers via Apollo...');
         const { data: apolloData } = await supabase.functions.invoke('enrich-apollo', {
           body: { 
             type: 'people',
@@ -684,16 +687,15 @@ serve(async (req) => {
           }
         });
 
-        if (apolloData?.people) {
+        if (apolloData?.people && apolloData.people.length > 0) {
           decisionMakers = apolloData.people;
+          decisorsSource = 'apollo';
           
           for (const person of decisionMakers.slice(0, 5)) {
-            // Mapear functions do Apollo para department
             const department = person.functions?.[0] 
               ? person.functions[0].charAt(0).toUpperCase() + person.functions[0].slice(1)
               : null;
             
-            // Pegar primeiro telefone se existir
             const phone = person.phone_numbers?.[0]?.raw_number || null;
             
             await supabase.from('decision_makers').upsert({
@@ -705,14 +707,91 @@ serve(async (req) => {
               linkedin_url: person.linkedin_url,
               seniority: person.seniority,
               department: department,
-              verified_email: person.email_status === 'verified'
+              verified_email: person.email_status === 'verified',
+              source: 'apollo'
             });
           }
+          console.log(`✅ Apollo: ${decisionMakers.length} decision makers found`);
         }
-        console.log(`✅ ${decisionMakers.length} decision makers found`);
       } catch (error) {
         console.error('❌ Apollo error:', error);
       }
+      
+      // 🔥 ESTRATÉGIA 2: Se Apollo falhou ou retornou < 3 decisores → PhantomBuster
+      if (decisionMakers.length < 3 && socialMediaData.linkedin?.url) {
+        try {
+          console.log('👥 [2/2] Apollo insufficient, trying PhantomBuster fallback...');
+          
+          const phantomApiKey = Deno.env.get('PHANTOMBUSTER_API_KEY');
+          const phantomSessionCookie = Deno.env.get('PHANTOMBUSTER_SESSION_COOKIE');
+          const phantomAgentId = Deno.env.get('PHANTOMBUSTER_AGENT_ID');
+          
+          if (phantomApiKey && phantomSessionCookie && phantomAgentId) {
+            // Lançar PhantomBuster agent para scrape do LinkedIn
+            const launchResponse = await fetch('https://api.phantombuster.com/api/v2/agents/launch', {
+              method: 'POST',
+              headers: {
+                'X-Phantombuster-Key': phantomApiKey,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                id: phantomAgentId,
+                argument: {
+                  sessionCookie: phantomSessionCookie,
+                  spreadsheetUrl: socialMediaData.linkedin.url,
+                  numberOfProfiles: 5
+                }
+              })
+            });
+            
+            if (launchResponse.ok) {
+              const launchData = await launchResponse.json();
+              console.log('✅ PhantomBuster agent launched:', launchData.containerId);
+              
+              // Aguardar 15 segundos para processamento
+              await new Promise(resolve => setTimeout(resolve, 15000));
+              
+              // Buscar resultados
+              const resultResponse = await fetch(
+                `https://api.phantombuster.com/api/v2/containers/fetch-result?id=${launchData.containerId}`,
+                {
+                  headers: { 'X-Phantombuster-Key': phantomApiKey }
+                }
+              );
+              
+              if (resultResponse.ok) {
+                const phantomProfiles = await resultResponse.json();
+                console.log(`✅ PhantomBuster: ${phantomProfiles.length} profiles scraped`);
+                
+                // Salvar perfis do PhantomBuster
+                for (const profile of phantomProfiles.slice(0, 5)) {
+                  await supabase.from('decision_makers').upsert({
+                    company_id,
+                    name: profile.fullName || profile.name,
+                    title: profile.headline || profile.title,
+                    linkedin_url: profile.profileUrl,
+                    department: profile.experience?.[0]?.company === company.name 
+                      ? profile.experience[0].title 
+                      : null,
+                    source: 'phantombuster'
+                  });
+                }
+                
+                decisionMakers = [...decisionMakers, ...phantomProfiles];
+                decisorsSource = decisionMakers.length === phantomProfiles.length 
+                  ? 'phantombuster' 
+                  : 'apollo+phantombuster';
+              }
+            }
+          } else {
+            console.warn('⚠️ PhantomBuster credentials not configured');
+          }
+        } catch (error) {
+          console.error('❌ PhantomBuster error:', error);
+        }
+      }
+      
+      console.log(`✅ Total: ${decisionMakers.length} decision makers (source: ${decisorsSource})`);
     }
 
     // ========================================
