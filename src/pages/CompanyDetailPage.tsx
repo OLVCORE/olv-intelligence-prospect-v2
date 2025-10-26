@@ -1007,7 +1007,7 @@ export default function CompanyDetailPage() {
                   <Users className="h-5 w-5" />
                   Decisores Mapeados
                 </CardTitle>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
                   {id && (
                     <DecisionMakerAddDialog
                       companyId={id}
@@ -1018,6 +1018,7 @@ export default function CompanyDetailPage() {
                       }
                     />
                   )}
+                  
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1026,19 +1027,22 @@ export default function CompanyDetailPage() {
                           size="icon"
                           onClick={handleTestApollo}
                           disabled={isTestingApollo}
-                          className="h-8 w-8"
+                          className="h-10 w-10"
                           aria-label="Buscar decisores via Apollo"
                         >
                           {isTestingApollo ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <img src={apolloLogo} alt="Apollo.io logo" className="h-4 w-4" />
+                            <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
+                              <img src={apolloLogo} alt="Apollo" className="h-5 w-5" />
+                            </div>
                           )}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Buscar decisores (Apollo)</TooltipContent>
+                      <TooltipContent>Buscar decisores (Apollo.io)</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                  
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1047,19 +1051,41 @@ export default function CompanyDetailPage() {
                           size="icon"
                           onClick={handleRunPhantom}
                           disabled={isRunningPhantom}
-                          className="h-8 w-8"
+                          className="h-10 w-10"
                           aria-label="Buscar decisores via PhantomBuster"
                         >
                           {isRunningPhantom ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <img src={phantomLogo} alt="PhantomBuster logo" className="h-4 w-4" />
+                            <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
+                              <img src={phantomLogo} alt="PhantomBuster" className="h-5 w-5" />
+                            </div>
                           )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Buscar decisores (PhantomBuster)</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+
+                  {id && (
+                    <LinkedInEnrichButton
+                      companyId={id}
+                      linkedinUrl={
+                        (company as any)?.digital_presence?.linkedin ||
+                        (company as any)?.raw_data?.linkedin ||
+                        (company as any)?.raw_data?.social?.linkedin ||
+                        company?.linkedin_url ||
+                        undefined
+                      }
+                      onSuccess={() => {
+                        queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+                        queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
+                      }}
+                      variant="ghost"
+                      size="icon"
+                      showLabel={false}
+                    />
+                  )}
                 </div>
               </div>
             </CardHeader>

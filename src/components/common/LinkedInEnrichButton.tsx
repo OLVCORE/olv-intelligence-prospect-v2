@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Linkedin, Loader2, CheckCircle2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -119,39 +120,49 @@ export function LinkedInEnrichButton({
   const isProcessing = isScrapingLinkedIn || isFetchingResults;
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={scrapingComplete ? handleFetchResults : handleLinkedInScrape}
-        disabled={isProcessing}
-        variant={variant}
-        size={size}
-        className="group relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[#0A66C2]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        {isProcessing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : scrapingComplete ? (
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-        ) : (
-          <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-[#0A66C2] shadow-lg">
-            <Linkedin className="h-5 w-5 text-white" />
-          </div>
-        )}
-        
-        {showLabel && (
-          <span className="ml-2">
-            {isScrapingLinkedIn 
-              ? 'Iniciando...' 
-              : isFetchingResults 
-                ? 'Buscando...' 
-                : scrapingComplete
-                  ? 'Buscar Resultados'
-                  : 'Analisar LinkedIn'
-            }
-          </span>
-        )}
-      </Button>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={scrapingComplete ? handleFetchResults : handleLinkedInScrape}
+            disabled={isProcessing || !linkedinUrl}
+            variant={variant}
+            size={size}
+            className={showLabel ? "group relative overflow-hidden" : "h-10 w-10"}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : scrapingComplete ? (
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            ) : (
+              <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-[#0A66C2] shadow-lg">
+                <Linkedin className="h-5 w-5 text-white" />
+              </div>
+            )}
+            
+            {showLabel && (
+              <span className="ml-2">
+                {isScrapingLinkedIn 
+                  ? 'Iniciando...' 
+                  : isFetchingResults 
+                    ? 'Buscando...' 
+                    : scrapingComplete
+                      ? 'Buscar Resultados'
+                      : 'Analisar LinkedIn'
+                }
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {!linkedinUrl 
+            ? 'LinkedIn não configurado' 
+            : scrapingComplete 
+              ? 'Buscar resultados do scraping'
+              : 'Analisar perfil LinkedIn'
+          }
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
