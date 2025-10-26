@@ -29,10 +29,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanies, useDeleteCompany } from '@/hooks/useCompanies';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
 
 export default function CompaniesManagementPage() {
   logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
@@ -64,6 +68,7 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching, setIsBatchEnriching] = useState(false);
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [enrichingReceitaId, setEnrichingReceitaId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -281,6 +286,148 @@ export default function CompaniesManagementPage() {
     setPage(0); // Reset to first page when sorting
   };
 
+  const handleExportCSV = () => {
+    try {
+      setIsExporting(true);
+      const headers = ['Empresa', 'CNPJ', 'Status CNPJ', 'Setor', 'UF', 'Website', 'Score Análise'];
+      const rows = companies.map(company => [
+        company.name,
+        company.cnpj || 'N/A',
+        (company as any).cnpj_status || 'pendente',
+        company.industry || 'N/A',
+        (company.location as any)?.state || 'N/A',
+        company.website || 'N/A',
+        company.digital_maturity_score ? `${company.digital_maturity_score}%` : 'N/A'
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `empresas_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      toast.success('CSV exportado com sucesso!');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Erro ao exportar CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportXLS = () => {
+    try {
+      setIsExporting(true);
+      const data = companies.map(company => ({
+        'Empresa': company.name,
+        'CNPJ': company.cnpj || 'N/A',
+        'Status CNPJ': (company as any).cnpj_status || 'pendente',
+        'Setor': company.industry || 'N/A',
+        'UF': (company.location as any)?.state || 'N/A',
+        'Cidade': (company.location as any)?.city || 'N/A',
+        'Website': company.website || 'N/A',
+        'Score Maturidade': company.digital_maturity_score || 'N/A',
+        'Funcionários': company.employees || 'N/A',
+        'Data Cadastro': company.created_at ? new Date(company.created_at).toLocaleDateString('pt-BR') : 'N/A'
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Empresas');
+      XLSX.writeFile(wb, `empresas_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Error exporting XLS:', error);
+      toast.error('Erro ao exportar Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      setIsExporting(true);
+      const doc = new jsPDF();
+      
+      doc.setFontSize(18);
+      doc.text('Relatório de Empresas', 14, 20);
+      doc.setFontSize(11);
+      doc.text(`Total: ${totalCount} empresas`, 14, 28);
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 34);
+
+      const tableData = companies.map(company => [
+        company.name,
+        company.cnpj || 'N/A',
+        (company as any).cnpj_status || 'pendente',
+        company.industry || 'N/A',
+        (company.location as any)?.state || 'N/A',
+        company.digital_maturity_score ? `${company.digital_maturity_score}%` : 'N/A'
+      ]);
+
+      autoTable(doc, {
+        head: [['Empresa', 'CNPJ', 'Status', 'Setor', 'UF', 'Score']],
+        body: tableData,
+        startY: 40,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [99, 102, 241] }
+      });
+
+      doc.save(`empresas_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPNG = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('Gerando imagem...', { description: 'Aguarde um momento' });
+      
+      const tableElement = document.querySelector('[data-testid="companies-table"]') as HTMLElement;
+      if (!tableElement) {
+        toast.error('Tabela não encontrada');
+        return;
+      }
+
+      const canvas = await html2canvas(tableElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false
+      });
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `empresas_${new Date().toISOString().split('T')[0]}.png`;
+          link.click();
+          toast.success('Imagem exportada com sucesso!');
+        }
+      });
+    } catch (error) {
+      console.error('Error exporting PNG:', error);
+      toast.error('Erro ao exportar imagem');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    toast.info('Atualizando dados...');
+    await refetch();
+    toast.success('Dados atualizados!');
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -364,7 +511,7 @@ export default function CompaniesManagementPage() {
               {totalCount} {totalCount === 1 ? 'empresa cadastrada' : 'empresas cadastradas'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Input
               placeholder="Buscar por nome, CNPJ ou domínio..."
               value={searchTerm}
@@ -374,6 +521,55 @@ export default function CompaniesManagementPage() {
               }}
               className="max-w-md"
             />
+            
+            {/* Export Buttons */}
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting || companies.length === 0}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                disabled={isExporting || companies.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportXLS}
+                disabled={isExporting || companies.length === 0}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                XLS
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPNG}
+                disabled={isExporting || companies.length === 0}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                PNG
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
