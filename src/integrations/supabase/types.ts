@@ -1320,6 +1320,56 @@ export type Database = {
           },
         ]
       }
+      company_monitoring: {
+        Row: {
+          check_frequency_hours: number | null
+          company_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_intent_check_at: string | null
+          last_intent_score: number | null
+          last_totvs_check_at: string | null
+          last_totvs_score: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          check_frequency_hours?: number | null
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_intent_check_at?: string | null
+          last_intent_score?: number | null
+          last_totvs_check_at?: string | null
+          last_totvs_score?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          check_frequency_hours?: number | null
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_intent_check_at?: string | null
+          last_intent_score?: number | null
+          last_totvs_check_at?: string | null
+          last_totvs_score?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_monitoring_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_previews: {
         Row: {
           cnpj: string | null
@@ -4567,6 +4617,20 @@ export type Database = {
       create_canvas_version: {
         Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
         Returns: string
+      }
+      get_companies_for_monitoring_check: {
+        Args: never
+        Returns: {
+          company_cnpj: string
+          company_domain: string
+          company_id: string
+          company_name: string
+          hours_since_last_check: number
+          last_intent_score: number
+          last_totvs_score: number
+          monitoring_id: string
+          user_id: string
+        }[]
       }
       get_hot_leads: {
         Args: { min_intent_score?: number }
