@@ -36,17 +36,43 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to monitoring service
+    // Log error to monitoring service with full context
     logger.error('ErrorBoundary caught error', this.props.context || 'Unknown', {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString(),
     });
+
+    // Try to persist error to backend for recovery
+    this.persistErrorForRecovery(error, errorInfo);
 
     this.setState({
       error,
       errorInfo,
     });
+  }
+
+  private async persistErrorForRecovery(error: Error, errorInfo: ErrorInfo) {
+    try {
+      const errorData = {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        context: this.props.context,
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Store in localStorage as backup
+      const errors = JSON.parse(localStorage.getItem('error_recovery') || '[]');
+      errors.push(errorData);
+      localStorage.setItem('error_recovery', JSON.stringify(errors.slice(-10))); // Keep last 10
+    } catch (e) {
+      console.error('Failed to persist error for recovery:', e);
+    }
   }
 
   handleReset = () => {
