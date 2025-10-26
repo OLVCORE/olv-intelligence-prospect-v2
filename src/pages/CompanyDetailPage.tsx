@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackButton } from "@/components/common/BackButton";
+import { LinkedInEnrichButton } from "@/components/common/LinkedInEnrichButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -218,46 +219,145 @@ export default function CompanyDetailPage() {
       <Tabs defaultValue="overview" className="w-full">
         <ScrollArea className="w-full whitespace-nowrap">
           <TabsList className="inline-flex w-auto">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="identificacao" className="flex items-center gap-2">
-              <IdCard className="h-4 w-4" />
-              Identificação
-            </TabsTrigger>
-            <TabsTrigger value="localizacao" className="flex items-center gap-2">
-              <MapPinned className="h-4 w-4" />
-              Localização
-            </TabsTrigger>
-            <TabsTrigger value="atividade" className="flex items-center gap-2">
-              <ActivityIcon className="h-4 w-4" />
-              Atividade
-            </TabsTrigger>
-            <TabsTrigger value="estrutura" className="flex items-center gap-2">
-              <UsersIcon className="h-4 w-4" />
-              Estrutura
-            </TabsTrigger>
-            <TabsTrigger value="financeiro" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Financeiro
-            </TabsTrigger>
-            <TabsTrigger value="digital" className="flex items-center gap-2">
-              <Monitor className="h-4 w-4" />
-              Digital
-            </TabsTrigger>
-            <TabsTrigger value="inteligencia" className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              Inteligência
-            </TabsTrigger>
-            <TabsTrigger value="receita" className="flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              Receita
-            </TabsTrigger>
-            <TabsTrigger value="actions" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Ações
-            </TabsTrigger>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    Visão Geral
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Resumo executivo com CNPJ, razão social, situação, porte e data de abertura
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="identificacao" className="flex items-center gap-2">
+                    <IdCard className="h-4 w-4" />
+                    Identificação
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Dados cadastrais: CNPJ, razão social, nome fantasia, natureza jurídica, tipo unidade, situação cadastral
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="localizacao" className="flex items-center gap-2">
+                    <MapPinned className="h-4 w-4" />
+                    Localização
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Endereço completo, telefones (assertividade, matriz, filiais, celulares), e-mails, WhatsApp e mapa
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="atividade" className="flex items-center gap-2">
+                    <ActivityIcon className="h-4 w-4" />
+                    Atividade
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Setor, CNAEs primários e secundários, NCMs, regime tributário, importação/exportação
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="estrutura" className="flex items-center gap-2">
+                    <UsersIcon className="h-4 w-4" />
+                    Estrutura
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Funcionários (matriz e filiais), sócios, decisores, colaboradores e quantidade de filiais
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="financeiro" className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Financeiro
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Capital social, faturamento, recebimentos do governo, crescimento e todas as dívidas (CNPJ, sócios, FGTS, Previdência)
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="digital" className="flex items-center gap-2">
+                    <Monitor className="h-4 w-4" />
+                    Digital
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Websites, redes sociais (Instagram, Facebook, LinkedIn, Twitter, YouTube), tecnologias, ferramentas, tags e notas
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="inteligencia" className="flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    Inteligência
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Score digital, nível de atividade, classificação e insights capturados pela IA
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="receita" className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Receita
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Dados oficiais completos da Receita Federal (JSON raw)
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="actions" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Ações
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Enriquecimento de dados (Apollo, PhantomBuster, LinkedIn), adicionar decisores e excluir empresa
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </TabsList>
         </ScrollArea>
 
@@ -464,6 +564,38 @@ export default function CompanyDetailPage() {
                   </ScrollArea>
                 </div>
                 <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefones - Matriz</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.telefones_matriz || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefones - Filiais</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.telefones_filiais || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Celulares</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.celulares || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Melhor Celular</p>
+                  <p className="font-mono">{rawData.melhor_celular || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Fixos</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.fixos || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">PAT - Telefone</p>
+                  <p className="font-mono">{rawData.pat_telefone || 'N/A'}</p>
+                </div>
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">WhatsApp</p>
                   <p className="font-mono">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</p>
                 </div>
@@ -484,6 +616,26 @@ export default function CompanyDetailPage() {
                   <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Decisores</p>
                   <ScrollArea className="h-20 border rounded p-2">
                     <p className="text-xs">{rawData.emails_validados_decisores || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Colaboradores</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.emails_validados_colaboradores || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email PAT</p>
+                  <p className="text-sm">{rawData.email_pat || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email Receita Federal</p>
+                  <p className="text-sm">{rawData.email_receita_federal || receitaData?.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Emails Públicos</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.emails_publicos || 'N/A'}</p>
                   </ScrollArea>
                 </div>
               </CardContent>
@@ -1064,46 +1216,81 @@ export default function CompanyDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Enriquecimento de Dados</CardTitle>
+                <CardDescription>Buscar decisores e enriquecer informações</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button
                   onClick={handleSmartRefresh}
                   disabled={isSmartRefreshing}
-                  className="w-full"
+                  className="w-full justify-start"
+                  variant="default"
                 >
                   {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                   Atualização Inteligente (360°)
                 </Button>
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleTestApollo}
-                    disabled={isTestingApollo}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {isTestingApollo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <img src={apolloLogo} className="h-4 w-4 mr-2" alt="Apollo" />}
-                    Apollo
-                  </Button>
+                <Separator />
 
-                  <Button
-                    onClick={handleRunPhantom}
-                    disabled={isRunningPhantom}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {isRunningPhantom ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <img src={phantomLogo} className="h-4 w-4 mr-2" alt="Phantom" />}
-                    Phantom
-                  </Button>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Buscar Decisores</p>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleTestApollo}
+                          disabled={isTestingApollo}
+                          variant="outline"
+                          className="w-full justify-start"
+                        >
+                          {isTestingApollo ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <img src={apolloLogo} className="h-4 w-4 mr-2" alt="Apollo" />
+                          )}
+                          Apollo.io - Buscar Decisores
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Busca decisores via Apollo.io (API paga)
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleRunPhantom}
+                          disabled={isRunningPhantom}
+                          variant="outline"
+                          className="w-full justify-start"
+                        >
+                          {isRunningPhantom ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <img src={phantomLogo} className="h-4 w-4 mr-2" alt="PhantomBuster" />
+                          )}
+                          PhantomBuster - Scraping LinkedIn
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Raspagem de perfis LinkedIn via PhantomBuster
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <LinkedInEnrichButton companyId={id!} />
+
+                  <DecisionMakerAddDialog companyId={id!} />
                 </div>
-
-                <DecisionMakerAddDialog companyId={id!} />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
+                <CardDescription>Ações irreversíveis</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
