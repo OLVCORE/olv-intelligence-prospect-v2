@@ -730,27 +730,6 @@ export default function CompaniesManagementPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
-                    onClick={handleBatchEnrichEconodata}
-                    disabled={!hasSelection || isBatchEnrichingEconodata}
-                    className="gap-2"
-                  >
-                    {isBatchEnrichingEconodata ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Database className="h-4 w-4" />
-                    )}
-                    Econodata
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Enriquecer com Econodata (selecionadas)</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
                     onClick={() => navigate('/search')}
                     className="gap-2"
                   >
