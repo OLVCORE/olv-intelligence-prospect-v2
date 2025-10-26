@@ -255,15 +255,20 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                               {source.evidence}
                             </p>
                             {source.url ? (
-                              <a
-                                href={source.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                🔗 VER EVIDÊNCIA NA FONTE ORIGINAL (clique para verificar)
-                              </a>
+                              <div className="space-y-1">
+                                <a
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  🔗 VER EVIDÊNCIA NA FONTE ORIGINAL
+                                </a>
+                                <p className="text-xs text-muted-foreground italic">
+                                  ⚠️ Nota: LinkedIn pode pedir verificação humana. Sites sem HTTPS podem ser bloqueados pelo navegador.
+                                </p>
+                              </div>
                             ) : (
                               <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
                                 <AlertCircle className="h-3 w-3" />
