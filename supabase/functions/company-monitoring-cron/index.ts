@@ -19,9 +19,9 @@ serve(async (req) => {
 
     console.log("🔍 Iniciando varredura automática de monitoramento...");
 
-    // Buscar empresas que precisam de verificação
+    // Buscar empresas que precisam de verificação (até 500 por execução)
     const { data: companiesToCheck, error: fetchError } = await supabase
-      .rpc('get_companies_for_monitoring_check');
+      .rpc('get_companies_for_monitoring_check', { batch_limit: 500 });
 
     if (fetchError) {
       console.error("Erro ao buscar empresas:", fetchError);
@@ -44,8 +44,10 @@ serve(async (req) => {
     const results = [];
     let notificationsCreated = 0;
 
-    // Processar em lotes para não sobrecarregar
-    for (const company of companiesToCheck.slice(0, 20)) { // Limitar a 20 por execução
+    // Processar todas as empresas retornadas (até 500)
+    console.log(`\n🚀 Processando ${companiesToCheck.length} empresas...`);
+    
+    for (const company of companiesToCheck) {
       console.log(`\n🏢 Verificando: ${company.company_name}`);
 
       try {

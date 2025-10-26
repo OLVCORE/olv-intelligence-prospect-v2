@@ -4619,7 +4619,7 @@ export type Database = {
         Returns: string
       }
       get_companies_for_monitoring_check: {
-        Args: never
+        Args: { batch_limit?: number }
         Returns: {
           company_cnpj: string
           company_domain: string
