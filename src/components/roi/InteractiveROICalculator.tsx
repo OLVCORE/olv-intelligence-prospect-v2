@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, TrendingUp, DollarSign, Calendar, AlertCircle } from 'lucide-react';
 import { CashFlowChart } from './charts/CashFlowChart';
 import { BenefitsBreakdown } from './charts/BenefitsBreakdown';
+import { TOTVSProductSelector, type TOTVSProduct } from './TOTVSProductSelector';
 
 interface ROICalculatorProps {
   companyId: string;
@@ -71,32 +72,52 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   const { toast } = useToast();
   const [isCalculating, setIsCalculating] = useState(false);
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
+  const [selectedProducts, setSelectedProducts] = useState<TOTVSProduct[]>([]);
   
   const [inputs, setInputs] = useState<ROIInputs>({
     currentCosts: {
-      software: initialData?.currentCosts?.software || 50000,
-      personnel: initialData?.currentCosts?.personnel || 200000,
-      maintenance: initialData?.currentCosts?.maintenance || 30000,
-      outsourcing: initialData?.currentCosts?.outsourcing || 100000,
+      software: initialData?.currentCosts?.software || 0,
+      personnel: initialData?.currentCosts?.personnel || 0,
+      maintenance: initialData?.currentCosts?.maintenance || 0,
+      outsourcing: initialData?.currentCosts?.outsourcing || 0,
     },
     proposedInvestment: {
-      licenses: initialData?.proposedInvestment?.licenses || 150000,
-      implementation: initialData?.proposedInvestment?.implementation || 100000,
-      training: initialData?.proposedInvestment?.training || 30000,
-      firstYearMaintenance: initialData?.proposedInvestment?.firstYearMaintenance || 45000,
+      licenses: initialData?.proposedInvestment?.licenses || 0,
+      implementation: initialData?.proposedInvestment?.implementation || 0,
+      training: initialData?.proposedInvestment?.training || 0,
+      firstYearMaintenance: initialData?.proposedInvestment?.firstYearMaintenance || 0,
     },
     expectedBenefits: {
-      timeReductionPercent: initialData?.expectedBenefits?.timeReductionPercent || 30,
-      errorReductionPercent: initialData?.expectedBenefits?.errorReductionPercent || 40,
-      revenueIncreasePercent: initialData?.expectedBenefits?.revenueIncreasePercent || 15,
-      employeesAffected: initialData?.expectedBenefits?.employeesAffected || 50,
-      avgSalary: initialData?.expectedBenefits?.avgSalary || 80000,
+      timeReductionPercent: initialData?.expectedBenefits?.timeReductionPercent || 0,
+      errorReductionPercent: initialData?.expectedBenefits?.errorReductionPercent || 0,
+      revenueIncreasePercent: initialData?.expectedBenefits?.revenueIncreasePercent || 0,
+      employeesAffected: initialData?.expectedBenefits?.employeesAffected || 0,
+      avgSalary: initialData?.expectedBenefits?.avgSalary || 0,
     },
     projectYears: 3,
     discountRate: 10,
   });
 
   const [results, setResults] = useState<ROIOutput | null>(null);
+
+  // Atualizar custos de investimento quando produtos mudam
+  useEffect(() => {
+    const totals = selectedProducts.reduce((acc, p) => ({
+      licenses: acc.licenses + p.licenseCost,
+      implementation: acc.implementation + p.implementationCost,
+      maintenance: acc.maintenance + p.maintenanceCost,
+    }), { licenses: 0, implementation: 0, maintenance: 0 });
+
+    setInputs(prev => ({
+      ...prev,
+      proposedInvestment: {
+        ...prev.proposedInvestment,
+        licenses: totals.licenses,
+        implementation: totals.implementation,
+        firstYearMaintenance: totals.maintenance,
+      }
+    }));
+  }, [selectedProducts]);
 
   const calculateROI = async () => {
     setIsCalculating(true);
@@ -208,6 +229,12 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
         {/* Inputs Tab */}
         <TabsContent value="inputs" className="space-y-4">
+          {/* Seletor de Produtos TOTVS */}
+          <TOTVSProductSelector
+            selectedProducts={selectedProducts}
+            onProductsChange={setSelectedProducts}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle>1. Custos Atuais</CardTitle>
@@ -216,8 +243,19 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
             <CardContent className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Software Atual</Label>
-                  <span className="text-sm font-mono">{formatCurrency(inputs.currentCosts.software)}</span>
+                  <Label>Software Atual (composição total)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={inputs.currentCosts.software || ''}
+                      onChange={(e) => updateInput('currentCosts', 'software', parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right"
+                      placeholder="0"
+                    />
+                    <span className="text-sm font-mono text-muted-foreground">
+                      {formatCurrency(inputs.currentCosts.software)}
+                    </span>
+                  </div>
                 </div>
                 <Slider
                   value={[inputs.currentCosts.software]}
@@ -231,8 +269,19 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Custos de Pessoal (processos manuais)</Label>
-                  <span className="text-sm font-mono">{formatCurrency(inputs.currentCosts.personnel)}</span>
+                  <Label>Custos de Pessoal (processos manuais do projeto)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={inputs.currentCosts.personnel || ''}
+                      onChange={(e) => updateInput('currentCosts', 'personnel', parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right"
+                      placeholder="0"
+                    />
+                    <span className="text-sm font-mono text-muted-foreground">
+                      {formatCurrency(inputs.currentCosts.personnel)}
+                    </span>
+                  </div>
                 </div>
                 <Slider
                   value={[inputs.currentCosts.personnel]}
@@ -280,35 +329,31 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
           <Card>
             <CardHeader>
               <CardTitle>2. Investimento Proposto</CardTitle>
-              <CardDescription>Quanto custará a solução TOTVS</CardDescription>
+              <CardDescription>
+                Custos calculados automaticamente dos produtos selecionados acima
+                {selectedProducts.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedProducts.length} produto(s)
+                  </Badge>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Licenças</Label>
-                  <span className="text-sm font-mono">{formatCurrency(inputs.proposedInvestment.licenses)}</span>
+              <div className="p-4 border rounded-lg bg-muted/50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Licenças Totais</Label>
+                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.licenses)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Implementação Total</Label>
+                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.implementation)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Manutenção Anual</Label>
+                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.firstYearMaintenance)}</p>
+                  </div>
                 </div>
-                <Slider
-                  value={[inputs.proposedInvestment.licenses]}
-                  onValueChange={([v]) => updateInput('proposedInvestment', 'licenses', v)}
-                  min={0}
-                  max={500000}
-                  step={10000}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Implementação</Label>
-                  <span className="text-sm font-mono">{formatCurrency(inputs.proposedInvestment.implementation)}</span>
-                </div>
-                <Slider
-                  value={[inputs.proposedInvestment.implementation]}
-                  onValueChange={([v]) => updateInput('proposedInvestment', 'implementation', v)}
-                  min={0}
-                  max={300000}
-                  step={10000}
-                />
               </div>
 
               {mode === 'advanced' && (
@@ -348,13 +393,24 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
           <Card>
             <CardHeader>
               <CardTitle>3. Benefícios Esperados</CardTitle>
-              <CardDescription>Impacto previsto na operação</CardDescription>
+              <CardDescription>Configure os benefícios esperados baseados em dados reais do projeto</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label>Redução de Tempo (%)</Label>
-                  <span className="text-sm font-mono">{inputs.expectedBenefits.timeReductionPercent}%</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={inputs.expectedBenefits.timeReductionPercent || ''}
+                      onChange={(e) => updateInput('expectedBenefits', 'timeReductionPercent', parseFloat(e.target.value) || 0)}
+                      className="w-20 text-right"
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                    />
+                    <span className="text-sm font-mono">{inputs.expectedBenefits.timeReductionPercent}%</span>
+                  </div>
                 </div>
                 <Slider
                   value={[inputs.expectedBenefits.timeReductionPercent]}
@@ -368,7 +424,18 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label>Redução de Erros (%)</Label>
-                  <span className="text-sm font-mono">{inputs.expectedBenefits.errorReductionPercent}%</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={inputs.expectedBenefits.errorReductionPercent || ''}
+                      onChange={(e) => updateInput('expectedBenefits', 'errorReductionPercent', parseFloat(e.target.value) || 0)}
+                      className="w-20 text-right"
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                    />
+                    <span className="text-sm font-mono">{inputs.expectedBenefits.errorReductionPercent}%</span>
+                  </div>
                 </div>
                 <Slider
                   value={[inputs.expectedBenefits.errorReductionPercent]}
@@ -382,7 +449,18 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label>Aumento de Receita (%)</Label>
-                  <span className="text-sm font-mono">{inputs.expectedBenefits.revenueIncreasePercent}%</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={inputs.expectedBenefits.revenueIncreasePercent || ''}
+                      onChange={(e) => updateInput('expectedBenefits', 'revenueIncreasePercent', parseFloat(e.target.value) || 0)}
+                      className="w-20 text-right"
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                    />
+                    <span className="text-sm font-mono">{inputs.expectedBenefits.revenueIncreasePercent}%</span>
+                  </div>
                 </div>
                 <Slider
                   value={[inputs.expectedBenefits.revenueIncreasePercent]}
