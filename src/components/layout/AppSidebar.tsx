@@ -65,173 +65,202 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const menuGroups = [
+// Estrutura de tipos para melhor type-safety
+type MenuItem = {
+  title: string;
+  icon: any;
+  url: string;
+  description: string;
+  highlighted?: boolean;
+  special?: boolean;
+  competitive?: boolean;
+  submenu?: Array<{
+    title: string;
+    icon: any;
+    url: string;
+    description: string;
+  }>;
+};
+
+type MenuGroup = {
+  label: string;
+  icon: any;
+  items: MenuItem[];
+};
+
+const menuGroups: MenuGroup[] = [
   {
-    label: "Início",
+    label: "Central de Comando",
     icon: LayoutDashboard,
     items: [
       {
         title: "Dashboard Executivo",
         icon: LayoutDashboard,
         url: "/dashboard",
-        description: "Visão geral consolidada de métricas e performance"
+        description: "Visão geral consolidada de métricas e performance de vendas"
       },
       {
         title: "Busca Global",
         icon: Search,
         url: "/search",
-        description: "Busca unificada de empresas, contatos e inteligência"
+        description: "Busca unificada de empresas, contatos e inteligência competitiva"
       }
     ]
   },
   {
-    label: "FASE 1: Prospecção & Qualificação",
+    label: "Prospecção & Intelligence",
     icon: Crosshair,
     items: [
       {
         title: "Base de Empresas",
         icon: Building2,
         url: "/companies",
-        description: "Gestão completa da base de prospectos"
+        description: "Gestão completa da base de prospectos e qualificação inicial"
       },
       {
-        title: "Intelligence 360",
+        title: "Intelligence 360°",
         icon: Brain,
         url: "/intelligence-360",
         highlighted: true,
-        description: "Análise completa automatizada com IA",
-          submenu: [
-            { title: "Visão Geral 360", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência" },
-            { title: "Fit TOTVS Score", icon: Target, url: "/fit-totvs", description: "Score de aderência aos produtos TOTVS" },
-            { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Nível de transformação digital" },
-            { title: "Digital Health", icon: Activity, url: "/digital-presence", description: "Saúde da presença digital" },
-            { title: "Tech Stack", icon: Code, url: "/tech-stack", description: "Tecnologias utilizadas (ERP, CRM, e-commerce)" },
-            { title: "Análise Geográfica", icon: MapPin, url: "/geographic-analysis", description: "Distribuição territorial e insights regionais" },
-            { title: "Benchmark Setorial", icon: Award, url: "/benchmark", description: "Comparação com mercado e concorrentes" },
-          ],
+        description: "Análise completa automatizada com IA de múltiplas dimensões",
+        submenu: [
+          { title: "Visão Geral 360°", icon: Brain, url: "/intelligence-360", description: "Dashboard consolidado de inteligência estratégica" },
+          { title: "Fit TOTVS Score", icon: Target, url: "/fit-totvs", description: "Score de aderência aos produtos TOTVS" },
+          { title: "Maturidade Digital", icon: TrendingUp, url: "/maturity", description: "Nível de transformação digital da empresa" },
+          { title: "Digital Health", icon: Activity, url: "/digital-presence", description: "Saúde da presença digital e engajamento" },
+          { title: "Tech Stack", icon: Code, url: "/tech-stack", description: "Tecnologias em uso: ERP, CRM, e-commerce" },
+          { title: "Análise Geográfica", icon: MapPin, url: "/geographic-analysis", description: "Distribuição territorial e insights regionais" },
+          { title: "Benchmark Setorial", icon: Award, url: "/benchmark", description: "Comparação com mercado e concorrentes diretos" },
+        ],
       },
     ]
   },
   {
-    label: "FASE 2: Estratégia & Vendas",
-    icon: DollarSign,
-    highlight: true,
+    label: "Estratégia de Conta",
+    icon: Target,
     items: [
       {
         title: "Account Strategy Hub",
         icon: Target,
         url: "/account-strategy",
         special: true,
-        description: "Central estratégica: ROI, CPQ, Cenários, Propostas e Valor",
+        description: "Central estratégica unificada: ROI, CPQ, Cenários, Propostas e Valor",
         submenu: [
-          { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy?tab=overview", description: "Visão geral da conta e estratégia" },
-          { title: "ROI & TCO Calculator", icon: DollarSign, url: "/account-strategy?tab=roi", description: "Calculadora interativa de retorno" },
-          { title: "CPQ & Pricing Intelligence", icon: Sparkles, url: "/account-strategy?tab=cpq", description: "Configure-Price-Quote com IA" },
-          { title: "Cenários & Propostas", icon: Layers, url: "/account-strategy?tab=scenarios", description: "Análise Best/Expected/Worst case" },
-          { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração de propostas comerciais" },
-          { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
-          { title: "Histórico de Estratégias", icon: History, url: "/account-strategy/history", description: "Ver todas as estratégias salvas" },
+          { title: "Overview Estratégico", icon: LayoutDashboard, url: "/account-strategy?tab=overview", description: "Visão geral da conta e estratégia de abordagem" },
+          { title: "ROI & TCO Calculator", icon: DollarSign, url: "/account-strategy?tab=roi", description: "Calculadora interativa de retorno sobre investimento" },
+          { title: "CPQ & Pricing Intelligence", icon: Sparkles, url: "/account-strategy?tab=cpq", description: "Configure-Price-Quote com inteligência artificial" },
+          { title: "Cenários & Propostas", icon: Layers, url: "/account-strategy?tab=scenarios", description: "Análise Best/Expected/Worst case scenarios" },
+          { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração automatizada de propostas comerciais" },
+          { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Acompanhamento de valor entregue ao cliente" },
+          { title: "Histórico de Estratégias", icon: History, url: "/account-strategy/history", description: "Todas as estratégias criadas e seus resultados" },
+        ],
+      },
+    ]
+  },
+  {
+    label: "Competitive Intelligence",
+    icon: Shield,
+    items: [
+      {
+        title: "Intelligence Center",
+        icon: Shield,
+        url: "/competitive-intelligence",
+        competitive: true,
+        description: "Battle cards, win/loss analysis e monitoramento competitivo em tempo real"
+      },
+    ]
+  },
+  {
+    label: "Execução Comercial",
+    icon: Rocket,
+    items: [
+      {
+        title: "SDR Sales Suite",
+        icon: MessageSquare,
+        url: "/sdr/workspace",
+        highlighted: true,
+        description: "Plataforma completa de automação de prospecção e vendas",
+        submenu: [
+          { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
+          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
+          { title: "Pipeline Kanban", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades em progresso" },
+          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
+          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
+          { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
+          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e ferramentas externas" },
         ],
       },
       {
         title: "Canvas (War Room)",
         icon: Layers,
         url: "/canvas",
-        description: "Planejamento colaborativo em tempo real"
+        description: "Planejamento colaborativo visual em tempo real para grandes contas"
       },
       {
-        title: "Competitive Intelligence",
-        icon: Shield,
-        url: "/competitive-intelligence",
-        description: "Battle cards e win/loss analysis completa"
-      },
-      {
-        title: "Playbooks",
+        title: "Playbooks de Vendas",
         icon: BookOpen,
         url: "/playbooks",
-        description: "Guias de abordagem e melhores práticas"
+        description: "Guias de abordagem, melhores práticas e scripts aprovados"
       },
       {
         title: "Biblioteca de Personas",
         icon: Users,
         url: "/personas-library",
-        description: "Perfis comportamentais e estratégias"
+        description: "Perfis comportamentais de decisores e estratégias de abordagem"
       }
     ]
   },
   {
-    label: "FASE 3: Execução & Operação",
-    icon: Rocket,
-    items: [
-      {
-        title: "SDR Suite",
-        icon: MessageSquare,
-        url: "/sdr/workspace",
-        highlighted: true,
-        description: "Automação completa de prospecção e vendas",
-        submenu: [
-          { title: "🚀 Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado" },
-          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance" },
-          { title: "Pipeline", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades" },
-          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal" },
-          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas" },
-          { title: "Tasks", icon: ListChecks, url: "/sdr/tasks", description: "Lista de tarefas e lembretes" },
-          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte CRM e ferramentas" },
-        ],
-      }
-    ]
-  },
-  {
-    label: "FASE 4: Resultados & Analytics",
+    label: "Performance & Resultados",
     icon: BarChart3,
     items: [
       {
         title: "Metas de Vendas",
         icon: Target,
         url: "/goals",
-        description: "Acompanhamento de metas e performance"
+        description: "Acompanhamento de metas individuais e coletivas de performance"
       },
       {
         title: "Analytics SDR",
         icon: LineChart,
         url: "/sdr/analytics",
-        description: "Métricas detalhadas de conversão"
+        description: "Métricas detalhadas de conversão e análise preditiva"
       },
       {
         title: "Relatórios",
         icon: FileText,
         url: "/reports",
-        description: "Biblioteca de relatórios e análises"
+        description: "Biblioteca completa de relatórios executivos e análises"
       }
     ]
   },
   {
-    label: "Governança & Admin",
+    label: "Governança & Administração",
     icon: Settings,
     items: [
       {
         title: "Transformação Digital",
         icon: Zap,
         url: "/governance",
-        description: "Gaps de governança e consultoria"
+        description: "Análise de gaps de governança e roadmap de consultoria"
       },
       {
         title: "Migração de Dados",
         icon: Database,
         url: "/data-migration",
-        description: "Limpeza e preparação de dados"
+        description: "Limpeza, preparação e importação de dados legados"
       },
       {
-        title: "Consultoria OLV",
+        title: "Consultoria OLV Premium",
         icon: Award,
         url: "/consultoria-olv",
-        description: "Catálogo e simulador de serviços de consultoria"
+        description: "Catálogo e simulador de serviços de consultoria especializada"
       },
       {
         title: "Configurações",
         icon: Settings,
         url: "/settings",
-        description: "Integrações e preferências"
+        description: "Integrações, preferências do sistema e gerenciamento de usuários"
       },
     ]
   },
@@ -246,8 +275,6 @@ export function AppSidebar() {
     <Sidebar 
       collapsible="icon" 
       className="border-r pt-12 md:pt-16"
-      onMouseEnter={() => !isMobile && setOpen(true)}
-      onMouseLeave={() => !isMobile && setOpen(false)}
     >
       <SidebarHeader className="border-b border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:justify-center touch-manipulation active:scale-95">
@@ -299,31 +326,37 @@ export function AppSidebar() {
                                  >
                                    <SidebarMenuButton 
                                      asChild
-                                     className={cn(
-                                       "touch-manipulation active:scale-95 py-3 md:py-2",
-                                       (item as any).special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
-                                       (item as any).highlighted && !((item as any).special) && "font-semibold bg-primary/5 border-l-2 border-primary"
-                                     )}
+                                 className={cn(
+                                  "touch-manipulation active:scale-95 py-3 md:py-2",
+                                  item.special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
+                                  item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
+                                  item.highlighted && !item.special && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
+                                )}
                                    >
                                      <CollapsibleTrigger className="w-full">
                                        <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
-                                         <div className="relative">
-                                           <item.icon className={cn(
-                                             "h-5 w-5 md:h-4 md:w-4",
-                                             (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                           )} />
-                                           {(item as any).special && (
-                                             <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
-                                           )}
-                                         </div>
-                                         {(open || isMobile) && (
-                                           <span className={cn(
-                                             "font-medium text-sm md:text-sm",
-                                             (item as any).special && "text-[hsl(var(--accent-gold))]"
-                                           )}>
-                                             {item.title}
-                                           </span>
-                                         )}
+                                          <div className="relative">
+                                            <item.icon className={cn(
+                                              "h-5 w-5 md:h-4 md:w-4",
+                                              item.special && "text-[hsl(var(--accent-gold))]",
+                                              item.competitive && "text-red-500"
+                                            )} />
+                                            {item.special && (
+                                              <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
+                                            )}
+                                            {item.competitive && (
+                                              <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                                            )}
+                                          </div>
+                                          {(open || isMobile) && (
+                                            <span className={cn(
+                                              "font-medium text-sm md:text-sm",
+                                              item.special && "text-[hsl(var(--accent-gold))]",
+                                              item.competitive && "text-red-500 font-bold"
+                                            )}>
+                                              {item.title}
+                                            </span>
+                                          )}
                                        </div>
                                        {(open || isMobile) && (
                                          <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -385,18 +418,34 @@ export function AppSidebar() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div>
-                              <SidebarMenuButton 
+                               <SidebarMenuButton 
                                 asChild 
                                 isActive={isActive}
                                 className={cn(
                                   "touch-manipulation active:scale-95 py-3 md:py-2",
-                                  (item as any).highlighted && "font-semibold bg-primary/5 border-l-2 border-primary"
+                                  item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
+                                  item.highlighted && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
                                 )}
                               >
-                                <Link to={item.url} className="flex items-center gap-2">
-                                  <item.icon className="h-5 w-5 md:h-4 md:w-4" />
-                                  {(open || isMobile) && <span className="text-sm md:text-sm">{item.title}</span>}
-                                </Link>
+                                 <Link to={item.url} className="flex items-center gap-2">
+                                   <div className="relative">
+                                     <item.icon className={cn(
+                                       "h-5 w-5 md:h-4 md:w-4",
+                                       item.competitive && "text-red-500"
+                                     )} />
+                                     {item.competitive && (
+                                       <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                                     )}
+                                   </div>
+                                   {(open || isMobile) && (
+                                     <span className={cn(
+                                       "text-sm md:text-sm",
+                                       item.competitive && "text-red-500 font-bold"
+                                     )}>
+                                       {item.title}
+                                     </span>
+                                   )}
+                                 </Link>
                               </SidebarMenuButton>
                             </div>
                           </TooltipTrigger>
