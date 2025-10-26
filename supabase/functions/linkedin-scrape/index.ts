@@ -59,11 +59,15 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      console.error('[LinkedIn Scrape] Erro PhantomBuster:', response.status);
+      const status = response.status;
+      console.error('[LinkedIn Scrape] Erro PhantomBuster:', status);
+      const msg = status === 401
+        ? 'Credenciais inválidas ou sessão do LinkedIn expirada (401). Atualize o Session Cookie e confirme o Agent ID.'
+        : `Falha ao iniciar PhantomBuster (${status}).`;
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'PhantomBuster precisa ser configurado com Agent ID e Session Cookie' 
+          message: msg 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
