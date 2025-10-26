@@ -170,9 +170,13 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   };
 
   useEffect(() => {
-    // Auto-calculate quando inputs mudam (debounced)
+    // Auto-calculate quando inputs mudam (debounced) - só se houver dados mínimos
+    const hasMinimumData = 
+      (inputs.currentCosts.software > 0 || inputs.currentCosts.personnel > 0) &&
+      (inputs.proposedInvestment.licenses > 0 || inputs.proposedInvestment.implementation > 0);
+    
     const timer = setTimeout(() => {
-      if (mode === 'simple') {
+      if (mode === 'simple' && hasMinimumData) {
         calculateROI();
       }
     }, 1000);
@@ -520,7 +524,30 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
         {/* Results Tab */}
         <TabsContent value="results" className="space-y-4">
-          {results && (
+          {!results ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum resultado ainda</h3>
+                <p className="text-muted-foreground mb-4">
+                  Configure os produtos TOTVS e custos na aba "Inputs" e clique em "Calcular ROI Completo"
+                </p>
+                <Button onClick={calculateROI} disabled={isCalculating}>
+                  {isCalculating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Calculando...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      Calcular ROI Agora
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
             <>
               <div className="grid gap-4 md:grid-cols-3">
                 <Card>
@@ -529,11 +556,11 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-3xl font-bold ${getROIColor(results.returnOnInvestment)}`}>
-                      {results.returnOnInvestment.toFixed(1)}%
+                    <div className={`text-3xl font-bold ${getROIColor(results.returnOnInvestment ?? 0)}`}>
+                      {(results.returnOnInvestment ?? 0).toFixed(1)}%
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Benchmark: {results.industryBenchmark.averageROI}% (você está no percentil {results.industryBenchmark.percentileRank})
+                      Benchmark: {results.industryBenchmark?.averageROI ?? 0}% (você está no percentil {results.industryBenchmark?.percentileRank ?? 0})
                     </p>
                   </CardContent>
                 </Card>
@@ -545,10 +572,10 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold">
-                      {results.paybackPeriodMonths} meses
+                      {results.paybackPeriodMonths ?? 0} meses
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Média da indústria: {results.industryBenchmark.averagePayback} meses
+                      Média da indústria: {results.industryBenchmark?.averagePayback ?? 0} meses
                     </p>
                   </CardContent>
                 </Card>
@@ -560,7 +587,7 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold">
-                      {formatCurrency(results.netPresentValue)}
+                      {formatCurrency(results.netPresentValue ?? 0)}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       Taxa de desconto: {inputs.discountRate}%
@@ -574,7 +601,11 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                   <CardTitle>Breakdown de Benefícios Anuais</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <BenefitsBreakdown data={results.breakdownBenefits} />
+                  {results.breakdownBenefits ? (
+                    <BenefitsBreakdown data={results.breakdownBenefits} />
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">Sem dados de benefícios</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -584,7 +615,7 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {results.yearByYear.map((year) => (
+                    {(results.yearByYear ?? []).map((year) => (
                       <div key={year.year} className="flex items-center justify-between border-b pb-2">
                         <span className="font-semibold">Ano {year.year}</span>
                         <div className="text-right text-sm space-y-1">
@@ -605,7 +636,17 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
         {/* Charts Tab */}
         <TabsContent value="charts" className="space-y-4">
-          {results && (
+          {!results ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum resultado para visualizar</h3>
+                <p className="text-muted-foreground mb-4">
+                  Calcule o ROI primeiro para ver os gráficos
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
             <>
               <Card>
                 <CardHeader>
@@ -613,7 +654,11 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                   <CardDescription>Visualização do retorno ao longo do tempo</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CashFlowChart data={results.yearByYear} />
+                  {results.yearByYear && results.yearByYear.length > 0 ? (
+                    <CashFlowChart data={results.yearByYear} />
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">Sem dados para visualizar</p>
+                  )}
                 </CardContent>
               </Card>
             </>
