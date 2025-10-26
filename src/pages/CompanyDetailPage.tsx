@@ -453,7 +453,63 @@ export default function CompanyDetailPage() {
           {/* Conteúdo baseado na seção ativa */}
           {activeSection === 'overview' && (
             <div className="space-y-6">
-              <p className="text-muted-foreground">Visão Geral - Em desenvolvimento com todos os dados principais</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Situação</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                      {receitaData?.situacao || 'Desconhecido'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">CNPJ</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-mono">{company.cnpj || 'N/A'}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Porte</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{receitaData?.porte || company.size || 'N/A'}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Setor</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{company.industry || 'N/A'}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Funcionários</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{company.employees || receitaData?.qsa?.length || 'N/A'}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Data de Abertura</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{receitaData?.abertura ? new Date(receitaData.abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
@@ -462,43 +518,62 @@ export default function CompanyDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
+                    <IdCard className="h-5 w-5" />
                     Dados Cadastrais
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">CNPJ</p>
-                    <p className="font-mono font-semibold text-lg">{company.cnpj || 'N/A'}</p>
+                <CardContent className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
+                      <p className="font-mono font-semibold text-lg">{company.cnpj || 'N/A'}</p>
+                    </div>
+                    {receitaData?.razao_social && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
+                        <p className="font-semibold">{receitaData.razao_social}</p>
+                      </div>
+                    )}
+                    {receitaData?.fantasia && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Nome Fantasia</p>
+                        <p className="font-semibold">{receitaData.fantasia}</p>
+                      </div>
+                    )}
+                    {receitaData?.abertura && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Data de Abertura</p>
+                        <p>{new Date(receitaData.abertura).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    )}
                   </div>
-                  {receitaData?.razao_social && (
+
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Razão Social</p>
-                      <p className="font-semibold">{receitaData.razao_social}</p>
+                      <p className="text-sm font-medium text-muted-foreground">Setor</p>
+                      <p>{company.industry || 'N/A'}</p>
                     </div>
-                  )}
-                  {receitaData?.fantasia && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Nome Fantasia</p>
-                      <p className="font-semibold">{receitaData.fantasia}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-muted-foreground">Setor</p>
-                    <p>{company.industry || 'N/A'}</p>
+                    {receitaData?.porte && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Porte</p>
+                        <p>{receitaData.porte}</p>
+                      </div>
+                    )}
+                    {receitaData?.natureza_juridica && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Natureza Jurídica</p>
+                        <p>{receitaData.natureza_juridica}</p>
+                      </div>
+                    )}
+                    {receitaData?.situacao && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Situação Cadastral</p>
+                        <Badge variant={receitaData.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                          {receitaData.situacao}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                  {receitaData?.porte && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Porte</p>
-                      <p>{receitaData.porte}</p>
-                    </div>
-                  )}
-                  {receitaData?.abertura && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data de Abertura</p>
-                      <p>{receitaData.abertura}</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -509,12 +584,75 @@ export default function CompanyDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Endereço Completo
+                    <MapPinned className="h-5 w-5" />
+                    Endereço e Contato
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Dados de localização e contato - Em desenvolvimento</p>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">Endereço</h3>
+                      {receitaData?.logradouro && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Logradouro</p>
+                          <p>{receitaData.logradouro}, {receitaData.numero}</p>
+                          {receitaData.complemento && <p className="text-sm">{receitaData.complemento}</p>}
+                        </div>
+                      )}
+                      {receitaData?.bairro && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Bairro</p>
+                          <p>{receitaData.bairro}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Cidade/Estado</p>
+                        <p>{receitaData?.municipio || (company.location as any)?.city || 'N/A'} - {receitaData?.uf || (company.location as any)?.state || 'N/A'}</p>
+                      </div>
+                      {receitaData?.cep && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">CEP</p>
+                          <p className="font-mono">{receitaData.cep}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">Contato</h3>
+                      {receitaData?.telefone && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Telefone</p>
+                          <p className="font-mono">{receitaData.telefone}</p>
+                        </div>
+                      )}
+                      {receitaData?.email && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">E-mail</p>
+                          <p>{receitaData.email}</p>
+                        </div>
+                      )}
+                      {company.website && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Website</p>
+                          <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {company.website}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {(receitaData?.logradouro || receitaData?.municipio || receitaData?.cep) && (
+                    <div className="h-64 rounded-lg overflow-hidden border">
+                      <LocationMap
+                        address={receitaData?.logradouro}
+                        numero={receitaData?.numero}
+                        municipio={receitaData?.municipio}
+                        estado={receitaData?.uf}
+                        cep={receitaData?.cep}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -525,12 +663,40 @@ export default function CompanyDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
-                    Atividades Econômicas
+                    <ActivityIcon className="h-5 w-5" />
+                    Atividades Econômicas (CNAEs)
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">CNAEs, NCMs e produtos - Em desenvolvimento</p>
+                <CardContent className="space-y-6">
+                  {receitaData?.atividade_principal && (
+                    <div>
+                      <h3 className="font-semibold mb-3">Atividade Principal</h3>
+                      {receitaData.atividade_principal.map((ativ: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                          <p className="font-mono text-sm text-muted-foreground">{ativ.code}</p>
+                          <p className="font-medium">{ativ.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-3">Atividades Secundárias ({receitaData.atividades_secundarias.length})</h3>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {receitaData.atividades_secundarias.map((ativ: any, idx: number) => (
+                          <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                            <p className="font-mono text-sm text-muted-foreground">{ativ.code}</p>
+                            <p className="text-sm">{ativ.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!receitaData?.atividade_principal && !receitaData?.atividades_secundarias && (
+                    <p className="text-muted-foreground">Nenhuma atividade econômica cadastrada</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -542,29 +708,85 @@ export default function CompanyDetailPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Decisores ({decisors.length})
+                      <UsersIcon className="h-5 w-5" />
+                      Decisores e Contatos ({decisors.length})
                     </CardTitle>
                     <DecisionMakerAddDialog companyId={company.id} />
                   </div>
                 </CardHeader>
                 <CardContent>
                   {decisors.length === 0 ? (
-                    <p className="text-muted-foreground">Nenhum decisor cadastrado</p>
+                    <p className="text-muted-foreground text-center py-8">Nenhum decisor cadastrado</p>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                       {decisors.map((decisor: any) => (
-                        <div key={decisor.id} className="border-b pb-4 last:border-0">
-                          <p className="font-semibold">{decisor.name}</p>
-                          <p className="text-sm text-muted-foreground">{decisor.title}</p>
-                          {decisor.email && <p className="text-sm">{decisor.email}</p>}
-                          {decisor.phone && <p className="text-sm">{decisor.phone}</p>}
-                        </div>
+                        <Card key={decisor.id} className="p-4">
+                          <div className="space-y-2">
+                            <p className="font-semibold text-lg">{decisor.name}</p>
+                            <p className="text-sm text-muted-foreground">{decisor.title || 'Cargo não informado'}</p>
+                            {decisor.department && (
+                              <Badge variant="outline">{decisor.department}</Badge>
+                            )}
+                            <Separator className="my-2" />
+                            <div className="space-y-1">
+                              {decisor.email && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Mail className="h-3 w-3" />
+                                  <a href={`mailto:${decisor.email}`} className="text-primary hover:underline">
+                                    {decisor.email}
+                                  </a>
+                                </div>
+                              )}
+                              {decisor.phone && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Phone className="h-3 w-3" />
+                                  <a href={`tel:${decisor.phone}`} className="text-primary hover:underline">
+                                    {decisor.phone}
+                                  </a>
+                                </div>
+                              )}
+                              {decisor.linkedin_url && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Globe className="h-3 w-3" />
+                                  <a href={decisor.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                    LinkedIn
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            {decisor.source && (
+                              <Badge variant="secondary" className="text-xs mt-2">
+                                Fonte: {decisor.source}
+                              </Badge>
+                            )}
+                          </div>
+                        </Card>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
+
+              {receitaData?.qsa && receitaData.qsa.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className="h-5 w-5" />
+                      Quadro Societário ({receitaData.qsa.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {receitaData.qsa.map((socio: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                          <p className="font-semibold">{socio.nome}</p>
+                          <p className="text-sm text-muted-foreground">{socio.qual}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -573,12 +795,49 @@ export default function CompanyDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
+                    <Wallet className="h-5 w-5" />
                     Informações Financeiras
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Capital social e dados financeiros - Em desenvolvimento</p>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {receitaData?.capital_social && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Capital Social</p>
+                        <p className="text-xl font-semibold">
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(parseFloat(receitaData.capital_social))}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {company.revenue && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Faturamento Estimado</p>
+                        <p className="text-xl font-semibold">{company.revenue}</p>
+                      </div>
+                    )}
+
+                    {receitaData?.porte && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Porte da Empresa</p>
+                        <Badge variant="outline" className="text-base">{receitaData.porte}</Badge>
+                      </div>
+                    )}
+
+                    {company.employees && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Número de Funcionários</p>
+                        <p className="text-lg font-semibold">{company.employees}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {!receitaData?.capital_social && !company.revenue && !company.employees && (
+                    <p className="text-muted-foreground text-center py-8">Nenhuma informação financeira disponível</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -589,30 +848,77 @@ export default function CompanyDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
+                    <Monitor className="h-5 w-5" />
                     Presença Digital
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {company.website && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Website</p>
-                      <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {company.website}
-                      </a>
-                    </div>
-                  )}
-                  {digitalPresence && (
-                    <div className="mt-4 space-y-2">
-                      {digitalPresence.linkedin && (
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">Website e Domínio</h3>
+                      {company.website && (
                         <div>
-                          <p className="text-sm text-muted-foreground">LinkedIn</p>
-                          <a href={digitalPresence.linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {digitalPresence.linkedin}
+                          <p className="text-sm font-medium text-muted-foreground">Website</p>
+                          <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {company.website}
+                          </a>
+                        </div>
+                      )}
+                      {company.domain && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Domínio</p>
+                          <p className="font-mono">{company.domain}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">Redes Sociais</h3>
+                      {digitalPresence?.linkedin && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">LinkedIn</p>
+                          <a href={digitalPresence.linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-2">
+                            <Globe className="h-4 w-4" />
+                            Ver perfil
+                          </a>
+                        </div>
+                      )}
+                      {digitalPresence?.facebook && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Facebook</p>
+                          <a href={digitalPresence.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            Ver perfil
+                          </a>
+                        </div>
+                      )}
+                      {digitalPresence?.twitter && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Twitter/X</p>
+                          <a href={digitalPresence.twitter} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            Ver perfil
                           </a>
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {company.digital_maturity_score && (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Score de Maturidade Digital</p>
+                          <p className="text-sm text-muted-foreground">Avaliação geral da presença digital</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-bold text-primary">{company.digital_maturity_score.toFixed(1)}</p>
+                          <p className="text-sm text-muted-foreground">de 100</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!company.website && !digitalPresence?.linkedin && !company.domain && (
+                    <p className="text-muted-foreground text-center py-8">Nenhuma informação de presença digital disponível</p>
                   )}
                 </CardContent>
               </Card>

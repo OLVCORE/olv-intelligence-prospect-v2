@@ -289,29 +289,145 @@ export default function CompaniesManagementPage() {
   const handleExportCSV = () => {
     try {
       setIsExporting(true);
-      const headers = ['Empresa', 'CNPJ', 'Status CNPJ', 'Setor', 'UF', 'Website', 'Score Análise'];
-      const rows = companies.map(company => [
-        company.name,
-        company.cnpj || 'N/A',
-        (company as any).cnpj_status || 'pendente',
-        company.industry || 'N/A',
-        (company.location as any)?.state || 'N/A',
-        company.website || 'N/A',
-        company.digital_maturity_score ? `${company.digital_maturity_score}%` : 'N/A'
-      ]);
+      const BOM = '\uFEFF';
+      
+      // 87 colunas completas
+      const headers = [
+        'CNPJ', 'Nome da Empresa', 'Nome Fantasia', 'Razão Social', 'Website', 'Domínio',
+        'Instagram', 'LinkedIn', 'Facebook', 'Twitter', 'YouTube',
+        'Setor', 'Porte', 'Natureza Jurídica', 'Funcionários', 'Faturamento Estimado',
+        'Capital Social', 'Data de Abertura', 'Situação Cadastral', 'Data Situação',
+        'Motivo Situação', 'Situação Especial', 'Data Situação Especial',
+        'CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro', 
+        'Município', 'UF', 'País', 'Latitude', 'Longitude',
+        'Telefone', 'Email', 'Email Verificado',
+        'CNAE Principal Código', 'CNAE Principal Descrição',
+        'CNAEs Secundários Quantidade', 'CNAEs Secundários',
+        'Quadro Societário Quantidade', 'Sócios',
+        'Score Maturidade Digital', 'Score Fit TOTVS', 'Score Análise',
+        'Tech Stack', 'ERP Atual', 'CRM Atual',
+        'Produto Principal', 'Marca', 'Link Produto/Marketplace', 'Categoria',
+        'Decisores Quantidade', 'Decisor 1 Nome', 'Decisor 1 Cargo', 'Decisor 1 Email', 
+        'Decisor 1 Telefone', 'Decisor 1 LinkedIn',
+        'Decisor 2 Nome', 'Decisor 2 Cargo', 'Decisor 2 Email', 
+        'Decisor 2 Telefone', 'Decisor 2 LinkedIn',
+        'Decisor 3 Nome', 'Decisor 3 Cargo', 'Decisor 3 Email', 
+        'Decisor 3 Telefone', 'Decisor 3 LinkedIn',
+        'Enriquecido Receita', 'Enriquecido 360', 'Enriquecido Apollo', 'Enriquecido Phantom',
+        'Data Criação', 'Data Última Atualização', 'Data Último Enriquecimento',
+        'Status Enriquecimento', 'Fonte Enriquecimento',
+        'Observações', 'Tags', 'Prioridade',
+        'Último Contato', 'Próximo Contato', 'Status Pipeline',
+        'Valor Oportunidade', 'Probabilidade Fechamento', 'Data Fechamento Esperada'
+      ];
+      
+      const rows = companies.map(company => {
+        const receitaData = (company as any)?.raw_data?.receita;
+        const digitalPresence = (company as any)?.digital_presence;
+        const decisors = (company as any)?.decision_makers || [];
+        
+        return [
+          company.cnpj || '',
+          company.name || '',
+          receitaData?.fantasia || '',
+          receitaData?.razao_social || company.name || '',
+          company.website || '',
+          company.domain || '',
+          digitalPresence?.instagram || '',
+          digitalPresence?.linkedin || '',
+          digitalPresence?.facebook || '',
+          digitalPresence?.twitter || '',
+          digitalPresence?.youtube || '',
+          company.industry || '',
+          receitaData?.porte || '',
+          receitaData?.natureza_juridica || '',
+          company.employees || '',
+          company.revenue || '',
+          receitaData?.capital_social || '',
+          receitaData?.abertura ? new Date(receitaData.abertura).toLocaleDateString('pt-BR') : '',
+          receitaData?.situacao || '',
+          receitaData?.data_situacao || '',
+          receitaData?.motivo_situacao || '',
+          receitaData?.situacao_especial || '',
+          receitaData?.data_situacao_especial || '',
+          receitaData?.cep || '',
+          receitaData?.logradouro || '',
+          receitaData?.numero || '',
+          receitaData?.complemento || '',
+          receitaData?.bairro || '',
+          receitaData?.municipio || (company.location as any)?.city || '',
+          receitaData?.uf || (company.location as any)?.state || '',
+          receitaData?.pais || 'Brasil',
+          (company.location as any)?.coordinates?.lat || '',
+          (company.location as any)?.coordinates?.lng || '',
+          receitaData?.telefone || '',
+          receitaData?.email || '',
+          receitaData?.email_status === 'verified' ? 'Sim' : 'Não',
+          receitaData?.atividade_principal?.[0]?.code || '',
+          receitaData?.atividade_principal?.[0]?.text || '',
+          receitaData?.atividades_secundarias?.length || 0,
+          receitaData?.atividades_secundarias?.map((a: any) => `${a.code} - ${a.text}`).join('; ') || '',
+          receitaData?.qsa?.length || 0,
+          receitaData?.qsa?.map((s: any) => `${s.nome} (${s.qual})`).join('; ') || '',
+          company.digital_maturity_score || '',
+          (company as any)?.fit_score || '',
+          (company as any)?.analysis_score || '',
+          (company as any)?.tech_stack?.join(', ') || '',
+          (company as any)?.current_erp || '',
+          (company as any)?.current_crm || '',
+          (company as any)?.main_product || '',
+          (company as any)?.brand || '',
+          (company as any)?.product_link || '',
+          (company as any)?.category || '',
+          decisors.length || 0,
+          decisors[0]?.name || '',
+          decisors[0]?.title || '',
+          decisors[0]?.email || '',
+          decisors[0]?.phone || '',
+          decisors[0]?.linkedin_url || '',
+          decisors[1]?.name || '',
+          decisors[1]?.title || '',
+          decisors[1]?.email || '',
+          decisors[1]?.phone || '',
+          decisors[1]?.linkedin_url || '',
+          decisors[2]?.name || '',
+          decisors[2]?.title || '',
+          decisors[2]?.email || '',
+          decisors[2]?.phone || '',
+          decisors[2]?.linkedin_url || '',
+          (company as any)?.enriched_receita ? 'Sim' : 'Não',
+          (company as any)?.enriched_360 ? 'Sim' : 'Não',
+          (company as any)?.enriched_apollo ? 'Sim' : 'Não',
+          (company as any)?.enriched_phantom ? 'Sim' : 'Não',
+          company.created_at ? new Date(company.created_at).toLocaleDateString('pt-BR') : '',
+          company.updated_at ? new Date(company.updated_at).toLocaleDateString('pt-BR') : '',
+          (company as any)?.last_enrichment_at ? new Date((company as any).last_enrichment_at).toLocaleDateString('pt-BR') : '',
+          (company as any)?.enrichment_status || '',
+          (company as any)?.enrichment_source || '',
+          (company as any)?.notes || '',
+          (company as any)?.tags?.join(', ') || '',
+          (company as any)?.priority || '',
+          (company as any)?.last_contact_at ? new Date((company as any).last_contact_at).toLocaleDateString('pt-BR') : '',
+          (company as any)?.next_contact_at ? new Date((company as any).next_contact_at).toLocaleDateString('pt-BR') : '',
+          (company as any)?.pipeline_status || '',
+          (company as any)?.opportunity_value || '',
+          (company as any)?.close_probability || '',
+          (company as any)?.expected_close_date ? new Date((company as any).expected_close_date).toLocaleDateString('pt-BR') : ''
+        ];
+      });
 
       const csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       ].join('\n');
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `empresas_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `empresas_completo_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       
-      toast.success('CSV exportado com sucesso!');
+      toast.success('CSV completo exportado com 87 colunas!');
     } catch (error) {
       console.error('Error exporting CSV:', error);
       toast.error('Erro ao exportar CSV');
@@ -323,25 +439,116 @@ export default function CompaniesManagementPage() {
   const handleExportXLS = () => {
     try {
       setIsExporting(true);
-      const data = companies.map(company => ({
-        'Empresa': company.name,
-        'CNPJ': company.cnpj || 'N/A',
-        'Status CNPJ': (company as any).cnpj_status || 'pendente',
-        'Setor': company.industry || 'N/A',
-        'UF': (company.location as any)?.state || 'N/A',
-        'Cidade': (company.location as any)?.city || 'N/A',
-        'Website': company.website || 'N/A',
-        'Score Maturidade': company.digital_maturity_score || 'N/A',
-        'Funcionários': company.employees || 'N/A',
-        'Data Cadastro': company.created_at ? new Date(company.created_at).toLocaleDateString('pt-BR') : 'N/A'
-      }));
+      
+      const data = companies.map(company => {
+        const receitaData = (company as any)?.raw_data?.receita;
+        const digitalPresence = (company as any)?.digital_presence;
+        const decisors = (company as any)?.decision_makers || [];
+        
+        return {
+          'CNPJ': company.cnpj || '',
+          'Nome da Empresa': company.name || '',
+          'Nome Fantasia': receitaData?.fantasia || '',
+          'Razão Social': receitaData?.razao_social || company.name || '',
+          'Website': company.website || '',
+          'Domínio': company.domain || '',
+          'Instagram': digitalPresence?.instagram || '',
+          'LinkedIn': digitalPresence?.linkedin || '',
+          'Facebook': digitalPresence?.facebook || '',
+          'Twitter': digitalPresence?.twitter || '',
+          'YouTube': digitalPresence?.youtube || '',
+          'Setor': company.industry || '',
+          'Porte': receitaData?.porte || '',
+          'Natureza Jurídica': receitaData?.natureza_juridica || '',
+          'Funcionários': company.employees || '',
+          'Faturamento Estimado': company.revenue || '',
+          'Capital Social': receitaData?.capital_social || '',
+          'Data de Abertura': receitaData?.abertura ? new Date(receitaData.abertura).toLocaleDateString('pt-BR') : '',
+          'Situação Cadastral': receitaData?.situacao || '',
+          'Data Situação': receitaData?.data_situacao || '',
+          'Motivo Situação': receitaData?.motivo_situacao || '',
+          'Situação Especial': receitaData?.situacao_especial || '',
+          'Data Situação Especial': receitaData?.data_situacao_especial || '',
+          'CEP': receitaData?.cep || '',
+          'Logradouro': receitaData?.logradouro || '',
+          'Número': receitaData?.numero || '',
+          'Complemento': receitaData?.complemento || '',
+          'Bairro': receitaData?.bairro || '',
+          'Município': receitaData?.municipio || (company.location as any)?.city || '',
+          'UF': receitaData?.uf || (company.location as any)?.state || '',
+          'País': receitaData?.pais || 'Brasil',
+          'Latitude': (company.location as any)?.coordinates?.lat || '',
+          'Longitude': (company.location as any)?.coordinates?.lng || '',
+          'Telefone': receitaData?.telefone || '',
+          'Email': receitaData?.email || '',
+          'Email Verificado': receitaData?.email_status === 'verified' ? 'Sim' : 'Não',
+          'CNAE Principal Código': receitaData?.atividade_principal?.[0]?.code || '',
+          'CNAE Principal Descrição': receitaData?.atividade_principal?.[0]?.text || '',
+          'CNAEs Secundários Quantidade': receitaData?.atividades_secundarias?.length || 0,
+          'CNAEs Secundários': receitaData?.atividades_secundarias?.map((a: any) => `${a.code} - ${a.text}`).join('; ') || '',
+          'Quadro Societário Quantidade': receitaData?.qsa?.length || 0,
+          'Sócios': receitaData?.qsa?.map((s: any) => `${s.nome} (${s.qual})`).join('; ') || '',
+          'Score Maturidade Digital': company.digital_maturity_score || '',
+          'Score Fit TOTVS': (company as any)?.fit_score || '',
+          'Score Análise': (company as any)?.analysis_score || '',
+          'Tech Stack': (company as any)?.tech_stack?.join(', ') || '',
+          'ERP Atual': (company as any)?.current_erp || '',
+          'CRM Atual': (company as any)?.current_crm || '',
+          'Produto Principal': (company as any)?.main_product || '',
+          'Marca': (company as any)?.brand || '',
+          'Link Produto/Marketplace': (company as any)?.product_link || '',
+          'Categoria': (company as any)?.category || '',
+          'Decisores Quantidade': decisors.length || 0,
+          'Decisor 1 Nome': decisors[0]?.name || '',
+          'Decisor 1 Cargo': decisors[0]?.title || '',
+          'Decisor 1 Email': decisors[0]?.email || '',
+          'Decisor 1 Telefone': decisors[0]?.phone || '',
+          'Decisor 1 LinkedIn': decisors[0]?.linkedin_url || '',
+          'Decisor 2 Nome': decisors[1]?.name || '',
+          'Decisor 2 Cargo': decisors[1]?.title || '',
+          'Decisor 2 Email': decisors[1]?.email || '',
+          'Decisor 2 Telefone': decisors[1]?.phone || '',
+          'Decisor 2 LinkedIn': decisors[1]?.linkedin_url || '',
+          'Decisor 3 Nome': decisors[2]?.name || '',
+          'Decisor 3 Cargo': decisors[2]?.title || '',
+          'Decisor 3 Email': decisors[2]?.email || '',
+          'Decisor 3 Telefone': decisors[2]?.phone || '',
+          'Decisor 3 LinkedIn': decisors[2]?.linkedin_url || '',
+          'Enriquecido Receita': (company as any)?.enriched_receita ? 'Sim' : 'Não',
+          'Enriquecido 360': (company as any)?.enriched_360 ? 'Sim' : 'Não',
+          'Enriquecido Apollo': (company as any)?.enriched_apollo ? 'Sim' : 'Não',
+          'Enriquecido Phantom': (company as any)?.enriched_phantom ? 'Sim' : 'Não',
+          'Data Criação': company.created_at ? new Date(company.created_at).toLocaleDateString('pt-BR') : '',
+          'Data Última Atualização': company.updated_at ? new Date(company.updated_at).toLocaleDateString('pt-BR') : '',
+          'Data Último Enriquecimento': (company as any)?.last_enrichment_at ? new Date((company as any).last_enrichment_at).toLocaleDateString('pt-BR') : '',
+          'Status Enriquecimento': (company as any)?.enrichment_status || '',
+          'Fonte Enriquecimento': (company as any)?.enrichment_source || '',
+          'Observações': (company as any)?.notes || '',
+          'Tags': (company as any)?.tags?.join(', ') || '',
+          'Prioridade': (company as any)?.priority || '',
+          'Último Contato': (company as any)?.last_contact_at ? new Date((company as any).last_contact_at).toLocaleDateString('pt-BR') : '',
+          'Próximo Contato': (company as any)?.next_contact_at ? new Date((company as any).next_contact_at).toLocaleDateString('pt-BR') : '',
+          'Status Pipeline': (company as any)?.pipeline_status || '',
+          'Valor Oportunidade': (company as any)?.opportunity_value || '',
+          'Probabilidade Fechamento': (company as any)?.close_probability || '',
+          'Data Fechamento Esperada': (company as any)?.expected_close_date ? new Date((company as any).expected_close_date).toLocaleDateString('pt-BR') : ''
+        };
+      });
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Empresas');
-      XLSX.writeFile(wb, `empresas_${new Date().toISOString().split('T')[0]}.xlsx`);
       
-      toast.success('Excel exportado com sucesso!');
+      // Auto-ajustar largura das colunas
+      const maxWidth = 50;
+      const colWidths = Object.keys(data[0] || {}).map(key => ({
+        wch: Math.min(maxWidth, Math.max(key.length, 10))
+      }));
+      ws['!cols'] = colWidths;
+      
+      XLSX.writeFile(wb, `empresas_completo_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success('Excel completo exportado com 87 colunas!');
     } catch (error) {
       console.error('Error exporting XLS:', error);
       toast.error('Erro ao exportar Excel');
