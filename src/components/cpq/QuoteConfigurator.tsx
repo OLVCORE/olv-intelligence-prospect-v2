@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
   const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({});
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
+  const initializedFromDraftRef = useRef(false);
 
   const { data: draftData, hasUnsavedChanges, save, updateData } = useModuleDraft<{ selectedProducts: QuoteProduct[]; priceOverrides: Record<string, number> }>(
     { selectedProducts: [], priceOverrides: {} },
@@ -38,16 +39,26 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
     }
   );
 
+  // Aplicar draft apenas uma vez quando carregar
   useEffect(() => {
-    if (draftData) {
+    if (draftData && !initializedFromDraftRef.current) {
       if (draftData.selectedProducts) setSelectedProducts(draftData.selectedProducts);
       if (draftData.priceOverrides) setPriceOverrides(draftData.priceOverrides);
+      initializedFromDraftRef.current = true;
     }
   }, [draftData]);
 
+  // Persistir alterações locais no draft somente se houver diferença real
   useEffect(() => {
-    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts, priceOverrides }));
-  }, [selectedProducts, priceOverrides, updateData]);
+    const draftSelStr = JSON.stringify(draftData?.selectedProducts || []);
+    const draftOvStr = JSON.stringify(draftData?.priceOverrides || {});
+    const localSelStr = JSON.stringify(selectedProducts);
+    const localOvStr = JSON.stringify(priceOverrides);
+
+    if (localSelStr !== draftSelStr || localOvStr !== draftOvStr) {
+      updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts, priceOverrides }));
+    }
+  }, [selectedProducts, priceOverrides, updateData, draftData]);
 
   const addProduct = (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);
