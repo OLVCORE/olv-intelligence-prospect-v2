@@ -40,7 +40,7 @@ export default function CompaniesManagementPage() {
   const location = useLocation();
   const [page, setPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'created_at'>('created_at');
+  const [sortBy, setSortBy] = useState<'name' | 'cnpj' | 'industry' | 'created_at' | 'cnpj_status'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const { data: companiesResult, isLoading: loading, refetch } = useCompanies({
@@ -271,7 +271,7 @@ export default function CompaniesManagementPage() {
     }
   };
 
-  const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'created_at') => {
+  const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'created_at' | 'cnpj_status') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -427,7 +427,17 @@ export default function CompaniesManagementPage() {
                         <ArrowUpDown className="h-3 w-3" />
                       </Button>
                     </TableHead>
-                    <TableHead>Status CNPJ</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('cnpj_status')}
+                        className="h-8 flex items-center gap-1"
+                      >
+                        Status CNPJ
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead>
                       <Button
                         variant="ghost"
