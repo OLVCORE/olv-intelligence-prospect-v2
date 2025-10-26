@@ -85,6 +85,8 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange, onSaveCost 
       onCostsChange(selectedCosts.filter(cost => cost.id !== costId));
     } else {
       onCostsChange([...selectedCosts, { id: costId, name: costName, category, cost: 0 }]);
+      // Expandir automaticamente a categoria para mostrar o item adicionado
+      setExpandedCategories(prev => ({ ...prev, [category]: true }));
       if (onSaveCost) {
         await onSaveCost();
         toast.success(`${costName} adicionado e salvo`);
@@ -104,7 +106,7 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange, onSaveCost 
     onCostsChange(selectedCosts.filter(cost => cost.id !== costId));
   };
 
-  const addCustomCost = (category: CurrentCostItem['category']) => {
+  const addCustomCost = async (category: CurrentCostItem['category']) => {
     const name = customItemName[category]?.trim();
     if (!name) return;
 
@@ -117,6 +119,12 @@ export function CurrentCostsSelector({ selectedCosts, onCostsChange, onSaveCost 
       isCustom: true 
     }]);
     setCustomItemName({ ...customItemName, [category]: '' });
+    // Expandir automaticamente a categoria para mostrar o item customizado
+    setExpandedCategories(prev => ({ ...prev, [category]: true }));
+    if (onSaveCost) {
+      await onSaveCost();
+      toast.success(`${name} adicionado e salvo`);
+    }
   };
 
   const toggleCategory = (category: string) => {
