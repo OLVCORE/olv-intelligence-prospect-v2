@@ -673,36 +673,34 @@ export default function CompaniesManagementPage() {
                   <BulkUploadDialog>
                     <Button
                       variant="secondary"
-                      className="gap-2"
+                      size="icon"
                     >
-                      <Upload className="h-4 w-4 text-secondary-foreground" />
-                      Upload em Massa
+                      <Upload className="h-4 w-4" />
                     </Button>
                   </BulkUploadDialog>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Importar múltiplas empresas via CSV ou Excel</p>
+                  <p>Upload em Massa</p>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="default"
+                    size="icon"
                     onClick={handleBatchEnrichReceitaWS}
                     disabled={isBatchEnriching}
-                    className="gap-2"
                   >
                     {isBatchEnriching ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Building2 className="h-4 w-4" />
+                      <Database className="h-4 w-4" />
                     )}
-                    Enriquecer com Receita Federal
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Enriquece dados básicos da empresa via Receita Federal</p>
+                  <p>Receita Federal (Lote)</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -710,20 +708,19 @@ export default function CompaniesManagementPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
+                    size="icon"
                     onClick={handleBatchEnrich360}
                     disabled={isBatchEnriching360}
-                    className="gap-2"
                   >
                     {isBatchEnriching360 ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Sparkles className="h-4 w-4 text-primary-foreground" />
+                      <Sparkles className="h-4 w-4" />
                     )}
-                    Enriquecimento 360° Completo
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Análise completa com IA: insights, sinais, recomendações</p>
+                  <p>Enriquecimento 360° Completo</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -731,18 +728,17 @@ export default function CompaniesManagementPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
+                    size="icon"
                     onClick={() => navigate('/search')}
-                    className="gap-2"
                   >
                     <span className="relative inline-flex">
-                      <Building2 className="h-4 w-4 text-primary-foreground" />
-                      <Plus className="h-3 w-3 text-primary-foreground absolute -right-1 -top-1" />
+                      <Building2 className="h-4 w-4" />
+                      <Plus className="h-3 w-3 absolute -right-1 -top-1" />
                     </span>
-                    Adicionar Empresa
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Adicionar empresa</p>
+                  <p>Adicionar Empresa</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -990,46 +986,160 @@ export default function CompaniesManagementPage() {
                       </TableCell>
                        <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/company/${company.id}`)}
-                            title="Ver detalhes"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/search?companyId=${company.id}`)}
-                            title="Editar/Salvar Dados"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                              const params = new URLSearchParams(location.search);
-                              const returnTab = params.get('tab') || 'roi';
-                              navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
-                            }}
-                            title="Usar no Account Strategy Hub"
-                          >
-                            <Zap className="h-4 w-4 text-primary-foreground" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setCompanyToDelete(company);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive hover:text-destructive"
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => navigate(`/company/${company.id}`)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver detalhes</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => navigate(`/search?companyId=${company.id}`)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Editar/Salvar Dados</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => {
+                                    const params = new URLSearchParams(location.search);
+                                    const returnTab = params.get('tab') || 'roi';
+                                    navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
+                                  }}
+                                >
+                                  <Zap className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Account Strategy Hub</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => handleEnrichReceita(company.id)}
+                                  disabled={enrichingReceitaId === company.id || !company.cnpj}
+                                >
+                                  {enrichingReceitaId === company.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Database className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Receita Federal</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => handleEnrich(company.id)}
+                                  disabled={enrichingId === company.id}
+                                >
+                                  {enrichingId === company.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Enriquecimento 360°</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={async () => {
+                                    if (!company.cnpj) {
+                                      toast.error('CNPJ não disponível');
+                                      return;
+                                    }
+                                    try {
+                                      toast.info('Iniciando enriquecimento Eco-Booster...');
+                                      const { data, error } = await supabase.functions.invoke('enrich-econodata', {
+                                        body: { companyId: company.id, cnpj: company.cnpj }
+                                      });
+                                      if (error) throw error;
+                                      toast.success('Eco-Booster concluído!');
+                                      refetch();
+                                    } catch (error) {
+                                      console.error('Error enriching Econodata:', error);
+                                      toast.error('Erro no Eco-Booster');
+                                    }
+                                  }}
+                                  disabled={!company.cnpj}
+                                >
+                                  <Database className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Eco-Booster</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setCompanyToDelete(company);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Excluir</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>

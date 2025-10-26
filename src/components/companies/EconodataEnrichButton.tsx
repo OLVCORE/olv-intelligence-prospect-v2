@@ -55,10 +55,10 @@ export function EconodataEnrichButton({
         </TooltipTrigger>
         <TooltipContent>
           <div className="max-w-xs space-y-2">
-            <p className="font-semibold">🌟 Fonte Primária - Econodata</p>
+            <p className="font-semibold">🚀 Eco-Booster</p>
             <p className="text-sm">
-              Busca os 87 campos oficiais diretamente da base Econodata.
-              Dados mais completos e atualizados do mercado.
+              Busca os 87 campos oficiais completos e atualizados.
+              Dados mais precisos e detalhados do mercado.
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               ✓ Preserva dados existentes válidos<br/>
