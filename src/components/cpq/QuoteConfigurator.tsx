@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { useProductCatalog, Product } from "@/hooks/useProductCatalog";
 import { useCreateQuote, QuoteProduct } from "@/hooks/useQuotes";
 import { toast } from "sonner";
 import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+import { UnsavedChangesWarning } from "@/components/common/UnsavedChangesWarning";
+import { useModuleDraft } from "@/hooks/useModuleDraft";
 
 interface QuoteConfiguratorProps {
   companyId: string;
@@ -20,9 +22,30 @@ interface QuoteConfiguratorProps {
 export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated }: QuoteConfiguratorProps) {
   const { data: products, isLoading } = useProductCatalog();
   const createQuote = useCreateQuote();
-  const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
+const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
+
+  const { data: draftData, hasUnsavedChanges, save, updateData } = useModuleDraft<{ selectedProducts: QuoteProduct[] }>(
+    { selectedProducts: [] },
+    {
+      module: 'cpq',
+      companyId,
+      accountStrategyId,
+      title: `CPQ - ${companyId || accountStrategyId}`,
+      autoSaveInterval: 10000,
+    }
+  );
+
+  useEffect(() => {
+    if (draftData?.selectedProducts) {
+      setSelectedProducts(draftData.selectedProducts);
+    }
+  }, [draftData]);
+
+  useEffect(() => {
+    updateData(prev => ({ ...(prev || { selectedProducts: [] }), selectedProducts }));
+  }, [selectedProducts, updateData]);
 
   const addProduct = (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);
