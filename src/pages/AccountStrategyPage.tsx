@@ -13,6 +13,7 @@ import { useDecisionMakers } from '@/hooks/useDecisionMakers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Target, TrendingUp, Users, FileText, Lightbulb, Calendar, DollarSign, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGenerateAccountStrategy } from '@/hooks/useAccountStrategies';
 import { InteractiveROICalculator } from '@/components/roi/InteractiveROICalculator';
@@ -35,6 +36,12 @@ export default function AccountStrategyPage() {
   const [selectedDecisionMakerId, setSelectedDecisionMakerId] = useState<string>('none');
   const [tab, setTab] = useState<string>(searchParams.get('tab') || 'overview');
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  
+  // Callback para verificar se há mudanças não salvas (será fornecido pelos componentes filhos)
+  const [hasUnsavedChangesCallback, setHasUnsavedChangesCallback] = useState<(() => boolean) | null>(null);
+  const [saveCallback, setSaveCallback] = useState<(() => Promise<void>) | null>(null);
 
   // Sync tab with URL query param changes (fixes sidebar navigation to tabs)
   React.useEffect(() => {
@@ -81,6 +88,49 @@ export default function AccountStrategyPage() {
       personaId: selectedPersonaId,
       decisionMakerId: selectedDecisionMakerId === 'none' ? undefined : selectedDecisionMakerId,
     });
+  };
+
+  // Handler para mudança de tab com verificação de mudanças não salvas
+  const handleTabChange = (newTab: string) => {
+    // Verifica se há mudanças não salvas
+    const hasUnsaved = hasUnsavedChangesCallback?.() || false;
+    
+    if (hasUnsaved) {
+      setPendingTab(newTab);
+      setShowUnsavedDialog(true);
+      return;
+    }
+    
+    // Se não há mudanças, muda a tab normalmente
+    changeTab(newTab);
+  };
+
+  const changeTab = (newTab: string) => {
+    setTab(newTab);
+    const sp = new URLSearchParams(searchParams);
+    sp.set('tab', newTab);
+    if (companyId) sp.set('company', companyId);
+    setSearchParams(sp, { replace: true });
+  };
+
+  const handleConfirmTabChange = () => {
+    if (pendingTab) {
+      changeTab(pendingTab);
+      setPendingTab(null);
+    }
+    setShowUnsavedDialog(false);
+  };
+
+  const handleSaveAndChangeTab = async () => {
+    if (saveCallback) {
+      await saveCallback();
+    }
+    handleConfirmTabChange();
+  };
+
+  const handleCancelTabChange = () => {
+    setPendingTab(null);
+    setShowUnsavedDialog(false);
   };
 
   if (isLoading) {
@@ -219,13 +269,7 @@ export default function AccountStrategyPage() {
             </Card>
             <Tabs 
               value={tab} 
-              onValueChange={(v) => {
-                setTab(v);
-                const sp = new URLSearchParams(searchParams);
-                sp.set('tab', v);
-                if (companyId) sp.set('company', companyId);
-                setSearchParams(sp, { replace: true });
-              }} 
+              onValueChange={handleTabChange}
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1">
@@ -241,6 +285,10 @@ export default function AccountStrategyPage() {
                   companyId={companyId!}
                   accountStrategyId={activeStrategy?.id}
                   initialData={{}}
+                  onUnsavedChangesMount={(hasChanges, save) => {
+                    setHasUnsavedChangesCallback(() => hasChanges);
+                    setSaveCallback(() => save);
+                  }}
                 />
               </TabsContent>
               <TabsContent value="cpq" className="space-y-4">
@@ -248,6 +296,10 @@ export default function AccountStrategyPage() {
                 <QuoteConfigurator
                   companyId={companyId!}
                   accountStrategyId={activeStrategy?.id}
+                  onUnsavedChangesMount={(hasChanges, save) => {
+                    setHasUnsavedChangesCallback(() => hasChanges);
+                    setSaveCallback(() => save);
+                  }}
                 />
               </TabsContent>
               <TabsContent value="scenarios" className="space-y-4">
@@ -276,7 +328,7 @@ export default function AccountStrategyPage() {
           </>
         ) : (
 
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps</TabsTrigger>
@@ -446,6 +498,10 @@ export default function AccountStrategyPage() {
                 companyId={companyId!}
                 accountStrategyId={activeStrategy.id}
                 initialData={activeStrategy.ai_insights as any}
+                onUnsavedChangesMount={(hasChanges, save) => {
+                  setHasUnsavedChangesCallback(() => hasChanges);
+                  setSaveCallback(() => save);
+                }}
               />
             </TabsContent>
 
@@ -455,6 +511,10 @@ export default function AccountStrategyPage() {
               <QuoteConfigurator
                 companyId={companyId!}
                 accountStrategyId={activeStrategy.id}
+                onUnsavedChangesMount={(hasChanges, save) => {
+                  setHasUnsavedChangesCallback(() => hasChanges);
+                  setSaveCallback(() => save);
+                }}
               />
             </TabsContent>
 
@@ -626,6 +686,30 @@ export default function AccountStrategyPage() {
           </Tabs>
         )}
       </div>
+      
+      {/* Alert Dialog para mudanças não salvas */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem alterações não salvas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja salvar suas alterações antes de mudar de aba? Se você continuar sem salvar, as alterações serão perdidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelTabChange}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmTabChange} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Continuar sem salvar
+            </AlertDialogAction>
+            {saveCallback && (
+              <AlertDialogAction onClick={handleSaveAndChangeTab}>
+                Salvar e continuar
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       <ScrollToTopButton />
     </AppLayout>
   );

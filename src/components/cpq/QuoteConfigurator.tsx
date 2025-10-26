@@ -17,9 +17,10 @@ interface QuoteConfiguratorProps {
   companyId: string;
   accountStrategyId?: string;
   onQuoteCreated?: (quoteId: string) => void;
+  onUnsavedChangesMount?: (hasChanges: () => boolean, save: () => Promise<void>) => void;
 }
 
-export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated }: QuoteConfiguratorProps) {
+export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated, onUnsavedChangesMount }: QuoteConfiguratorProps) {
   const { data: products, isLoading } = useProductCatalog();
   const createQuote = useCreateQuote();
   const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
@@ -59,6 +60,13 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
       updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts, priceOverrides }));
     }
   }, [selectedProducts, priceOverrides, updateData, draftData]);
+
+  // Notificar o componente pai sobre as funções de verificação e salvamento
+  useEffect(() => {
+    if (onUnsavedChangesMount) {
+      onUnsavedChangesMount(() => hasUnsavedChanges, save);
+    }
+  }, [hasUnsavedChanges, save, onUnsavedChangesMount]);
 
   const addProduct = async (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);

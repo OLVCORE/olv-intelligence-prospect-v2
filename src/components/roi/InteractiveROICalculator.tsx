@@ -27,6 +27,7 @@ interface ROICalculatorProps {
   companyId: string;
   accountStrategyId?: string;
   initialData?: Partial<ROIInputs>;
+  onUnsavedChangesMount?: (hasChanges: () => boolean, save: () => Promise<void>) => void;
 }
 
 interface ROIInputs {
@@ -78,7 +79,7 @@ interface ROIOutput {
   };
 }
 
-export function InteractiveROICalculator({ companyId, accountStrategyId, initialData }: ROICalculatorProps) {
+export function InteractiveROICalculator({ companyId, accountStrategyId, initialData, onUnsavedChangesMount }: ROICalculatorProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(false);
@@ -148,11 +149,11 @@ const cpqSignature = JSON.stringify({
   overrides: cpqData?.priceOverrides || {},
 });
 
-  // Sincronizar produtos do CPQ para o ROI automaticamente
+  // Sincronizar produtos do CPQ para o ROI automaticamente (MERGE, não sobrescrever)
   useEffect(() => {
     if (!cpqSignature) return;
     if (cpqData?.selectedProducts && cpqData.selectedProducts.length > 0) {
-      const convertedProducts: TOTVSProduct[] = cpqData.selectedProducts.map(product => {
+      const convertedProducts: (TOTVSProduct & { fromCPQ?: boolean })[] = cpqData.selectedProducts.map(product => {
         const effectivePrice = cpqData.priceOverrides?.[product.sku] ?? product.base_price;
         const totalLicenseCost = effectivePrice * product.quantity;
         return {
@@ -162,29 +163,47 @@ const cpqSignature = JSON.stringify({
           implementationCost: Math.round(totalLicenseCost * 0.3),
           maintenanceCost: Math.round(totalLicenseCost * 0.2),
           users: product.quantity,
+          fromCPQ: true, // Marca que veio do CPQ
         };
       });
 
+      // MERGE: manter produtos manuais (sem fromCPQ), atualizar/adicionar produtos do CPQ
+      const manualProducts = selectedProducts.filter((p: any) => !p.fromCPQ);
+      const cpqProductIds = new Set(convertedProducts.map(p => p.id));
+      
+      // Remove produtos CPQ antigos que não estão mais no CPQ
+      const filteredManualProducts = manualProducts.filter(p => !cpqProductIds.has(p.id));
+      
+      // Merge: produtos manuais + produtos do CPQ (atualizados)
+      const mergedProducts = [...filteredManualProducts, ...convertedProducts];
+
       const currentSignature = selectedProducts.map(p => `${p.id}:${p.licenseCost}:${p.implementationCost}:${p.maintenanceCost}`).sort().join('|');
-      const newSignature = convertedProducts.map(p => `${p.id}:${p.licenseCost}:${p.implementationCost}:${p.maintenanceCost}`).sort().join('|');
+      const newSignature = mergedProducts.map(p => `${p.id}:${p.licenseCost}:${p.implementationCost}:${p.maintenanceCost}`).sort().join('|');
       
       if (currentSignature !== newSignature) {
         setLocalState(prev => ({
           ...prev,
-          selectedProducts: convertedProducts,
+          selectedProducts: mergedProducts,
         }));
         updateData(prev => ({
           ...prev,
-          selectedProducts: convertedProducts,
+          selectedProducts: mergedProducts,
         }));
         toast({
-          title: "📦 Produtos importados do CPQ",
-          description: `${convertedProducts.length} produto(s) com valores atualizados do catálogo`,
+          title: "📦 Produtos sincronizados do CPQ",
+          description: `${convertedProducts.length} produto(s) do CPQ + ${filteredManualProducts.length} manual(is)`,
         });
       }
     }
   }, [cpqSignature]);
 
+
+  // Notificar o componente pai sobre as funções de verificação e salvamento
+  useEffect(() => {
+    if (onUnsavedChangesMount) {
+      onUnsavedChangesMount(() => hasUnsavedChanges, save);
+    }
+  }, [hasUnsavedChanges, save, onUnsavedChangesMount]);
 
   // Sincronizar draftData com localState quando carrega
   useEffect(() => {
