@@ -1790,6 +1790,7 @@ export type Database = {
           phone: string | null
           raw_data: Json | null
           seniority: string | null
+          source: string | null
           title: string | null
           updated_at: string
           verified_email: boolean | null
@@ -1805,6 +1806,7 @@ export type Database = {
           phone?: string | null
           raw_data?: Json | null
           seniority?: string | null
+          source?: string | null
           title?: string | null
           updated_at?: string
           verified_email?: boolean | null
@@ -1820,6 +1822,7 @@ export type Database = {
           phone?: string | null
           raw_data?: Json | null
           seniority?: string | null
+          source?: string | null
           title?: string | null
           updated_at?: string
           verified_email?: boolean | null
