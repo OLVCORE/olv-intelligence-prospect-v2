@@ -119,14 +119,16 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
   };
 
   const saveEditedPrice = async (sku: string) => {
-    // Atualiza localmente e no draft
+    // Atualiza localmente e no draft (inclui overrides para refletir no ROI imediatamente)
     const newSelected = selectedProducts.map(p =>
       p.sku === sku
         ? { ...p, base_price: editingPrice, final_price: editingPrice * p.quantity * (1 - p.discount / 100) }
         : p
     );
+    const newOverrides = { ...priceOverrides, [sku]: editingPrice };
     setSelectedProducts(newSelected);
-    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides }));
+    setPriceOverrides(newOverrides);
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides: newOverrides }));
     await save();
     setEditingPriceId(null);
     toast.success('Preço atualizado');

@@ -64,7 +64,10 @@ const loadingRef = useRef(false);
         return;
       }
 
-      const { data: result, error } = await query.maybeSingle();
+      const { data: result, error } = await query
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -116,7 +119,10 @@ const loadingRef = useRef(false);
         query = query.eq('company_id', companyId).is('account_strategy_id', null);
       }
 
-      const { data: existing, error: fetchError } = await query.maybeSingle();
+      const { data: existing, error: fetchError } = await query
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 

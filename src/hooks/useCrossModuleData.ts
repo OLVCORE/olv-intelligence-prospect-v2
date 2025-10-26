@@ -35,16 +35,20 @@ export function useCrossModuleData<T = any>(options: UseCrossModuleDataOptions) 
         return null;
       }
 
-      const { data, error } = await query.maybeSingle();
+      const { data, error } = await query
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
       return data?.data as T | null;
     },
     enabled: !!(companyId || accountStrategyId),
-    staleTime: 60_000, // 1 min
+    staleTime: 0,
     gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
     retry: 1,
   });
 }
