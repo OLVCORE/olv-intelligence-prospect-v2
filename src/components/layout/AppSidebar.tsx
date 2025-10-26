@@ -282,11 +282,11 @@ export function AppSidebar() {
     >
       <SidebarHeader className="border-b border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity touch-manipulation active:scale-95 group-data-[collapsible=icon]:justify-center">
-          <Building2 className="h-7 w-7 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
+          <Building2 className="h-8 w-8 text-sidebar-primary flex-shrink-0" />
           {(open || isMobile) && (
             <div className="min-w-0">
-              <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
-              <p className="text-[10px] md:text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+              <h1 className="text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
+              <p className="text-sm text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
             </div>
           )}
         </Link>
@@ -303,9 +303,9 @@ export function AppSidebar() {
             <Collapsible key={group.label} className="group/group" defaultOpen={isGroupActive}>
               <SidebarGroup>
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="flex items-center gap-3 text-[11px] md:text-xs font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-4 md:py-3 px-2 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
-                    <div className="flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all">
-                      <group.icon className="h-5 w-5 md:h-4 md:w-4 text-sidebar-primary" />
+                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-4 px-2 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all">
+                      <group.icon className="h-5 w-5 text-sidebar-primary" />
                     </div>
                     <span className="flex-1 group-data-[collapsible=icon]:hidden">{group.label}</span>
                     <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden" />
@@ -330,38 +330,38 @@ export function AppSidebar() {
                                  >
                                    <SidebarMenuButton 
                                      asChild
-                                 className={cn(
-                                  "touch-manipulation active:scale-95 py-3 md:py-2",
-                                  item.special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
-                                  item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
-                                  item.highlighted && !item.special && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
-                                )}
+                                     className={cn(
+                                       "touch-manipulation active:scale-95 py-3",
+                                       item.special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
+                                       item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
+                                       item.highlighted && !item.special && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
+                                     )}
                                    >
                                      <CollapsibleTrigger className="w-full">
-                                       <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
-                                          <div className="relative">
-                                            <item.icon className={cn(
-                                              "h-5 w-5 md:h-4 md:w-4",
-                                              item.special && "text-[hsl(var(--accent-gold))]",
-                                              item.competitive && "text-red-500"
-                                            )} />
-                                            {item.special && (
-                                              <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
-                                            )}
-                                            {item.competitive && (
-                                              <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
-                                            )}
-                                          </div>
-                                          {(open || isMobile) && (
-                                            <span className={cn(
-                                              "font-medium text-sm md:text-sm",
-                                              item.special && "text-[hsl(var(--accent-gold))]",
-                                              item.competitive && "text-red-500 font-bold"
-                                            )}>
-                                              {item.title}
-                                            </span>
-                                          )}
-                                       </div>
+                                         <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
+                                           <div className="relative">
+                                             <item.icon className={cn(
+                                               "h-5 w-5",
+                                               item.special && "text-[hsl(var(--accent-gold))]",
+                                               item.competitive && "text-red-500"
+                                             )} />
+                                             {item.special && (
+                                               <div className="absolute -top-1 -right-1 h-2 w-2 bg-[hsl(var(--accent-gold))] rounded-full animate-pulse shadow-lg shadow-[hsl(var(--accent-gold))]/50" />
+                                             )}
+                                             {item.competitive && (
+                                               <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                                             )}
+                                           </div>
+                                           {(open || isMobile) && (
+                                             <span className={cn(
+                                               "font-medium text-sm",
+                                               item.special && "text-[hsl(var(--accent-gold))]",
+                                               item.competitive && "text-red-500 font-bold"
+                                             )}>
+                                               {item.title}
+                                             </span>
+                                           )}
+                                         </div>
                                        {(open || isMobile) && (
                                          <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                                        )}
@@ -380,7 +380,7 @@ export function AppSidebar() {
                                                        location.pathname === subItem.url.split('?')[0] && 
                                                        (!subItem.url.includes('?tab=') || location.search.includes(subItem.url.split('?tab=')[1]))
                                                      } 
-                                                     className="touch-manipulation active:scale-95 py-2.5 md:py-2"
+                                                     className="touch-manipulation active:scale-95 py-2.5"
                                                    >
                                                      {(() => {
                                                        const sp = new URLSearchParams(location.search);
@@ -390,8 +390,8 @@ export function AppSidebar() {
                                                        const url = isAS && company ? `${base}${base.includes('?') ? '&' : '?'}company=${company}` : base;
                                                        return (
                                                          <Link to={url}>
-                                                           <subItem.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                                                           <span className="text-xs md:text-xs">{subItem.title}</span>
+                                                           <subItem.icon className="h-4 w-4" />
+                                                           <span className="text-sm">{subItem.title}</span>
                                                          </Link>
                                                        );
                                                      })()}
@@ -422,34 +422,34 @@ export function AppSidebar() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div>
-                               <SidebarMenuButton 
+                              <SidebarMenuButton 
                                 asChild 
                                 isActive={isActive}
                                 className={cn(
-                                  "touch-manipulation active:scale-95 py-3 md:py-2",
+                                  "touch-manipulation active:scale-95 py-3",
                                   item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
                                   item.highlighted && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
                                 )}
                               >
-                                 <Link to={item.url} className="flex items-center gap-2">
-                                   <div className="relative">
-                                     <item.icon className={cn(
-                                       "h-5 w-5 md:h-4 md:w-4",
-                                       item.competitive && "text-red-500"
-                                     )} />
-                                     {item.competitive && (
-                                       <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
-                                     )}
-                                   </div>
-                                   {(open || isMobile) && (
-                                     <span className={cn(
-                                       "text-sm md:text-sm",
-                                       item.competitive && "text-red-500 font-bold"
-                                     )}>
-                                       {item.title}
-                                     </span>
-                                   )}
-                                 </Link>
+                                <Link to={item.url} className="flex items-center gap-2">
+                                  <div className="relative">
+                                    <item.icon className={cn(
+                                      "h-5 w-5",
+                                      item.competitive && "text-red-500"
+                                    )} />
+                                    {item.competitive && (
+                                      <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                                    )}
+                                  </div>
+                                  {(open || isMobile) && (
+                                    <span className={cn(
+                                      "text-sm",
+                                      item.competitive && "text-red-500 font-bold"
+                                    )}>
+                                      {item.title}
+                                    </span>
+                                  )}
+                                </Link>
                               </SidebarMenuButton>
                             </div>
                           </TooltipTrigger>
@@ -470,19 +470,19 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-2 py-2 md:py-1.5 text-xs md:text-sm text-sidebar-foreground/70 overflow-hidden group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-            <User className="h-5 w-5 md:h-4 md:w-4 flex-shrink-0" />
-            {(open || isMobile) && <span className="truncate whitespace-nowrap text-xs md:text-sm">{user?.email}</span>}
+          <div className="flex items-center gap-2 px-2 py-2 text-sm text-sidebar-foreground/70 overflow-hidden group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+            <User className="h-5 w-5 flex-shrink-0" />
+            {(open || isMobile) && <span className="truncate whitespace-nowrap text-sm">{user?.email}</span>}
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 touch-manipulation active:scale-95 h-11 md:h-9"
+                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 touch-manipulation active:scale-95 h-11"
                 onClick={signOut}
               >
-                <LogOut className="h-5 w-5 md:h-4 md:w-4 flex-shrink-0" />
+                <LogOut className="h-5 w-5 flex-shrink-0" />
                 {(open || isMobile) && <span className="ml-2 whitespace-nowrap text-sm">Sair</span>}
               </Button>
             </TooltipTrigger>
@@ -497,12 +497,12 @@ export function AppSidebar() {
               variant="outline"
               size="sm"
               onClick={() => setOpen(!open)}
-              className="w-full h-10 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border-primary/30 text-primary font-semibold transition-all"
+              className="w-full h-11 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border-primary/30 text-primary font-semibold transition-all"
             >
               {open ? (
                 <>
                   <ChevronsLeft className="h-5 w-5" />
-                  {!isMobile && <span className="text-xs">Recolher</span>}
+                  {!isMobile && <span className="text-sm">Recolher</span>}
                 </>
               ) : (
                 <ChevronsRight className="h-5 w-5" />
