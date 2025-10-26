@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ const GoogleIcon = () => (
 
 const MAX_COMPANIES = 1000;
 
-export function BulkUploadDialog() {
+export function BulkUploadDialog({ children }: { children?: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState("");
@@ -573,10 +573,14 @@ try {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Upload className="h-4 w-4" />
-          Upload em Massa
-        </Button>
+        {children ? (
+          children
+        ) : (
+          <Button className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload em Massa
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>

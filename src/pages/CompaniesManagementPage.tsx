@@ -71,7 +71,7 @@ export default function CompaniesManagementPage() {
   const [isBatchEnriching360, setIsBatchEnriching360] = useState(false);
   const [enrichingReceitaId, setEnrichingReceitaId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  
   const [isBatchEnrichingEconodata, setIsBatchEnrichingEconodata] = useState(false);
   const hasSelection = selectedCompanies.length > 0;
 
@@ -670,14 +670,15 @@ export default function CompaniesManagementPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="success"
-                    onClick={() => setShowBulkUpload(true)}
-                    className="gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload em Massa
-                  </Button>
+                  <BulkUploadDialog>
+                    <Button
+                      variant="secondary"
+                      className="gap-2"
+                    >
+                      <Upload className="h-4 w-4 text-secondary-foreground" />
+                      Upload em Massa
+                    </Button>
+                  </BulkUploadDialog>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Importar múltiplas empresas via CSV ou Excel</p>
@@ -716,7 +717,7 @@ export default function CompaniesManagementPage() {
                     {isBatchEnriching360 ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Sparkles className="h-4 w-4" />
+                      <Sparkles className="h-4 w-4 text-primary-foreground" />
                     )}
                     Enriquecimento 360° Completo
                   </Button>
@@ -733,12 +734,15 @@ export default function CompaniesManagementPage() {
                     onClick={() => navigate('/search')}
                     className="gap-2"
                   >
-                    <Plus className="h-4 w-4" />
-                    Nova Empresa
+                    <span className="relative inline-flex">
+                      <Building2 className="h-4 w-4 text-primary-foreground" />
+                      <Plus className="h-3 w-3 text-primary-foreground absolute -right-1 -top-1" />
+                    </span>
+                    Adicionar Empresa
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Adicionar nova empresa manualmente</p>
+                  <p>Adicionar empresa</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1012,7 +1016,7 @@ export default function CompaniesManagementPage() {
                             }}
                             title="Usar no Account Strategy Hub"
                           >
-                            <Zap className="h-4 w-4" />
+                            <Zap className="h-4 w-4 text-primary-foreground" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -1092,7 +1096,7 @@ export default function CompaniesManagementPage() {
            </AlertDialogContent>
          </AlertDialog>
 
-         <BulkUploadDialog />
+         
        </div>
      </AppLayout>
      </ErrorBoundary>
