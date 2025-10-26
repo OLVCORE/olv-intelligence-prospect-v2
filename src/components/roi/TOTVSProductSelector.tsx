@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 export interface TOTVSProduct {
   id: string;
@@ -41,6 +42,8 @@ const AVAILABLE_PRODUCTS = [
 
 export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOTVSProductSelectorProps) {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<number>(0);
 
   const isProductSelected = (productId: string) => {
     return selectedProducts.some(p => p.id === productId);
@@ -71,6 +74,17 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
         p.id === productId ? { ...p, [field]: value } : p
       )
     );
+  };
+
+  const startEditingField = (productId: string, field: keyof TOTVSProduct, currentValue: number) => {
+    setEditingField(`${productId}-${field}`);
+    setEditingValue(currentValue);
+  };
+
+  const saveEditedField = (productId: string, field: keyof TOTVSProduct) => {
+    updateProduct(productId, field, editingValue);
+    setEditingField(null);
+    toast.success('Valor atualizado');
   };
 
   const toggleExpanded = (productId: string) => {
@@ -194,51 +208,186 @@ export function TOTVSProductSelector({ selectedProducts, onProductsChange }: TOT
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                       <div className="space-y-2">
                         <Label htmlFor={`${product.id}-license`}>Custo de Licenças (R$)</Label>
-                        <Input
-                          id={`${product.id}-license`}
-                          type="number"
-                          value={product.licenseCost || ''}
-                          onChange={(e) => updateProduct(product.id, 'licenseCost', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          min="0"
-                          step="1000"
-                        />
+                        {editingField === `${product.id}-licenseCost` ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">R$</span>
+                            <Input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                              className="flex-1"
+                              step="1000"
+                              min="0"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveEditedField(product.id, 'licenseCost')}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Save className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id={`${product.id}-license`}
+                              type="number"
+                              value={product.licenseCost || ''}
+                              onChange={(e) => updateProduct(product.id, 'licenseCost', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              min="0"
+                              step="1000"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingField(product.id, 'licenseCost', product.licenseCost)}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`${product.id}-implementation`}>Custo de Implementação (R$)</Label>
-                        <Input
-                          id={`${product.id}-implementation`}
-                          type="number"
-                          value={product.implementationCost || ''}
-                          onChange={(e) => updateProduct(product.id, 'implementationCost', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          min="0"
-                          step="1000"
-                        />
+                        {editingField === `${product.id}-implementationCost` ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">R$</span>
+                            <Input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                              className="flex-1"
+                              step="1000"
+                              min="0"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveEditedField(product.id, 'implementationCost')}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Save className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id={`${product.id}-implementation`}
+                              type="number"
+                              value={product.implementationCost || ''}
+                              onChange={(e) => updateProduct(product.id, 'implementationCost', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              min="0"
+                              step="1000"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingField(product.id, 'implementationCost', product.implementationCost)}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`${product.id}-maintenance`}>Manutenção Anual (R$)</Label>
-                        <Input
-                          id={`${product.id}-maintenance`}
-                          type="number"
-                          value={product.maintenanceCost || ''}
-                          onChange={(e) => updateProduct(product.id, 'maintenanceCost', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          min="0"
-                          step="1000"
-                        />
+                        {editingField === `${product.id}-maintenanceCost` ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">R$</span>
+                            <Input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(parseFloat(e.target.value) || 0)}
+                              className="flex-1"
+                              step="1000"
+                              min="0"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveEditedField(product.id, 'maintenanceCost')}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Save className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id={`${product.id}-maintenance`}
+                              type="number"
+                              value={product.maintenanceCost || ''}
+                              onChange={(e) => updateProduct(product.id, 'maintenanceCost', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              min="0"
+                              step="1000"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingField(product.id, 'maintenanceCost', product.maintenanceCost)}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`${product.id}-users`}>Número de Usuários</Label>
-                        <Input
-                          id={`${product.id}-users`}
-                          type="number"
-                          value={product.users || ''}
-                          onChange={(e) => updateProduct(product.id, 'users', parseInt(e.target.value) || 0)}
-                          placeholder="0"
-                          min="0"
-                          step="1"
-                        />
+                        {editingField === `${product.id}-users` ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(parseInt(e.target.value) || 0)}
+                              className="flex-1"
+                              step="1"
+                              min="0"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => saveEditedField(product.id, 'users')}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Save className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id={`${product.id}-users`}
+                              type="number"
+                              value={product.users || ''}
+                              onChange={(e) => updateProduct(product.id, 'users', parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                              min="0"
+                              step="1"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingField(product.id, 'users', product.users)}
+                              className="h-9 w-9 p-0"
+                            >
+                              <Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </CollapsibleContent>

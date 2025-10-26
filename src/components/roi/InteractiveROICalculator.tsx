@@ -134,7 +134,7 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   });
 
   // Carregar produtos do CPQ para sincronização
-  const { data: cpqData } = useCrossModuleData<{ selectedProducts: QuoteProduct[] }>({
+  const { data: cpqData } = useCrossModuleData<{ selectedProducts: QuoteProduct[]; priceOverrides: Record<string, number> }>({
     sourceModule: 'cpq',
     companyId,
     accountStrategyId,
@@ -144,20 +144,31 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
   useEffect(() => {
     if (cpqData?.selectedProducts && cpqData.selectedProducts.length > 0) {
       // Converter produtos do CPQ para formato do ROI
-      const convertedProducts: TOTVSProduct[] = cpqData.selectedProducts.map(product => ({
-        id: product.sku,
-        name: product.name,
-        licenseCost: product.base_price * product.quantity,
-        implementationCost: 0, // Usuário pode editar depois
-        maintenanceCost: product.base_price * product.quantity * 0.2, // 20% do valor como manutenção (estimativa)
-        users: product.quantity,
-      }));
+      const convertedProducts: TOTVSProduct[] = cpqData.selectedProducts.map(product => {
+        // Usar priceOverrides se disponível, senão usar base_price
+        const effectivePrice = cpqData.priceOverrides?.[product.sku] ?? product.base_price;
+        const totalLicenseCost = effectivePrice * product.quantity;
+        
+        return {
+          id: product.sku,
+          name: product.name,
+          licenseCost: totalLicenseCost,
+          implementationCost: Math.round(totalLicenseCost * 0.3), // 30% do valor como implementação (estimativa)
+          maintenanceCost: Math.round(totalLicenseCost * 0.2), // 20% do valor como manutenção (estimativa)
+          users: product.quantity,
+        };
+      });
 
-      // Atualizar apenas se houver mudanças reais
-      const currentIds = selectedProducts.map(p => p.id).sort().join(',');
-      const newIds = convertedProducts.map(p => p.id).sort().join(',');
+      // Atualizar apenas se houver mudanças reais nos produtos ou valores
+      const currentSignature = selectedProducts.map(p => `${p.id}:${p.licenseCost}:${p.implementationCost}:${p.maintenanceCost}`).sort().join('|');
+      const newSignature = convertedProducts.map(p => `${p.id}:${p.licenseCost}:${p.implementationCost}:${p.maintenanceCost}`).sort().join('|');
       
-      if (currentIds !== newIds) {
+      if (currentSignature !== newSignature) {
+        setLocalState(prev => ({
+          ...prev,
+          selectedProducts: convertedProducts,
+        }));
+        
         updateData(prev => ({
           ...prev,
           selectedProducts: convertedProducts,
@@ -165,11 +176,11 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
         
         toast({
           title: "📦 Produtos importados do CPQ",
-          description: `${convertedProducts.length} produto(s) carregados automaticamente`,
+          description: `${convertedProducts.length} produto(s) com valores atualizados do catálogo`,
         });
       }
     }
-  }, [cpqData?.selectedProducts]);
+  }, [cpqData?.selectedProducts, cpqData?.priceOverrides]);
 
 
   // Sincronizar draftData com localState quando carrega
