@@ -28,6 +28,7 @@ import { DiagnosticUpload } from "@/components/sdr/DiagnosticUpload";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCompanyReport } from "@/hooks/useCompanyReport";
+import DecisionMakerAddDialog from "@/components/companies/DecisionMakerAddDialog";
 export default function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function CompanyDetailPage() {
   const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
   const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const [isTestingApollo, setIsTestingApollo] = useState(false);
   const location = useLocation();
 
   const { data: company, isLoading } = useQuery({
@@ -286,6 +288,55 @@ export default function CompanyDetailPage() {
   const receitaData = (company.raw_data as any)?.receita;
   const maturity = company.digital_maturity?.[0];
   const analysisData = maturity?.analysis_data as any;
+
+  const handleTestApollo = async () => {
+    setIsTestingApollo(true);
+    try {
+      const searchName = (receitaData?.fantasia && receitaData.fantasia !== company.name) ? receitaData.fantasia : company.name;
+      const { data: apolloData, error } = await supabase.functions.invoke('enrich-apollo', {
+        body: {
+          type: 'people',
+          organizationName: searchName,
+          ...(company.domain ? { domain: company.domain } : {}),
+          titles: ['CEO','CTO','CFO','CIO','Diretor','Diretora','Gerente','VP','Head','TI','Tecnologia','Financeiro','Compras','Procurement','Operations','COO']
+        }
+      });
+      if (error) throw error;
+
+      const people = (apolloData as any)?.people || [];
+      for (const person of people.slice(0, 5)) {
+        const department = person.functions?.[0]
+          ? person.functions[0].charAt(0).toUpperCase() + person.functions[0].slice(1)
+          : null;
+        const phone = person.phone_numbers?.[0]?.raw_number || null;
+        await supabase.from('decision_makers').upsert({
+          company_id: id,
+          name: person.name,
+          title: person.title,
+          email: person.email,
+          phone,
+          linkedin_url: person.linkedin_url,
+          seniority: person.seniority,
+          department,
+          verified_email: person.email_status === 'verified',
+          source: 'apollo'
+        } as any);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      await queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
+      if (people.length > 0) {
+        toast.success('Apollo retornou decisores!', { description: `${people.length} contatos encontrados` });
+      } else {
+        toast.info('Apollo não retornou decisores para esta empresa.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Falha ao testar Apollo', { description: e.message });
+    } finally {
+      setIsTestingApollo(false);
+    }
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -906,11 +957,20 @@ export default function CompanyDetailPage() {
         {/* Decisores Tab */}
         <TabsContent value="decisores" className="space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Decisores Mapeados
               </CardTitle>
+              <div className="flex items-center gap-2">
+                {id && (
+                  <DecisionMakerAddDialog companyId={id} />
+                )}
+                <Button variant="outline" size="sm" onClick={handleTestApollo} disabled={isTestingApollo}>
+                  {isTestingApollo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  Testar Apollo
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {company.decision_makers && company.decision_makers.length > 0 ? (
@@ -943,9 +1003,18 @@ export default function CompanyDetailPage() {
               ) : (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum decisor identificado ainda. A API Apollo não retornou contatos para esta empresa.
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Nenhum decisor identificado ainda. Você pode adicioná-los manualmente.
                   </p>
+                  {id && (
+                    <div className="flex items-center justify-center gap-2">
+                      <DecisionMakerAddDialog companyId={id} />
+                      <Button variant="outline" size="sm" onClick={handleTestApollo} disabled={isTestingApollo}>
+                        {isTestingApollo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                        Testar Apollo
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
