@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { BackButton } from '@/components/common/BackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,7 @@ export default function AccountStrategyPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <BackButton />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
