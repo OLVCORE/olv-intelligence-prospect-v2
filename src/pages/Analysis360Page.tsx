@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanySelector } from '@/components/intelligence/CompanySelector';
+import { LinkedInEnrichButton } from '@/components/common/LinkedInEnrichButton';
 import { 
   Loader2, Building2, TrendingUp, AlertTriangle, CheckCircle, 
   Linkedin, Scale, DollarSign, Star, ShoppingCart, Server, 
@@ -271,6 +272,15 @@ export default function Analysis360Page() {
             <Button onClick={runEnrichment} size="lg" disabled={enriching}>
               {enriching ? 'Analisando...' : 'Iniciar Análise 360°'}
             </Button>
+            
+            {company?.linkedin_url && (
+              <LinkedInEnrichButton
+                companyId={companyId!}
+                linkedinUrl={company.linkedin_url}
+                size="lg"
+                onSuccess={loadCompanyData}
+              />
+            )}
           </CardContent>
         </Card>
       ) : (

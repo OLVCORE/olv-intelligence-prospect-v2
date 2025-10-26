@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { ExplainabilityButton } from "@/components/common/ExplainabilityButton";
+import { LinkedInEnrichButton } from "@/components/common/LinkedInEnrichButton";
 import {
   AlertDialog,
   AlertDialogAction,
