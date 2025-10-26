@@ -1,9 +1,8 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackButton } from "@/components/common/BackButton";
-import { LinkedInEnrichButton } from "@/components/common/LinkedInEnrichButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,37 +27,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { DiagnosticUpload } from "@/components/sdr/DiagnosticUpload";
-import { CompanyReport } from "@/components/reports/CompanyReport";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCompanyReport } from "@/hooks/useCompanyReport";
 import DecisionMakerAddDialog from "@/components/companies/DecisionMakerAddDialog";
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider 
-} from "@/components/ui/sidebar";
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [isAnalyzingFit, setIsAnalyzingFit] = useState(false);
-  const [isUpdatingReceita, setIsUpdatingReceita] = useState(false);
   const [isSmartRefreshing, setIsSmartRefreshing] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('overview');
   const [isTestingApollo, setIsTestingApollo] = useState(false);
   const [isRunningPhantom, setIsRunningPhantom] = useState(false);
-  const location = useLocation();
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-detail', id],
@@ -89,32 +72,6 @@ export default function CompanyDetailPage() {
     staleTime: 0,
   });
 
-  const { data: execReport, isLoading: isReportLoading, refetch: refetchReport } = useCompanyReport(id);
-
-  const { data: fitSignal } = useQuery({
-    queryKey: ['fit-analysis', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('governance_signals')
-        .select('raw_data')
-        .eq('company_id', id!)
-        .eq('signal_type', 'totvs_fit_analysis')
-        .order('detected_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) return null;
-      return (data as any)?.raw_data || null;
-    },
-  });
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    if (tab && ['overview','identificacao','localizacao','atividade','estrutura','financeiro','digital','inteligencia','receita','actions'].includes(tab)) {
-      setActiveSection(tab);
-    }
-  }, [location.search]);
-
   if (isLoading) {
     return (
       <div className="p-8 space-y-6">
@@ -133,82 +90,11 @@ export default function CompanyDetailPage() {
     );
   }
 
-  const handleGenerateReport = async () => {
-    setIsGeneratingReport(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-company-report', {
-        body: { companyId: id }
-      });
-
-      if (error) throw error;
-
-      toast.success("Relatório gerado com sucesso!", {
-        description: "Relatório disponível para visualização"
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['company-report', id] });
-      console.log('Report data:', data);
-    } catch (error: any) {
-      toast.error("Erro ao gerar relatório", {
-        description: error.message
-      });
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
-
-  const handleAnalyzeFit = async () => {
-    setIsAnalyzingFit(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('analyze-totvs-fit', {
-        body: { company_id: id }
-      });
-
-      if (error) throw error;
-
-      toast.success("Análise de Fit concluída!", {
-        description: "Veja os resultados na aba Fit TOTVS"
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['fit-analysis', id] });
-      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
-      setActiveSection('inteligencia');
-    } catch (error: any) {
-      toast.error("Erro ao analisar Fit TOTVS", {
-        description: error.message
-      });
-    } finally {
-      setIsAnalyzingFit(false);
-    }
-  };
-
-  const handleUpdateReceita = async () => {
-    setIsUpdatingReceita(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
-        body: { cnpj: company.cnpj, company_id: id }
-      });
-
-      if (error) throw error;
-
-      toast.success("Dados da Receita Federal atualizados!");
-      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
-    } catch (error: any) {
-      toast.error("Erro ao atualizar dados da Receita Federal", {
-        description: error.message
-      });
-    } finally {
-      setIsUpdatingReceita(false);
-    }
-  };
-
   const handleSmartRefresh = async () => {
     setIsSmartRefreshing(true);
     try {
-      toast.info('Executando atualização inteligente...', {
-        description: 'Receita + 360° + Maturidade + Relatório'
-      });
-
+      toast.info('Executando atualização inteligente...');
+      
       await supabase.functions.invoke('enrich-receitaws', {
         body: { cnpj: company.cnpj, company_id: id }
       });
@@ -217,71 +103,46 @@ export default function CompanyDetailPage() {
         body: { company_id: id }
       });
 
-      await supabase.functions.invoke('calculate-maturity-score', {
-        body: { companyId: id }
-      });
-
-      await supabase.functions.invoke('generate-company-report', {
-        body: { companyId: id }
-      });
-
       toast.success('Atualização completa realizada!');
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
-      queryClient.invalidateQueries({ queryKey: ['company-report', id] });
     } catch (error: any) {
-      toast.error('Erro na atualização', {
-        description: error.message
-      });
+      toast.error('Erro na atualização', { description: error.message });
     } finally {
       setIsSmartRefreshing(false);
     }
   };
 
   const handleTestApollo = async () => {
-    const receitaData = (company as any)?.raw_data?.receita;
     setIsTestingApollo(true);
     try {
-      const searchName = (receitaData?.fantasia && receitaData.fantasia !== company.name) ? receitaData.fantasia : company.name;
+      const searchName = company.name;
       const { data: apolloData, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
           type: 'people',
           organizationName: searchName,
           ...(company.domain ? { domain: company.domain } : {}),
-          titles: ['CEO','CTO','CFO','CIO','Diretor','Diretora','Gerente','VP','Head','TI','Tecnologia','Financeiro','Compras','Procurement','Operations','COO']
+          titles: ['CEO','CTO','CFO','Diretor','Gerente','VP']
         }
       });
       if (error) throw error;
 
       const people = (apolloData as any)?.people || [];
       for (const person of people.slice(0, 5)) {
-        const department = person.functions?.[0]
-          ? person.functions[0].charAt(0).toUpperCase() + person.functions[0].slice(1)
-          : null;
-        const phone = person.phone_numbers?.[0]?.raw_number || null;
         await supabase.from('decision_makers').upsert({
           company_id: id,
           name: person.name,
           title: person.title,
           email: person.email,
-          phone,
+          phone: person.phone_numbers?.[0]?.raw_number || null,
           linkedin_url: person.linkedin_url,
-          seniority: person.seniority,
-          department,
-          verified_email: person.email_status === 'verified',
           source: 'apollo'
         } as any);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
-      await queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
-      if (people.length > 0) {
-        toast.success('Apollo retornou decisores!', { description: `${people.length} contatos encontrados` });
-      } else {
-        toast.info('Apollo não retornou decisores para esta empresa.');
-      }
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      toast.success(`${people.length} contatos encontrados via Apollo`);
     } catch (e: any) {
-      console.error(e);
-      toast.error('Falha ao testar Apollo', { description: e.message });
+      toast.error('Erro ao buscar decisores via Apollo');
     } finally {
       setIsTestingApollo(false);
     }
@@ -290,784 +151,983 @@ export default function CompanyDetailPage() {
   const handleRunPhantom = async () => {
     setIsRunningPhantom(true);
     try {
-      const dp = (company as any)?.digital_presence || {};
-      const raw = (company as any)?.raw_data || {};
-      const linkedinUrl = dp.linkedin || raw.linkedin || raw?.social?.linkedin || (company as any)?.linkedin_url || null;
-
+      const linkedinUrl = (company as any)?.digital_presence?.linkedin;
       if (!linkedinUrl) {
-        toast.info('LinkedIn não encontrado', { description: 'Adicione a URL do LinkedIn da empresa para usar o PhantomBuster.' });
+        toast.info('LinkedIn não encontrado');
         setIsRunningPhantom(false);
         return;
       }
 
-      toast.info('Executando PhantomBuster...', { description: 'Raspando perfis/empresa no LinkedIn' });
       const { data, error } = await supabase.functions.invoke('linkedin-scrape', {
         body: { linkedin_url: linkedinUrl, company_id: id }
       });
       if (error) throw error;
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
-        queryClient.invalidateQueries({ queryKey: ['decision_makers', id] }),
-      ]);
-      const res: any = data;
-      const found = Array.isArray(res?.profiles) ? res.profiles.length : Array.isArray(res?.data?.profiles) ? res.data.profiles.length : undefined;
-      const success = typeof res?.success === 'boolean' ? res.success : undefined;
-      const message = typeof res?.message === 'string' ? res.message : undefined;
-      if (success === false) {
-        toast.info('PhantomBuster não executou', { description: message || 'Verifique as credenciais do PhantomBuster.' });
-      } else {
-        toast.success('PhantomBuster concluído', { description: found ? `${found} perfil(is) encontrado(s)` : (message || 'Execução iniciada') });
-      }
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      toast.success('PhantomBuster concluído');
     } catch (e: any) {
-      console.error(e);
-      toast.error('Falha ao executar PhantomBuster', { description: e.message });
+      toast.error('Erro ao executar PhantomBuster');
     } finally {
       setIsRunningPhantom(false);
     }
   };
 
   const receitaData = (company as any)?.raw_data?.receita;
-  const maturity = (company as any)?.digital_maturity?.[0];
   const decisors = (company as any)?.decision_makers || [];
   const digitalPresence = (company as any)?.digital_presence;
-  
-  // Seções do menu
-  const sections = [
-    { id: 'overview', label: 'Visão Geral', icon: Eye, description: 'Resumo e principais informações' },
-    { id: 'identificacao', label: 'Identificação', icon: IdCard, description: 'Dados cadastrais e CNPJ' },
-    { id: 'localizacao', label: 'Localização & Contato', icon: MapPinned, description: 'Endereço, telefone, emails' },
-    { id: 'atividade', label: 'Atividade Econômica', icon: ActivityIcon, description: 'CNAEs, NCMs, produtos' },
-    { id: 'estrutura', label: 'Estrutura', icon: UsersIcon, description: 'Decisores, sócios, organograma' },
-    { id: 'financeiro', label: 'Financeiro', icon: Wallet, description: 'Capital social, faturamento' },
-    { id: 'digital', label: 'Presença Digital', icon: Monitor, description: 'Website, redes sociais, tech stack' },
-    { id: 'inteligencia', label: 'Análise & IA', icon: Brain, description: 'Scores, fit TOTVS, insights' },
-    { id: 'receita', label: 'Receita Federal', icon: FileSpreadsheet, description: 'Dados oficiais da RFB' },
-    { id: 'actions', label: 'Ações', icon: Zap, description: 'Enriquecimento e configurações' },
-  ];
+  const rawData = (company as any)?.raw_data || {};
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        {/* Sidebar */}
-        <Sidebar className="w-64 border-r">
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {sections.map((section) => {
-                    const Icon = section.icon;
-                    return (
-                      <SidebarMenuItem key={section.id}>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SidebarMenuButton
-                                onClick={() => setActiveSection(section.id)}
-                                isActive={activeSection === section.id}
-                                className="w-full"
-                              >
-                                <Icon className="h-4 w-4" />
-                                <span>{section.label}</span>
-                              </SidebarMenuButton>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-xs">
-                              {section.description}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8 space-y-6 overflow-auto">
-          <BackButton to="/companies" />
-          
-          {/* Header */}
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <CardTitle className="text-3xl flex items-center gap-3">
-                    <Building2 className="h-8 w-8 text-primary" />
-                    {company.name}
-                  </CardTitle>
-                  {receitaData?.fantasia && receitaData.fantasia !== company.name && (
-                    <p className="text-lg text-muted-foreground">Nome Fantasia: {receitaData.fantasia}</p>
-                  )}
-                </div>
-                <div className="text-right space-y-2">
-                  {company.digital_maturity_score && (
-                    <div>
-                      <div className="text-4xl font-bold text-primary">{company.digital_maturity_score.toFixed(1)}</div>
-                      <p className="text-sm text-muted-foreground">Score Digital</p>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-end gap-2">
-                    <Badge 
-                      className={`${
-                        receitaData?.situacao === 'ATIVA' 
-                          ? 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
-                          : receitaData?.situacao === 'ALERTA'
-                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600'
-                          : 'bg-red-500 hover:bg-red-600 text-white border-red-600'
-                      }`}
-                    >
-                      {receitaData?.situacao || 'Status desconhecido'}
-                    </Badge>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="default"
-                            size="icon"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
-                            onClick={handleSmartRefresh}
-                            disabled={isSmartRefreshing}
-                            aria-label="Atualizar dados da empresa"
-                          >
-                            {isSmartRefreshing ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4 text-primary-foreground" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Atualizar dados (Receita + 360° + Maturidade + Relatório)
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Conteúdo baseado na seção ativa */}
-          {activeSection === 'overview' && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Situação</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                      {receitaData?.situacao || 'Desconhecido'}
-                    </Badge>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">CNPJ</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-mono">{company.cnpj || 'N/A'}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Porte</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{receitaData?.porte || company.size || 'N/A'}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Setor</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{company.industry || 'N/A'}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Funcionários</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{company.employees || receitaData?.qsa?.length || 'N/A'}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Data de Abertura</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{receitaData?.abertura ? new Date(receitaData.abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'identificacao' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IdCard className="h-5 w-5" />
-                    Dados Cadastrais
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
-                      <p className="font-mono font-semibold text-lg">{company.cnpj || 'N/A'}</p>
-                    </div>
-                    {receitaData?.razao_social && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
-                        <p className="font-semibold">{receitaData.razao_social}</p>
-                      </div>
-                    )}
-                    {receitaData?.fantasia && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Nome Fantasia</p>
-                        <p className="font-semibold">{receitaData.fantasia}</p>
-                      </div>
-                    )}
-                    {receitaData?.abertura && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Data de Abertura</p>
-                        <p>{new Date(receitaData.abertura).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Setor</p>
-                      <p>{company.industry || 'N/A'}</p>
-                    </div>
-                    {receitaData?.porte && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Porte</p>
-                        <p>{receitaData.porte}</p>
-                      </div>
-                    )}
-                    {receitaData?.natureza_juridica && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Natureza Jurídica</p>
-                        <p>{receitaData.natureza_juridica}</p>
-                      </div>
-                    )}
-                    {receitaData?.situacao && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Situação Cadastral</p>
-                        <Badge variant={receitaData.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                          {receitaData.situacao}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'localizacao' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPinned className="h-5 w-5" />
-                    Endereço e Contato
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">Endereço</h3>
-                      {receitaData?.logradouro && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Logradouro</p>
-                          <p>{receitaData.logradouro}, {receitaData.numero}</p>
-                          {receitaData.complemento && <p className="text-sm">{receitaData.complemento}</p>}
-                        </div>
-                      )}
-                      {receitaData?.bairro && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Bairro</p>
-                          <p>{receitaData.bairro}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Cidade/Estado</p>
-                        <p>{receitaData?.municipio || (company.location as any)?.city || 'N/A'} - {receitaData?.uf || (company.location as any)?.state || 'N/A'}</p>
-                      </div>
-                      {receitaData?.cep && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">CEP</p>
-                          <p className="font-mono">{receitaData.cep}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">Contato</h3>
-                      {receitaData?.telefone && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Telefone</p>
-                          <p className="font-mono">{receitaData.telefone}</p>
-                        </div>
-                      )}
-                      {receitaData?.email && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">E-mail</p>
-                          <p>{receitaData.email}</p>
-                        </div>
-                      )}
-                      {company.website && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Website</p>
-                          <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {company.website}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {(receitaData?.logradouro || receitaData?.municipio || receitaData?.cep) && (
-                    <div className="h-64 rounded-lg overflow-hidden border">
-                      <LocationMap
-                        address={receitaData?.logradouro}
-                        numero={receitaData?.numero}
-                        municipio={receitaData?.municipio}
-                        estado={receitaData?.uf}
-                        cep={receitaData?.cep}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'atividade' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ActivityIcon className="h-5 w-5" />
-                    Atividades Econômicas (CNAEs)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {receitaData?.atividade_principal && (
-                    <div>
-                      <h3 className="font-semibold mb-3">Atividade Principal</h3>
-                      {receitaData.atividade_principal.map((ativ: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-muted/50 rounded-lg">
-                          <p className="font-mono text-sm text-muted-foreground">{ativ.code}</p>
-                          <p className="font-medium">{ativ.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold mb-3">Atividades Secundárias ({receitaData.atividades_secundarias.length})</h3>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {receitaData.atividades_secundarias.map((ativ: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-muted/50 rounded-lg">
-                            <p className="font-mono text-sm text-muted-foreground">{ativ.code}</p>
-                            <p className="text-sm">{ativ.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {!receitaData?.atividade_principal && !receitaData?.atividades_secundarias && (
-                    <p className="text-muted-foreground">Nenhuma atividade econômica cadastrada</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'estrutura' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <UsersIcon className="h-5 w-5" />
-                      Decisores e Contatos ({decisors.length})
-                    </CardTitle>
-                    <DecisionMakerAddDialog companyId={company.id} />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {decisors.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">Nenhum decisor cadastrado</p>
-                  ) : (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {decisors.map((decisor: any) => (
-                        <Card key={decisor.id} className="p-4">
-                          <div className="space-y-2">
-                            <p className="font-semibold text-lg">{decisor.name}</p>
-                            <p className="text-sm text-muted-foreground">{decisor.title || 'Cargo não informado'}</p>
-                            {decisor.department && (
-                              <Badge variant="outline">{decisor.department}</Badge>
-                            )}
-                            <Separator className="my-2" />
-                            <div className="space-y-1">
-                              {decisor.email && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Mail className="h-3 w-3" />
-                                  <a href={`mailto:${decisor.email}`} className="text-primary hover:underline">
-                                    {decisor.email}
-                                  </a>
-                                </div>
-                              )}
-                              {decisor.phone && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Phone className="h-3 w-3" />
-                                  <a href={`tel:${decisor.phone}`} className="text-primary hover:underline">
-                                    {decisor.phone}
-                                  </a>
-                                </div>
-                              )}
-                              {decisor.linkedin_url && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Globe className="h-3 w-3" />
-                                  <a href={decisor.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                    LinkedIn
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                            {decisor.source && (
-                              <Badge variant="secondary" className="text-xs mt-2">
-                                Fonte: {decisor.source}
-                              </Badge>
-                            )}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {receitaData?.qsa && receitaData.qsa.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Quadro Societário ({receitaData.qsa.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {receitaData.qsa.map((socio: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-muted/50 rounded-lg">
-                          <p className="font-semibold">{socio.nome}</p>
-                          <p className="text-sm text-muted-foreground">{socio.qual}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+      <BackButton to="/companies" />
+      
+      {/* Header */}
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <CardTitle className="text-3xl flex items-center gap-3">
+                <Building2 className="h-8 w-8 text-primary" />
+                {company.name}
+              </CardTitle>
+              {receitaData?.fantasia && receitaData.fantasia !== company.name && (
+                <p className="text-lg text-muted-foreground">Nome Fantasia: {receitaData.fantasia}</p>
               )}
             </div>
-          )}
-
-          {activeSection === 'financeiro' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5" />
-                    Informações Financeiras
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {receitaData?.capital_social && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Capital Social</p>
-                        <p className="text-xl font-semibold">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(parseFloat(receitaData.capital_social))}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {company.revenue && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Faturamento Estimado</p>
-                        <p className="text-xl font-semibold">{company.revenue}</p>
-                      </div>
-                    )}
-
-                    {receitaData?.porte && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Porte da Empresa</p>
-                        <Badge variant="outline" className="text-base">{receitaData.porte}</Badge>
-                      </div>
-                    )}
-
-                    {company.employees && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Número de Funcionários</p>
-                        <p className="text-lg font-semibold">{company.employees}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {!receitaData?.capital_social && !company.revenue && !company.employees && (
-                    <p className="text-muted-foreground text-center py-8">Nenhuma informação financeira disponível</p>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="text-right space-y-2">
+              <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                {receitaData?.situacao || 'Status desconhecido'}
+              </Badge>
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSmartRefresh}
+                  disabled={isSmartRefreshing}
+                >
+                  {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Atualizar
+                </Button>
+              </div>
             </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Tabs Navigation */}
+      <Tabs defaultValue="overview" className="w-full">
+        <ScrollArea className="w-full whitespace-nowrap">
+          <TabsList className="inline-flex w-auto">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="identificacao" className="flex items-center gap-2">
+              <IdCard className="h-4 w-4" />
+              Identificação
+            </TabsTrigger>
+            <TabsTrigger value="localizacao" className="flex items-center gap-2">
+              <MapPinned className="h-4 w-4" />
+              Localização
+            </TabsTrigger>
+            <TabsTrigger value="atividade" className="flex items-center gap-2">
+              <ActivityIcon className="h-4 w-4" />
+              Atividade
+            </TabsTrigger>
+            <TabsTrigger value="estrutura" className="flex items-center gap-2">
+              <UsersIcon className="h-4 w-4" />
+              Estrutura
+            </TabsTrigger>
+            <TabsTrigger value="financeiro" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Financeiro
+            </TabsTrigger>
+            <TabsTrigger value="digital" className="flex items-center gap-2">
+              <Monitor className="h-4 w-4" />
+              Digital
+            </TabsTrigger>
+            <TabsTrigger value="inteligencia" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Inteligência
+            </TabsTrigger>
+            <TabsTrigger value="receita" className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Receita
+            </TabsTrigger>
+            <TabsTrigger value="actions" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Ações
+            </TabsTrigger>
+          </TabsList>
+        </ScrollArea>
+
+        {/* TAB 1: Visão Geral */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">CNPJ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="font-mono font-semibold">{company.cnpj || 'N/A'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Razão Social</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{receitaData?.razao_social || company.name}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Nome Fantasia</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{receitaData?.fantasia || rawData.nome_fantasia || 'N/A'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Situação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                  {receitaData?.situacao || rawData.situacao_cadastral || 'Desconhecido'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Porte</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{receitaData?.porte || rawData.porte_estimado || company.size || 'N/A'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Data Abertura</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{receitaData?.abertura || rawData.data_abertura ? new Date(receitaData?.abertura || rawData.data_abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* TAB 2: Identificação */}
+        <TabsContent value="identificacao" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IdCard className="h-5 w-5" />
+                Dados Cadastrais
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
+                <p className="font-mono font-semibold text-lg">{company.cnpj || rawData.cnpj || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
+                <p className="font-semibold">{receitaData?.razao_social || rawData.razao_social || company.name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Nome Fantasia</p>
+                <p>{receitaData?.fantasia || rawData.nome_fantasia || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Nome da Empresa</p>
+                <p>{rawData.nome_empresa || company.name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tipo Unidade</p>
+                <p>{rawData.tipo_unidade || receitaData?.tipo || 'Matriz'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Natureza Jurídica</p>
+                <p>{receitaData?.natureza_juridica || rawData.natureza_juridica || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Data de Abertura</p>
+                <p>{receitaData?.abertura || rawData.data_abertura ? new Date(receitaData?.abertura || rawData.data_abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Situação Cadastral</p>
+                <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
+                  {receitaData?.situacao || rawData.situacao_cadastral || 'N/A'}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Website</p>
+                {company.website || digitalPresence?.website ? (
+                  <a href={company.website || digitalPresence?.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    {company.website || digitalPresence?.website}
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground">N/A</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 3: Localização & Contato */}
+        <TabsContent value="localizacao" className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPinned className="h-5 w-5" />
+                  Endereço
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Logradouro</p>
+                  <p>{receitaData?.logradouro || rawData.logradouro || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Número</p>
+                  <p>{receitaData?.numero || rawData.numero || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Complemento</p>
+                  <p>{receitaData?.complemento || rawData.complemento || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Bairro</p>
+                  <p>{receitaData?.bairro || rawData.bairro || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">CEP</p>
+                  <p className="font-mono">{receitaData?.cep || rawData.cep || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Cidade</p>
+                  <p>{receitaData?.municipio || rawData.cidade || (company.location as any)?.city || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Microrregião</p>
+                  <p>{rawData.microrregiao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Mesorregião</p>
+                  <p>{rawData.mesorregiao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">UF</p>
+                  <p>{receitaData?.uf || rawData.uf || (company.location as any)?.state || 'N/A'}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Contatos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Assertividade</p>
+                  <p>{rawData.assertividade || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Melhor Telefone</p>
+                  <p className="font-mono">{rawData.melhor_telefone || receitaData?.telefone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Segundo Melhor Telefone</p>
+                  <p className="font-mono">{rawData.segundo_melhor_telefone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefones Alta Assertividade</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.telefones_alta_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefones Média Assertividade</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.telefones_media_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefones Baixa Assertividade</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.telefones_baixa_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">WhatsApp</p>
+                  <p className="font-mono">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</p>
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Departamentos</p>
+                  <ScrollArea className="h-24 border rounded p-2">
+                    <p className="text-xs">{rawData.emails_validados_departamentos || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Sócios</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.emails_validados_socios || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Decisores</p>
+                  <ScrollArea className="h-20 border rounded p-2">
+                    <p className="text-xs">{rawData.emails_validados_decisores || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Mapa */}
+          {receitaData?.cep && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Localização no Mapa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80 rounded-lg overflow-hidden border">
+                  <LocationMap
+                    address={receitaData?.logradouro}
+                    numero={receitaData?.numero}
+                    municipio={receitaData?.municipio}
+                    estado={receitaData?.uf}
+                    cep={receitaData?.cep}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           )}
+        </TabsContent>
 
-          {activeSection === 'digital' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    Presença Digital
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">Website e Domínio</h3>
-                      {company.website && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Website</p>
-                          <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {company.website}
-                          </a>
-                        </div>
-                      )}
-                      {company.domain && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Domínio</p>
-                          <p className="font-mono">{company.domain}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">Redes Sociais</h3>
-                      {digitalPresence?.linkedin && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">LinkedIn</p>
-                          <a href={digitalPresence.linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-2">
-                            <Globe className="h-4 w-4" />
-                            Ver perfil
-                          </a>
-                        </div>
-                      )}
-                      {digitalPresence?.facebook && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Facebook</p>
-                          <a href={digitalPresence.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            Ver perfil
-                          </a>
-                        </div>
-                      )}
-                      {digitalPresence?.twitter && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Twitter/X</p>
-                          <a href={digitalPresence.twitter} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            Ver perfil
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {company.digital_maturity_score && (
-                    <div className="pt-4 border-t">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Score de Maturidade Digital</p>
-                          <p className="text-sm text-muted-foreground">Avaliação geral da presença digital</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-bold text-primary">{company.digital_maturity_score.toFixed(1)}</p>
-                          <p className="text-sm text-muted-foreground">de 100</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {!company.website && !digitalPresence?.linkedin && !company.domain && (
-                    <p className="text-muted-foreground text-center py-8">Nenhuma informação de presença digital disponível</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'inteligencia' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Brain className="h-5 w-5" />
-                      Análise & Inteligência Artificial
-                    </CardTitle>
-                    <Button onClick={handleAnalyzeFit} disabled={isAnalyzingFit}>
-                      {isAnalyzingFit ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Analisar Fit TOTVS
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {fitSignal ? (
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Score de Fit</p>
-                        <p className="text-2xl font-bold text-primary">{fitSignal.score || 'N/A'}</p>
-                      </div>
-                      {fitSignal.reasoning && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Análise</p>
-                          <p className="text-sm">{fitSignal.reasoning}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">Clique em "Analisar Fit TOTVS" para gerar a análise</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'receita' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5" />
-                      Dados da Receita Federal
-                    </CardTitle>
-                    <Button onClick={handleUpdateReceita} disabled={isUpdatingReceita} variant="outline">
-                      {isUpdatingReceita ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                      Atualizar
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {receitaData ? (
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Situação</p>
-                        <Badge variant={receitaData.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                          {receitaData.situacao}
-                        </Badge>
-                      </div>
-                      {receitaData.atividade_principal && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Atividade Principal</p>
-                          <p>{receitaData.atividade_principal[0]?.text}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">Nenhum dado da Receita Federal disponível</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'actions' && (
-            <div className="space-y-6">
-              <DiagnosticUpload companyId={company.id} companyName={company.name} />
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <img src={apolloLogo} alt="Apollo" className="h-5 w-5" />
-                      Apollo.io
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Button onClick={handleTestApollo} disabled={isTestingApollo} className="w-full">
-                      {isTestingApollo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Buscar Decisores
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <img src={phantomLogo} alt="PhantomBuster" className="h-5 w-5" />
-                      PhantomBuster
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Button onClick={handleRunPhantom} disabled={isRunningPhantom} className="w-full">
-                      {isRunningPhantom ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Raspar LinkedIn
-                    </Button>
-                  </CardContent>
-                </Card>
+        {/* TAB 4: Atividade Econômica */}
+        <TabsContent value="atividade" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ActivityIcon className="h-5 w-5" />
+                Atividade Econômica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Setor Amigável</p>
+                  <p>{rawData.setor_amigavel || company.industry || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Atividade Principal</p>
+                  <p>{receitaData?.atividade_principal?.text || rawData.atividade_economica || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Código CNAE</p>
+                  <p className="font-mono">{receitaData?.atividade_principal?.code || rawData.cod_atividade_economica || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Regime Tributário</p>
+                  <p>{rawData.regime_tributario || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Importação</p>
+                  <Badge variant={rawData.importacao ? 'default' : 'secondary'}>
+                    {rawData.importacao ? 'Sim' : 'Não'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Exportação</p>
+                  <Badge variant={rawData.exportacao ? 'default' : 'secondary'}>
+                    {rawData.exportacao ? 'Sim' : 'Não'}
+                  </Badge>
+                </div>
               </div>
 
-              <Card className="border-destructive">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-destructive">
-                    <Trash2 className="h-5 w-5" />
-                    Zona de Perigo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="w-full"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir Empresa
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </main>
-      </div>
+              <Separator />
 
-      {/* Delete Confirmation Dialog */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Atividades Secundárias</p>
+                <ScrollArea className="h-32 border rounded p-3">
+                  {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 ? (
+                    receitaData.atividades_secundarias.map((ativ: any, i: number) => (
+                      <div key={i} className="mb-2">
+                        <p className="text-sm font-mono">{ativ.code}</p>
+                        <p className="text-xs text-muted-foreground">{ativ.text}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">{rawData.atividades_secundarias || 'N/A'}</p>
+                  )}
+                </ScrollArea>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Códigos NCM</p>
+                <ScrollArea className="h-40 border rounded p-3">
+                  <p className="text-xs whitespace-pre-wrap font-mono">{rawData.cod_ncms_primarios || 'N/A'}</p>
+                </ScrollArea>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Descrição NCMs</p>
+                <ScrollArea className="h-64 border rounded p-3">
+                  <p className="text-xs whitespace-pre-wrap">{rawData.ncms_primarios || 'N/A'}</p>
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 5: Estrutura Organizacional */}
+        <TabsContent value="estrutura" className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Funcionários
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Funcionários (Matriz + CNPJ)</p>
+                  <p className="text-2xl font-bold">{rawData.funcionarios_presumido_matriz_cnpj || company.employees || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Funcionários (Este CNPJ)</p>
+                  <p className="text-xl font-semibold">{rawData.funcionarios_presumido_este_cnpj || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">PAT - Funcionários</p>
+                  <p>{rawData.pat_funcionarios || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Qtd. Filiais</p>
+                  <p>{rawData.qtd_filiais || '0'}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5" />
+                  Sócios e Administradores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64 border rounded p-3">
+                  {receitaData?.qsa && receitaData.qsa.length > 0 ? (
+                    receitaData.qsa.map((socio: any, i: number) => (
+                      <div key={i} className="mb-3 pb-3 border-b last:border-0">
+                        <p className="font-semibold">{socio.nome}</p>
+                        <p className="text-sm text-muted-foreground">{socio.qual}</p>
+                      </div>
+                    ))
+                  ) : rawData.socios_administradores ? (
+                    <p className="text-sm whitespace-pre-wrap">{rawData.socios_administradores}</p>
+                  ) : (
+                    <p className="text-muted-foreground">Nenhum sócio cadastrado</p>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Decisores</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Decisores - Cargos</p>
+                  <ScrollArea className="h-32 border rounded p-3">
+                    <p className="text-xs whitespace-pre-wrap">{rawData.decisores_cargos || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Decisores - LinkedIn</p>
+                  <ScrollArea className="h-32 border rounded p-3">
+                    <p className="text-xs whitespace-pre-wrap break-all">{rawData.decisores_linkedin || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Colaboradores</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Colaboradores - Cargos</p>
+                  <ScrollArea className="h-32 border rounded p-3">
+                    <p className="text-xs whitespace-pre-wrap">{rawData.colaboradores_cargos || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Colaboradores - LinkedIn</p>
+                  <ScrollArea className="h-32 border rounded p-3">
+                    <p className="text-xs whitespace-pre-wrap break-all">{rawData.colaboradores_linkedin || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Decisores cadastrados no sistema */}
+          {decisors.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Decisores Cadastrados ({decisors.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3">
+                  {decisors.map((dec: any) => (
+                    <div key={dec.id} className="border rounded p-3">
+                      <p className="font-semibold">{dec.name}</p>
+                      <p className="text-sm text-muted-foreground">{dec.title}</p>
+                      {dec.email && <p className="text-xs">{dec.email}</p>}
+                      {dec.phone && <p className="text-xs">{dec.phone}</p>}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB 6: Financeiro */}
+        <TabsContent value="financeiro" className="space-y-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Capital Social</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xl font-bold">
+                  {receitaData?.capital_social || rawData.capital_social
+                    ? `R$ ${parseFloat(receitaData?.capital_social || rawData.capital_social).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : 'N/A'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Recebimentos Governo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xl font-bold">
+                  {rawData.recebimentos_governo_federal
+                    ? `R$ ${parseFloat(rawData.recebimentos_governo_federal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : 'N/A'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Porte</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{rawData.enquadramento_porte || receitaData?.porte || rawData.porte_estimado || 'N/A'}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Faturamento (Matriz + CNPJ)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{rawData.faturamento_presumido_matriz_cnpj || 'N/A'}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Faturamento (Este CNPJ)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{rawData.faturamento_presumido_este_cnpj || 'N/A'}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Crescimento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge>{rawData.crescimento_empresa || 'Estável'}</Badge>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Separator />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                Dívidas e Débitos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">% Dívidas CNPJ / Faturamento</p>
+                  <p className="text-lg font-semibold">{rawData.perc_dividas_cnpj_sobre_faturamento || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">% Dívidas CNPJ + Sócios / Faturamento</p>
+                  <p className="text-lg font-semibold">{rawData.perc_dividas_cnpj_socios_sobre_faturamento || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Dívidas CNPJ com União</p>
+                  <p className="text-lg font-semibold text-red-600">{rawData.total_dividas_cnpj_uniao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Dívidas CNPJ + Sócios com União</p>
+                  <p className="text-lg font-semibold text-red-600">{rawData.total_dividas_cnpj_socios_uniao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas Gerais CNPJ</p>
+                  <p>{rawData.dividas_gerais_cnpj_uniao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas Gerais CNPJ + Sócios</p>
+                  <p>{rawData.dividas_gerais_cnpj_socios_uniao || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas FGTS (CNPJ)</p>
+                  <p>{rawData.dividas_cnpj_fgts || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas FGTS (CNPJ + Sócios)</p>
+                  <p>{rawData.dividas_cnpj_socios_fgts || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas Previdência (CNPJ)</p>
+                  <p>{rawData.dividas_cnpj_previdencia || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dívidas Previdência (CNPJ + Sócios)</p>
+                  <p>{rawData.dividas_cnpj_socios_previdencia || 'N/A'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 7: Presença Digital */}
+        <TabsContent value="digital" className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Websites
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Sites Encontrados</p>
+                  <ScrollArea className="h-24 border rounded p-3">
+                    <p className="text-sm whitespace-pre-wrap break-all">{rawData.sites || digitalPresence?.website || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Melhor Site</p>
+                  {rawData.melhor_site || digitalPresence?.website ? (
+                    <a href={rawData.melhor_site || digitalPresence?.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                      {rawData.melhor_site || digitalPresence?.website}
+                    </a>
+                  ) : (
+                    <p className="text-muted-foreground">N/A</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Segundo Melhor Site</p>
+                  {rawData.segundo_melhor_site ? (
+                    <a href={rawData.segundo_melhor_site} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                      {rawData.segundo_melhor_site}
+                    </a>
+                  ) : (
+                    <p className="text-muted-foreground">N/A</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Redes Sociais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">WhatsApp</span>
+                  <span className="font-mono text-sm">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</span>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Instagram</span>
+                  {rawData.instagram || digitalPresence?.instagram ? (
+                    <a href={rawData.instagram || digitalPresence?.instagram} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Link
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Facebook</span>
+                  {rawData.facebook || digitalPresence?.facebook ? (
+                    <a href={rawData.facebook || digitalPresence?.facebook} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Link
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">LinkedIn</span>
+                  {rawData.linkedin || digitalPresence?.linkedin ? (
+                    <a href={rawData.linkedin || digitalPresence?.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Link
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Twitter</span>
+                  {rawData.twitter || digitalPresence?.twitter ? (
+                    <a href={rawData.twitter || digitalPresence?.twitter} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Link
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">YouTube</span>
+                  {rawData.youtube || digitalPresence?.youtube ? (
+                    <a href={rawData.youtube || digitalPresence?.youtube} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Link
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Outras Redes</span>
+                  <span className="text-xs">{rawData.outras || 'N/A'}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tecnologias e Ferramentas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Tecnologias</p>
+                <ScrollArea className="h-32 border rounded p-3">
+                  <p className="text-sm whitespace-pre-wrap">{rawData.tecnologias || digitalPresence?.technologies?.join(', ') || 'N/A'}</p>
+                </ScrollArea>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Ferramentas</p>
+                <ScrollArea className="h-32 border rounded p-3">
+                  <p className="text-sm whitespace-pre-wrap">{rawData.ferramentas || 'N/A'}</p>
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-24 border rounded p-3">
+                  <p className="text-sm">{rawData.tags || company.tags?.join(', ') || 'N/A'}</p>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Notas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-24 border rounded p-3">
+                  <p className="text-sm">{rawData.notas || 'N/A'}</p>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* TAB 8: Inteligência e Análise */}
+        <TabsContent value="inteligencia" className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Score Digital</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary">
+                  {company.digital_maturity_score?.toFixed(1) || 'N/A'}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Nível de Atividade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge>{rawData.nivel_atividade || 'N/A'}</Badge>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Classificação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{company.classification || 'N/A'}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Insights Capturados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(company as any)?.insights && (company as any).insights.length > 0 ? (
+                <div className="space-y-2">
+                  {(company as any).insights.map((insight: any) => (
+                    <div key={insight.id} className="border rounded p-3">
+                      <p className="font-semibold">{insight.insight_type}</p>
+                      <p className="text-sm text-muted-foreground">{insight.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Nenhum insight capturado ainda</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 9: Receita Federal */}
+        <TabsContent value="receita" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5" />
+                Dados da Receita Federal
+              </CardTitle>
+              <CardDescription>Informações oficiais da RFB</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {receitaData ? (
+                <ScrollArea className="h-96 border rounded p-4">
+                  <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(receitaData, null, 2)}</pre>
+                </ScrollArea>
+              ) : (
+                <p className="text-muted-foreground">Nenhum dado da Receita Federal disponível</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 10: Ações */}
+        <TabsContent value="actions" className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Enriquecimento de Dados</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  onClick={handleSmartRefresh}
+                  disabled={isSmartRefreshing}
+                  className="w-full"
+                >
+                  {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Atualização Inteligente (360°)
+                </Button>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleTestApollo}
+                    disabled={isTestingApollo}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {isTestingApollo ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <img src={apolloLogo} className="h-4 w-4 mr-2" alt="Apollo" />}
+                    Apollo
+                  </Button>
+
+                  <Button
+                    onClick={handleRunPhantom}
+                    disabled={isRunningPhantom}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {isRunningPhantom ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <img src={phantomLogo} className="h-4 w-4 mr-2" alt="Phantom" />}
+                    Phantom
+                  </Button>
+                </div>
+
+                <DecisionMakerAddDialog companyId={id!} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="w-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Empresa
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir <strong>{company?.name}</strong>?
-              Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1082,10 +1142,9 @@ export default function CompanyDetailPage() {
 
                   if (error) throw error;
 
-                  toast.success('Empresa excluída com sucesso');
+                  toast.success('Empresa excluída');
                   navigate('/companies');
                 } catch (error) {
-                  console.error('Error deleting company:', error);
                   toast.error('Erro ao excluir empresa');
                 }
               }}
@@ -1096,6 +1155,6 @@ export default function CompanyDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }
