@@ -303,7 +303,7 @@ export function AppSidebar() {
             <Collapsible key={group.label} className="group/group mb-1" defaultOpen={isGroupActive}>
               <SidebarGroup className="px-2">
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-2 px-3 mb-1 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
+                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-3 px-3 mb-1 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
                     <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
                       <group.icon className="h-5 w-5 text-sidebar-primary" />
                     </div>
