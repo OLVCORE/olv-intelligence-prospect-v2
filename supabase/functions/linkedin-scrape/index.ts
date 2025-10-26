@@ -43,27 +43,41 @@ serve(async (req) => {
     }
 
     // Iniciar PhantomBuster
+    const requestBody = {
+      id: phantomAgentId,
+      argument: {
+        sessionCookie: phantomSessionCookie,
+        profileUrls: [linkedin_url]
+      }
+    };
+    
+    console.log('[LinkedIn Scrape] Request body:', JSON.stringify(requestBody, null, 2));
+    
     const response = await fetch('https://api.phantombuster.com/api/v2/agents/launch', {
       method: 'POST',
       headers: {
         'X-Phantombuster-Key': phantomApiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        id: phantomAgentId,
-        argument: {
-          sessionCookie: phantomSessionCookie,
-          profileUrls: [linkedin_url]
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const status = response.status;
-      console.error('[LinkedIn Scrape] Erro PhantomBuster:', status);
-      const msg = status === 401
-        ? 'Credenciais inválidas ou sessão do LinkedIn expirada (401). Atualize o Session Cookie e confirme o Agent ID.'
-        : `Falha ao iniciar PhantomBuster (${status}).`;
+      const errorText = await response.text();
+      console.error('[LinkedIn Scrape] Erro PhantomBuster:', status, errorText);
+      
+      let msg = '';
+      if (status === 400) {
+        msg = `Configuração inválida (400). Verifique: 1) Agent ID correto, 2) Session Cookie válido, 3) Formato dos argumentos. Detalhes: ${errorText}`;
+      } else if (status === 401) {
+        msg = 'API Key inválida (401). Atualize o PHANTOMBUSTER_API_KEY.';
+      } else if (status === 404) {
+        msg = 'Agent não encontrado (404). Confirme o PHANTOMBUSTER_AGENT_ID.';
+      } else {
+        msg = `Falha ao iniciar PhantomBuster (${status}): ${errorText}`;
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
