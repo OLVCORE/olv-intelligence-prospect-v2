@@ -1,9 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, XCircle, Play, ExternalLink } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Play, ExternalLink, Loader2, Briefcase, Search, Globe, Users, ChevronDown } from "lucide-react";
 import { useTOTVSDetection } from "@/hooks/useTOTVSDetection";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 
 interface TOTVSDetectionCardProps {
   company: {
@@ -19,6 +22,7 @@ interface TOTVSDetectionCardProps {
 
 export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
   const { mutate: detectTOTVS, isPending } = useTOTVSDetection();
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-destructive";
@@ -46,30 +50,107 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
     });
   };
 
+  const sourceIcons: Record<string, any> = {
+    'linkedin_jobs': { icon: Briefcase, color: 'text-blue-500', label: '💼 LinkedIn Jobs' },
+    'google_news': { icon: Search, color: 'text-green-500', label: '📰 Google News' },
+    'website_scraping': { icon: Globe, color: 'text-purple-500', label: '🌐 Website' },
+    'linkedin_profiles': { icon: Users, color: 'text-orange-500', label: '👤 LinkedIn Profiles' }
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="flex items-center gap-2">
               Detecção de Uso de TOTVS
               {company.is_disqualified && <XCircle className="h-5 w-5 text-destructive" />}
             </CardTitle>
             <CardDescription>
-              Sistema multi-fonte para detectar se a empresa já usa TOTVS
+              Sistema multi-fonte conectado às APIs reais de busca web
             </CardDescription>
           </div>
-          <Button
-            onClick={handleDetect}
-            disabled={isPending}
-            size="sm"
-            variant={company.totvs_detection_score === undefined ? "default" : "outline"}
-          >
-            <Play className="h-4 w-4 mr-2" />
-            {isPending ? 'Detectando...' : company.totvs_detection_score === undefined ? 'Iniciar Detecção' : 'Atualizar'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {isPending && (
+              <Badge variant="outline" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Consultando APIs...
+              </Badge>
+            )}
+            <Button
+              onClick={handleDetect}
+              disabled={isPending}
+              size="sm"
+              variant={company.totvs_detection_score === undefined ? "default" : "outline"}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {isPending ? 'Buscando em 4 fontes' : company.totvs_detection_score === undefined ? '🚀 Iniciar' : '🔄 Atualizar'}
+            </Button>
+          </div>
         </div>
+
+        {/* How it works - Collapsible */}
+        <Collapsible open={showExplanation} onOpenChange={setShowExplanation}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between mt-2 text-xs">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="h-3 w-3" />
+                Como funciona a detecção? (APIs conectadas)
+              </span>
+              <ChevronDown className={`h-3 w-3 transition-transform ${showExplanation ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <div className="bg-muted/50 rounded-lg p-3 space-y-3 text-xs">
+              <div className="flex items-start gap-2">
+                <Briefcase className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-blue-600">LinkedIn Jobs (40 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca vagas via <strong>Serper API</strong> com query: "{company.name}" + TOTVS/Protheus
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Search className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-green-600">Google News (30 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Procura notícias via <strong>Serper News API</strong>: "usa TOTVS", "cliente TOTVS", cases
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Globe className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-purple-600">Website Scraping (20 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Faz <strong>HTTP request direto</strong> ao site da empresa e varre o HTML buscando "totvs", "protheus"
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Users className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-orange-600">LinkedIn Profiles (10 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca via <strong>Serper API</strong> perfis de funcionários com skill/experiência em TOTVS
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <strong className="text-primary">✅ APIs Ativas:</strong>
+                <ul className="mt-1 space-y-0.5 ml-4 text-muted-foreground">
+                  <li>• Serper API (Google Search/News)</li>
+                  <li>• Web Scraping Direto (HTTPS/Fetch)</li>
+                  <li>• Supabase Database (armazenamento)</li>
+                </ul>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardHeader>
+
       <CardContent className="space-y-4">
         {company.totvs_detection_score !== undefined ? (
           <>
@@ -90,56 +171,82 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               </p>
             </div>
 
+            {/* Zero Score Alert */}
+            {company.totvs_detection_score === 0 && (
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  <strong>✅ Nenhuma evidência de uso de TOTVS encontrada!</strong>
+                  <p className="text-xs mt-1">
+                    As 4 fontes foram consultadas em tempo real via APIs (LinkedIn Jobs, Google News, Website, LinkedIn Profiles) 
+                    e não encontraram menções. <strong>Lead qualificado para prospecção! 🎯</strong>
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Disqualification Alert */}
             {company.is_disqualified && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <XCircle className="h-5 w-5 text-destructive mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-destructive">Lead Desqualificado Automaticamente</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Score ≥ 70 indica alta probabilidade de já usar TOTVS. Este lead foi automaticamente
-                      removido do pipeline ativo.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>⛔ Lead Desqualificado Automaticamente</strong>
+                  <p className="text-xs mt-1">
+                    Score ≥ 70 indica alta probabilidade de já usar TOTVS. Este lead foi automaticamente
+                    removido do pipeline ativo.
+                  </p>
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Detection Sources */}
-            {company.totvs_detection_sources && company.totvs_detection_sources.length > 0 && (
+            {company.totvs_detection_sources && company.totvs_detection_sources.length > 0 ? (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Fontes Detectadas ({company.totvs_detection_sources.length})</h4>
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Evidências Encontradas nas APIs ({company.totvs_detection_sources.length})
+                </h4>
                 <div className="space-y-2">
-                  {company.totvs_detection_sources.map((source: any, idx: number) => (
-                    <div key={idx} className="bg-muted/50 rounded-lg p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {source.source === 'linkedin_jobs' && '💼 LinkedIn Jobs'}
-                          {source.source === 'google_news' && '📰 Google News'}
-                          {source.source === 'website_scraping' && '🌐 Website'}
-                          {source.source === 'linkedin_profiles' && '👤 LinkedIn Profiles'}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          +{source.confidence} pts
-                        </Badge>
+                  {company.totvs_detection_sources.map((source: any, idx: number) => {
+                    const sourceConfig = sourceIcons[source.source];
+                    const IconComponent = sourceConfig?.icon || Search;
+                    
+                    return (
+                      <div key={idx} className="bg-muted/50 rounded-lg p-3 space-y-2 border border-border">
+                        <div className="flex items-start gap-3">
+                          <IconComponent className={`h-4 w-4 ${sourceConfig?.color || 'text-muted-foreground'} shrink-0 mt-0.5`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-sm font-medium">{sourceConfig?.label || source.source}</span>
+                              <Badge variant="destructive" className="text-xs">
+                                +{source.confidence} pts
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{source.evidence}</p>
+                            {source.url && (
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
+                              >
+                                🔗 Ver evidência na fonte original <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">{source.evidence}</p>
-                      {source.url && (
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
-                        >
-                          Ver fonte <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
-            )}
+            ) : company.totvs_detection_score === 0 ? (
+              <div className="text-center py-4 px-3 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-sm font-medium text-green-800">✅ Nenhuma fonte detectou uso de TOTVS</p>
+                <p className="text-xs text-green-700 mt-1">4 fontes consultadas via API em tempo real</p>
+              </div>
+            ) : null}
 
             {/* Last Check */}
             {company.totvs_last_checked_at && (
@@ -147,30 +254,31 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 Última verificação: {new Date(company.totvs_last_checked_at).toLocaleString('pt-BR')}
               </p>
             )}
-
-            {/* Scoring Explanation */}
-            <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Como funciona o Score
-              </h4>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• <strong>LinkedIn Jobs (40 pts):</strong> Vagas mencionam TOTVS/Protheus</li>
-                <li>• <strong>Google News (30 pts):</strong> Notícias sobre uso de TOTVS</li>
-                <li>• <strong>Website (20 pts):</strong> Site menciona TOTVS como parceiro</li>
-                <li>• <strong>LinkedIn Profiles (10 pts):</strong> Funcionários listam TOTVS como skill</li>
-                <li className="pt-1 border-t mt-2">
-                  <strong>Score ≥ 70:</strong> Auto-desqualifica (alta confiança)
-                </li>
-              </ul>
-            </div>
           </>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              Clique em "Iniciar Detecção" para verificar se esta empresa já usa TOTVS
-            </p>
+          <div className="text-center py-8 space-y-3">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
+            <div>
+              <p className="font-medium mb-2">Clique em "Iniciar" para buscar em tempo real:</p>
+              <div className="text-xs space-y-2 bg-muted/30 p-4 rounded-lg text-left max-w-md mx-auto">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-3 w-3 text-blue-500" />
+                  <span>LinkedIn Jobs via Serper API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Search className="h-3 w-3 text-green-500" />
+                  <span>Google News via Serper API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-3 w-3 text-purple-500" />
+                  <span>Website Scraping Direto (HTTPS)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-3 w-3 text-orange-500" />
+                  <span>LinkedIn Profiles via Serper API</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

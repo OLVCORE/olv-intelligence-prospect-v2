@@ -1,11 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Briefcase, Newspaper, Users, Search, ExternalLink, Play } from "lucide-react";
+import { TrendingUp, Briefcase, Newspaper, Users, Search, ExternalLink, Play, Loader2, AlertCircle, ChevronDown } from "lucide-react";
 import { useIntentSignals, useDetectIntentSignals, useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useState } from "react";
 
 interface IntentSignalsCardProps {
   company: {
@@ -20,39 +23,29 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
   const { data: signals = [], isLoading } = useIntentSignals(company.id);
   const { data: intentScore = 0 } = useCalculateIntentScore(company.id);
   const { mutate: detectSignals, isPending } = useDetectIntentSignals();
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const getSignalIcon = (type: string) => {
-    switch (type) {
-      case 'job_posting':
-        return <Briefcase className="h-4 w-4" />;
-      case 'news':
-        return <Newspaper className="h-4 w-4" />;
-      case 'growth':
-        return <TrendingUp className="h-4 w-4" />;
-      case 'linkedin_activity':
-        return <Users className="h-4 w-4" />;
-      case 'search_activity':
-        return <Search className="h-4 w-4" />;
-      default:
-        return null;
-    }
+    const icons: Record<string, any> = {
+      'job_posting': { icon: Briefcase, color: 'text-blue-500' },
+      'news': { icon: Newspaper, color: 'text-green-500' },
+      'growth': { icon: TrendingUp, color: 'text-purple-500' },
+      'linkedin_activity': { icon: Users, color: 'text-orange-500' },
+      'search_activity': { icon: Search, color: 'text-pink-500' }
+    };
+    const config = icons[type] || { icon: Search, color: 'text-muted-foreground' };
+    return <config.icon className={`h-4 w-4 ${config.color}`} />;
   };
 
   const getSignalLabel = (type: string) => {
-    switch (type) {
-      case 'job_posting':
-        return 'Vaga Aberta';
-      case 'news':
-        return 'Notícia';
-      case 'growth':
-        return 'Crescimento';
-      case 'linkedin_activity':
-        return 'LinkedIn';
-      case 'search_activity':
-        return 'Pesquisa';
-      default:
-        return type;
-    }
+    const labels: Record<string, string> = {
+      'job_posting': '💼 Vaga Aberta',
+      'news': '📰 Notícia',
+      'growth': '📊 Crescimento',
+      'linkedin_activity': '👥 LinkedIn',
+      'search_activity': '🔍 Pesquisa'
+    };
+    return labels[type] || type;
   };
 
   const getScoreColor = (score: number) => {
@@ -80,26 +73,104 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="flex items-center gap-2">
               Sinais de Intenção de Compra
               {intentScore >= 70 && <span className="text-green-600">🔥</span>}
             </CardTitle>
             <CardDescription>
-              Detecta sinais que indicam momento ideal para prospecção
+              Detecta sinais em tempo real via APIs de busca e análise de dados
             </CardDescription>
           </div>
-          <Button
-            onClick={handleDetect}
-            disabled={isPending || isLoading}
-            size="sm"
-            variant={signals.length === 0 ? "default" : "outline"}
-          >
-            <Play className="h-4 w-4 mr-2" />
-            {isPending ? 'Detectando...' : signals.length === 0 ? 'Iniciar Detecção' : 'Atualizar'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {isPending && (
+              <Badge variant="outline" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Buscando sinais...
+              </Badge>
+            )}
+            <Button
+              onClick={handleDetect}
+              disabled={isPending || isLoading}
+              size="sm"
+              variant={signals.length === 0 ? "default" : "outline"}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {isPending ? 'Buscando em 5 fontes' : signals.length === 0 ? '🚀 Iniciar' : '🔄 Atualizar'}
+            </Button>
+          </div>
         </div>
+
+        {/* How it works - Collapsible */}
+        <Collapsible open={showExplanation} onOpenChange={setShowExplanation}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between mt-2 text-xs">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="h-3 w-3" />
+                Como funciona a detecção? (APIs conectadas)
+              </span>
+              <ChevronDown className={`h-3 w-3 transition-transform ${showExplanation ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <div className="bg-muted/50 rounded-lg p-3 space-y-3 text-xs">
+              <div className="flex items-start gap-2">
+                <Briefcase className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-blue-600">Job Postings (30 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca vagas via <strong>Serper API</strong>: "{company.name}" + Analista ERP, CIO, Diretor TI
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Newspaper className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-green-600">News (25 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Procura notícias via <strong>Serper News API</strong>: expansão, IPO, transformação digital, investimento
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <TrendingUp className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-purple-600">Growth Indicators (10 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Lê dados da <strong>tabela Econodata</strong>: crescimento de receita &gt;20%, contratações &gt;50
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Users className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-orange-600">LinkedIn Activity (15 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca via <strong>Serper API</strong> em linkedin.com/company: posts sobre modernização, investimento em TI
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Search className="h-4 w-4 text-pink-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-pink-600">Search Activity (20 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca via <strong>Serper API</strong>: "{company.name}" + "software gestão", "ERP", "alternativas SAP"
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <strong className="text-primary">✅ APIs Ativas:</strong>
+                <ul className="mt-1 space-y-0.5 ml-4 text-muted-foreground">
+                  <li>• Serper API (Google Search/News/LinkedIn)</li>
+                  <li>• Supabase Database (Econodata, storage)</li>
+                </ul>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardHeader>
+
       <CardContent className="space-y-4">
         {/* Intent Score */}
         <div className="space-y-2">
@@ -114,21 +185,27 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
             </span>
           </div>
           {intentScore >= 70 && (
-            <p className="text-sm text-green-600 font-medium">
-              ⚡ Momento IDEAL para contato! Esta empresa está ativamente buscando soluções.
-            </p>
+            <Alert className="bg-green-50 border-green-200">
+              <AlertDescription className="text-green-800">
+                <strong>⚡ Momento IDEAL para contato!</strong>
+                <p className="text-xs mt-1">
+                  Esta empresa está ativamente buscando soluções. Os sinais foram detectados em tempo real via APIs.
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
 
         {/* Signals List */}
         {signals.length > 0 ? (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">
-              Sinais Detectados ({signals.length})
+            <h4 className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Sinais Detectados via APIs ({signals.length})
             </h4>
             <div className="space-y-2">
               {signals.map((signal) => (
-                <div key={signal.id} className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div key={signal.id} className="bg-muted/50 rounded-lg p-3 space-y-2 border border-border">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {getSignalIcon(signal.signal_type)}
@@ -137,7 +214,7 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                         {signal.confidence_score} pts
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(signal.detected_at), { 
                         addSuffix: true,
                         locale: ptBR,
@@ -145,44 +222,56 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                     </span>
                   </div>
                   <p className="text-sm font-medium">{signal.signal_title}</p>
-                  <p className="text-xs text-muted-foreground">{signal.signal_description}</p>
-                  {signal.signal_url && (
-                    <a
-                      href={signal.signal_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
-                    >
-                      Ver fonte <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
+                  <p className="text-xs text-muted-foreground leading-relaxed">{signal.signal_description}</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Badge variant="outline" className="text-xs">
+                      Fonte: {signal.signal_source}
+                    </Badge>
+                    {signal.signal_url && (
+                      <a
+                        href={signal.signal_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        🔗 Ver na fonte <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        ) : !isLoading && (
-          <div className="text-center py-8 space-y-2">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              Nenhum sinal detectado ainda. Clique em "Iniciar Detecção" para buscar.
-            </p>
+        ) : !isLoading && signals.length === 0 && intentScore === 0 ? (
+          <div className="text-center py-8 space-y-3">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
+            <div>
+              <p className="font-medium mb-2">Clique em "Iniciar" para buscar sinais em tempo real:</p>
+              <div className="text-xs space-y-2 bg-muted/30 p-4 rounded-lg text-left max-w-md mx-auto">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-3 w-3 text-blue-500" />
+                  <span>Vagas abertas via Serper API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Newspaper className="h-3 w-3 text-green-500" />
+                  <span>Notícias via Serper News API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3 w-3 text-purple-500" />
+                  <span>Crescimento via Econodata DB</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-3 w-3 text-orange-500" />
+                  <span>Atividade LinkedIn via Serper</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Search className="h-3 w-3 text-pink-500" />
+                  <span>Pesquisas relacionadas via Serper</span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Signal Types Explanation */}
-        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-          <h4 className="text-sm font-medium">Tipos de Sinais (Score Ponderado)</h4>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• <strong>💼 Vagas Abertas (30 pts):</strong> TI, ERP, Analista Sistemas</li>
-            <li>• <strong>📰 Notícias (25 pts):</strong> Expansão, IPO, Transformação Digital</li>
-            <li>• <strong>📊 Crescimento (10 pts):</strong> Receita &gt;20%, Contratações &gt;50</li>
-            <li>• <strong>👥 LinkedIn (15 pts):</strong> Posts sobre modernização, investimento</li>
-            <li>• <strong>🔍 Pesquisas (20 pts):</strong> "ERP", "Software Gestão", "Alternativas SAP"</li>
-            <li className="pt-1 border-t mt-2">
-              <strong>Score ≥ 70:</strong> HOT LEAD 🔥 (momento ideal!)
-            </li>
-          </ul>
-        </div>
+        ) : null}
       </CardContent>
     </Card>
   );
