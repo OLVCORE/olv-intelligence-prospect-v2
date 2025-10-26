@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Building2, Users, FileText, BarChart3, Globe, Shield, 
   Calendar, MapPin, DollarSign, Briefcase, AlertCircle,
-  CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw, Target
+  CheckCircle, TrendingUp, Activity, Trash2, Loader2, RefreshCw, Target,
+  UserPlus, TestTube
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -957,19 +958,51 @@ export default function CompanyDetailPage() {
         {/* Decisores Tab */}
         <TabsContent value="decisores" className="space-y-6">
           <Card>
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Decisores Mapeados
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {id && (
-                  <DecisionMakerAddDialog companyId={id} />
-                )}
-                <Button variant="outline" size="sm" onClick={handleTestApollo} disabled={isTestingApollo}>
-                  {isTestingApollo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  Testar Apollo
-                </Button>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Decisores Mapeados
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  {id && (
+                    <DecisionMakerAddDialog
+                      companyId={id}
+                      trigger={
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <UserPlus className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Adicionar decisor manualmente</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      }
+                    />
+                  )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleTestApollo}
+                          disabled={isTestingApollo}
+                          className="h-8 w-8"
+                        >
+                          {isTestingApollo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <TestTube className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Testar conexão Apollo</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1003,18 +1036,9 @@ export default function CompanyDetailPage() {
               ) : (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Nenhum decisor identificado ainda. Você pode adicioná-los manualmente.
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum decisor identificado ainda. Você pode adicioná-los manualmente usando o botão acima.
                   </p>
-                  {id && (
-                    <div className="flex items-center justify-center gap-2">
-                      <DecisionMakerAddDialog companyId={id} />
-                      <Button variant="outline" size="sm" onClick={handleTestApollo} disabled={isTestingApollo}>
-                        {isTestingApollo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                        Testar Apollo
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>

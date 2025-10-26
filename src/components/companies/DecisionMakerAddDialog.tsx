@@ -12,7 +12,7 @@ interface Props {
   onAdded?: () => void;
 }
 
-export default function DecisionMakerAddDialog({ companyId, onAdded }: Props) {
+export default function DecisionMakerAddDialog({ companyId, onAdded, trigger }: Props & { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
@@ -64,9 +64,11 @@ export default function DecisionMakerAddDialog({ companyId, onAdded }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" /> Adicionar Decisor
-        </Button>
+        {trigger || (
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-2" /> Adicionar Decisor
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
