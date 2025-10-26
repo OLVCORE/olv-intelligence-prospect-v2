@@ -64,14 +64,22 @@ serve(async (req) => {
 
         if (jobsResponse.ok) {
           const jobsData = await jobsResponse.json();
-          const hasJobsMention = jobsData.organic?.some((result: any) => 
+          
+          // Filtrar domínios da própria TOTVS
+          const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com', 'loja.totvs.com'];
+          const validResults = jobsData.organic?.filter((result: any) => {
+            const url = result.link?.toLowerCase() || '';
+            return !totvsOwnDomains.some(domain => url.includes(domain));
+          });
+          
+          const hasJobsMention = validResults?.some((result: any) => 
             result.snippet?.toLowerCase().includes('totvs') ||
             result.snippet?.toLowerCase().includes('protheus') ||
             result.title?.toLowerCase().includes('totvs')
           );
 
           if (hasJobsMention) {
-            const evidence = jobsData.organic[0];
+            const evidence = validResults[0];
             sources.push({
               source: 'linkedin_jobs',
               confidence: 40,
@@ -107,10 +115,18 @@ serve(async (req) => {
 
         if (newsResponse.ok) {
           const newsData = await newsResponse.json();
-          const hasNewsMention = newsData.news?.length > 0;
+          
+          // Filtrar domínios da própria TOTVS
+          const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com', 'loja.totvs.com'];
+          const validNews = newsData.news?.filter((article: any) => {
+            const url = article.link?.toLowerCase() || '';
+            return !totvsOwnDomains.some(domain => url.includes(domain));
+          });
+          
+          const hasNewsMention = validNews?.length > 0;
 
           if (hasNewsMention) {
-            const evidence = newsData.news[0];
+            const evidence = validNews[0];
             sources.push({
               source: 'google_news',
               confidence: 30,
@@ -181,7 +197,15 @@ serve(async (req) => {
 
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
-          const hasProfileMention = profileData.organic?.some((result: any) => 
+          
+          // Filtrar domínios da própria TOTVS
+          const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com', 'loja.totvs.com'];
+          const validResults = profileData.organic?.filter((result: any) => {
+            const url = result.link?.toLowerCase() || '';
+            return !totvsOwnDomains.some(domain => url.includes(domain));
+          });
+          
+          const hasProfileMention = validResults?.some((result: any) => 
             result.snippet?.toLowerCase().includes('totvs')
           );
 
@@ -190,7 +214,7 @@ serve(async (req) => {
               source: 'linkedin_profiles',
               confidence: 10,
               evidence: 'Funcionário(s) listam TOTVS como skill/experiência no LinkedIn',
-              url: profileData.organic[0].link,
+              url: validResults[0].link,
               detected_at: new Date().toISOString(),
             });
             totalScore += 10;
