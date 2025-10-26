@@ -41,6 +41,10 @@ export function useCrossModuleData<T = any>(options: UseCrossModuleDataOptions) 
       return data?.data as T | null;
     },
     enabled: !!(companyId || accountStrategyId),
-    staleTime: 5000, // Revalidar a cada 5 segundos
+    staleTime: 60_000, // 1 min
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
   });
 }

@@ -35,6 +35,7 @@ export function useModuleDraft<T extends Record<string, any>>(
   const [isLoading, setIsLoading] = useState(true);
 const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 const initialDataRef = useRef(initialData);
+const loadingRef = useRef(false);
 
   const { module, companyId, accountStrategyId, title, autoSaveInterval = 5000 } = options;
 
@@ -42,8 +43,8 @@ const initialDataRef = useRef(initialData);
 
   // Load data from backend
   const load = useCallback(async () => {
-    if (!user) return;
-    
+    if (!user || loadingRef.current) return;
+    loadingRef.current = true;
     setIsLoading(true);
     try {
       let query = supabase
@@ -59,6 +60,7 @@ const initialDataRef = useRef(initialData);
       } else {
         // Se não tem nem accountStrategyId nem companyId, não carrega nada
         setIsLoading(false);
+        loadingRef.current = false;
         return;
       }
 
@@ -83,6 +85,7 @@ const initialDataRef = useRef(initialData);
       });
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   }, [user, module, accountStrategyId, companyId, toast]);
 
