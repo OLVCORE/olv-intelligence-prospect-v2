@@ -22,12 +22,13 @@ interface QuoteConfiguratorProps {
 export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated }: QuoteConfiguratorProps) {
   const { data: products, isLoading } = useProductCatalog();
   const createQuote = useCreateQuote();
-const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
+  const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({});
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
 
-  const { data: draftData, hasUnsavedChanges, save, updateData } = useModuleDraft<{ selectedProducts: QuoteProduct[] }>(
-    { selectedProducts: [] },
+  const { data: draftData, hasUnsavedChanges, save, updateData } = useModuleDraft<{ selectedProducts: QuoteProduct[]; priceOverrides: Record<string, number> }>(
+    { selectedProducts: [], priceOverrides: {} },
     {
       module: 'cpq',
       companyId,
@@ -38,14 +39,15 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
   );
 
   useEffect(() => {
-    if (draftData?.selectedProducts) {
-      setSelectedProducts(draftData.selectedProducts);
+    if (draftData) {
+      if (draftData.selectedProducts) setSelectedProducts(draftData.selectedProducts);
+      if (draftData.priceOverrides) setPriceOverrides(draftData.priceOverrides);
     }
   }, [draftData]);
 
   useEffect(() => {
-    updateData(prev => ({ ...(prev || { selectedProducts: [] }), selectedProducts }));
-  }, [selectedProducts, updateData]);
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts, priceOverrides }));
+  }, [selectedProducts, priceOverrides, updateData]);
 
   const addProduct = (product: Product) => {
     const existing = selectedProducts.find(p => p.sku === product.sku);
@@ -54,14 +56,16 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
       return;
     }
 
+    const effectivePrice = priceOverrides[product.sku] ?? product.base_price;
+
     const newProduct: QuoteProduct = {
       id: product.id,
       sku: product.sku,
       name: product.name,
       quantity: product.min_quantity,
-      base_price: product.base_price,
+      base_price: effectivePrice,
       discount: 0,
-      final_price: product.base_price * product.min_quantity,
+      final_price: effectivePrice * product.min_quantity,
     };
 
     setSelectedProducts([...selectedProducts, newProduct]);
@@ -103,8 +107,16 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
     setEditingPrice(currentPrice);
   };
 
-  const saveEditedPrice = (sku: string) => {
-    updatePrice(sku, editingPrice);
+  const saveEditedPrice = async (sku: string) => {
+    // Atualiza localmente e no draft
+    const newSelected = selectedProducts.map(p =>
+      p.sku === sku
+        ? { ...p, base_price: editingPrice, final_price: editingPrice * p.quantity * (1 - p.discount / 100) }
+        : p
+    );
+    setSelectedProducts(newSelected);
+    updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides }));
+    await save();
     setEditingPriceId(null);
     toast.success('Preço atualizado');
   };
@@ -136,6 +148,8 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
       currency: 'BRL',
     }).format(value);
   };
+
+  const getDisplayPrice = (p: Product) => priceOverrides[p.sku] ?? p.base_price;
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -197,8 +211,23 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          // Update product in catalog temporarily for this session
+                        onClick={async () => {
+                          // Salva preço sobrescrito no catálogo (apenas sessão/draft)
+                          setPriceOverrides(prev => ({ ...prev, [product.sku]: editingPrice }));
+                          // Se já foi adicionado, atualiza também o item selecionado
+                          const alreadySelected = selectedProducts.some(p => p.sku === product.sku);
+                          let newSelected = selectedProducts;
+                          if (alreadySelected) {
+                            newSelected = selectedProducts.map(p =>
+                              p.sku === product.sku
+                                ? { ...p, base_price: editingPrice, final_price: editingPrice * p.quantity * (1 - p.discount / 100) }
+                                : p
+                            );
+                            setSelectedProducts(newSelected);
+                          }
+                          // Persistir no draft imediatamente
+                          updateData(prev => ({ ...(prev || { selectedProducts: [], priceOverrides: {} }), selectedProducts: newSelected, priceOverrides: { ...(prev?.priceOverrides || {}), [product.sku]: editingPrice } }));
+                          await save();
                           setEditingPriceId(null);
                           toast.success('Preço atualizado no catálogo');
                         }}
@@ -210,14 +239,14 @@ const [selectedProducts, setSelectedProducts] = useState<QuoteProduct[]>([]);
                   ) : (
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-sm font-semibold text-primary">
-                        {formatCurrency(product.base_price)}
+                        {formatCurrency(getDisplayPrice(product))}
                       </p>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => {
                           setEditingPriceId(`catalog-${product.sku}`);
-                          setEditingPrice(product.base_price);
+                          setEditingPrice(getDisplayPrice(product));
                         }}
                         className="h-6 w-6 p-0"
                       >
