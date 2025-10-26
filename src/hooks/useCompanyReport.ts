@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface CompanyReport {
-  // ===== IDENTIFICAÇÃO =====
+  // ===== IDENTIFICAÇÃO (7 campos) =====
   identification: {
     cnpj: string;
     razao_social: string;
@@ -19,7 +19,7 @@ export interface CompanyReport {
     domain?: string;
   };
 
-  // ===== LOCALIZAÇÃO & CONTATO =====
+  // ===== LOCALIZAÇÃO & CONTATO (15 campos) =====
   location: {
     logradouro: string;
     numero: string;
@@ -33,8 +33,9 @@ export interface CompanyReport {
     pais: string;
   };
 
+  // ===== CONTATOS (24 campos telefone + email) =====
   contacts: {
-    // Telefones
+    // Telefones (16 campos)
     assertividade?: string;
     melhor_telefone?: string;
     segundo_melhor_telefone?: string;
@@ -49,7 +50,7 @@ export interface CompanyReport {
     pat_telefone?: string;
     whatsapp?: string;
 
-    // E-mails
+    // E-mails (11 campos)
     emails_validados_departamentos?: string[];
     emails_validados_socios?: string[];
     emails_validados_decisores?: string[];
@@ -59,7 +60,7 @@ export interface CompanyReport {
     emails_publicos?: string[];
   };
 
-  // ===== ATIVIDADE ECONÔMICA =====
+  // ===== ATIVIDADE ECONÔMICA (10 campos) =====
   activity: {
     setor_amigavel: string;
     setor?: string;
@@ -75,9 +76,9 @@ export interface CompanyReport {
     regime_tributario?: string;
   };
 
-  // ===== ESTRUTURA ORGANIZACIONAL =====
+  // ===== ESTRUTURA ORGANIZACIONAL (13 campos) =====
   structure: {
-    // Funcionários
+    // Funcionários (7 campos)
     funcionarios_presumido_matriz_cnpj?: number;
     funcionarios_presumido_este_cnpj?: number;
     pat_funcionarios?: number;
@@ -85,10 +86,10 @@ export interface CompanyReport {
     faixa_funcionarios: string;
     porte_estimado?: string;
 
-    // Filiais
+    // Filiais (1 campo)
     qtd_filiais?: number;
 
-    // Pessoas
+    // Pessoas (5 campos)
     socios_administradores?: Array<{
       nome: string;
       qualificacao: string;
@@ -102,8 +103,9 @@ export interface CompanyReport {
     decisores_por_departamento?: Record<string, number>;
   };
 
-  // ===== FINANCEIRO =====
+  // ===== FINANCEIRO (21 campos) =====
   financials: {
+    // Dados básicos (9 campos)
     capital_social?: number;
     recebimentos_governo_federal?: number;
     enquadramento_porte?: string;
@@ -114,7 +116,7 @@ export interface CompanyReport {
     porte: string;
     capacidade_investimento: string;
 
-    // Dívidas
+    // Dívidas (12 campos)
     perc_dividas_cnpj_sobre_faturamento?: number;
     perc_dividas_cnpj_socios_sobre_faturamento?: number;
     total_dividas_cnpj_uniao?: number;
@@ -127,15 +129,15 @@ export interface CompanyReport {
     dividas_cnpj_socios_previdencia?: number;
   };
 
-  // ===== PRESENÇA DIGITAL =====
+  // ===== PRESENÇA DIGITAL (10 campos) =====
   digitalPresence: {
-    // Sites
+    // Sites (5 campos)
     sites?: string[];
     melhor_site?: string;
     segundo_melhor_site?: string;
     website_status: string;
 
-    // Redes Sociais
+    // Redes Sociais (9 campos)
     instagram?: string;
     facebook?: string;
     linkedin?: string;
@@ -144,14 +146,14 @@ export interface CompanyReport {
     outras_redes?: string[];
     social_media?: any;
 
-    // Tecnologia
+    // Tecnologia (4 campos)
     tecnologias: string[];
     ferramentas?: string[];
     maturidade_digital: number;
     classificacao_maturidade: string;
   };
 
-  // ===== ANÁLISE & INTELIGÊNCIA =====
+  // ===== ANÁLISE & INTELIGÊNCIA (7 campos) =====
   metrics: {
     score_global: number;
     componentes: {
