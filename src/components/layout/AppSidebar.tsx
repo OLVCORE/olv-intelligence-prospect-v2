@@ -129,7 +129,6 @@ const menuGroups = [
           { title: "CPQ & Pricing Intelligence", icon: Sparkles, url: "/account-strategy?tab=cpq", description: "Configure-Price-Quote com IA" },
           { title: "Cenários & Propostas", icon: Layers, url: "/account-strategy?tab=scenarios", description: "Análise Best/Expected/Worst case" },
           { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração de propostas comerciais" },
-          { title: "Competitive Intelligence", icon: Shield, url: "/account-strategy?tab=competitive", description: "Posicionamento competitivo" },
           { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
           { title: "Histórico de Estratégias", icon: History, url: "/account-strategy/history", description: "Ver todas as estratégias salvas" },
         ],

@@ -272,12 +272,11 @@ export default function AccountStrategyPage() {
               onValueChange={handleTabChange}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-1">
                 <TabsTrigger value="roi">ROI</TabsTrigger>
                 <TabsTrigger value="cpq">CPQ</TabsTrigger>
                 <TabsTrigger value="scenarios">Cenários</TabsTrigger>
                 <TabsTrigger value="proposals">Propostas</TabsTrigger>
-                <TabsTrigger value="competitive">Competitivo</TabsTrigger>
                 <TabsTrigger value="value">Valor</TabsTrigger>
               </TabsList>
               <TabsContent value="roi" className="space-y-4">
@@ -313,9 +312,6 @@ export default function AccountStrategyPage() {
               <TabsContent value="proposals" className="space-y-4">
                 <ProposalManager companyId={companyId!} />
               </TabsContent>
-              <TabsContent value="competitive" className="space-y-4">
-                <BattleCardViewer />
-              </TabsContent>
               <TabsContent value="value" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -329,14 +325,13 @@ export default function AccountStrategyPage() {
         ) : (
 
           <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="gaps">Gaps</TabsTrigger>
               <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
               <TabsTrigger value="roi">ROI</TabsTrigger>
               <TabsTrigger value="cpq">CPQ</TabsTrigger>
               <TabsTrigger value="scenarios">Cenários</TabsTrigger>
-              <TabsTrigger value="competitive">Competitivo</TabsTrigger>
               <TabsTrigger value="value">Valor</TabsTrigger>
               <TabsTrigger value="financial">Financeiro</TabsTrigger>
               <TabsTrigger value="actions">Ações</TabsTrigger>
