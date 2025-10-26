@@ -14,7 +14,7 @@ interface EconodataEnrichButtonProps {
 export function EconodataEnrichButton({ 
   companyId, 
   cnpj, 
-  variant = 'default',
+  variant = 'outline',
   size = 'default',
   className 
 }: EconodataEnrichButtonProps) {

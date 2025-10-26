@@ -1258,7 +1258,7 @@ export default function CompanyDetailPage() {
                 <EconodataEnrichButton 
                   companyId={id!}
                   cnpj={company.cnpj}
-                  variant="default"
+                  variant="outline"
                   size="default"
                   className="w-full"
                 />
