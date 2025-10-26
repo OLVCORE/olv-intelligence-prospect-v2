@@ -154,6 +154,35 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
       <CardContent className="space-y-4">
         {company.totvs_detection_score !== undefined ? (
           <>
+            {/* Criteria Always Visible */}
+            <div className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Critérios de Detecção (Score Ponderado)
+              </h4>
+              <div className="grid grid-cols-1 gap-2 text-xs">
+                <div className="flex items-start gap-2">
+                  <Briefcase className="h-3 w-3 text-blue-500 shrink-0 mt-0.5" />
+                  <span><strong>💼 LinkedIn Jobs (40 pts):</strong> Vagas mencionando TOTVS, Protheus, RM TOTVS</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Search className="h-3 w-3 text-green-500 shrink-0 mt-0.5" />
+                  <span><strong>📰 Google News (30 pts):</strong> Notícias sobre "usa TOTVS", "cliente TOTVS", cases</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Globe className="h-3 w-3 text-purple-500 shrink-0 mt-0.5" />
+                  <span><strong>🌐 Website (20 pts):</strong> Site da empresa menciona TOTVS como parceiro/sistema</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Users className="h-3 w-3 text-orange-500 shrink-0 mt-0.5" />
+                  <span><strong>👤 LinkedIn Profiles (10 pts):</strong> Funcionários listam TOTVS como skill</span>
+                </div>
+                <div className="pt-2 border-t mt-1">
+                  <strong className="text-destructive">Score ≥ 70:</strong> Auto-desqualifica (alta confiança de uso)
+                </div>
+              </div>
+            </div>
+
             {/* Score Display */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -216,22 +245,30 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                         <div className="flex items-start gap-3">
                           <IconComponent className={`h-4 w-4 ${sourceConfig?.color || 'text-muted-foreground'} shrink-0 mt-0.5`} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center justify-between gap-2 mb-2">
                               <span className="text-sm font-medium">{sourceConfig?.label || source.source}</span>
                               <Badge variant="destructive" className="text-xs">
                                 +{source.confidence} pts
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed">{source.evidence}</p>
-                            {source.url && (
+                            <p className="text-xs text-muted-foreground leading-relaxed bg-background/50 p-2 rounded mb-2">
+                              {source.evidence}
+                            </p>
+                            {source.url ? (
                               <a
                                 href={source.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
+                                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
                               >
-                                🔗 Ver evidência na fonte original <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3" />
+                                🔗 VER EVIDÊNCIA NA FONTE ORIGINAL (clique para verificar)
                               </a>
+                            ) : (
+                              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
+                                <AlertCircle className="h-3 w-3" />
+                                Evidência detectada via scraping direto do website
+                              </div>
                             )}
                           </div>
                         </div>

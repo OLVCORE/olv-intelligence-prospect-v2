@@ -172,6 +172,39 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Criteria Always Visible */}
+        <div className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border">
+          <h4 className="text-sm font-medium flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Critérios de Detecção (Score Ponderado)
+          </h4>
+          <div className="grid grid-cols-1 gap-2 text-xs">
+            <div className="flex items-start gap-2">
+              <Briefcase className="h-3 w-3 text-blue-500 shrink-0 mt-0.5" />
+              <span><strong>💼 Vagas Abertas (30 pts):</strong> TI, ERP, Analista Sistemas, CIO, Diretor Tecnologia</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Newspaper className="h-3 w-3 text-green-500 shrink-0 mt-0.5" />
+              <span><strong>📰 Notícias (25 pts):</strong> Expansão, IPO, Transformação Digital, Investimento</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <TrendingUp className="h-3 w-3 text-purple-500 shrink-0 mt-0.5" />
+              <span><strong>📊 Crescimento (10 pts):</strong> Receita &gt;20%, Contratações &gt;50 funcionários</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Users className="h-3 w-3 text-orange-500 shrink-0 mt-0.5" />
+              <span><strong>👥 LinkedIn (15 pts):</strong> Posts sobre modernização, investimento em TI</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Search className="h-3 w-3 text-pink-500 shrink-0 mt-0.5" />
+              <span><strong>🔍 Pesquisas (20 pts):</strong> "Software Gestão", "ERP", "Alternativas SAP"</span>
+            </div>
+            <div className="pt-2 border-t mt-1">
+              <strong className="text-green-600">Score ≥ 70:</strong> HOT LEAD 🔥 (momento ideal para contato!)
+            </div>
+          </div>
+        </div>
+
         {/* Intent Score */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -201,7 +234,7 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
           <div className="space-y-2">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <Search className="h-4 w-4" />
-              Sinais Detectados via APIs ({signals.length})
+              Evidências Encontradas nas APIs ({signals.length})
             </h4>
             <div className="space-y-2">
               {signals.map((signal) => (
@@ -210,8 +243,8 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                     <div className="flex items-center gap-2">
                       {getSignalIcon(signal.signal_type)}
                       <span className="text-sm font-medium">{getSignalLabel(signal.signal_type)}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {signal.confidence_score} pts
+                      <Badge variant="default" className="text-xs bg-green-600">
+                        +{signal.confidence_score} pts
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -221,21 +254,31 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                       })}
                     </span>
                   </div>
-                  <p className="text-sm font-medium">{signal.signal_title}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{signal.signal_description}</p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <Badge variant="outline" className="text-xs">
-                      Fonte: {signal.signal_source}
-                    </Badge>
-                    {signal.signal_url && (
+                  <p className="text-sm font-semibold text-primary">{signal.signal_title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed bg-background/50 p-2 rounded">
+                    {signal.signal_description}
+                  </p>
+                  <div className="flex flex-col gap-2 pt-1 border-t">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        📍 Fonte: {signal.signal_source}
+                      </Badge>
+                    </div>
+                    {signal.signal_url ? (
                       <a
                         href={signal.signal_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                        className="text-xs text-primary hover:underline flex items-center gap-1 font-medium bg-primary/5 p-2 rounded hover:bg-primary/10 transition-colors"
                       >
-                        🔗 Ver na fonte <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3 w-3" />
+                        🔗 VER EVIDÊNCIA NA FONTE ORIGINAL (clique para verificar)
                       </a>
+                    ) : (
+                      <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
+                        <AlertCircle className="h-3 w-3" />
+                        Evidência detectada internamente (dados do banco Econodata)
+                      </div>
                     )}
                   </div>
                 </div>
