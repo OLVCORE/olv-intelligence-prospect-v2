@@ -471,6 +471,24 @@ export type Database = {
           },
         ]
       }
+      app_features: {
+        Row: {
+          enabled: boolean
+          feature: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          feature: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          feature?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       battle_cards: {
         Row: {
           competitor_id: string

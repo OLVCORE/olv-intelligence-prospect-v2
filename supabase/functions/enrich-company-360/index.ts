@@ -121,6 +121,37 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ========================================
+    // ✅ PRÉ-CHECK: VALIDAR DEPENDÊNCIAS ANTES DE PROCESSAR
+    // ========================================
+    console.log('🔍 Pre-check: Validating dependencies...');
+    
+    // Verificar se tabela sdr_deals existe e tem as colunas necessárias
+    const { data: dealsCheck, error: dealsCheckError } = await supabase
+      .from('sdr_deals')
+      .select('id')
+      .limit(1);
+    
+    if (dealsCheckError && dealsCheckError.code !== 'PGRST116') {
+      console.warn('⚠️ sdr_deals table validation failed:', dealsCheckError);
+    } else {
+      console.log('✅ sdr_deals table validated');
+    }
+    
+    // Verificar se tabela app_features existe (kill switch)
+    const { data: featuresCheck, error: featuresCheckError } = await supabase
+      .from('app_features')
+      .select('feature, enabled')
+      .eq('feature', 'auto_deal')
+      .maybeSingle();
+    
+    if (featuresCheckError && featuresCheckError.code !== 'PGRST116') {
+      console.warn('⚠️ app_features table check failed:', featuresCheckError);
+    } else {
+      const autoDealStatus = featuresCheck?.enabled ? 'ENABLED' : 'DISABLED';
+      console.log(`✅ Kill switch validated: auto_deal=${autoDealStatus}`);
+    }
+    
     // Buscar dados básicos da empresa
     const { data: company, error: companyError } = await supabase
       .from('companies')
