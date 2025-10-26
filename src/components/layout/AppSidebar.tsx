@@ -51,6 +51,7 @@ import {
   SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -276,16 +277,19 @@ export function AppSidebar() {
       collapsible="icon" 
       className="border-r pt-12 md:pt-16"
     >
-      <SidebarHeader className="border-b border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:justify-center touch-manipulation active:scale-95">
-          <Building2 className="h-7 w-7 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
-          {(open || isMobile) && (
-            <div className="min-w-0">
-              <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
-              <p className="text-[10px] md:text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
-            </div>
-          )}
-        </Link>
+      <SidebarHeader className="border-b border-sidebar-border p-3 md:p-4 group-data-[collapsible=icon]:p-2">
+        <div className="flex items-center justify-between gap-2">
+          <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity touch-manipulation active:scale-95 flex-1 min-w-0">
+            <Building2 className="h-7 w-7 md:h-8 md:w-8 text-sidebar-primary flex-shrink-0" />
+            {(open || isMobile) && (
+              <div className="min-w-0">
+                <h1 className="text-base md:text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
+                <p className="text-[10px] md:text-xs text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+              </div>
+            )}
+          </Link>
+          <SidebarTrigger className="flex-shrink-0" />
+        </div>
       </SidebarHeader>
       <SidebarContent className="px-2">
         <TooltipProvider delayDuration={200}>
