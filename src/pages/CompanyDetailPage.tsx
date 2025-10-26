@@ -307,16 +307,12 @@ export default function CompanyDetailPage() {
                     </TooltipContent>
                   </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <EconodataEnrichButton
-                        companyId={id!}
-                        cnpj={company.cnpj || ''}
-                        variant="default"
-                        size="icon"
-                      />
-                    </TooltipTrigger>
-                  </Tooltip>
+                  <EconodataEnrichButton
+                    companyId={id!}
+                    cnpj={company.cnpj || ''}
+                    variant="default"
+                    size="icon"
+                  />
                 </TooltipProvider>
               </div>
             </div>

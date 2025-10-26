@@ -42,13 +42,25 @@ export function EconodataEnrichButton({
           >
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enriquecendo...
+                {size === 'icon' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enriquecendo...
+                  </>
+                )}
               </>
             ) : (
               <>
-                <Zap className="mr-2 h-4 w-4" />
-                Eco-Booster
+                {size === 'icon' ? (
+                  <Zap className="h-4 w-4" />
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Eco-Booster
+                  </>
+                )}
               </>
             )}
           </Button>
