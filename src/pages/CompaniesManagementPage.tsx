@@ -729,6 +729,60 @@ export default function CompaniesManagementPage() {
                   <Button
                     variant="default"
                     size="icon"
+                    onClick={async () => {
+                      try {
+                        setIsBatchEnrichingEconodata(true);
+                        toast.info('Iniciando enriquecimento em lote com Eco-Booster...', {
+                          description: 'Apenas empresas com CNPJ serão processadas'
+                        });
+
+                        const companiesWithCNPJ = companies.filter(c => c.cnpj);
+                        let enriched = 0;
+                        let errors = 0;
+
+                        for (const company of companiesWithCNPJ) {
+                          try {
+                            const { error } = await supabase.functions.invoke('enrich-econodata', {
+                              body: { companyId: company.id, cnpj: company.cnpj }
+                            });
+                            if (error) throw error;
+                            enriched++;
+                          } catch (e) {
+                            console.error(`Error enriching ${company.name}:`, e);
+                            errors++;
+                          }
+                        }
+
+                        toast.success(
+                          `Eco-Booster concluído! ${enriched} empresas atualizadas, ${errors} erros.`
+                        );
+                        refetch();
+                      } catch (error) {
+                        console.error('Error batch enriching Econodata:', error);
+                        toast.error('Erro ao executar Eco-Booster em lote');
+                      } finally {
+                        setIsBatchEnrichingEconodata(false);
+                      }
+                    }}
+                    disabled={isBatchEnrichingEconodata}
+                  >
+                    {isBatchEnrichingEconodata ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Eco-Booster (Lote)</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
                     onClick={() => navigate('/search')}
                   >
                     <span className="relative inline-flex">
