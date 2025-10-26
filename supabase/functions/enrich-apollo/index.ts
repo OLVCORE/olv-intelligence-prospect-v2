@@ -32,12 +32,15 @@ serve(async (req) => {
     if (type === 'organization') {
       // Buscar organização
       const params = new URLSearchParams({
-        api_key: apolloApiKey,
         q_organization_name: organizationName,
         ...(domain && { q_organization_domains: domain })
       });
 
-      const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+      const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`, {
+        headers: {
+          'X-Api-Key': apolloApiKey,
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Apollo API error: ${response.status}`);
@@ -62,7 +65,6 @@ serve(async (req) => {
       const tryByDomain = async (): Promise<any[]> => {
         if (!domain) return [];
         const body = {
-          api_key: apolloApiKey,
           page: 1,
           per_page: 10,
           q_organization_domains: [domain],
@@ -70,7 +72,7 @@ serve(async (req) => {
         };
         const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloApiKey },
           body: JSON.stringify(body)
         });
         if (!resp.ok) {
@@ -85,11 +87,12 @@ serve(async (req) => {
       // 2) Tentar obter ID da organização e buscar por ID
       const tryByOrganizationId = async (): Promise<any[]> => {
         const params = new URLSearchParams({
-          api_key: apolloApiKey,
           q_organization_name: organizationName,
           ...(domain ? { q_organization_domains: domain } : {}) as any
         });
-        const orgResp = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+        const orgResp = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`, {
+          headers: { 'X-Api-Key': apolloApiKey }
+        });
         if (!orgResp.ok) {
           const t = await orgResp.text();
           console.error('ENRICH_APOLLO org search error', orgResp.status, t);
@@ -100,7 +103,6 @@ serve(async (req) => {
         if (!org?.id) return [];
 
         const body = {
-          api_key: apolloApiKey,
           page: 1,
           per_page: 10,
           organization_ids: [org.id],
@@ -108,7 +110,7 @@ serve(async (req) => {
         };
         const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloApiKey },
           body: JSON.stringify(body)
         });
         if (!resp.ok) {
@@ -129,7 +131,6 @@ serve(async (req) => {
 
         for (const name of candidates) {
           const body = {
-            api_key: apolloApiKey,
             page: 1,
             per_page: 10,
             q_organization_name: name,
@@ -137,7 +138,7 @@ serve(async (req) => {
           };
           const resp = await fetch('https://api.apollo.io/v1/mixed_people/search', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloApiKey },
             body: JSON.stringify(body)
           });
           if (resp.ok) {
