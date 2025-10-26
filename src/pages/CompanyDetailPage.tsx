@@ -257,63 +257,75 @@ export default function CompanyDetailPage() {
               <Badge variant={situacaoReceita === 'ATIVA' ? 'success' : (situacaoReceita && ['INAPTA','SUSPENSA','INATIVA','BAIXADA'].includes(situacaoReceita) ? 'warning' : 'destructive')} className="bg-success text-success-foreground">
                 {situacaoReceita || 'Status desconhecido'}
               </Badge>
-              <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="icon"
-                        onClick={handleSmartRefresh}
-                        disabled={isSmartRefreshing}
-                      >
-                        {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Atualizar</p>
-                    </TooltipContent>
-                  </Tooltip>
+              <div className="flex flex-col items-end gap-3">
+                <Button
+                  variant="default"
+                  size="lg"
+                  onClick={() => navigate(`/account-strategy?company=${id}`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Target className="h-5 w-5 mr-2" />
+                  Criar Estratégia
+                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleSmartRefresh}
+                          disabled={isSmartRefreshing}
+                        >
+                          {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Atualizar</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="icon"
-                        onClick={() => handleEnrichReceita(id!)}
-                        disabled={isEnrichingReceita}
-                      >
-                        {isEnrichingReceita ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Receita Federal</p>
-                    </TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEnrichReceita(id!)}
+                          disabled={isEnrichingReceita}
+                        >
+                          {isEnrichingReceita ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Receita Federal</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="icon"
-                        onClick={handleFullEnrichment}
-                        disabled={isEnriching}
-                      >
-                        {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Enriquecimento 360° Completo + IA</p>
-                    </TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleFullEnrichment}
+                          disabled={isEnriching}
+                        >
+                          {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Enriquecimento 360° Completo + IA</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <EconodataEnrichButton
-                    companyId={id!}
-                    cnpj={company.cnpj || ''}
-                    variant="default"
-                    size="icon"
-                  />
-                </TooltipProvider>
+                    <EconodataEnrichButton
+                      companyId={id!}
+                      cnpj={company.cnpj || ''}
+                      variant="outline"
+                      size="icon"
+                    />
+                  </TooltipProvider>
+                </div>
               </div>
             </div>
           </div>
