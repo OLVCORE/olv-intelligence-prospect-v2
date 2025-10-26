@@ -37,6 +37,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
+import { EconodataEnrichButton } from '@/components/companies/EconodataEnrichButton';
 
 export default function CompaniesManagementPage() {
   logger.info('CompaniesManagementPage mounted', 'CompaniesManagement');
@@ -987,6 +988,12 @@ export default function CompaniesManagementPage() {
                               <Building2 className="h-4 w-4" />
                             )}
                           </Button>
+                          <EconodataEnrichButton
+                            companyId={company.id}
+                            cnpj={company.cnpj}
+                            variant="outline"
+                            size="sm"
+                          />
                           <Button
                             variant="ghost"
                             size="sm"

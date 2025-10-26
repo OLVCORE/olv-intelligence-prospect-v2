@@ -219,17 +219,24 @@ export default function CompanyDetailPage() {
               <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
                 {receitaData?.situacao || 'Status desconhecido'}
               </Badge>
-              <div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSmartRefresh}
-                  disabled={isSmartRefreshing}
-                >
-                  {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                  Atualizar
-                </Button>
-              </div>
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSmartRefresh}
+                    disabled={isSmartRefreshing}
+                  >
+                    {isSmartRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Atualizar
+                  </Button>
+                  <EconodataEnrichButton 
+                    companyId={id!}
+                    cnpj={company.cnpj}
+                    variant="default"
+                    size="sm"
+                    className="ml-2"
+                  />
+                </div>
             </div>
           </div>
         </CardHeader>
