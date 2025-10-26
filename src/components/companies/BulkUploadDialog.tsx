@@ -170,22 +170,123 @@ export function BulkUploadDialog() {
     const mapping = new Map<string, string>();
     const normalized = headers.map(h => normalizeHeader(h));
     
+    // Mapeamento completo de 87 colunas
     const headerMap: { [key: string]: string[] } = {
+      // Identificação básica
       'CNPJ': ['cnpj', 'cnpj da empresa', 'cnpj empresa'],
-      'Nome da Empresa': ['nome', 'nome da empresa', 'razao social', 'empresa'],
+      'Nome da Empresa': ['nome', 'nome da empresa', 'empresa'],
+      'Nome Fantasia': ['nome fantasia', 'fantasia'],
+      'Razão Social': ['razao social', 'razao', 'razao social da empresa'],
       'Website': ['website', 'site', 'url', 'website da empresa'],
+      'Domínio': ['dominio', 'domain'],
+      
+      // Redes sociais
       'Instagram': ['instagram', 'insta', '@instagram'],
       'LinkedIn': ['linkedin', 'link linkedin', 'linkedin url'],
-      'Produto/Categoria': ['produto', 'categoria', 'produto/categoria', 'tipo'],
-      'Marca': ['marca', 'brand'],
-      'Link Produto/Marketplace': ['link produto', 'marketplace', 'link'],
-      'CEP': ['cep', 'codigo postal'],
-      'Estado': ['estado', 'uf', 'state'],
-      'Pais': ['pais', 'país', 'country'],
-      'Municipio': ['municipio', 'município', 'cidade', 'city'],
-      'Bairro': ['bairro', 'neighborhood'],
+      'Facebook': ['facebook', 'fb'],
+      'Twitter': ['twitter', 'x', 'twitter/x'],
+      'YouTube': ['youtube', 'yt'],
+      
+      // Classificação
+      'Setor': ['setor', 'industria', 'industry', 'segmento'],
+      'Porte': ['porte', 'tamanho', 'size'],
+      'Natureza Jurídica': ['natureza juridica', 'natureza', 'tipo juridico'],
+      'Funcionários': ['funcionarios', 'employees', 'numero de funcionarios'],
+      'Faturamento Estimado': ['faturamento', 'revenue', 'faturamento estimado'],
+      'Capital Social': ['capital social', 'capital'],
+      
+      // Datas e status
+      'Data de Abertura': ['data de abertura', 'abertura', 'data abertura'],
+      'Situação Cadastral': ['situacao cadastral', 'situacao', 'status cadastral'],
+      'Data Situação': ['data situacao', 'data da situacao'],
+      'Motivo Situação': ['motivo situacao', 'motivo'],
+      'Situação Especial': ['situacao especial', 'situacao esp'],
+      'Data Situação Especial': ['data situacao especial', 'data sit esp'],
+      
+      // Endereço
+      'CEP': ['cep', 'codigo postal', 'zipcode'],
       'Logradouro': ['logradouro', 'endereco', 'endereço', 'rua', 'address'],
-      'Numero': ['numero', 'número', 'num', 'number']
+      'Número': ['numero', 'número', 'num', 'number'],
+      'Complemento': ['complemento', 'compl'],
+      'Bairro': ['bairro', 'neighborhood'],
+      'Município': ['municipio', 'município', 'cidade', 'city'],
+      'UF': ['uf', 'estado', 'state'],
+      'País': ['pais', 'país', 'country'],
+      'Latitude': ['latitude', 'lat'],
+      'Longitude': ['longitude', 'lng', 'long'],
+      
+      // Contato
+      'Telefone': ['telefone', 'phone', 'tel', 'fone'],
+      'Email': ['email', 'e-mail', 'mail'],
+      'Email Verificado': ['email verificado', 'verified email'],
+      
+      // CNAEs
+      'CNAE Principal Código': ['cnae principal codigo', 'cnae principal', 'cnae codigo'],
+      'CNAE Principal Descrição': ['cnae principal descricao', 'cnae descricao'],
+      'CNAEs Secundários Quantidade': ['cnaes secundarios quantidade', 'qtd cnaes'],
+      'CNAEs Secundários': ['cnaes secundarios', 'cnaes sec'],
+      
+      // Quadro societário
+      'Quadro Societário Quantidade': ['quadro societario quantidade', 'qtd socios'],
+      'Sócios': ['socios', 'quadro societario', 'qsa'],
+      
+      // Scores
+      'Score Maturidade Digital': ['score maturidade digital', 'score digital', 'maturidade'],
+      'Score Fit TOTVS': ['score fit totvs', 'fit totvs', 'fit'],
+      'Score Análise': ['score analise', 'score'],
+      
+      // Tecnologia
+      'Tech Stack': ['tech stack', 'tecnologias', 'stack'],
+      'ERP Atual': ['erp atual', 'erp', 'sistema erp'],
+      'CRM Atual': ['crm atual', 'crm', 'sistema crm'],
+      
+      // Produtos
+      'Produto Principal': ['produto principal', 'produto', 'main product'],
+      'Marca': ['marca', 'brand'],
+      'Link Produto/Marketplace': ['link produto', 'marketplace', 'link', 'product link'],
+      'Categoria': ['categoria', 'category'],
+      
+      // Decisores
+      'Decisores Quantidade': ['decisores quantidade', 'qtd decisores'],
+      'Decisor 1 Nome': ['decisor 1 nome', 'decisor1 nome'],
+      'Decisor 1 Cargo': ['decisor 1 cargo', 'decisor1 cargo'],
+      'Decisor 1 Email': ['decisor 1 email', 'decisor1 email'],
+      'Decisor 1 Telefone': ['decisor 1 telefone', 'decisor1 telefone'],
+      'Decisor 1 LinkedIn': ['decisor 1 linkedin', 'decisor1 linkedin'],
+      'Decisor 2 Nome': ['decisor 2 nome', 'decisor2 nome'],
+      'Decisor 2 Cargo': ['decisor 2 cargo', 'decisor2 cargo'],
+      'Decisor 2 Email': ['decisor 2 email', 'decisor2 email'],
+      'Decisor 2 Telefone': ['decisor 2 telefone', 'decisor2 telefone'],
+      'Decisor 2 LinkedIn': ['decisor 2 linkedin', 'decisor2 linkedin'],
+      'Decisor 3 Nome': ['decisor 3 nome', 'decisor3 nome'],
+      'Decisor 3 Cargo': ['decisor 3 cargo', 'decisor3 cargo'],
+      'Decisor 3 Email': ['decisor 3 email', 'decisor3 email'],
+      'Decisor 3 Telefone': ['decisor 3 telefone', 'decisor3 telefone'],
+      'Decisor 3 LinkedIn': ['decisor 3 linkedin', 'decisor3 linkedin'],
+      
+      // Enriquecimento
+      'Enriquecido Receita': ['enriquecido receita', 'receita'],
+      'Enriquecido 360': ['enriquecido 360', '360'],
+      'Enriquecido Apollo': ['enriquecido apollo', 'apollo'],
+      'Enriquecido Phantom': ['enriquecido phantom', 'phantom'],
+      
+      // Metadados
+      'Data Criação': ['data criacao', 'criado em', 'created at'],
+      'Data Última Atualização': ['data ultima atualizacao', 'updated at', 'atualizado em'],
+      'Data Último Enriquecimento': ['data ultimo enriquecimento', 'ultimo enriquecimento'],
+      'Status Enriquecimento': ['status enriquecimento', 'enrichment status'],
+      'Fonte Enriquecimento': ['fonte enriquecimento', 'fonte'],
+      
+      // CRM
+      'Observações': ['observacoes', 'obs', 'notes', 'notas'],
+      'Tags': ['tags', 'etiquetas'],
+      'Prioridade': ['prioridade', 'priority'],
+      'Último Contato': ['ultimo contato', 'last contact'],
+      'Próximo Contato': ['proximo contato', 'next contact'],
+      'Status Pipeline': ['status pipeline', 'pipeline'],
+      'Valor Oportunidade': ['valor oportunidade', 'valor', 'value'],
+      'Probabilidade Fechamento': ['probabilidade fechamento', 'probabilidade', 'probability'],
+      'Data Fechamento Esperada': ['data fechamento esperada', 'expected close', 'data fechamento']
     };
 
     normalized.forEach((norm, idx) => {
@@ -197,7 +298,7 @@ export function BulkUploadDialog() {
       }
     });
 
-    console.log('🔄 Mapeamento de headers:', Object.fromEntries(mapping));
+    console.log('🔄 Mapeamento de headers (87 colunas):', Object.fromEntries(mapping));
     return mapping;
   };
 
@@ -496,6 +597,10 @@ try {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-sm">
+                <strong>Formato expandido:</strong> 87 colunas completas de dados
+                <br />
+                <strong>Campos incluídos:</strong> CNPJ, identificação, endereço, CNAEs, sócios, decisores (até 3), redes sociais, tech stack, scores, enriquecimentos, pipeline CRM
+                <br />
                 <strong>Formatos aceitos:</strong> CSV, TSV, XLSX, XLS
                 <br />
                 <strong>Separadores:</strong> vírgula (,), ponto e vírgula (;) ou TAB
