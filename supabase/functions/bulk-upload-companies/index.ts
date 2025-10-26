@@ -39,12 +39,12 @@ serve(async (req) => {
       const row = companies[i];
       
       try {
-        // Validação básica - pelo menos um identificador
-        const cnpj = row.CNPJ?.replace(/\D/g, '') || null;
-        const name = row['Nome da Empresa'] || row['Razão Social'] || row['Nome Fantasia'];
-        const website = row.Website;
-        const linkedin = row.LinkedIn;
-        const instagram = row.Instagram;
+        // Validação básica - pelo menos um identificador (AGORA USANDO CAMPOS NORMALIZADOS)
+        const cnpj = (row.cnpj || row.CNPJ)?.replace(/\D/g, '') || null;
+        const name = row.nome_empresa || row['nome_empresa'] || row['Nome da Empresa'] || row['Razão Social'] || row.nome_fantasia || row['nome_fantasia'];
+        const website = row.sites || row.melhor_site || row.Website;
+        const linkedin = row.linkedin || row.LinkedIn;
+        const instagram = row.instagram || row.Instagram;
         
         if (!cnpj && !name && !website && !linkedin && !instagram) {
           results.errors.push(`Linha ${i + 2}: Nenhum identificador fornecido`);
@@ -57,103 +57,138 @@ serve(async (req) => {
           continue;
         }
 
-        // Prepara dados completos da empresa
+        // Prepara dados completos da empresa (TODOS OS 87 CAMPOS)
         const companyData: any = {
           name: name || 'Empresa Importada',
           cnpj: cnpj,
-          industry: row.Setor || null,
-          employees: row['Funcionários'] ? parseInt(row['Funcionários']) : null,
-          revenue: row['Faturamento Estimado'] || null,
-          digital_maturity_score: row['Score Maturidade Digital'] ? parseFloat(row['Score Maturidade Digital']) : null,
+          industry: row.setor_amigavel || row.Setor || null,
+          employees: (row.funcionarios_presumido_matriz_cnpj || row['Funcion ários']) ? parseInt(String(row.funcionarios_presumido_matriz_cnpj || row['Funcionários'] || '0')) : null,
+          revenue: row.faturamento_presumido_matriz_cnpj || row['Faturamento Estimado'] || null,
+          digital_maturity_score: row['Score Maturidade Digital'] ? parseFloat(String(row['Score Maturidade Digital'])) : null,
           raw_data: {
             imported_at: new Date().toISOString(),
             csv_row: i + 2,
+            source: 'econodata_87_campos',
             
-            // Dados da Receita Federal
-            receita: {
-              fantasia: row['Nome Fantasia'] || null,
-              razao_social: row['Razão Social'] || null,
-              porte: row.Porte || null,
-              natureza_juridica: row['Natureza Jurídica'] || null,
-              capital_social: row['Capital Social'] || null,
-              abertura: row['Data de Abertura'] || null,
-              situacao: row['Situação Cadastral'] || null,
-              data_situacao: row['Data Situação'] || null,
-              motivo_situacao: row['Motivo Situação'] || null,
-              situacao_especial: row['Situação Especial'] || null,
-              data_situacao_especial: row['Data Situação Especial'] || null,
-              cep: row.CEP || null,
-              logradouro: row.Logradouro || null,
-              numero: row['Número'] || null,
-              complemento: row.Complemento || null,
-              bairro: row.Bairro || null,
-              municipio: row['Município'] || null,
-              uf: row.UF || null,
-              pais: row['País'] || 'Brasil',
-              telefone: row.Telefone || null,
-              email: row.Email || null,
-              email_status: row['Email Verificado'] === 'Sim' ? 'verified' : null,
-              
-              // CNAEs
-              atividade_principal: row['CNAE Principal Código'] ? [{
-                code: row['CNAE Principal Código'],
-                text: row['CNAE Principal Descrição'] || ''
-              }] : null,
-              
-              // Sócios (parseado se houver)
-              qsa: row['Sócios'] ? row['Sócios'].split(';').map(s => {
-                const match = s.trim().match(/^(.+?)\s*\((.+?)\)$/);
-                return match ? { nome: match[1].trim(), qual: match[2].trim() } : null;
-              }).filter(Boolean) : null
-            },
+            // === IDENTIFICAÇÃO ===
+            cnpj: cnpj,
+            nome_empresa: name,
+            nome_fantasia: row.nome_fantasia || row['Nome Fantasia'] || null,
+            marca: row.marca || row.Marca || null,
+            tipo_unidade: row.tipo_unidade || row['Tipo Unidade'] || 'Matriz',
             
-            // Produtos e marketplace
-            produto_categoria: row['Produto Principal'] || row['Categoria'] || null,
-            marca: row.Marca || null,
-            link_produto: row['Link Produto/Marketplace'] || null,
+            // === NATUREZA JURÍDICA ===
+            natureza_juridica: row.natureza_juridica || row['Natureza Jurídica'] || null,
+            situacao_cadastral: row.situacao_cadastral || row['Situação Cadastral'] || 'ATIVA',
+            data_abertura: row.data_abertura || row['Data de Abertura'] || null,
+            regime_tributario: row.regime_tributario || row['Regime Tributário'] || null,
             
-            // Tech Stack
-            tech_stack: row['Tech Stack'] ? row['Tech Stack'].split(',').map(t => t.trim()) : null,
-            current_erp: row['ERP Atual'] || null,
-            current_crm: row['CRM Atual'] || null,
+            // === LOCALIZAÇÃO ===
+            endereco: row.endereco || row.Logradouro || null,
+            numero: row.numero || row['Número'] || null,
+            complemento: row.complemento || row.Complemento || null,
+            bairro: row.bairro || row.Bairro || null,
+            cep: row.cep || row.CEP || null,
+            municipio: row.municipio || row['Município'] || null,
+            uf: row.uf || row.UF || null,
+            pais: row.pais || row['País'] || 'Brasil',
+            microrregiao: row.microrregiao || null,
+            mesorregiao: row.mesorregiao || null,
             
-            // Scores
-            fit_score: row['Score Fit TOTVS'] ? parseFloat(row['Score Fit TOTVS']) : null,
-            analysis_score: row['Score Análise'] ? parseFloat(row['Score Análise']) : null,
+            // === CONTATOS - ASSERTIVIDADE ===
+            assertividade: row.assertividade || null,
+            melhor_telefone: row.melhor_telefone || row.Telefone || null,
+            segundo_melhor_telefone: row.segundo_melhor_telefone || null,
+            telefones_alta_assertividade: row.telefones_alta_assertividade || null,
+            telefones_media_assertividade: row.telefones_media_assertividade || null,
+            telefones_baixa_assertividade: row.telefones_baixa_assertividade || null,
+            telefones_matriz: row.telefones_matriz || null,
+            telefones_filiais: row.telefones_filiais || null,
+            celulares: row.celulares || null,
+            melhor_celular: row.melhor_celular || null,
+            fixos: row.fixos || null,
+            pat_telefone: row.pat_telefone || null,
+            whatsapp: row.whatsapp || null,
             
-            // Enriquecimentos
-            enriched_receita: row['Enriquecido Receita'] === 'Sim',
-            enriched_360: row['Enriquecido 360'] === 'Sim',
-            enriched_apollo: row['Enriquecido Apollo'] === 'Sim',
-            enriched_phantom: row['Enriquecido Phantom'] === 'Sim',
+            // === ATIVIDADE ECONÔMICA ===
+            setor_amigavel: row.setor_amigavel || row.Setor || null,
+            atividade_economica: row.atividade_economica || null,
+            cod_atividade_economica: row.cod_atividade_economica || row['CNAE Principal Código'] || null,
+            atividades_secundarias: row.atividades_secundarias || null,
+            cod_atividades_secundarias: row.cod_atividades_secundarias || null,
             
-            // Metadados CRM
-            notes: row['Observações'] || null,
-            tags: row.Tags ? row.Tags.split(',').map(t => t.trim()) : null,
-            priority: row.Prioridade || null,
-            pipeline_status: row['Status Pipeline'] || null,
-            opportunity_value: row['Valor Oportunidade'] || null,
-            close_probability: row['Probabilidade Fechamento'] ? parseFloat(row['Probabilidade Fechamento']) : null
+            // === NCMs ===
+            cod_ncms_primarios: row.cod_ncms_primarios || null,
+            ncms_primarios: row.ncms_primarios || null,
+            
+            // === FINANCEIRO ===
+            capital_social: row.capital_social || row['Capital Social'] || null,
+            recebimentos_governo_federal: row.recebimentos_governo_federal || null,
+            enquadramento_porte: row.enquadramento_porte || null,
+            funcionarios_presumido_matriz_cnpj: row.funcionarios_presumido_matriz_cnpj || null,
+            funcionarios_presumido_este_cnpj: row.funcionarios_presumido_este_cnpj || null,
+            faturamento_presumido_matriz_cnpj: row.faturamento_presumido_matriz_cnpj || null,
+            faturamento_presumido_este_cnpj: row.faturamento_presumido_este_cnpj || null,
+            crescimento_empresa: row.crescimento_empresa || null,
+            qtd_filiais: row.qtd_filiais || null,
+            
+            // === ESTRUTURA ===
+            socios_administradores: row.socios_administradores || row['Sócios'] || null,
+            decisores_cargos: row.decisores_cargos || null,
+            decisores_linkedin: row.decisores_linkedin || null,
+            colaboradores_cargos: row.colaboradores_cargos || null,
+            colaboradores_linkedin: row.colaboradores_linkedin || null,
+            
+            // === EMAILS ===
+            emails_validados_departamentos: row.emails_validados_departamentos || null,
+            emails_validados_socios: row.emails_validados_socios || null,
+            emails_validados_decisores: row.emails_validados_decisores || null,
+            emails_validados_colaboradores: row.emails_validados_colaboradores || null,
+            email_pat: row.email_pat || null,
+            email_receita_federal: row.email_receita_federal || row.Email || null,
+            emails_publicos: row.emails_publicos || null,
+            
+            // === PORTE E COMÉRCIO EXTERIOR ===
+            porte_estimado: row.porte_estimado || row.Porte || null,
+            importacao: row.importacao || null,
+            exportacao: row.exportacao || null,
+            pat_funcionarios: row.pat_funcionarios || null,
+            
+            // === DIGITAL PRESENCE ===
+            sites: row.sites || row.Website || null,
+            melhor_site: row.melhor_site || null,
+            segundo_melhor_site: row.segundo_melhor_site || null,
+            instagram: row.instagram || row.Instagram || null,
+            facebook: row.facebook || row.Facebook || null,
+            linkedin: row.linkedin || row.LinkedIn || null,
+            twitter: row.twitter || row.Twitter || null,
+            youtube: row.youtube || row.YouTube || null,
+            outras: row.outras || null,
+            
+            // === TECNOLOGIA ===
+            tecnologias: row.tecnologias || row['Tech Stack'] || null,
+            ferramentas: row.ferramentas || null,
+            
+            // === METADATA ===
+            tags: row.tags || row.Tags || null,
+            notas: row.notas || row['Observações'] || null,
+            nivel_atividade: row.nivel_atividade || null,
+            
+            // === DÍVIDAS ===
+            perc_dividas_cnpj_sobre_faturamento: row.perc_dividas_cnpj_sobre_faturamento || null,
+            perc_dividas_cnpj_socios_sobre_faturamento: row.perc_dividas_cnpj_socios_sobre_faturamento || null,
+            total_dividas_cnpj_uniao: row.total_dividas_cnpj_uniao || null,
+            total_dividas_cnpj_socios_uniao: row.total_dividas_cnpj_socios_uniao || null,
+            dividas_gerais_cnpj_uniao: row.dividas_gerais_cnpj_uniao || null,
+            dividas_gerais_cnpj_socios_uniao: row.dividas_gerais_cnpj_socios_uniao || null,
+            dividas_cnpj_fgts: row.dividas_cnpj_fgts || null,
+            dividas_cnpj_socios_fgts: row.dividas_cnpj_socios_fgts || null,
+            dividas_cnpj_previdencia: row.dividas_cnpj_previdencia || null,
+            dividas_cnpj_socios_previdencia: row.dividas_cnpj_socios_previdencia || null
           }
         };
-
-        // Copia campos ricos (87 colunas Econodata) para raw_data
-        const econoKeys = [
-          'assertividade','melhor_telefone','segundo_melhor_telefone','telefones_alta_assertividade','telefones_media_assertividade','telefones_baixa_assertividade','telefones_matriz','telefones_filiais','celulares','melhor_celular','fixos','pat_telefone','whatsapp',
-          'setor_amigavel','atividade_economica','cod_atividade_economica','atividades_secundarias','cod_atividades_secundarias','cod_ncms_primarios','ncms_primarios',
-          'recebimentos_governo_federal','enquadramento_porte','funcionarios_presumido_matriz_cnpj','funcionarios_presumido_este_cnpj','faturamento_presumido_matriz_cnpj','faturamento_presumido_este_cnpj','crescimento_empresa','qtd_filiais','socios_administradores','decisores_cargos','decisores_linkedin','colaboradores_cargos','colaboradores_linkedin',
-          'emails_validados_departamentos','emails_validados_socios','emails_validados_decisores','emails_validados_colaboradores','email_pat','email_receita_federal','emails_publicos',
-          'porte_estimado','importacao','exportacao','pat_funcionarios','regime_tributario','situacao_cadastral',
-          'sites','melhor_site','segundo_melhor_site','instagram','facebook','linkedin','twitter','youtube','outras','tecnologias','ferramentas','tags','notas','nivel_atividade',
-          'perc_dividas_cnpj_sobre_faturamento','perc_dividas_cnpj_socios_sobre_faturamento','total_dividas_cnpj_uniao','total_dividas_cnpj_socios_uniao','dividas_gerais_cnpj_uniao','dividas_gerais_cnpj_socios_uniao','dividas_cnpj_fgts','dividas_cnpj_socios_fgts','dividas_cnpj_previdencia','dividas_cnpj_socios_previdencia',
-          'microrregiao','mesorregiao','tipo_unidade'
-        ];
-        const econoData: Record<string, any> = {};
-        for (const k of econoKeys) {
-          const v = (row as any)[k];
-          if (v !== undefined && v !== '') econoData[k] = v;
-        }
-        companyData.raw_data = { ...companyData.raw_data, ...econoData };
+        
+        console.log(`✅ Empresa ${i + 2}: ${companyData.raw_data.nome_empresa} - ${Object.keys(companyData.raw_data).length} campos capturados`);
 
         // Website e domínio
         if (website) {

@@ -32,6 +32,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DecisionMakerAddDialog from "@/components/companies/DecisionMakerAddDialog";
+import { DecisorsCollaboratorsCard } from "@/components/companies/DecisorsCollaboratorsCard";
+import { RichContactsCard } from "@/components/companies/RichContactsCard";
+import { FinancialDebtCard } from "@/components/companies/FinancialDebtCard";
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -493,6 +496,8 @@ export default function CompanyDetailPage() {
 
         {/* TAB 3: Localização & Contato */}
         <TabsContent value="localizacao" className="space-y-4">
+          <RichContactsCard rawData={rawData} />
+          
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -811,12 +816,10 @@ export default function CompanyDetailPage() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Decisores da Planilha ({parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin).length})
-              </CardTitle>
+          <DecisorsCollaboratorsCard
+            decisors={parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin)}
+            collaborators={parseCollaborators(rawData.colaboradores_cargos, rawData.colaboradores_linkedin)}
+          />
               <CardDescription>Decisores identificados pela Econodata</CardDescription>
             </CardHeader>
             <CardContent>
@@ -911,6 +914,8 @@ export default function CompanyDetailPage() {
 
         {/* TAB 6: Financeiro */}
         <TabsContent value="financeiro" className="space-y-4">
+          <FinancialDebtCard rawData={rawData} />
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">

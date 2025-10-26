@@ -170,184 +170,136 @@ export function BulkUploadDialog() {
     const mapping = new Map<string, string>();
     const normalized = headers.map(h => normalizeHeader(h));
     
-    // Mapeamento completo de 87 colunas
+    // Mapeamento COMPLETO e EXATO dos 87 campos Econodata
     const headerMap: { [key: string]: string[] } = {
-      // Identificação básica
-      'CNPJ': ['cnpj', 'cnpj da empresa', 'cnpj empresa'],
-      'Nome da Empresa': ['nome', 'nome da empresa', 'empresa'],
-      'Nome Fantasia': ['nome fantasia', 'fantasia'],
-      'Razão Social': ['razao social', 'razao', 'razao social da empresa'],
-      'Website': ['website', 'site', 'url', 'website da empresa'],
-      'Domínio': ['dominio', 'domain'],
+      // === IDENTIFICAÇÃO BÁSICA ===
+      'cnpj': ['cnpj', 'cnpj da empresa', 'cnpj empresa'],
+      'nome_empresa': ['nome', 'nome da empresa', 'empresa', 'razao social', 'razão social'],
+      'nome_fantasia': ['nome fantasia', 'fantasia'],
+      'marca': ['marca', 'brand'],
+      'tipo_unidade': ['tipo unidade', 'tipo da unidade', 'tipo', 'natureza unidade'],
       
-      // Redes sociais
-      'Instagram': ['instagram', 'insta', '@instagram'],
-      'LinkedIn': ['linkedin', 'link linkedin', 'linkedin url'],
-      'Facebook': ['facebook', 'fb'],
-      'Twitter': ['twitter', 'x', 'twitter/x'],
-      'YouTube': ['youtube', 'yt'],
+      // === NATUREZA JURÍDICA E REGIME ===
+      'natureza_juridica': ['natureza juridica', 'natureza', 'tipo juridico'],
+      'situacao_cadastral': ['situacao cadastral', 'situacao', 'status cadastral'],
+      'data_abertura': ['data de abertura', 'abertura', 'data abertura'],
+      'regime_tributario': ['regime tributario', 'regime tributário', 'regime'],
       
-      // Classificação
-      'Setor': ['setor', 'industria', 'industry', 'segmento'],
-      'Porte': ['porte', 'tamanho', 'size'],
-      'Natureza Jurídica': ['natureza juridica', 'natureza', 'tipo juridico'],
-      'Funcionários': ['funcionarios', 'employees', 'numero de funcionarios'],
-      'Faturamento Estimado': ['faturamento', 'revenue', 'faturamento estimado'],
-      'Capital Social': ['capital social', 'capital'],
+      // === LOCALIZAÇÃO ===
+      'endereco': ['endereco', 'endereço', 'logradouro', 'rua', 'address'],
+      'numero': ['numero', 'número', 'num', 'number'],
+      'complemento': ['complemento', 'compl'],
+      'bairro': ['bairro', 'neighborhood'],
+      'cep': ['cep', 'codigo postal', 'zipcode'],
+      'municipio': ['municipio', 'município', 'cidade', 'city'],
+      'uf': ['uf', 'estado', 'state'],
+      'pais': ['pais', 'país', 'country'],
+      'microrregiao': ['microrregiao', 'microrregião', '(mi)', 'microrregião geográfica'],
+      'mesorregiao': ['mesorregiao', 'mesorregião', '(me)', 'mesorregião geográfica'],
       
-      // Datas e status
-      'Data de Abertura': ['data de abertura', 'abertura', 'data abertura'],
-      'Situação Cadastral': ['situacao cadastral', 'situacao', 'status cadastral'],
-      'Data Situação': ['data situacao', 'data da situacao'],
-      'Motivo Situação': ['motivo situacao', 'motivo'],
-      'Situação Especial': ['situacao especial', 'situacao esp'],
-      'Data Situação Especial': ['data situacao especial', 'data sit esp'],
-      
-      // Endereço
-      'CEP': ['cep', 'codigo postal', 'zipcode'],
-      'Logradouro': ['logradouro', 'endereco', 'endereço', 'rua', 'address'],
-      'Número': ['numero', 'número', 'num', 'number'],
-      'Complemento': ['complemento', 'compl'],
-      'Bairro': ['bairro', 'neighborhood'],
-      'Município': ['municipio', 'município', 'cidade', 'city'],
-      'UF': ['uf', 'estado', 'state'],
-      'País': ['pais', 'país', 'country'],
-      'Latitude': ['latitude', 'lat'],
-      'Longitude': ['longitude', 'lng', 'long'],
-      
-      // Regiões
-      'microrregiao': ['microrregiao','microrregião'],
-      'mesorregiao': ['mesorregiao','mesorregião'],
-      
-      // Contato
-      'Telefone': ['telefone', 'phone', 'tel', 'fone'],
-      'Email': ['email', 'e-mail', 'mail'],
-      'Email Verificado': ['email verificado', 'verified email'],
-      
-      // Contatos ricos (Econodata)
+      // === CONTATOS - ASSERTIVIDADE ===
       'assertividade': ['assertividade'],
       'melhor_telefone': ['melhor telefone'],
       'segundo_melhor_telefone': ['segundo melhor telefone'],
-      'telefones_alta_assertividade': ['telefones de alta assertividade','telefones alta assertividade'],
-      'telefones_media_assertividade': ['telefones de media assertividade','telefones média assertividade','telefones media assertividade'],
-      'telefones_baixa_assertividade': ['telefones de baixa assertividade','telefones baixa assertividade'],
-      'telefones_matriz': ['telefones - matriz','telefones matriz'],
-      'telefones_filiais': ['telefones- filiais','telefones - filiais','telefones filiais'],
+      'telefones_alta_assertividade': ['telefones de alta assertividade', 'telefones alta assertividade'],
+      'telefones_media_assertividade': ['telefones de media assertividade', 'telefones média assertividade', 'telefones media assertividade', 'telefones de média assertividade'],
+      'telefones_baixa_assertividade': ['telefones de baixa assertividade', 'telefones baixa assertividade'],
+      'telefones_matriz': ['telefones - matriz', 'telefones matriz'],
+      'telefones_filiais': ['telefones- filiais', 'telefones - filiais', 'telefones filiais'],
       'celulares': ['celulares'],
       'melhor_celular': ['melhor celular'],
       'fixos': ['fixos'],
-      'pat_telefone': ['pat - telefone','pat telefone'],
-      'whatsapp': ['whatsapp','wa'],
+      'pat_telefone': ['pat - telefone', 'pat telefone'],
+      'whatsapp': ['whatsapp', 'wa'],
       
-      // CNAEs
-      'CNAE Principal Código': ['cnae principal codigo', 'cnae principal', 'cnae codigo'],
-      'CNAE Principal Descrição': ['cnae principal descricao', 'cnae descricao'],
-      'CNAEs Secundários Quantidade': ['cnaes secundarios quantidade', 'qtd cnaes'],
-      'CNAEs Secundários': ['cnaes secundarios', 'cnaes sec'],
-      'atividades_secundarias': ['atividades secundarias','atividades secundárias'],
-      'cod_atividades_secundarias': ['cod atividades secundarias','cod atividades secundárias'],
-      'atividade_economica': ['atividade economica','atividade econômica'],
-      'cod_atividade_economica': ['cod atividade economica','cnae codigo primario','cnae codigo principal'],
-      'setor_amigavel': ['setor amigavel','setor amigável'],
+      // === ATIVIDADE ECONÔMICA ===
+      'setor_amigavel': ['setor amigavel', 'setor amigável'],
+      'atividade_economica': ['atividade economica', 'atividade econômica'],
+      'cod_atividade_economica': ['cod atividade economica', 'cod atividade econômica', 'cnae codigo primario', 'cnae codigo principal'],
+      'atividades_secundarias': ['atividades secundarias', 'atividades secundárias'],
+      'cod_atividades_secundarias': ['cod atividades secundarias', 'cod atividades secundárias'],
       
-      // Tributário e porte
-      'regime_tributario': ['regime tributario','regime tributário'],
-      'porte_estimado': ['porte estimado'],
-      'tipo_unidade': ['tipo unidade','tipo da unidade'],
+      // === NCMs ===
+      'cod_ncms_primarios': ['cod ncms primarios', 'codigos ncms primarios', 'cód ncms primários', 'cod. ncms primários'],
+      'ncms_primarios': ['ncms primarios', 'ncms primários'],
       
-      // Comércio exterior
-      'importacao': ['importacao','importação'],
-      'exportacao': ['exportacao','exportação'],
+      // === FINANCEIRO ===
+      'capital_social': ['capital social', 'capital'],
+      'recebimentos_governo_federal': ['recebimentos do governo federal', 'recebimentos governo'],
+      'enquadramento_porte': ['enquadramento de porte', 'enquadramento porte'],
+      'funcionarios_presumido_matriz_cnpj': ['funcionarios presumido para matriz + cnpj', 'funcionários presumido para matriz + cnpj', 'func matriz cnpj'],
+      'funcionarios_presumido_este_cnpj': ['funcionarios presumido para este cnpj', 'funcionários presumido para este cnpj', 'func este cnpj'],
+      'faturamento_presumido_matriz_cnpj': ['faturamento presumido para matriz + cnpjs', 'faturamento presumido matriz cnpj', 'fat matriz cnpj'],
+      'faturamento_presumido_este_cnpj': ['faturamento presumido para este cnpj', 'fat este cnpj'],
+      'crescimento_empresa': ['crescimento da empresa', 'crescimento'],
+      'qtd_filiais': ['qtd. filiais', 'qtd filiais', 'quantidade de filiais'],
       
-      // Sites e presença web
-      'sites': ['sites','websites'],
-      'melhor_site': ['melhor site'],
-      'segundo_melhor_site': ['segundo melhor site'],
+      // === ESTRUTURA ===
+      'socios_administradores': ['sócios e administradores', 'socios e administradores', 'socios administradores'],
+      'decisores_cargos': ['decisores - cargos', 'decisores cargos'],
+      'decisores_linkedin': ['decisores - linkedin', 'decisores linkedin'],
+      'colaboradores_cargos': ['colaboradores - cargos', 'colaboradores cargos'],
+      'colaboradores_linkedin': ['colaboradores - linkedin', 'colaboradores linkedin'],
       
-      // Emails ricos
-      'emails_validados_departamentos': ['e-mails validados de departamentos','emails validados de departamentos'],
-      'emails_validados_socios': ['e-mails validados de socios','emails validados de sócios'],
-      'emails_validados_decisores': ['e-mails validados de decisores','emails validados de decisores'],
-      'emails_validados_colaboradores': ['e-mails validados de colaboradores','emails validados de colaboradores'],
+      // === EMAILS ===
+      'emails_validados_departamentos': ['e-mails validados de departamentos', 'emails validados de departamentos', 'emails departamentos'],
+      'emails_validados_socios': ['e-mails validados de socios', 'emails validados de sócios', 'e-mails validados de sócios', 'emails socios'],
+      'emails_validados_decisores': ['e-mails validados de decisores', 'emails validados de decisores', 'emails decisores'],
+      'emails_validados_colaboradores': ['e-mails validados de colaboradores', 'emails validados de colaboradores', 'emails colaboradores'],
       'email_pat': ['email pat'],
       'email_receita_federal': ['email receita federal'],
-      'emails_publicos': ['emails publicos','e-mails publicos','e-mails públicos'],
+      'emails_publicos': ['emails publicos', 'e-mails publicos', 'e-mails públicos', 'emails públicos'],
       
-      // NCMs
-      'cod_ncms_primarios': ['cod ncms primarios','codigos ncms primarios','cód ncms primários'],
-      'ncms_primarios': ['ncms primarios','ncms primários'],
+      // === PORTE E COMÉRCIO EXTERIOR ===
+      'porte_estimado': ['porte estimado', 'medio', 'médio', 'grande', 'pequeno'],
+      'importacao': ['importacao', 'importação'],
+      'exportacao': ['exportacao', 'exportação'],
+      'pat_funcionarios': ['pat - funcionarios', 'pat - funcionários', 'pat funcionarios'],
       
-      // Quadro societário
-      'Quadro Societário Quantidade': ['quadro societario quantidade', 'qtd socios'],
-      'Sócios': ['socios', 'quadro societario', 'qsa'],
-      'socios_administradores': ['sócios e administradores','socios e administradores'],
+      // === DIGITAL PRESENCE ===
+      'sites': ['sites', 'websites', 'site'],
+      'melhor_site': ['melhor site'],
+      'segundo_melhor_site': ['segundo melhor site'],
+      'instagram': ['instagram', 'insta', '@instagram'],
+      'facebook': ['facebook', 'fb'],
+      'linkedin': ['linkedin', 'link linkedin', 'linkedin url'],
+      'twitter': ['twitter', 'x', 'twitter/x'],
+      'youtube': ['youtube', 'yt'],
+      'outras': ['outras', 'outras redes'],
       
-      // Estrutura
-      'funcionarios_presumido_matriz_cnpj': ['funcionarios presumido para matriz + cnpj','funcionários presumido para matriz + cnpj'],
-      'funcionarios_presumido_este_cnpj': ['funcionarios presumido para este cnpj','funcionários presumido para este cnpj'],
-      'pat_funcionarios': ['pat - funcionarios','pat - funcionários','pat funcionarios'],
-      'qtd_filiais': ['qtd. filiais','qtd filiais','quantidade de filiais'],
+      // === TECNOLOGIA ===
+      'tecnologias': ['tecnologias', 'tech stack', 'stack tecnológico'],
+      'ferramentas': ['ferramentas', 'tools'],
       
-      // Scores
-      'Score Maturidade Digital': ['score maturidade digital', 'score digital', 'maturidade'],
-      'Score Fit TOTVS': ['score fit totvs', 'fit totvs', 'fit'],
-      'Score Análise': ['score analise', 'score'],
-      'nivel_atividade': ['nível de atividade','nivel de atividade'],
+      // === METADATA ===
+      'tags': ['tags', 'etiquetas'],
+      'notas': ['notas', 'notes', 'observações', 'observacoes'],
+      'nivel_atividade': ['nível de atividade', 'nivel de atividade'],
       
-      // Tecnologia
-      'Tech Stack': ['tech stack', 'tecnologias', 'stack'],
-      'ERP Atual': ['erp atual', 'erp', 'sistema erp'],
-      'CRM Atual': ['crm atual', 'crm', 'sistema crm'],
-      'tecnologias': ['tecnologias (livre)', 'tecnologias usadas'],
-      'ferramentas': ['ferramentas'],
-      
-      // Produtos
-      'Produto Principal': ['produto principal', 'produto', 'main product'],
-      'Marca': ['marca', 'brand'],
-      'Link Produto/Marketplace': ['link produto', 'marketplace', 'link', 'product link'],
-      'Categoria': ['categoria', 'category'],
-      
-      // Decisores/Colaboradores (listas)
-      'decisores_cargos': ['decisores - cargos','decisores cargos'],
-      'decisores_linkedin': ['decisores - linkedin','decisores linkedin'],
-      'colaboradores_cargos': ['colaboradores - cargos','colaboradores cargos'],
-      'colaboradores_linkedin': ['colaboradores - linkedin','colaboradores linkedin'],
-      
-      // Enriquecimento
-      'Enriquecido Receita': ['enriquecido receita', 'receita'],
-      'Enriquecido 360': ['enriquecido 360', '360'],
-      'Enriquecido Apollo': ['enriquecido apollo', 'apollo'],
-      'Enriquecido Phantom': ['enriquecido phantom', 'phantom'],
-      
-      // Metadados
-      'Data Criação': ['data criacao', 'criado em', 'created at'],
-      'Data Última Atualização': ['data ultima atualizacao', 'updated at', 'atualizado em'],
-      'Data Último Enriquecimento': ['data ultimo enriquecimento', 'ultimo enriquecimento'],
-      'Status Enriquecimento': ['status enriquecimento', 'enrichment status'],
-      'Fonte Enriquecimento': ['fonte enriquecimento', 'fonte'],
-      
-      // CRM
-      'Observações': ['observacoes', 'obs', 'notes', 'notas'],
-      'Tags': ['tags', 'etiquetas'],
-      'Prioridade': ['prioridade', 'priority'],
-      'Último Contato': ['ultimo contato', 'last contact'],
-      'Próximo Contato': ['proximo contato', 'next contact'],
-      'Status Pipeline': ['status pipeline', 'pipeline'],
-      'Valor Oportunidade': ['valor oportunidade', 'valor', 'value'],
-      'Probabilidade Fechamento': ['probabilidade fechamento', 'probabilidade', 'probability'],
-      'Data Fechamento Esperada': ['data fechamento esperada', 'expected close', 'data fechamento']
+      // === DÍVIDAS ===
+      'perc_dividas_cnpj_sobre_faturamento': ['% dívidas cnpj sobre faturamento anual', '% dividas cnpj sobre faturamento'],
+      'perc_dividas_cnpj_socios_sobre_faturamento': ['% dívidas cnpj e sócios sobre faturamento anual', '% dividas cnpj e socios sobre faturamento'],
+      'total_dividas_cnpj_uniao': ['total dívidas cnpj com a união', 'total dividas cnpj uniao'],
+      'total_dividas_cnpj_socios_uniao': ['total dívidas cnpj e sócios com a união', 'total dividas cnpj socios uniao'],
+      'dividas_gerais_cnpj_uniao': ['dívidas gerais cnpj com a união', 'dividas gerais cnpj uniao'],
+      'dividas_gerais_cnpj_socios_uniao': ['dívidas gerais cnpj e sócios com a união', 'dividas gerais cnpj socios uniao'],
+      'dividas_cnpj_fgts': ['dívidas cnpj com o fgts', 'dividas cnpj fgts'],
+      'dividas_cnpj_socios_fgts': ['dívidas cnpj e sócios com o fgts', 'dividas cnpj socios fgts'],
+      'dividas_cnpj_previdencia': ['dívidas cnpj com a previdência', 'dividas cnpj previdencia'],
+      'dividas_cnpj_socios_previdencia': ['dívidas cnpj e sócios com a previdência', 'dividas cnpj socios previdencia']
     };
 
+    // Primeiro, tenta mapeamento direto (case insensitive + normalizado)
     normalized.forEach((norm, idx) => {
       for (const [standard, variations] of Object.entries(headerMap)) {
-        if (variations.includes(norm)) {
+        if (variations.includes(norm) || norm === normalizeHeader(standard)) {
           mapping.set(standard, headers[idx]);
           break;
         }
       }
     });
 
-    console.log('🔄 Mapeamento de headers (87 colunas):', Object.fromEntries(mapping));
+    console.log(`🔄 Mapeamento de ${mapping.size}/87 campos Econodata:`, Object.fromEntries(mapping));
     return mapping;
   };
 
@@ -370,30 +322,39 @@ export function BulkUploadDialog() {
           const headers = (jsonData[0] as any[]).map(h => String(h).trim());
           const headerMapping = mapHeaders(headers);
           
-          const rows: any[] = [];
+      const rows: any[] = [];
+      
+      for (let i = 1; i < jsonData.length; i++) {
+        const rowData = jsonData[i] as any[];
+        const row: any = {};
+        
+        // Primeiro, mapeia com o mapeamento padrão
+        headers.forEach((rawHeader, index) => {
+          const value = normalizeValue(rowData[index]);
           
-          for (let i = 1; i < jsonData.length; i++) {
-            const rowData = jsonData[i] as any[];
-            const row: any = {};
-            
-            headers.forEach((rawHeader, index) => {
-              const value = normalizeValue(rowData[index]);
-              
-              for (const [standard, mapped] of headerMapping.entries()) {
-                if (mapped === rawHeader) {
-                  row[standard] = value;
-                  break;
-                }
-              }
-            });
-            
-            const hasIdentifier = row.CNPJ || row['Nome da Empresa'] || row.Website || 
-                                  row.Instagram || row.LinkedIn;
-            
-            if (hasIdentifier) {
-              rows.push(row);
+          for (const [standard, mapped] of headerMapping.entries()) {
+            if (mapped === rawHeader) {
+              row[standard] = value;
+              break;
             }
           }
+        });
+        
+        // Se não achou no mapeamento, tenta mapeamento direto (chave original)
+        headers.forEach((rawHeader, index) => {
+          const value = normalizeValue(rowData[index]);
+          if (value && !row[rawHeader]) {
+            row[rawHeader] = value;
+          }
+        });
+        
+        const hasIdentifier = row.cnpj || row['nome_empresa'] || row.nome_empresa || 
+                              row.sites || row.instagram || row.linkedin;
+        
+        if (hasIdentifier) {
+          rows.push(row);
+        }
+      }
           
           console.log(`✅ ${rows.length} empresas válidas de ${jsonData.length - 1} linhas (Excel)`);
           resolve(rows);
@@ -463,6 +424,7 @@ export function BulkUploadDialog() {
         const values = parseCSVLine(line, separator);
         const row: any = {};
         
+        // Primeiro, mapeia com o mapeamento padrão
         rawHeaders.forEach((rawHeader, index) => {
           const value = normalizeValue(values[index]);
           
@@ -474,8 +436,16 @@ export function BulkUploadDialog() {
           }
         });
         
-        const hasIdentifier = row.CNPJ || row['Nome da Empresa'] || row.Website || 
-                              row.Instagram || row.LinkedIn;
+        // Se não achou no mapeamento, tenta mapeamento direto (chave original)
+        rawHeaders.forEach((rawHeader, index) => {
+          const value = normalizeValue(values[index]);
+          if (value && !row[rawHeader]) {
+            row[rawHeader] = value;
+          }
+        });
+        
+        const hasIdentifier = row.cnpj || row.nome_empresa || row.sites || 
+                              row.instagram || row.linkedin;
         
         if (hasIdentifier) {
           rows.push(row);
