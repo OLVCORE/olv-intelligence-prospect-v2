@@ -64,7 +64,7 @@ export function useAICopilot(context: CopilotContext) {
       return data.suggestions as CopilotSuggestion[];
     },
     refetchInterval: 60000, // Atualizar a cada 1 minuto
-    enabled: !!context.userId
+    enabled: false // Copilot desativado temporariamente
   });
 
   // Executar ação sugerida

@@ -345,16 +345,28 @@ export default function CompanyDetailPage() {
   const handleRunPhantom = async () => {
     setIsRunningPhantom(true);
     try {
-      toast.info('Executando PhantomBuster...', { description: 'Caso não esteja configurado, será exibido um aviso.' });
-      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
-        body: { company_id: id }
+      const dp = (company as any)?.digital_presence || {};
+      const raw = (company as any)?.raw_data || {};
+      const linkedinUrl = dp.linkedin || raw.linkedin || raw?.social?.linkedin || null;
+
+      if (!linkedinUrl) {
+        toast.info('LinkedIn não encontrado', { description: 'Adicione a URL do LinkedIn da empresa para usar o PhantomBuster.' });
+        setIsRunningPhantom(false);
+        return;
+      }
+
+      toast.info('Executando PhantomBuster...', { description: 'Raspando perfis/empresa no LinkedIn' });
+      const { data, error } = await supabase.functions.invoke('linkedin-scrape', {
+        body: { linkedin_url: linkedinUrl, company_id: id }
       });
       if (error) throw error;
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['company-detail', id] }),
         queryClient.invalidateQueries({ queryKey: ['decision_makers', id] }),
       ]);
-      toast.success('PhantomBuster executado (via enriquecimento 360°)');
+      const found = Array.isArray((data as any)?.profiles) ? (data as any).profiles.length : undefined;
+      toast.success('PhantomBuster concluído', { description: found ? `${found} perfil(is) encontrado(s)` : 'Execução finalizada' });
     } catch (e: any) {
       console.error(e);
       toast.error('Falha ao executar PhantomBuster', { description: e.message });
