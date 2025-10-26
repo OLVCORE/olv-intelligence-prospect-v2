@@ -33,7 +33,8 @@ export function useModuleDraft<T extends Record<string, any>>(
   const [savedData, setSavedData] = useState<T | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+const initialDataRef = useRef(initialData);
 
   const { module, companyId, accountStrategyId, title, autoSaveInterval = 5000 } = options;
 
@@ -71,7 +72,7 @@ export function useModuleDraft<T extends Record<string, any>>(
         setSavedData(loadedData);
       } else {
         // Nenhum draft salvo, usa initialData
-        setSavedData(initialData);
+        setSavedData(initialDataRef.current);
       }
     } catch (error: any) {
       console.error('Error loading module draft:', error);
@@ -83,7 +84,7 @@ export function useModuleDraft<T extends Record<string, any>>(
     } finally {
       setIsLoading(false);
     }
-  }, [user, module, accountStrategyId, companyId, initialData, toast]);
+  }, [user, module, accountStrategyId, companyId, toast]);
 
   // Save data to backend
   const save = useCallback(async () => {
