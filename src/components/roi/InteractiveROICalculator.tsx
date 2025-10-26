@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TrendingUp, DollarSign, Calendar, AlertCircle } from 'lucide-react';
+import { Loader2, TrendingUp, DollarSign, Calendar, AlertCircle, ArrowLeft, Download } from 'lucide-react';
 import { CashFlowChart } from './charts/CashFlowChart';
 import { BenefitsBreakdown } from './charts/BenefitsBreakdown';
 import { TOTVSProductSelector, type TOTVSProduct } from './TOTVSProductSelector';
+import { CurrentCostsSelector, type CurrentCostItem } from './CurrentCostsSelector';
+import { TOTVSCostsSelector, type TOTVSCostItem } from './TOTVSCostsSelector';
 
 interface ROICalculatorProps {
   companyId: string;
@@ -70,9 +73,12 @@ interface ROIOutput {
 
 export function InteractiveROICalculator({ companyId, accountStrategyId, initialData }: ROICalculatorProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(false);
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
   const [selectedProducts, setSelectedProducts] = useState<TOTVSProduct[]>([]);
+  const [currentCosts, setCurrentCosts] = useState<CurrentCostItem[]>([]);
+  const [totvsCosts, setTotvsCosts] = useState<TOTVSCostItem[]>([]);
   
   const [inputs, setInputs] = useState<ROIInputs>({
     currentCosts: {
@@ -100,24 +106,53 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
 
   const [results, setResults] = useState<ROIOutput | null>(null);
 
-  // Atualizar custos de investimento quando produtos mudam
+  // Auto-calculate when products or costs change
   useEffect(() => {
-    const totals = selectedProducts.reduce((acc, p) => ({
-      licenses: acc.licenses + p.licenseCost,
-      implementation: acc.implementation + p.implementationCost,
-      maintenance: acc.maintenance + p.maintenanceCost,
-    }), { licenses: 0, implementation: 0, maintenance: 0 });
+    const totalLicenses = selectedProducts.reduce((sum, p) => sum + (p.licenseCost || 0), 0);
+    const totalImplementation = selectedProducts.reduce((sum, p) => sum + (p.implementationCost || 0), 0);
+    const totalMaintenance = selectedProducts.reduce((sum, p) => sum + (p.maintenanceCost || 0), 0);
+    
+    const totalTotvsCosts = totvsCosts.reduce((sum, c) => sum + (c.cost || 0), 0);
 
     setInputs(prev => ({
       ...prev,
       proposedInvestment: {
         ...prev.proposedInvestment,
-        licenses: totals.licenses,
-        implementation: totals.implementation,
-        firstYearMaintenance: totals.maintenance,
+        licenses: totalLicenses,
+        implementation: totalImplementation + totalTotvsCosts,
+        firstYearMaintenance: totalMaintenance,
       }
     }));
-  }, [selectedProducts]);
+  }, [selectedProducts, totvsCosts]);
+
+  // Auto-calculate current costs when they change
+  useEffect(() => {
+    const softwareCosts = currentCosts
+      .filter(c => c.category === 'software')
+      .reduce((sum, c) => sum + (c.cost || 0), 0);
+    
+    const personnelCosts = currentCosts
+      .filter(c => c.category === 'personnel')
+      .reduce((sum, c) => sum + (c.cost || 0), 0);
+    
+    const maintenanceCosts = currentCosts
+      .filter(c => c.category === 'maintenance')
+      .reduce((sum, c) => sum + (c.cost || 0), 0);
+    
+    const consultingCosts = currentCosts
+      .filter(c => c.category === 'consulting')
+      .reduce((sum, c) => sum + (c.cost || 0), 0);
+
+    setInputs(prev => ({
+      ...prev,
+      currentCosts: {
+        software: softwareCosts * 12, // Annual
+        personnel: personnelCosts * 12, // Annual
+        maintenance: maintenanceCosts * 12, // Annual
+        outsourcing: consultingCosts * 12, // Annual
+      }
+    }));
+  }, [currentCosts]);
 
   const calculateROI = async () => {
     setIsCalculating(true);
@@ -189,12 +224,19 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
     return 'text-red-600 dark:text-red-400';
   };
 
+  const exportToPDF = () => {
+    toast({
+      title: "Exportação em desenvolvimento",
+      description: "A funcionalidade de exportação PDF será implementada em breve.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -205,6 +247,22 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToPDF}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               <Button
                 variant={mode === 'simple' ? 'default' : 'outline'}
                 size="sm"
@@ -239,129 +297,62 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
             onProductsChange={setSelectedProducts}
           />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>1. Custos Atuais</CardTitle>
-              <CardDescription>Quanto você gasta hoje com sistemas e processos</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Software Atual (composição total)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={inputs.currentCosts.software || ''}
-                      onChange={(e) => updateInput('currentCosts', 'software', parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right"
-                      placeholder="0"
-                    />
-                    <span className="text-sm font-mono text-muted-foreground">
-                      {formatCurrency(inputs.currentCosts.software)}
-                    </span>
-                  </div>
-                </div>
-                <Slider
-                  value={[inputs.currentCosts.software]}
-                  onValueChange={([v]) => updateInput('currentCosts', 'software', v)}
-                  min={0}
-                  max={500000}
-                  step={10000}
-                  className="w-full"
-                />
-              </div>
+          {/* Custos Atuais - Seletor Detalhado */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">1. Custos Atuais</h3>
+            <p className="text-sm text-muted-foreground">
+              Quanto você gasta hoje com sistemas e processos
+            </p>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Custos de Pessoal (processos manuais do projeto)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={inputs.currentCosts.personnel || ''}
-                      onChange={(e) => updateInput('currentCosts', 'personnel', parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right"
-                      placeholder="0"
-                    />
-                    <span className="text-sm font-mono text-muted-foreground">
-                      {formatCurrency(inputs.currentCosts.personnel)}
-                    </span>
-                  </div>
-                </div>
-                <Slider
-                  value={[inputs.currentCosts.personnel]}
-                  onValueChange={([v]) => updateInput('currentCosts', 'personnel', v)}
-                  min={0}
-                  max={1000000}
-                  step={20000}
-                />
-              </div>
+            <CurrentCostsSelector
+              selectedCosts={currentCosts}
+              onCostsChange={setCurrentCosts}
+            />
+          </div>
 
-              {mode === 'advanced' && (
-                <>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Manutenção</Label>
-                      <span className="text-sm font-mono">{formatCurrency(inputs.currentCosts.maintenance)}</span>
+          {/* Investimento Proposto TOTVS */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">2. Investimento Proposto</h3>
+            <p className="text-sm text-muted-foreground">
+              Quanto custará a solução TOTVS
+            </p>
+
+            <TOTVSCostsSelector
+              selectedCosts={totvsCosts}
+              onCostsChange={setTotvsCosts}
+            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo do Investimento</CardTitle>
+                <CardDescription>
+                  Valores calculados automaticamente dos produtos e serviços selecionados
+                  {selectedProducts.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedProducts.length} produto(s)
+                    </Badge>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 border rounded-lg bg-muted/50">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Licenças Totais</Label>
+                      <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.licenses)}</p>
                     </div>
-                    <Slider
-                      value={[inputs.currentCosts.maintenance]}
-                      onValueChange={([v]) => updateInput('currentCosts', 'maintenance', v)}
-                      min={0}
-                      max={200000}
-                      step={5000}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Outsourcing/Consultoria</Label>
-                      <span className="text-sm font-mono">{formatCurrency(inputs.currentCosts.outsourcing)}</span>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Implementação Total</Label>
+                      <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.implementation)}</p>
                     </div>
-                    <Slider
-                      value={[inputs.currentCosts.outsourcing]}
-                      onValueChange={([v]) => updateInput('currentCosts', 'outsourcing', v)}
-                      min={0}
-                      max={500000}
-                      step={10000}
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>2. Investimento Proposto</CardTitle>
-              <CardDescription>
-                Custos calculados automaticamente dos produtos selecionados acima
-                {selectedProducts.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {selectedProducts.length} produto(s)
-                  </Badge>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 border rounded-lg bg-muted/50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Licenças Totais</Label>
-                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.licenses)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Implementação Total</Label>
-                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.implementation)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Manutenção Anual</Label>
-                    <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.firstYearMaintenance)}</p>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Manutenção Anual</Label>
+                      <p className="text-2xl font-bold">{formatCurrency(inputs.proposedInvestment.firstYearMaintenance)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {mode === 'advanced' && (
-                <>
+                {mode === 'advanced' && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <Label>Treinamento</Label>
@@ -375,24 +366,10 @@ export function InteractiveROICalculator({ companyId, accountStrategyId, initial
                       step={5000}
                     />
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Manutenção Anual</Label>
-                      <span className="text-sm font-mono">{formatCurrency(inputs.proposedInvestment.firstYearMaintenance)}</span>
-                    </div>
-                    <Slider
-                      value={[inputs.proposedInvestment.firstYearMaintenance]}
-                      onValueChange={([v]) => updateInput('proposedInvestment', 'firstYearMaintenance', v)}
-                      min={0}
-                      max={150000}
-                      step={5000}
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
