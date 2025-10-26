@@ -291,7 +291,7 @@ export function AppSidebar() {
           )}
         </Link>
       </SidebarHeader>
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-1 py-2">
         <TooltipProvider delayDuration={200}>
           {menuGroups.map((group) => {
             const isGroupActive = group.items.some(item => 
@@ -300,20 +300,20 @@ export function AppSidebar() {
             );
             
             return (
-            <Collapsible key={group.label} className="group/group" defaultOpen={isGroupActive}>
-              <SidebarGroup>
+            <Collapsible key={group.label} className="group/group mb-4" defaultOpen={isGroupActive}>
+              <SidebarGroup className="px-2">
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-4 px-2 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all">
+                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-bold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-3 px-3 mb-2 rounded-lg hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
                       <group.icon className="h-5 w-5 text-sidebar-primary" />
                     </div>
-                    <span className="flex-1 group-data-[collapsible=icon]:hidden">{group.label}</span>
-                    <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden" />
+                    <span className="flex-1 group-data-[collapsible=icon]:hidden text-left">{group.label}</span>
+                    <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden flex-shrink-0" />
                   </CollapsibleTrigger>
                 </SidebarGroupLabel>
-                <CollapsibleContent>
+                <CollapsibleContent className="mt-1">
                   <SidebarGroupContent>
-                    <SidebarMenu>
+                    <SidebarMenu className="space-y-1">
                       {group.items.map((item) => {
                     const isActive = location.pathname === item.url;
                     const hasSubmenu = (item as any).submenu;
@@ -331,15 +331,15 @@ export function AppSidebar() {
                                    <SidebarMenuButton 
                                      asChild
                                      className={cn(
-                                       "touch-manipulation active:scale-95 py-3",
+                                       "touch-manipulation active:scale-95 py-3 px-3 mb-1",
                                        item.special && "relative overflow-hidden bg-[hsl(var(--accent-gold))]/15 border-l-4 border-[hsl(var(--accent-gold))] shadow-lg shadow-[hsl(var(--accent-gold))]/20 hover:shadow-[hsl(var(--accent-gold))]/40 transition-all duration-300",
                                        item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
                                        item.highlighted && !item.special && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
                                      )}
                                    >
                                      <CollapsibleTrigger className="w-full">
-                                         <div className="flex items-center gap-2 py-1 group-data-[collapsible=icon]:justify-center">
-                                           <div className="relative">
+                                         <div className="flex items-center gap-3 py-1 group-data-[collapsible=icon]:justify-center">
+                                           <div className="relative flex-shrink-0">
                                              <item.icon className={cn(
                                                "h-5 w-5",
                                                item.special && "text-[hsl(var(--accent-gold))]",
@@ -354,7 +354,7 @@ export function AppSidebar() {
                                            </div>
                                            {(open || isMobile) && (
                                              <span className={cn(
-                                               "font-medium text-sm",
+                                               "font-medium text-sm flex-1 text-left",
                                                item.special && "text-[hsl(var(--accent-gold))]",
                                                item.competitive && "text-red-500 font-bold"
                                              )}>
@@ -363,12 +363,12 @@ export function AppSidebar() {
                                            )}
                                          </div>
                                        {(open || isMobile) && (
-                                         <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                         <ChevronRight className="ml-auto h-4 w-4 flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                                        )}
                                      </CollapsibleTrigger>
                                    </SidebarMenuButton>
-                                  <CollapsibleContent>
-                                    <SidebarMenuSub>
+                                  <CollapsibleContent className="mt-1 ml-8">
+                                    <SidebarMenuSub className="space-y-1 border-l-2 border-sidebar-border/30 ml-2 pl-4">
                                       {(item as any).submenu.map((subItem: any) => (
                                          <SidebarMenuSubItem key={subItem.title}>
                                            <Tooltip>
@@ -380,7 +380,7 @@ export function AppSidebar() {
                                                        location.pathname === subItem.url.split('?')[0] && 
                                                        (!subItem.url.includes('?tab=') || location.search.includes(subItem.url.split('?tab=')[1]))
                                                      } 
-                                                     className="touch-manipulation active:scale-95 py-2.5"
+                                                     className="touch-manipulation active:scale-95 py-2.5 px-3"
                                                    >
                                                      {(() => {
                                                        const sp = new URLSearchParams(location.search);
@@ -422,35 +422,35 @@ export function AppSidebar() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div>
-                              <SidebarMenuButton 
-                                asChild 
-                                isActive={isActive}
-                                className={cn(
-                                  "touch-manipulation active:scale-95 py-3",
-                                  item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
-                                  item.highlighted && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
-                                )}
-                              >
-                                <Link to={item.url} className="flex items-center gap-2">
-                                  <div className="relative">
-                                    <item.icon className={cn(
-                                      "h-5 w-5",
-                                      item.competitive && "text-red-500"
-                                    )} />
-                                    {item.competitive && (
-                                      <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
-                                    )}
-                                  </div>
-                                  {(open || isMobile) && (
-                                    <span className={cn(
-                                      "text-sm",
-                                      item.competitive && "text-red-500 font-bold"
-                                    )}>
-                                      {item.title}
-                                    </span>
-                                  )}
-                                </Link>
-                              </SidebarMenuButton>
+                             <SidebarMenuButton 
+                               asChild 
+                               isActive={isActive}
+                               className={cn(
+                                 "touch-manipulation active:scale-95 py-3 px-3",
+                                 item.competitive && "relative overflow-hidden bg-red-500/10 border-l-4 border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all duration-300 animate-pulse-subtle",
+                                 item.highlighted && !item.competitive && "font-semibold bg-primary/5 border-l-2 border-primary"
+                               )}
+                             >
+                               <Link to={item.url} className="flex items-center gap-3">
+                                 <div className="relative flex-shrink-0">
+                                   <item.icon className={cn(
+                                     "h-5 w-5",
+                                     item.competitive && "text-red-500"
+                                   )} />
+                                   {item.competitive && (
+                                     <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                                   )}
+                                 </div>
+                                 {(open || isMobile) && (
+                                   <span className={cn(
+                                     "text-sm flex-1 text-left",
+                                     item.competitive && "text-red-500 font-bold"
+                                   )}>
+                                     {item.title}
+                                   </span>
+                                 )}
+                               </Link>
+                             </SidebarMenuButton>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-[280px] hidden md:block">
