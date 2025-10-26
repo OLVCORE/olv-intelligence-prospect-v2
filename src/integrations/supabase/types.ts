@@ -1894,6 +1894,7 @@ export type Database = {
           overall_score: number | null
           social_score: number | null
           twitter_data: Json | null
+          updated_at: string
           web_score: number | null
           website_metrics: Json | null
           youtube_data: Json | null
@@ -1910,6 +1911,7 @@ export type Database = {
           overall_score?: number | null
           social_score?: number | null
           twitter_data?: Json | null
+          updated_at?: string
           web_score?: number | null
           website_metrics?: Json | null
           youtube_data?: Json | null
@@ -1926,6 +1928,7 @@ export type Database = {
           overall_score?: number | null
           social_score?: number | null
           twitter_data?: Json | null
+          updated_at?: string
           web_score?: number | null
           website_metrics?: Json | null
           youtube_data?: Json | null
