@@ -31,6 +31,7 @@ const TechStackPage = lazy(() => import("./pages/TechStackPage"));
 const FitTOTVSPage = lazy(() => import("./pages/FitTOTVSPage"));
 const GovernancePage = lazy(() => import("./pages/GovernancePage"));
 const AccountStrategyPage = lazy(() => import("./pages/AccountStrategyPage"));
+const StrategyHistoryPage = lazy(() => import("./pages/StrategyHistoryPage"));
 const CompetitiveIntelligencePage = lazy(() => import("./pages/CompetitiveIntelligencePage"));
 const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
@@ -426,6 +427,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <AccountStrategyPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account-strategy/history"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <StrategyHistoryPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

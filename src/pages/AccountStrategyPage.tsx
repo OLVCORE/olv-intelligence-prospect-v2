@@ -23,6 +23,7 @@ import { ProposalManager } from '@/components/proposals/ProposalManager';
 import { BattleCardViewer } from '@/components/competitive/BattleCardViewer';
 import { ValueRealizationDashboard } from '@/components/value/ValueRealizationDashboard';
 import { CompanySelectDialog } from '@/components/common/CompanySelectDialog';
+import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
 
 export default function AccountStrategyPage() {
   const params = useParams<{ companyId: string }>();
@@ -620,6 +621,7 @@ export default function AccountStrategyPage() {
           </Tabs>
         )}
       </div>
+      <ScrollToTopButton />
     </AppLayout>
   );
 }

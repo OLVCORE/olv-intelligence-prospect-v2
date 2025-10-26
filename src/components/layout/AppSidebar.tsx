@@ -34,7 +34,8 @@ import {
   Repeat,
   LineChart,
   Award,
-  DollarSign
+  DollarSign,
+  History
 } from "lucide-react";
 import {
   Sidebar,
@@ -130,6 +131,7 @@ const menuGroups = [
           { title: "Propostas Visuais", icon: FileText, url: "/account-strategy?tab=proposals", description: "Geração de propostas comerciais" },
           { title: "Competitive Intelligence", icon: Shield, url: "/account-strategy?tab=competitive", description: "Posicionamento competitivo" },
           { title: "Value Realization", icon: TrendingUp, url: "/account-strategy?tab=value", description: "Tracking de valor entregue" },
+          { title: "Histórico de Estratégias", icon: History, url: "/account-strategy/history", description: "Ver todas as estratégias salvas" },
         ],
       },
       {

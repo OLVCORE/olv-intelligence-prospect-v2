@@ -9,6 +9,7 @@ import { Plus, Trash2, TrendingUp, AlertCircle, CheckCircle } from "lucide-react
 import { useProductCatalog, Product } from "@/hooks/useProductCatalog";
 import { useCreateQuote, QuoteProduct } from "@/hooks/useQuotes";
 import { toast } from "sonner";
+import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
 
 interface QuoteConfiguratorProps {
   companyId: string;
@@ -250,6 +251,7 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
           </Card>
         )}
       </div>
+      <ScrollToTopButton />
     </div>
   );
 }
