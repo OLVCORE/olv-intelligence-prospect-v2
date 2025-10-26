@@ -14,7 +14,7 @@ interface EconodataEnrichButtonProps {
 export function EconodataEnrichButton({ 
   companyId, 
   cnpj, 
-  variant = 'outline',
+  variant = 'default',
   size = 'default',
   className 
 }: EconodataEnrichButtonProps) {
@@ -47,7 +47,7 @@ export function EconodataEnrichButton({
               </>
             ) : (
               <>
-                <Database className="mr-2 h-4 w-4" />
+                <Database className="mr-2 h-4 w-4 text-primary-foreground" />
                 Enriquecer com Econodata
               </>
             )}

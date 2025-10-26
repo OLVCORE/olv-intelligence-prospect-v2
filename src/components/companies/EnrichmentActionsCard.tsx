@@ -145,7 +145,7 @@ export function EnrichmentActionsCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="secondary"
+                  variant="default"
                   onClick={onEconodata}
                   disabled={isLoadingEconodata}
                   className="flex items-center gap-2"
@@ -153,7 +153,7 @@ export function EnrichmentActionsCard({
                   {isLoadingEconodata ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Database className="h-4 w-4" />
+                    <Database className="h-4 w-4 text-primary-foreground" />
                   )}
                   Econodata
                 </Button>
