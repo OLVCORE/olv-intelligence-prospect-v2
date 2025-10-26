@@ -37,6 +37,9 @@ All colors MUST be HSL.
     --accent-orange: 25 95% 53%;
     --accent-gold: 43 74% 49%;
 
+    /* Static white surface for icon tiles */
+    --surface-plain: 0 0% 100%;
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 217 91% 60%;
@@ -103,6 +106,9 @@ All colors MUST be HSL.
     --chart-3: 25 95% 53%;
     --chart-4: 262 83% 58%;
     --chart-5: 188 85% 50%;
+
+    /* Static white surface for icon tiles (keeps white even in dark mode) */
+    --surface-plain: 0 0% 100%;
   }
 }
 

@@ -1057,7 +1057,7 @@ export default function CompanyDetailPage() {
                           {isRunningPhantom ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-background border border-border shadow-sm">
+                            <div className="relative h-8 w-8 flex items-center justify-center rounded-lg bg-[hsl(var(--surface-plain))] border border-border shadow-sm">
                               <img src={phantomLogo} alt="PhantomBuster" className="h-5 w-5 object-contain" />
                             </div>
                           )}
