@@ -7,15 +7,21 @@ import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompet
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
 import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
 import { Badge } from "@/components/ui/badge";
-import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus, Target } from "lucide-react";
+import { Shield, TrendingUp, TrendingDown, Award, BarChart3, Search, Plus, Target, AlertCircle } from "lucide-react";
 import { useWinLossAnalysis } from "@/hooks/useCompetitiveIntelligence";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 
 export default function CompetitiveIntelligencePage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const companyId = searchParams.get('company');
+  const [showCompanySelector, setShowCompanySelector] = useState(false);
   
   const { data: winLossData } = useWinLossAnalysis();
   
@@ -45,13 +51,58 @@ export default function CompetitiveIntelligencePage() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="h-8 w-8" />
-            Inteligência Competitiva
+            <Target className="h-8 w-8" />
+            Qualificação de Leads ICP
           </h1>
           <p className="text-muted-foreground">
-            Battle cards, análise de win/loss e estratégias contra competidores
+            Detecte uso de TOTVS e sinais de intenção para qualificar empresas-alvo
           </p>
         </div>
+
+        {/* Company Selector */}
+        {!companyId && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Selecione uma empresa para iniciar a qualificação de lead</span>
+              <Button size="sm" onClick={() => setShowCompanySelector(true)}>
+                <Target className="mr-2 h-4 w-4" />
+                Selecionar Empresa
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <CompanySelectDialog
+          open={showCompanySelector}
+          onOpenChange={setShowCompanySelector}
+          mode="single"
+          title="Selecione uma Empresa para Qualificar"
+          confirmLabel="Qualificar"
+          onConfirm={(ids) => {
+            navigate(`/competitive-intelligence?company=${ids[0]}`);
+          }}
+        />
+
+        {company && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">{company.name}</CardTitle>
+                  <CardDescription>{company.domain || company.city}</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowCompanySelector(true)}
+                >
+                  Trocar Empresa
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -100,166 +151,232 @@ export default function CompetitiveIntelligencePage() {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue={company ? "lead-qualification" : "battle-cards"} className="w-full">
-          <TabsList className={company ? "grid w-full grid-cols-5" : "grid w-full grid-cols-4"}>
-            {company && (
+        {/* Main Content */}
+        {company ? (
+          <Tabs defaultValue="lead-qualification" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="lead-qualification">
                 <Target className="mr-2 h-4 w-4" />
                 Qualificação
               </TabsTrigger>
-            )}
-            <TabsTrigger value="battle-cards">
-              <Shield className="mr-2 h-4 w-4" />
-              Battle Cards
-            </TabsTrigger>
-            <TabsTrigger value="manage">
-              <Plus className="mr-2 h-4 w-4" />
-              Gerenciar
-            </TabsTrigger>
-            <TabsTrigger value="auto-search">
-              <Search className="mr-2 h-4 w-4" />
-              Busca Auto
-            </TabsTrigger>
-            <TabsTrigger value="win-loss">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Win/Loss
-            </TabsTrigger>
-          </TabsList>
+              <TabsTrigger value="battle-cards">
+                <Shield className="mr-2 h-4 w-4" />
+                Battle Cards
+              </TabsTrigger>
+              <TabsTrigger value="auto-search">
+                <Search className="mr-2 h-4 w-4" />
+                Busca Auto
+              </TabsTrigger>
+              <TabsTrigger value="manage">
+                <Plus className="mr-2 h-4 w-4" />
+                Gerenciar
+              </TabsTrigger>
+              <TabsTrigger value="win-loss">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Win/Loss
+              </TabsTrigger>
+            </TabsList>
 
-          {company && (
             <TabsContent value="lead-qualification" className="space-y-6">
+              <Alert className="bg-blue-500/10 border-blue-500/20">
+                <Target className="h-4 w-4 text-blue-500" />
+                <AlertDescription>
+                  <p className="font-semibold mb-2">Estratégia de Qualificação ICP</p>
+                  <ol className="text-sm space-y-1 list-decimal list-inside">
+                    <li><strong>Detecção TOTVS:</strong> Score &ge; 70 = Desqualificar (já usa TOTVS)</li>
+                    <li><strong>Sinais de Intenção:</strong> Score &ge; 70 = HOT LEAD (prospectar agora!)</li>
+                    <li><strong>Combinação Ideal:</strong> TOTVS &lt; 70 + Intenção &ge; 70 = PROSPECT NOW!</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
+
               <div className="grid gap-6 md:grid-cols-2">
                 <TOTVSDetectionCard company={company} />
                 <IntentSignalsCard company={company} />
               </div>
             </TabsContent>
-          )}
 
-          <TabsContent value="battle-cards" className="space-y-4">
-            <BattleCardViewer />
-          </TabsContent>
+            <TabsContent value="battle-cards" className="space-y-4">
+              <BattleCardViewer />
+            </TabsContent>
 
-          <TabsContent value="manage" className="space-y-4">
-            <div className="flex justify-end">
-              <CompetitorFormDialog />
-            </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Concorrentes</CardTitle>
-                <CardDescription>
-                  Adicione concorrentes manualmente ou através da busca automática
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Use o botão "Adicionar Concorrente" acima para cadastrar manualmente,
-                  ou vá para a aba "Busca Auto" para encontrar concorrentes automaticamente na web.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="auto-search" className="space-y-4">
+              <AutoSearchCompetitors />
+            </TabsContent>
 
-          <TabsContent value="auto-search" className="space-y-4">
-            <AutoSearchCompetitors />
-          </TabsContent>
+            <TabsContent value="manage" className="space-y-4">
+              <div className="flex justify-end">
+                <CompetitorFormDialog />
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gerenciamento de Concorrentes</CardTitle>
+                  <CardDescription>
+                    Adicione concorrentes manualmente ou através da busca automática
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Use o botão "Adicionar Concorrente" acima para cadastrar manualmente,
+                    ou vá para a aba "Busca Auto" para encontrar concorrentes automaticamente na web.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="win-loss" className="space-y-4">
-            {winLossData && winLossData.length > 0 ? (
-              <div className="grid gap-4">
-                {winLossData.map((analysis) => (
-                  <Card key={analysis.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">
-                          Deal #{analysis.id.slice(0, 8)}
-                        </CardTitle>
-                        <Badge variant={
-                          analysis.outcome === 'won' ? 'default' :
-                          analysis.outcome === 'lost' ? 'destructive' : 'secondary'
-                        }>
-                          {analysis.outcome === 'won' ? 'Ganho' :
-                           analysis.outcome === 'lost' ? 'Perdido' : 'Em Andamento'}
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        Valor: {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(analysis.deal_value || 0)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <p className="text-sm font-semibold mb-2">Competidores Enfrentados</p>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.competitors_faced?.map((comp, idx) => (
-                            <Badge key={idx} variant="outline">{comp}</Badge>
-                          ))}
+            <TabsContent value="win-loss" className="space-y-4">
+              {/* Stats */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Win Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{winRate.toFixed(1)}%</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {wonDeals} vitórias / {totalDeals} deals
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Deals Ganhos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-green-600">{wonDeals}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Total de vitórias</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Deals Perdidos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-red-600">{lostDeals}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Total de perdas</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Em Andamento</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-yellow-600">
+                      {winLossData?.filter(d => d.outcome === 'ongoing').length || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Deals ativos</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {winLossData && winLossData.length > 0 ? (
+                <div className="grid gap-4">
+                  {winLossData.map((analysis) => (
+                    <Card key={analysis.id}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">
+                            Deal #{analysis.id.slice(0, 8)}
+                          </CardTitle>
+                          <Badge variant={
+                            analysis.outcome === 'won' ? 'default' :
+                            analysis.outcome === 'lost' ? 'destructive' : 'secondary'
+                          }>
+                            {analysis.outcome === 'won' ? 'Ganho' :
+                             analysis.outcome === 'lost' ? 'Perdido' : 'Em Andamento'}
+                          </Badge>
                         </div>
-                      </div>
-
-                      {analysis.win_reasons && analysis.win_reasons.length > 0 && (
+                        <CardDescription>
+                          Valor: {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(analysis.deal_value || 0)}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
                         <div>
-                          <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-600">
-                            <TrendingUp className="h-4 w-4" />
-                            Razões de Vitória
-                          </p>
-                          <ul className="space-y-1">
-                            {analysis.win_reasons.map((reason, idx) => (
-                              <li key={idx} className="text-sm flex items-start">
-                                <span className="mr-2">✓</span>
-                                <span>{reason}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {analysis.loss_reasons && analysis.loss_reasons.length > 0 && (
-                        <div>
-                          <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-red-600">
-                            <TrendingDown className="h-4 w-4" />
-                            Razões de Perda
-                          </p>
-                          <ul className="space-y-1">
-                            {analysis.loss_reasons.map((reason, idx) => (
-                              <li key={idx} className="text-sm flex items-start">
-                                <span className="mr-2">•</span>
-                                <span>{reason}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {analysis.key_differentiators && analysis.key_differentiators.length > 0 && (
-                        <div>
-                          <p className="text-sm font-semibold mb-2 flex items-center gap-2">
-                            <Award className="h-4 w-4" />
-                            Diferenciais-Chave
-                          </p>
+                          <p className="text-sm font-semibold mb-2">Competidores Enfrentados</p>
                           <div className="flex flex-wrap gap-2">
-                            {analysis.key_differentiators.map((diff, idx) => (
-                              <Badge key={idx}>{diff}</Badge>
+                            {analysis.competitors_faced?.map((comp, idx) => (
+                              <Badge key={idx} variant="outline">{comp}</Badge>
                             ))}
                           </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma análise Win/Loss registrada ainda</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+
+                        {analysis.win_reasons && analysis.win_reasons.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-600">
+                              <TrendingUp className="h-4 w-4" />
+                              Razões de Vitória
+                            </p>
+                            <ul className="space-y-1">
+                              {analysis.win_reasons.map((reason, idx) => (
+                                <li key={idx} className="text-sm flex items-start">
+                                  <span className="mr-2">✓</span>
+                                  <span>{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {analysis.loss_reasons && analysis.loss_reasons.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-red-600">
+                              <TrendingDown className="h-4 w-4" />
+                              Razões de Perda
+                            </p>
+                            <ul className="space-y-1">
+                              {analysis.loss_reasons.map((reason, idx) => (
+                                <li key={idx} className="text-sm flex items-start">
+                                  <span className="mr-2">•</span>
+                                  <span>{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {analysis.key_differentiators && analysis.key_differentiators.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                              <Award className="h-4 w-4" />
+                              Diferenciais-Chave
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {analysis.key_differentiators.map((diff, idx) => (
+                                <Badge key={idx}>{diff}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Nenhuma análise Win/Loss registrada ainda</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Target className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-muted-foreground mb-4">
+                Selecione uma empresa acima para iniciar a qualificação
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );
