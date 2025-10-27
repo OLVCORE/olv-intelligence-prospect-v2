@@ -421,7 +421,7 @@ serve(async (req) => {
         }
       }
 
-      // Se não encontrou por ID, tentar busca normal
+      // Se não encontrou por ID, tentar busca normal com múltiplas estratégias
       if (!org) {
         const searchDomain = domain || company.website || company.domain;
         
@@ -431,61 +431,108 @@ serve(async (req) => {
           'X-Api-Key': APOLLO_API_KEY,
         } as const;
         
-        const buildPayload = (opts: { byName?: boolean; byDomain?: boolean }) => {
-          const p: Record<string, unknown> = { page: 1, per_page: 1 };
-          if (opts.byName && company.name) p.q_organization_name = company.name;
-          if (opts.byDomain && searchDomain) p.q_organization_domains = searchDomain;
+        // Função para normalizar nome da empresa (remover sufixos jurídicos)
+        const normalizeName = (name: string): string => {
+          return name
+            .replace(/\s+(LTDA|ME|EPP|EIRELI|S\.A\.|SA|CIA|COMERCIO|IMPORTADORA|EXPORTADORA|DISTRIBUIDORA)\b\.?/gi, '')
+            .replace(/\s+E\s+/gi, ' ')
+            .trim();
+        };
+        
+        // Extrair primeira palavra significativa (geralmente marca/nome principal)
+        const getMainKeyword = (name: string): string => {
+          const normalized = normalizeName(name);
+          const words = normalized.split(/\s+/).filter(w => w.length > 3);
+          return words[0] || normalized;
+        };
+        
+        const buildPayload = (opts: { 
+          byName?: boolean; 
+          byDomain?: boolean; 
+          byKeyword?: boolean;
+          searchName?: string;
+        }) => {
+          const p: Record<string, unknown> = { page: 1, per_page: 5 };
+          
+          if (opts.byName && opts.searchName) {
+            p.q_organization_name = opts.searchName;
+          }
+          if (opts.byDomain && searchDomain) {
+            p.q_organization_domains = searchDomain;
+          }
+          if (opts.byKeyword && opts.searchName) {
+            p.q_keywords = opts.searchName;
+          }
+          
           return p;
         };
 
+        // ESTRATÉGIA 1: Nome completo + Domínio
+        console.log('[Apollo] 🔍 Estratégia 1: Nome completo + Domínio');
         let orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
           method: 'POST',
           headers: baseHeaders,
-          body: JSON.stringify(buildPayload({ byName: true, byDomain: true }))
+          body: JSON.stringify(buildPayload({ byName: true, byDomain: true, searchName: company.name }))
         });
         
-        if (!orgResponse.ok) {
-          const firstErr = await orgResponse.text();
-          console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, firstErr);
-
-          // Fallback 1: tentar por domínio apenas
+        if (!orgResponse.ok || !(await orgResponse.clone().json()).organizations?.length) {
+          console.log('[Apollo] ⚠️ Estratégia 1 falhou, tentando alternativas...');
+          
+          // ESTRATÉGIA 2: Domínio apenas (mais confiável)
           if (searchDomain) {
+            console.log('[Apollo] 🔍 Estratégia 2: Domínio apenas');
             const resp2 = await fetch('https://api.apollo.io/v1/organizations/search', {
               method: 'POST',
               headers: baseHeaders,
               body: JSON.stringify(buildPayload({ byDomain: true }))
             });
 
-            if (resp2.ok) {
+            if (resp2.ok && (await resp2.clone().json()).organizations?.length) {
               orgResponse = resp2;
             } else {
-              const secondErr = await resp2.text();
-              console.error('[Apollo] ❌ Fallback domínio falhou:', resp2.status, secondErr);
+              // ESTRATÉGIA 3: Nome normalizado (sem LTDA, ME, etc)
+              const normalizedName = normalizeName(company.name);
+              console.log('[Apollo] 🔍 Estratégia 3: Nome normalizado:', normalizedName);
+              
+              const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+                method: 'POST',
+                headers: baseHeaders,
+                body: JSON.stringify(buildPayload({ byName: true, searchName: normalizedName }))
+              });
 
-              // Fallback 2: tentar por nome apenas
-              if (company.name) {
-                const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+              if (resp3.ok && (await resp3.clone().json()).organizations?.length) {
+                orgResponse = resp3;
+              } else {
+                // ESTRATÉGIA 4: Palavra-chave principal (nome da marca)
+                const mainKeyword = getMainKeyword(company.name);
+                console.log('[Apollo] 🔍 Estratégia 4: Palavra-chave principal:', mainKeyword);
+                
+                const resp4 = await fetch('https://api.apollo.io/v1/organizations/search', {
                   method: 'POST',
                   headers: baseHeaders,
-                  body: JSON.stringify(buildPayload({ byName: true }))
+                  body: JSON.stringify(buildPayload({ byKeyword: true, searchName: mainKeyword }))
                 });
 
-                if (resp3.ok) {
-                  orgResponse = resp3;
+                if (resp4.ok && (await resp4.clone().json()).organizations?.length) {
+                  orgResponse = resp4;
                 } else {
-                  const thirdErr = await resp3.text();
-                  console.error('[Apollo] ❌ Fallback nome falhou:', resp3.status, thirdErr);
+                  // ESTRATÉGIA 5: Busca ampla por keywords sem filtro de domínio
+                  console.log('[Apollo] 🔍 Estratégia 5: Busca ampla por keywords');
+                  const resp5 = await fetch('https://api.apollo.io/v1/organizations/search', {
+                    method: 'POST',
+                    headers: baseHeaders,
+                    body: JSON.stringify({ 
+                      page: 1, 
+                      per_page: 10,
+                      q_keywords: normalizedName
+                    })
+                  });
+
+                  if (resp5.ok) {
+                    orgResponse = resp5;
+                  }
                 }
               }
-            }
-          } else if (company.name) {
-            const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
-              method: 'POST',
-              headers: baseHeaders,
-              body: JSON.stringify(buildPayload({ byName: true }))
-            });
-            if (resp3.ok) {
-              orgResponse = resp3;
             }
           }
         }
