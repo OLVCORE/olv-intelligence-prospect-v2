@@ -594,69 +594,35 @@ serve(async (req) => {
       }
 
       // Buscar pessoas/decisores da organização
-      // 🎯 FILTROS ESTRATÉGICOS - Foco em área corporativa brasileira
+      // 🎯 BUSCA ABRANGENTE - TODOS os decisores, filtramos depois na plataforma
       const peoplePayload: Record<string, unknown> = {
-        per_page: 100, // Aumentado para ter mais opções após filtragem
+        per_page: 100,
         
-        // 🇧🇷 FILTRO GEOGRÁFICO - Brasil primeiro
+        // 🇧🇷 FILTRO GEOGRÁFICO - Apenas Brasil (mantém foco regional)
         person_locations: ['Brazil'],
         
-        // 👔 FILTRO DE SENIORIDADE - Apenas decisores
+        // 👔 FILTRO DE SENIORIDADE - Apenas decisores (mantém qualidade)
         person_seniorities: ['c_suite', 'vp', 'director', 'manager', 'senior'],
-        
-        // 🏢 FILTRO DE DEPARTAMENTOS - Áreas que usam TOTVS
-        person_departments: [
-          'operations',
-          'finance', 
-          'sales',
-          'purchasing',
-          'supply chain',
-          'human resources',
-          'information technology',
-          'accounting',
-          'logistics'
-        ],
-        
-        // 📋 FILTRO DE CARGOS - Títulos estratégicos (mais abrangente)
-        person_titles: [
-          'CEO', 'CTO', 'CFO', 'COO', 'CMO', 'CIO',
-          'Diretor', 'Director', 'Diretora',
-          'Gerente', 'Manager', 'Head',
-          'Vice President', 'VP',
-          'Coordenador', 'Coordinator',
-          'Superintendente',
-          'Presidente', 'President'
-        ].join(','),
       };
       
       if (org?.id) {
         // Se temos o org ID, usar para busca mais precisa
         peoplePayload.q_organization_id = org.id;
+        console.log('[Apollo] 🎯 Usando Organization ID para busca precisa:', org.id);
       } else {
         // Fallback para domínio/nome
         const searchDomain = domain || company.website || company.domain;
-        if (searchDomain) peoplePayload.q_organization_domains = searchDomain;
-        if (company.name) peoplePayload.q_organization_name = company.name;
-      }
-      
-      // 📍 Se a empresa tem localização específica no Brasil, refinar ainda mais
-      const companyLocation = (company as any).location;
-      if (companyLocation?.state) {
-        // Adicionar estado específico para busca mais precisa
-        const brazilianStates = ['SP', 'RJ', 'MG', 'RS', 'PR', 'SC', 'BA', 'PE', 'CE', 'GO', 'DF'];
-        if (brazilianStates.includes(companyLocation.state)) {
-          peoplePayload.person_locations = [`${companyLocation.state}, Brazil`];
+        if (searchDomain) {
+          peoplePayload.q_organization_domains = searchDomain;
+          console.log('[Apollo] 🔍 Usando domínio para busca:', searchDomain);
+        }
+        if (company.name) {
+          peoplePayload.q_organization_name = company.name;
+          console.log('[Apollo] 🔍 Usando nome para busca:', company.name);
         }
       }
       
-      console.log('[Apollo] 🎯 Filtros aplicados:', {
-        locations: peoplePayload.person_locations,
-        seniorities: peoplePayload.person_seniorities,
-        departments: peoplePayload.person_departments,
-        titles_count: peoplePayload.person_titles?.toString().split(',').length,
-        hasOrgId: !!org?.id,
-        state: companyLocation?.state
-      });
+      console.log('[Apollo] 📋 Payload completo para people/search:', JSON.stringify(peoplePayload, null, 2));
 
       const peopleResponse = await fetch(`https://api.apollo.io/v1/people/search`, {
         method: 'POST',
@@ -667,12 +633,26 @@ serve(async (req) => {
         body: JSON.stringify(peoplePayload)
       });
       
+      console.log('[Apollo] 📡 Response status:', peopleResponse.status);
+      
+      if (!peopleResponse.ok) {
+        const errorText = await peopleResponse.text();
+        console.error('[Apollo] ❌ API Error:', peopleResponse.status, errorText);
+      }
+      
       if (peopleResponse.ok) {
         const peopleData = await peopleResponse.json();
         const people = peopleData.people || [];
         peopleCount = people.length;
 
         console.log('[Apollo] 👥 Encontrados', people.length, 'decisores');
+        console.log('[Apollo] 📊 Amostra de 3 primeiros:', people.slice(0, 3).map((p: any) => ({
+          name: p.name,
+          title: p.title,
+          email_status: p.email_status,
+          departments: p.departments,
+          seniority: p.seniority
+        })));
 
         // Salvar decisores com TODOS os campos
         for (const person of people) {

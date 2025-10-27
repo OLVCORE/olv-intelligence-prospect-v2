@@ -96,40 +96,46 @@ const getDepartment = (title?: string): string => {
   const t = title.toLowerCase();
 
   // Executivo (C-Level)
-  if (/\b(ceo|presidente|president|chief.?executive)\b/.test(t)) return 'Executivo';
+  if (/\b(ceo|presidente|president|chief.?executive|owner|sócio|socio|proprietário|proprietario)\b/.test(t)) return 'Executivo';
   
   // Operações & Produção
-  if (/\b(operations|operações|produção|producao|manufatura|fabrica|industrial|plant|coo)\b/.test(t)) return 'Operações';
+  if (/\b(operations?|operações|operacao|produção|producao|manufatura|fabrica|fábrica|industrial|plant|coo|production)\b/.test(t)) return 'Operações';
   
   // Financeiro & Contabilidade
-  if (/\b(finance|financeiro|contabil|contabilidade|cfo|tesouraria|controller|accounting)\b/.test(t)) return 'Financeiro';
+  if (/\b(finance?|financeiro|contabil|contabilidade|cfo|tesouraria|controller|accounting|fiscal)\b/.test(t)) return 'Financeiro';
   
   // Vendas & Comercial
-  if (/\b(sales|vendas|comercial|account|cmo|business.?development|revenue)\b/.test(t)) return 'Vendas';
+  if (/\b(sales|vendas|comercial|account|cmo|business.?development|revenue|negócios|negocios)\b/.test(t)) return 'Vendas';
   
   // Compras & Supply Chain
-  if (/\b(compras|suprimento|purchasing|procurement|supply.?chain|logistic|logística)\b/.test(t)) return 'Compras & Supply';
+  if (/\b(compras|suprimento|purchasing|procurement|supply.?chain|logistic|logística|abastecimento)\b/.test(t)) return 'Compras & Supply';
   
   // Recursos Humanos
-  if (/\b(hr|rh|recursos.?humanos|human.?resources|people|talent|gente)\b/.test(t)) return 'RH';
+  if (/\b(hr|rh|recursos.?humanos|human.?resources|people|talent|gente|pessoas)\b/.test(t)) return 'RH';
   
   // Tecnologia & TI
-  if (/\b(tech|tecnologia|ti|it|desenvolvimento|developer|engenharia|engineering|cto|cio|sistemas|information)\b/.test(t)) return 'Tecnologia';
+  if (/\b(tech|tecnologia|ti|it|desenvolvimento|developer|engenharia|engineering|cto|cio|sistemas|information|software)\b/.test(t)) return 'Tecnologia';
   
-  // Marketing
-  if (/\b(marketing|mkt|brand|comunicação|comunicacao)\b/.test(t)) return 'Marketing';
+  // Marketing & Comunicação
+  if (/\b(marketing|mkt|brand|comunicação|comunicacao|publicidade|mídia|midia)\b/.test(t)) return 'Marketing';
   
   // Jurídico & Compliance
-  if (/\b(legal|jurídico|juridico|compliance|regulatório|regulatorio)\b/.test(t)) return 'Jurídico';
+  if (/\b(legal|jurídico|juridico|compliance|regulatório|regulatorio|advocacia)\b/.test(t)) return 'Jurídico';
   
   // Customer Success & Suporte
-  if (/\b(customer|cliente|success|suporte|support|atendimento|relacionamento)\b/.test(t)) return 'Customer Success';
+  if (/\b(customer|cliente|success|suporte|support|atendimento|relacionamento|cs)\b/.test(t)) return 'Customer Success';
   
   // Qualidade & Processos
-  if (/\b(quality|qualidade|processo|process|melhoria|improvement)\b/.test(t)) return 'Qualidade';
+  if (/\b(quality|qualidade|processo|process|melhoria|improvement|qa|qc)\b/.test(t)) return 'Qualidade';
   
-  // Produto
-  if (/\b(product|produto|pmo)\b/.test(t)) return 'Produto';
+  // Produto & Inovação
+  if (/\b(product|produto|pmo|innovation|inovação|inovacao|design)\b/.test(t)) return 'Produto';
+  
+  // P&D & Pesquisa
+  if (/\b(p&d|pesquisa|research|desenvolvimento|r&d|innovation|inovação)\b/.test(t)) return 'P&D';
+  
+  // Administrativa
+  if (/\b(administrativ|admin|geral|facility|facilities|services)\b/.test(t)) return 'Administrativo';
 
   return 'Outros';
 };

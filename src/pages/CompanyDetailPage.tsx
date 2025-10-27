@@ -178,6 +178,23 @@ export default function CompanyDetailPage() {
     setIsEnriching(true);
     try {
       console.log('[CompanyDetail] 🚀 Iniciando enriquecimento Apollo para:', company.name);
+      
+      // Limpar domínio de http/https/www
+      const cleanDomain = (domain?: string) => {
+        if (!domain) return undefined;
+        return domain
+          .replace(/^https?:\/\//i, '') // Remove http:// ou https://
+          .replace(/^www\./i, '') // Remove www.
+          .replace(/\/.*$/, '') // Remove tudo depois da primeira /
+          .trim();
+      };
+      
+      const cleanedDomain = cleanDomain(company.domain || company.website);
+      console.log('[CompanyDetail] 🧹 Domínio limpo:', {
+        original: company.domain || company.website,
+        cleaned: cleanedDomain
+      });
+      
       toast.info('Enriquecendo com Apollo.io...');
       
       // Enriquecer empresa completa com Apollo
@@ -187,7 +204,7 @@ export default function CompanyDetailPage() {
           companyId: id,
           organizationName: company.name,
           ...(apolloOrgId ? { apolloOrgId } : {}),
-          ...(company.domain ? { domain: company.domain } : {})
+          ...(cleanedDomain ? { domain: cleanedDomain } : {})
         }
       });
       
