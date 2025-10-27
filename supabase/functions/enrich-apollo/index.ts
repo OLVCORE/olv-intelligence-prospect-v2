@@ -423,7 +423,20 @@ serve(async (req) => {
 
       // Se não encontrou por ID, tentar busca normal com múltiplas estratégias
       if (!org) {
-        const searchDomain = domain || company.website || company.domain;
+        // Domínio prioritário: limpar entrada (site pode ter múltiplas linhas)
+        const cleanDomainStr = (d?: string) => {
+          if (!d) return undefined;
+          try {
+            const first = String(d).split(/\n|,|\s/)[0] || '';
+            return first
+              .replace(/^https?:\/\//i, '')
+              .replace(/^www\./i, '')
+              .replace(/http$/i, '')
+              .replace(/\/.*$/, '')
+              .trim();
+          } catch { return undefined; }
+        };
+        const searchDomain = cleanDomainStr(domain || company.website || company.domain);
         
         const baseHeaders = {
           'Content-Type': 'application/json',
@@ -611,7 +624,19 @@ serve(async (req) => {
         console.log('[Apollo] 🎯 Usando Organization ID para busca precisa:', org.id);
       } else {
         // Fallback para domínio/nome
-        const searchDomain = domain || company.website || company.domain;
+        const cleanDomainStr = (d?: string) => {
+          if (!d) return undefined;
+          try {
+            const first = String(d).split(/\n|,|\s/)[0] || '';
+            return first
+              .replace(/^https?:\/\//i, '')
+              .replace(/^www\./i, '')
+              .replace(/http$/i, '')
+              .replace(/\/.*$/, '')
+              .trim();
+          } catch { return undefined; }
+        };
+        const searchDomain = cleanDomainStr(domain || company.website || company.domain);
         if (searchDomain) {
           peoplePayload.q_organization_domains = searchDomain;
           console.log('[Apollo] 🔍 Usando domínio para busca:', searchDomain);
@@ -640,12 +665,60 @@ serve(async (req) => {
         console.error('[Apollo] ❌ API Error:', peopleResponse.status, errorText);
       }
       
+      if (!peopleResponse.ok) {
+        const errorText = await peopleResponse.text();
+        console.error('[Apollo] ❌ API Error:', peopleResponse.status, errorText);
+      }
+      
       if (peopleResponse.ok) {
         const peopleData = await peopleResponse.json();
-        const people = peopleData.people || [];
+        let people = peopleData.people || [];
         peopleCount = people.length;
 
         console.log('[Apollo] 👥 Encontrados', people.length, 'decisores');
+        console.log('[Apollo] 📊 Amostra de 3 primeiros:', people.slice(0, 3).map((p: any) => ({
+          name: p.name,
+          title: p.title,
+          email_status: p.email_status,
+          departments: p.departments,
+          seniority: p.seniority
+        })));
+        
+        // 🔁 Fallback progressivo se não houver pessoas
+        if (people.length === 0) {
+          console.log('[Apollo] 🔁 Fallback: removendo filtros de senioridade e localização');
+          const fallback1 = { ...peoplePayload } as any;
+          delete fallback1.person_seniorities;
+          delete fallback1.person_locations;
+          const resp1 = await fetch('https://api.apollo.io/v1/people/search', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY }, body: JSON.stringify(fallback1)
+          });
+          if (resp1.ok) {
+            const d1 = await resp1.json();
+            people = d1.people || [];
+            console.log('[Apollo] 🔁 Fallback1 resultados:', people.length);
+          }
+        }
+        if (people.length === 0) {
+          console.log('[Apollo] 🔁 Fallback: busca ampla somente por nome/domínio');
+          const fallback2: any = { per_page: 100 };
+          if (org?.id) fallback2.q_organization_id = org.id;
+          if (!org?.id) {
+            const sd = (peoplePayload as any).q_organization_domains;
+            const sn = (peoplePayload as any).q_organization_name;
+            if (sd) fallback2.q_organization_domains = sd;
+            if (sn) fallback2.q_organization_name = sn;
+          }
+          const resp2 = await fetch('https://api.apollo.io/v1/people/search', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY }, body: JSON.stringify(fallback2)
+          });
+          if (resp2.ok) {
+            const d2 = await resp2.json();
+            people = d2.people || [];
+            console.log('[Apollo] 🔁 Fallback2 resultados:', people.length);
+          }
+        }
+
         console.log('[Apollo] 📊 Amostra de 3 primeiros:', people.slice(0, 3).map((p: any) => ({
           name: p.name,
           title: p.title,

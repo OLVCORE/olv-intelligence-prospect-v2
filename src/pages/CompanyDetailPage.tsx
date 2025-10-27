@@ -214,9 +214,16 @@ export default function CompanyDetailPage() {
       }
 
       console.log('[CompanyDetail] ✅ Enriquecimento concluído:', apolloData);
+      const count = (apolloData as any)?.people_count ?? 0;
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
       queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
-      toast.success('Dados Apollo atualizados com sucesso!');
+      if (count > 0) {
+        toast.success(`Dados Apollo atualizados: ${count} contato(s) encontrado(s)`);
+      } else {
+        toast.warning('Nenhum decisor retornado pelo Apollo', {
+          description: 'Tente informar o ID da organização no Apollo ou ajuste filtros/região.'
+        });
+      }
     } catch (e: any) {
       console.error('[CompanyDetail] ❌ Erro completo:', e);
       toast.error('Erro ao enriquecer com Apollo', { 
@@ -232,12 +239,26 @@ export default function CompanyDetailPage() {
     try {
       const searchName = company.name;
       console.log('[CompanyDetail] 🚀 Buscando decisores para:', searchName);
+
+      const cleanDomain = (d?: string) => {
+        if (!d) return undefined;
+        try {
+          const first = String(d).split(/\n|,|\s/)[0] || '';
+          return first
+            .replace(/^https?:\/\//i, '')
+            .replace(/^www\./i, '')
+            .replace(/http$/i, '')
+            .replace(/\/.*$/, '')
+            .trim();
+        } catch { return undefined; }
+      };
+      const cleanedDomain = cleanDomain(company.domain || company.website);
       
       const { data: apolloData, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
           type: 'people',
           organizationName: searchName,
-          ...(company.domain ? { domain: company.domain } : {}),
+          ...(cleanedDomain ? { domain: cleanedDomain } : {}),
           titles: ['CEO','CTO','CFO','Diretor','Gerente','VP']
         }
       });
