@@ -166,13 +166,6 @@ export function ForecastPanel() {
           </Card>
         )}
       </ScrollArea>
-
-      <Card className="p-3 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
-        <p className="text-xs text-center flex items-center justify-center gap-2">
-          <Sparkles className="h-3 w-3" />
-          Powered by Lovable AI (Google Gemini 2.5 Flash)
-        </p>
-      </Card>
     </div>
   );
 }

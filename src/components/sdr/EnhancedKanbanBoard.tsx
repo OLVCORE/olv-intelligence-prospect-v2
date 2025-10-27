@@ -12,6 +12,7 @@ import { DraggableDealCard } from './DraggableDealCard';
 import { KanbanColumn } from './KanbanColumn';
 import { DealDetailsDialog } from './DealDetailsDialog';
 import { DealFiltersDialog, type DealFilters } from './DealFiltersDialog';
+import { DealFormDialog } from './DealFormDialog';
 import { toast } from 'sonner';
 
 export function EnhancedKanbanBoard() {
@@ -26,6 +27,7 @@ export function EnhancedKanbanBoard() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createDealOpen, setCreateDealOpen] = useState(false);
   const [filters, setFilters] = useState<DealFilters>({});
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -144,7 +146,7 @@ export function EnhancedKanbanBoard() {
               </Badge>
             )}
           </Button>
-          <Button variant="default" size="sm">
+          <Button variant="default" size="sm" onClick={() => setCreateDealOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Deal
           </Button>
@@ -261,6 +263,28 @@ export function EnhancedKanbanBoard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <DealFormDialog
+        open={createDealOpen}
+        onOpenChange={setCreateDealOpen}
+        onSuccess={() => {
+          // Deals will auto-refresh via realtime subscription
+        }}
+      />
+
+      <DealDetailsDialog
+        deal={selectedDeal}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
+
+      <DealFiltersDialog
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        filters={filters}
+        onApplyFilters={setFilters}
+      />
     </div>
   );
 }

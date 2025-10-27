@@ -73,7 +73,7 @@ Retorne apenas as 3 sugestões, uma por linha, sem numeração ou marcadores.`;
     // Call Lovable AI
     const { data: aiData, error: aiError } = await supabase.functions.invoke('lovable-ai', {
       body: {
-        model: 'google/gemini-2.5-flash',
+        model: 'openai/gpt-5-mini',
         prompt,
         max_tokens: 500,
         temperature: 0.7,
