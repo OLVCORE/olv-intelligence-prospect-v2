@@ -23,7 +23,9 @@ export interface CompetitorSearchResult {
   competitors: DetectedCompetitor[];
   total_comparisons_found: number;
   portals_searched: number;
+  total_portals: number;
   search_date: string;
+  product_searched?: string;
 }
 
 export function useCompetitorSearch() {
@@ -56,8 +58,9 @@ export function useCompetitorSearch() {
     },
     onSuccess: (data) => {
       const portalsCount = data.portals_searched || 0;
+      const totalPortals = data.total_portals || 41;
       toast.success('🔍 Busca de Concorrentes Concluída', {
-        description: `${data.competitors.length} concorrentes encontrados em ${portalsCount} portais`,
+        description: `${data.competitors.length} concorrentes encontrados em ${portalsCount}/${totalPortals} portais`,
       });
     },
     onError: (error: Error) => {
