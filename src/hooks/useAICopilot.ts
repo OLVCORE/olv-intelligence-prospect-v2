@@ -56,12 +56,13 @@ export function useAICopilot(context: CopilotContext) {
         body: { context }
       });
 
+      // Se a função estiver sem créditos (402) ou indisponível, não quebre a UI
       if (error) {
-        console.error('Copilot error:', error);
-        throw error;
+        console.warn('Copilot indisponível:', error);
+        return [] as CopilotSuggestion[];
       }
 
-      return data.suggestions as CopilotSuggestion[];
+      return (data?.suggestions as CopilotSuggestion[]) || [];
     },
     refetchInterval: 60000, // Atualizar a cada 1 minuto
     enabled: !!context.userId // Ativar apenas se tiver userId

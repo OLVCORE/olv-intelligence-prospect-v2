@@ -100,10 +100,11 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
   };
 
   const handleEnrichCompany = async () => {
-    if (!formData.cnpj) {
+    // Aceita empresa selecionada OU CNPJ digitado
+    if (!selectedCompany?.id && !formData.cnpj) {
       toast({
         title: 'CNPJ obrigatório',
-        description: 'Digite o CNPJ para buscar dados da empresa',
+        description: 'Digite o CNPJ ou selecione uma empresa',
         variant: 'destructive',
       });
       return;
@@ -111,25 +112,70 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
 
     setEnriching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
-        body: { cnpj: formData.cnpj }
-      });
+      let companyId = selectedCompany?.id as string | undefined;
 
+      // Se não há empresa selecionada, localizar/criar pela CNPJ
+      if (!companyId) {
+        const clean = (formData.cnpj || '').replace(/\D/g, '');
+
+        // Tentar localizar por CNPJ (com ou sem máscara)
+        const { data: existing, error: findError } = await supabase
+          .from('companies')
+          .select('id, name, cnpj, employees, industry, revenue, lead_score')
+          .or(`cnpj.ilike.%${clean}%,cnpj.eq.${clean}`)
+          .maybeSingle();
+        if (findError && findError.code !== 'PGRST116') throw findError;
+
+        if (existing) {
+          companyId = existing.id;
+          setSelectedCompany(existing);
+        } else {
+          // Criar empresa mínima para permitir enriquecimento
+          const { data: created, error: insertErr } = await supabase
+            .from('companies')
+            .insert({
+              name: formData.company_name || `Empresa ${clean}`,
+              cnpj: formData.cnpj,
+              industry: formData.industry || null,
+              employees: formData.employees ? parseInt(formData.employees) : null,
+            })
+            .select('id, name, cnpj, employees, industry, revenue, lead_score')
+            .single();
+          if (insertErr) throw insertErr;
+          companyId = created.id;
+          setSelectedCompany(created);
+        }
+      }
+
+      // Invocar orquestrador com company_id (requisito da função)
+      const { error } = await supabase.functions.invoke('enrich-company-360', {
+        body: { company_id: companyId },
+      });
       if (error) throw error;
 
-      if (data.company) {
+      // Recarregar dados atualizados da empresa
+      const { data: updated } = await supabase
+        .from('companies')
+        .select('id, name, cnpj, employees, industry, revenue, lead_score')
+        .eq('id', companyId)
+        .single();
+
+      if (updated) {
+        setSelectedCompany(updated);
         setFormData({
           ...formData,
-          company_name: data.company.name || formData.company_name,
-          employees: data.company.employees?.toString() || formData.employees,
-          industry: data.company.industry || formData.industry,
-        });
-        
-        toast({
-          title: '✅ Empresa enriquecida!',
-          description: `Dados atualizados de ${data.company.name}`,
+          company_name: updated.name || formData.company_name,
+          cnpj: updated.cnpj || formData.cnpj,
+          employees: updated.employees?.toString() || formData.employees,
+          industry: updated.industry || formData.industry,
+          title: formData.title || `Prospecção - ${updated.name}`,
         });
       }
+
+      toast({
+        title: '✅ Empresa enriquecida!',
+        description: 'Dados atualizados com sucesso.',
+      });
     } catch (error: any) {
       console.error('Enrichment error:', error);
       toast({
