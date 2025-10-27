@@ -283,6 +283,41 @@ export default function CompaniesManagementPage() {
     }
   };
 
+  const [isBatchEnrichingApollo, setIsBatchEnrichingApollo] = useState(false);
+
+  const handleBatchEnrichApollo = async () => {
+    try {
+      setIsBatchEnrichingApollo(true);
+      toast.info('Iniciando atualização Apollo...', {
+        description: 'Buscando dados de decisores e contatos'
+      });
+
+      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+        body: { 
+          type: 'batch_enrich',
+          company_ids: selectedCompanies.length > 0 ? selectedCompanies : undefined
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.processed) {
+        toast.success(
+          `Atualização Apollo concluída! ${data.processed} empresas processadas, ${data.failed || 0} erros.`
+        );
+      } else {
+        toast.success('Atualização Apollo concluída!');
+      }
+
+      refetch();
+    } catch (error) {
+      console.error('Error batch enriching Apollo:', error);
+      toast.error('Erro ao executar atualização Apollo');
+    } finally {
+      setIsBatchEnrichingApollo(false);
+    }
+  };
+
   const handleSort = (field: 'name' | 'cnpj' | 'industry' | 'created_at' | 'cnpj_status') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -740,6 +775,27 @@ export default function CompaniesManagementPage() {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Enriquecimento 360° Completo</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={handleBatchEnrichApollo}
+                    disabled={isBatchEnrichingApollo}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                  >
+                    {isBatchEnrichingApollo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Target className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Atualizar Apollo (Decisores & Contatos)</p>
                 </TooltipContent>
               </Tooltip>
 

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus, AlertTriangle, XCircle, CheckCircle, Clock } from "lucide-react";
+import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus, AlertTriangle, XCircle, CheckCircle, Clock, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useBrazilianAddressAutocomplete } from "@/hooks/useGooglePlacesAutocomplete";
 import LocationMap from "@/components/map/LocationMap";
 import { BulkUploadDialog } from "@/components/companies/BulkUploadDialog";
+import { ApolloImportDialog } from "@/components/companies/ApolloImportDialog";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ export default function SearchPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [multipleResults, setMultipleResults] = useState<any[]>([]);
   const [showMultipleResults, setShowMultipleResults] = useState(false);
+  const [isApolloImportOpen, setIsApolloImportOpen] = useState(false);
   
   const [contacts, setContacts] = useState<Array<{name:string; title:string; phone?:string; whatsapp?:string; email?:string}>>([]);
   const [newContact, setNewContact] = useState<{name:string; title:string; phone?:string; whatsapp?:string; email?:string}>({name:"", title:"", phone:"", whatsapp:"", email:""});
@@ -636,8 +638,25 @@ export default function SearchPage() {
             Sistema unificado de busca com detecção automática e enriquecimento 360°
           </p>
         </div>
-        <BulkUploadDialog />
+        <div className="flex items-center gap-2">
+          <BulkUploadDialog />
+          <Button
+            variant="secondary"
+            size="default"
+            onClick={() => setIsApolloImportOpen(true)}
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold shadow-lg"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Importar do Apollo
+          </Button>
+        </div>
       </div>
+
+      {/* Dialog Apollo Import */}
+      <ApolloImportDialog 
+        open={isApolloImportOpen}
+        onOpenChange={setIsApolloImportOpen}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Coluna principal - Busca */}
