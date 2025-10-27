@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, Linkedin, Phone, Search, Filter, Users, Building2, TrendingUp } from 'lucide-react';
+import { Mail, Linkedin, Phone, Search, Filter, Users, Building2, TrendingUp, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface Decisor {
   id: string;
@@ -82,42 +84,50 @@ const getSeniorityLevel = (title?: string): { level: string; rank: number } => {
 
 export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [levelFilter, setLevelFilter] = useState<string>('all');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
-  // Filtrar pessoal corporativo (exclui apenas operacional)
-  const seniorDecisors = useMemo(() => {
+  // Processar todos os decisores sem filtrar por rank
+  const allDecisors = useMemo(() => {
     return decisors
       .map(d => ({
         ...d,
         seniorityInfo: getSeniorityLevel(d.title)
       }))
-      .filter(d => d.seniorityInfo.rank >= 1) // Corporativo ou acima (exclui operacional rank 0)
       .sort((a, b) => b.seniorityInfo.rank - a.seniorityInfo.rank); // Ordenar por senioridade
   }, [decisors]);
 
   // Aplicar filtros
   const filteredDecisors = useMemo(() => {
-    return seniorDecisors.filter(decisor => {
+    return allDecisors.filter(decisor => {
       const matchesSearch = !searchTerm || 
         decisor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         decisor.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         decisor.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesLevel = levelFilter === 'all' || decisor.seniorityInfo.level === levelFilter;
+      const matchesLevel = selectedLevels.length === 0 || selectedLevels.includes(decisor.seniorityInfo.level);
       
-      const matchesDepartment = departmentFilter === 'all' || 
-        decisor.department?.toLowerCase().includes(departmentFilter.toLowerCase());
+      const matchesDepartment = selectedDepartments.length === 0 || 
+        (decisor.department && selectedDepartments.includes(decisor.department));
       
       return matchesSearch && matchesLevel && matchesDepartment;
     });
-  }, [seniorDecisors, searchTerm, levelFilter, departmentFilter]);
+  }, [allDecisors, searchTerm, selectedLevels, selectedDepartments]);
 
-  // Extrair departamentos únicos
-  const departments = useMemo(() => {
-    const depts = new Set(seniorDecisors.map(d => d.department).filter(Boolean));
-    return Array.from(depts);
-  }, [seniorDecisors]);
+  // Extrair níveis e departamentos únicos
+  const availableLevels = useMemo(() => {
+    const levels = new Set(allDecisors.map(d => d.seniorityInfo.level));
+    return Array.from(levels).sort((a, b) => {
+      const rankA = allDecisors.find(d => d.seniorityInfo.level === a)?.seniorityInfo.rank || 0;
+      const rankB = allDecisors.find(d => d.seniorityInfo.level === b)?.seniorityInfo.rank || 0;
+      return rankB - rankA;
+    });
+  }, [allDecisors]);
+
+  const availableDepartments = useMemo(() => {
+    const depts = new Set(allDecisors.map(d => d.department).filter(Boolean));
+    return Array.from(depts) as string[];
+  }, [allDecisors]);
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -219,34 +229,132 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
             </div>
           </div>
           
-          <Select value={levelFilter} onValueChange={setLevelFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Nível" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os níveis</SelectItem>
-              <SelectItem value="C-Level">C-Level</SelectItem>
-              <SelectItem value="VP">VP</SelectItem>
-              <SelectItem value="Director">Director</SelectItem>
-              <SelectItem value="Manager">Manager</SelectItem>
-              <SelectItem value="Supervisor">Supervisor</SelectItem>
-              <SelectItem value="Professional">Professional</SelectItem>
-              <SelectItem value="Corporate">Corporate</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filtro de Níveis - Múltipla Escolha */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Níveis
+                {selectedLevels.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {selectedLevels.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">Níveis de Senioridade</h4>
+                  {selectedLevels.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedLevels([])}
+                      className="h-6 px-2 text-xs"
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {availableLevels.map((level) => (
+                    <div key={level} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`level-${level}`}
+                        checked={selectedLevels.includes(level)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedLevels([...selectedLevels, level]);
+                          } else {
+                            setSelectedLevels(selectedLevels.filter(l => l !== level));
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`level-${level}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {level}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          {departments.length > 0 && (
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Departamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept!}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filtro de Departamentos - Múltipla Escolha */}
+          {availableDepartments.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Departamentos
+                  {selectedDepartments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {selectedDepartments.length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">Departamentos</h4>
+                    {selectedDepartments.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedDepartments([])}
+                        className="h-6 px-2 text-xs"
+                      >
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {availableDepartments.map((dept) => (
+                      <div key={dept} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`dept-${dept}`}
+                          checked={selectedDepartments.includes(dept)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedDepartments([...selectedDepartments, dept]);
+                            } else {
+                              setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`dept-${dept}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {dept}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Limpar todos os filtros */}
+          {(selectedLevels.length > 0 || selectedDepartments.length > 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedLevels([]);
+                setSelectedDepartments([]);
+              }}
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Limpar filtros
+            </Button>
           )}
         </div>
 
@@ -377,7 +485,7 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
         {filteredDecisors.length > 0 && (
           <div className="pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
             <div>
-              Exibindo <strong>{filteredDecisors.length}</strong> de <strong>{seniorDecisors.length}</strong> contatos corporativos
+              Exibindo <strong>{filteredDecisors.length}</strong> de <strong>{allDecisors.length}</strong> contatos
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
