@@ -65,9 +65,11 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
 
   const sourceIcons: Record<string, any> = {
     'linkedin_jobs': { icon: Briefcase, color: 'text-blue-500', label: '💼 LinkedIn Jobs' },
-    'google_news': { icon: Search, color: 'text-green-500', label: '📰 Google News' },
+    'financial_documents': { icon: Search, color: 'text-green-600', label: '📊 Docs Financeiros' },
+    'google_news': { icon: Search, color: 'text-orange-500', label: '📰 Google News' },
+    'reclame_aqui': { icon: AlertCircle, color: 'text-red-500', label: '⚠️ Reclame Aqui' },
     'website_scraping': { icon: Globe, color: 'text-purple-500', label: '🌐 Website' },
-    'linkedin_profiles': { icon: Users, color: 'text-orange-500', label: '👤 LinkedIn Profiles' }
+    'linkedin_profiles': { icon: Users, color: 'text-cyan-500', label: '👤 LinkedIn Profiles' }
   };
 
   return (
@@ -97,7 +99,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               variant={company.totvs_detection_score === undefined ? "default" : "outline"}
             >
               <Play className="h-4 w-4 mr-2" />
-              {isPending ? 'Buscando em 4 fontes' : company.totvs_detection_score === undefined ? '🚀 Iniciar' : '🔄 Atualizar'}
+              {isPending ? 'Buscando em 5 fontes' : company.totvs_detection_score === undefined ? '🚀 Iniciar' : '🔄 Atualizar'}
             </Button>
           </div>
         </div>
@@ -118,36 +120,45 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               <div className="flex items-start gap-2">
                 <Briefcase className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-blue-600">LinkedIn Jobs (40 pts)</strong>
+                  <strong className="text-blue-600">LinkedIn Jobs (30 pts)</strong>
                   <p className="text-muted-foreground mt-0.5">
                     Busca vagas via <strong>Serper API</strong> com query: "{company.name}" + TOTVS/Protheus
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Search className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                <Search className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-green-600">Google News (30 pts)</strong>
+                  <strong className="text-green-600">Documentos Financeiros (25 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Busca <strong>balancetes, DREs, relações com investidores</strong> mostrando TOTVS como credora/fornecedora
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Search className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-orange-600">Google News (20 pts)</strong>
                   <p className="text-muted-foreground mt-0.5">
                     Procura notícias via <strong>Serper News API</strong>: "usa TOTVS", "cliente TOTVS", cases
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Globe className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-purple-600">Website Scraping (20 pts)</strong>
+                  <strong className="text-red-600">Reclame Aqui (15 pts)</strong>
                   <p className="text-muted-foreground mt-0.5">
-                    Faz <strong>HTTP request direto</strong> ao site da empresa e varre o HTML buscando "totvs", "protheus"
+                    Busca reclamações/menções sobre TOTVS relacionadas à empresa em <strong>reclameaqui.com.br</strong>
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Users className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                <Globe className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-orange-600">LinkedIn Profiles (10 pts)</strong>
+                  <strong className="text-purple-600">Website Scraping (10 pts)</strong>
                   <p className="text-muted-foreground mt-0.5">
-                    Busca via <strong>Serper API</strong> perfis de funcionários com skill/experiência em TOTVS
+                    Faz <strong>HTTP request direto</strong> ao site da empresa e varre o HTML buscando "totvs", "protheus"
                   </p>
                 </div>
               </div>
@@ -156,6 +167,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 <ul className="mt-1 space-y-0.5 ml-4 text-muted-foreground">
                   <li>• Serper API (Google Search/News)</li>
                   <li>• Web Scraping Direto (HTTPS/Fetch)</li>
+                  <li>• Reclame Aqui (Dados Públicos)</li>
                   <li>• Supabase Database (armazenamento)</li>
                 </ul>
               </div>
@@ -176,19 +188,23 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               <div className="grid grid-cols-1 gap-2 text-xs">
                 <div className="flex items-start gap-2">
                   <Briefcase className="h-3 w-3 text-blue-500 shrink-0 mt-0.5" />
-                  <span><strong>💼 LinkedIn Jobs (40 pts):</strong> Vagas mencionando TOTVS, Protheus, RM TOTVS</span>
+                  <span><strong>💼 LinkedIn Jobs (30 pts):</strong> Vagas mencionando TOTVS, Protheus, RM TOTVS</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Search className="h-3 w-3 text-green-500 shrink-0 mt-0.5" />
-                  <span><strong>📰 Google News (30 pts):</strong> Notícias sobre "usa TOTVS", "cliente TOTVS", cases</span>
+                  <Search className="h-3 w-3 text-green-600 shrink-0 mt-0.5" />
+                  <span><strong>📊 Docs Financeiros (25 pts):</strong> Balancetes, DREs mostrando TOTVS como credora</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Search className="h-3 w-3 text-orange-500 shrink-0 mt-0.5" />
+                  <span><strong>📰 Google News (20 pts):</strong> Notícias sobre "usa TOTVS", "cliente TOTVS"</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-3 w-3 text-red-500 shrink-0 mt-0.5" />
+                  <span><strong>⚠️ Reclame Aqui (15 pts):</strong> Reclamações/menções sobre TOTVS</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Globe className="h-3 w-3 text-purple-500 shrink-0 mt-0.5" />
-                  <span><strong>🌐 Website (20 pts):</strong> Site da empresa menciona TOTVS como parceiro/sistema</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Users className="h-3 w-3 text-orange-500 shrink-0 mt-0.5" />
-                  <span><strong>👤 LinkedIn Profiles (10 pts):</strong> Funcionários listam TOTVS como skill</span>
+                  <span><strong>🌐 Website (10 pts):</strong> Site menciona TOTVS como parceiro/sistema</span>
                 </div>
                 <div className="pt-2 border-t mt-1">
                   <strong className="text-destructive">Score ≥ 70:</strong> Auto-desqualifica (alta confiança de uso)
@@ -220,7 +236,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 <AlertDescription className="text-green-800">
                   <strong>✅ Nenhuma evidência de uso de TOTVS encontrada!</strong>
                   <p className="text-xs mt-1">
-                    As 4 fontes foram consultadas em tempo real via APIs (LinkedIn Jobs, Google News, Website, LinkedIn Profiles) 
+                    As 5 fontes foram consultadas em tempo real via APIs (LinkedIn Jobs, Docs Financeiros, Google News, Reclame Aqui, Website) 
                     e não encontraram menções. <strong>Lead qualificado para prospecção! 🎯</strong>
                   </p>
                 </AlertDescription>
@@ -314,7 +330,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               <div className="text-center py-4 px-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
                 <p className="text-sm font-medium text-green-800">✅ Nenhuma fonte detectou uso de TOTVS</p>
-                <p className="text-xs text-green-700 mt-1">4 fontes consultadas via API em tempo real</p>
+                <p className="text-xs text-green-700 mt-1">5 fontes consultadas via API em tempo real</p>
               </div>
             ) : null}
 
@@ -336,16 +352,20 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                   <span>LinkedIn Jobs via Serper API</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Search className="h-3 w-3 text-green-500" />
+                  <Search className="h-3 w-3 text-green-600" />
+                  <span>Docs Financeiros (Balancetes/DREs)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Search className="h-3 w-3 text-orange-500" />
                   <span>Google News via Serper API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-3 w-3 text-red-500" />
+                  <span>Reclame Aqui (Dados Públicos)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Globe className="h-3 w-3 text-purple-500" />
                   <span>Website Scraping Direto (HTTPS)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-3 w-3 text-orange-500" />
-                  <span>LinkedIn Profiles via Serper API</span>
                 </div>
               </div>
             </div>
