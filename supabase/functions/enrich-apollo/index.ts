@@ -594,9 +594,39 @@ serve(async (req) => {
       }
 
       // Buscar pessoas/decisores da organização
-      // Usar o Apollo Org ID se disponível, caso contrário usar domínio/nome
+      // 🎯 FILTROS ESTRATÉGICOS - Foco em área corporativa brasileira
       const peoplePayload: Record<string, unknown> = {
-        per_page: 50,
+        per_page: 100, // Aumentado para ter mais opções após filtragem
+        
+        // 🇧🇷 FILTRO GEOGRÁFICO - Brasil primeiro
+        person_locations: ['Brazil'],
+        
+        // 👔 FILTRO DE SENIORIDADE - Apenas decisores
+        person_seniorities: ['c_suite', 'vp', 'director', 'manager', 'senior'],
+        
+        // 🏢 FILTRO DE DEPARTAMENTOS - Áreas que usam TOTVS
+        person_departments: [
+          'operations',
+          'finance', 
+          'sales',
+          'purchasing',
+          'supply chain',
+          'human resources',
+          'information technology',
+          'accounting',
+          'logistics'
+        ],
+        
+        // 📋 FILTRO DE CARGOS - Títulos estratégicos (mais abrangente)
+        person_titles: [
+          'CEO', 'CTO', 'CFO', 'COO', 'CMO', 'CIO',
+          'Diretor', 'Director', 'Diretora',
+          'Gerente', 'Manager', 'Head',
+          'Vice President', 'VP',
+          'Coordenador', 'Coordinator',
+          'Superintendente',
+          'Presidente', 'President'
+        ].join(','),
       };
       
       if (org?.id) {
@@ -608,6 +638,25 @@ serve(async (req) => {
         if (searchDomain) peoplePayload.q_organization_domains = searchDomain;
         if (company.name) peoplePayload.q_organization_name = company.name;
       }
+      
+      // 📍 Se a empresa tem localização específica no Brasil, refinar ainda mais
+      const companyLocation = (company as any).location;
+      if (companyLocation?.state) {
+        // Adicionar estado específico para busca mais precisa
+        const brazilianStates = ['SP', 'RJ', 'MG', 'RS', 'PR', 'SC', 'BA', 'PE', 'CE', 'GO', 'DF'];
+        if (brazilianStates.includes(companyLocation.state)) {
+          peoplePayload.person_locations = [`${companyLocation.state}, Brazil`];
+        }
+      }
+      
+      console.log('[Apollo] 🎯 Filtros aplicados:', {
+        locations: peoplePayload.person_locations,
+        seniorities: peoplePayload.person_seniorities,
+        departments: peoplePayload.person_departments,
+        titles_count: peoplePayload.person_titles?.toString().split(',').length,
+        hasOrgId: !!org?.id,
+        state: companyLocation?.state
+      });
 
       const peopleResponse = await fetch(`https://api.apollo.io/v1/people/search`, {
         method: 'POST',

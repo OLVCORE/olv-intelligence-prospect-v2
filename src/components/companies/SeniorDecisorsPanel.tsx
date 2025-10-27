@@ -95,17 +95,43 @@ const getDepartment = (title?: string): string => {
   if (!title) return 'N/A';
   const t = title.toLowerCase();
 
-  if (/\b(sales|vendas|comercial|account)\b/.test(t)) return 'Sales';
-  if (/\b(marketing|mkt|brand)\b/.test(t)) return 'Marketing';
-  if (/\b(tech|tecnologia|ti|it|desenvolvimento|developer|engenharia|engineering|cto)\b/.test(t)) return 'Technology';
-  if (/\b(finance|financeiro|contabil|contabilidade|cfo|tesouraria)\b/.test(t)) return 'Finance';
-  if (/\b(operations|operações|logística|supply|coo)\b/.test(t)) return 'Operations';
-  if (/\b(hr|rh|recursos.?humanos|human.?resources|people)\b/.test(t)) return 'HR';
-  if (/\b(product|produto|pmo)\b/.test(t)) return 'Product';
-  if (/\b(legal|jurídico|compliance)\b/.test(t)) return 'Legal';
-  if (/\b(customer|cliente|success|suporte|support|atendimento)\b/.test(t)) return 'Customer Success';
+  // Executivo (C-Level)
+  if (/\b(ceo|presidente|president|chief.?executive)\b/.test(t)) return 'Executivo';
+  
+  // Operações & Produção
+  if (/\b(operations|operações|produção|producao|manufatura|fabrica|industrial|plant|coo)\b/.test(t)) return 'Operações';
+  
+  // Financeiro & Contabilidade
+  if (/\b(finance|financeiro|contabil|contabilidade|cfo|tesouraria|controller|accounting)\b/.test(t)) return 'Financeiro';
+  
+  // Vendas & Comercial
+  if (/\b(sales|vendas|comercial|account|cmo|business.?development|revenue)\b/.test(t)) return 'Vendas';
+  
+  // Compras & Supply Chain
+  if (/\b(compras|suprimento|purchasing|procurement|supply.?chain|logistic|logística)\b/.test(t)) return 'Compras & Supply';
+  
+  // Recursos Humanos
+  if (/\b(hr|rh|recursos.?humanos|human.?resources|people|talent|gente)\b/.test(t)) return 'RH';
+  
+  // Tecnologia & TI
+  if (/\b(tech|tecnologia|ti|it|desenvolvimento|developer|engenharia|engineering|cto|cio|sistemas|information)\b/.test(t)) return 'Tecnologia';
+  
+  // Marketing
+  if (/\b(marketing|mkt|brand|comunicação|comunicacao)\b/.test(t)) return 'Marketing';
+  
+  // Jurídico & Compliance
+  if (/\b(legal|jurídico|juridico|compliance|regulatório|regulatorio)\b/.test(t)) return 'Jurídico';
+  
+  // Customer Success & Suporte
+  if (/\b(customer|cliente|success|suporte|support|atendimento|relacionamento)\b/.test(t)) return 'Customer Success';
+  
+  // Qualidade & Processos
+  if (/\b(quality|qualidade|processo|process|melhoria|improvement)\b/.test(t)) return 'Qualidade';
+  
+  // Produto
+  if (/\b(product|produto|pmo)\b/.test(t)) return 'Produto';
 
-  return 'Other';
+  return 'Outros';
 };
 
 // ==========================================
