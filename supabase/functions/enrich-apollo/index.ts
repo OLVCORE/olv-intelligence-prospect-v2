@@ -267,7 +267,7 @@ serve(async (req) => {
         searchPayload.q_organization_domains = searchDomain;
       }
 
-      const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+      let orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -277,12 +277,70 @@ serve(async (req) => {
       });
       
       if (!orgResponse.ok) {
-        const errText = await orgResponse.text();
-        console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, errText);
-        return new Response(
-          JSON.stringify({ error: `Apollo organizations ${orgResponse.status}`, details: errText }),
-          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        const firstErr = await orgResponse.text();
+        console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, firstErr);
+
+        // Fallback 1: tentar por domínio apenas
+        if (searchDomain) {
+          const resp2 = await fetch('https://api.apollo.io/v1/organizations/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+            body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_domains: searchDomain })
+          });
+
+          if (resp2.ok) {
+            orgResponse = resp2;
+          } else {
+            const secondErr = await resp2.text();
+            console.error('[Apollo] ❌ Fallback domínio falhou:', resp2.status, secondErr);
+
+            // Fallback 2: tentar por nome apenas
+            if (company.name) {
+              const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+                body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_name: company.name })
+              });
+
+              if (resp3.ok) {
+                orgResponse = resp3;
+              } else {
+                const thirdErr = await resp3.text();
+                console.error('[Apollo] ❌ Fallback nome falhou:', resp3.status, thirdErr);
+                return new Response(
+                  JSON.stringify({ error: 'Apollo organizations search failed', details: { first: firstErr, byDomain: secondErr, byName: thirdErr } }),
+                  { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                );
+              }
+            } else {
+              return new Response(
+                JSON.stringify({ error: 'Apollo organizations search failed', details: firstErr }),
+                { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+        } else if (company.name) {
+          const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+            body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_name: company.name })
+          });
+          if (resp3.ok) {
+            orgResponse = resp3;
+          } else {
+            const thirdErr = await resp3.text();
+            console.error('[Apollo] ❌ Fallback nome (sem domínio) falhou:', resp3.status, thirdErr);
+            return new Response(
+              JSON.stringify({ error: 'Apollo organizations search failed', details: { first: firstErr, byName: thirdErr } }),
+              { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Apollo organizations search failed - missing name/domain' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
       const orgData = await orgResponse.json();
