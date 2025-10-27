@@ -690,11 +690,12 @@ export default function CompaniesManagementPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="secondary"
-                    size="icon"
+                    size="default"
                     onClick={() => setIsApolloImportOpen(true)}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold shadow-lg"
                   >
-                    <Download className="h-4 w-4" />
+                    <Target className="h-4 w-4 mr-2" />
+                    Importar do Apollo
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
