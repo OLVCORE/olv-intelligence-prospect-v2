@@ -26,38 +26,58 @@ interface SeniorDecisorsPanelProps {
   companyName?: string;
 }
 
-// Função para determinar senioridade baseada no título
+// Função para determinar senioridade baseada no título - INCLUSIVO para pessoal corporativo
 const getSeniorityLevel = (title?: string): { level: string; rank: number } => {
   if (!title) return { level: 'Unknown', rank: 0 };
   
   const titleLower = title.toLowerCase();
   
-  // C-Level (Rank 5)
-  if (titleLower.match(/\b(ceo|cto|cfo|coo|cio|cmo|president|presidente|chairman)\b/)) {
-    return { level: 'C-Level', rank: 5 };
+  // C-Level (Rank 6)
+  if (titleLower.match(/\b(ceo|cto|cfo|coo|cio|cmo|president|presidente|chairman|owner|proprietário|sócio)\b/)) {
+    return { level: 'C-Level', rank: 6 };
   }
   
-  // VP / Vice President (Rank 4)
+  // VP / Vice President (Rank 5)
   if (titleLower.match(/\b(vp|vice.president|vice.presidente)\b/)) {
-    return { level: 'VP', rank: 4 };
+    return { level: 'VP', rank: 5 };
   }
   
-  // Director / Diretor (Rank 3)
-  if (titleLower.match(/\b(director|diretor|diretora|head)\b/)) {
-    return { level: 'Director', rank: 3 };
+  // Director / Diretor (Rank 4)
+  if (titleLower.match(/\b(director|diretor|diretora|head of|head da)\b/)) {
+    return { level: 'Director', rank: 4 };
   }
   
-  // Manager / Gerente (Rank 2)
-  if (titleLower.match(/\b(manager|gerente|coordinator|coordenador|coordenadora)\b/)) {
-    return { level: 'Manager', rank: 2 };
+  // Manager / Gerente (Rank 3)
+  if (titleLower.match(/\b(manager|gerente|coordinator|coordenador|coordenadora|account manager)\b/)) {
+    return { level: 'Manager', rank: 3 };
   }
   
-  // Supervisor (Rank 1)
-  if (titleLower.match(/\b(supervisor|supervisora|lead|líder)\b/)) {
-    return { level: 'Supervisor', rank: 1 };
+  // Supervisor (Rank 2)
+  if (titleLower.match(/\b(supervisor|supervisora|lead|líder|team lead)\b/)) {
+    return { level: 'Supervisor', rank: 2 };
   }
   
-  return { level: 'Other', rank: 0 };
+  // Specialist / Analyst / Professional (Rank 1) - Pessoal corporativo
+  if (titleLower.match(/\b(specialist|especialista|analyst|analista|consultant|consultor|buyer|comprador|purchaser|inside sales|sales|vendas|vendedor|executive|executivo|professional|profissional|pleno|senior|sênior|jr|junior|júnior)\b/)) {
+    return { level: 'Professional', rank: 1 };
+  }
+  
+  // Assistant / Auxiliary (Rank 1) - Apoio corporativo
+  if (titleLower.match(/\b(assistant|assistente|auxiliar|auxiliary|secretary|secretária|administrative|administrativo|administrativa|intern|estagiário|trainee|aprendiz)\b/)) {
+    return { level: 'Corporate', rank: 1 };
+  }
+  
+  // Department roles (Rank 1) - Cargos de departamento
+  if (titleLower.match(/\b(department|departamento|finance|financeiro|financial|sales|commercial|comercial|marketing|operations|operações|hr|rh|human resources|it|ti|technology|procurement|suprimentos|logistics|logística)\b/)) {
+    return { level: 'Corporate', rank: 1 };
+  }
+  
+  // Excluir apenas cargos operacionais/chão de fábrica
+  if (titleLower.match(/\b(operator|operador|operadora|driver|motorista|forklift|empilhadeira|production worker|operário|ajudante|helper|mechanic|mecânico|technician|técnico de manutenção|porter|porteiro|cleaner|faxineiro|guard|segurança)\b/)) {
+    return { level: 'Operational', rank: 0 };
+  }
+  
+  return { level: 'Corporate', rank: 1 }; // Por padrão, considera corporativo
 };
 
 export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPanelProps) {
@@ -65,14 +85,14 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
 
-  // Filtrar apenas decisores seniores (Supervisor+)
+  // Filtrar pessoal corporativo (exclui apenas operacional)
   const seniorDecisors = useMemo(() => {
     return decisors
       .map(d => ({
         ...d,
         seniorityInfo: getSeniorityLevel(d.title)
       }))
-      .filter(d => d.seniorityInfo.rank >= 1) // Supervisor ou acima
+      .filter(d => d.seniorityInfo.rank >= 1) // Corporativo ou acima (exclui operacional rank 0)
       .sort((a, b) => b.seniorityInfo.rank - a.seniorityInfo.rank); // Ordenar por senioridade
   }, [decisors]);
 
@@ -151,7 +171,7 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
               {companyName && <span className="text-muted-foreground">- {companyName}</span>}
             </CardTitle>
             <CardDescription>
-              Liderança de Supervisor até C-Level com contatos verificados
+              Pessoal corporativo: Assistentes, Analistas, Vendedores, Gerentes e Executivos
             </CardDescription>
           </div>
           <div className="flex items-center gap-4 text-sm">
@@ -210,6 +230,8 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
               <SelectItem value="Director">Director</SelectItem>
               <SelectItem value="Manager">Manager</SelectItem>
               <SelectItem value="Supervisor">Supervisor</SelectItem>
+              <SelectItem value="Professional">Professional</SelectItem>
+              <SelectItem value="Corporate">Corporate</SelectItem>
             </SelectContent>
           </Select>
 
@@ -233,8 +255,8 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
           {filteredDecisors.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum decisor senior encontrado</p>
-              <p className="text-sm mt-1">Use o Apollo para buscar contatos de liderança</p>
+              <p>Nenhum contato corporativo encontrado</p>
+              <p className="text-sm mt-1">Use o Apollo para buscar contatos da empresa</p>
             </div>
           ) : (
             filteredDecisors.map((decisor) => (
@@ -355,7 +377,7 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
         {filteredDecisors.length > 0 && (
           <div className="pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
             <div>
-              Exibindo <strong>{filteredDecisors.length}</strong> de <strong>{seniorDecisors.length}</strong> decisores seniores
+              Exibindo <strong>{filteredDecisors.length}</strong> de <strong>{seniorDecisors.length}</strong> contatos corporativos
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
