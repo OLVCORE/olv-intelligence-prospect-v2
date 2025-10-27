@@ -489,57 +489,53 @@ serve(async (req) => {
       const org = orgData.organizations?.[0];
 
       if (!org) {
-        console.log('[Apollo] ⚠️ Organização não encontrada no Apollo');
-        return new Response(
-          JSON.stringify({ success: false, message: 'Organização não encontrada no Apollo' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+        console.log('[Apollo] ⚠️ Organização não encontrada no Apollo - prosseguindo com busca de pessoas mesmo assim');
+      } else {
+        // Atualizar empresa com TODOS os dados do Apollo
+        const updateData = {
+          apollo_id: org.id,
+          employee_count_from_apollo: org.estimated_num_employees,
+          revenue_range_from_apollo: org.revenue_range,
+          market_segments: org.market_cap ? [org.market_cap] : [],
+          sic_codes: org.sic_codes || [],
+          naics_codes: org.naics_codes || [],
+          phone_numbers: org.phone ? [org.phone] : [],
+          social_urls: {
+            facebook: org.facebook_url,
+            twitter: org.twitter_url,
+            blog: org.blog_url,
+            linkedin: org.linkedin_url
+          },
+          account_score: org.account_score || 0,
+          apollo_signals: org.signals || [],
+          funding_total: org.total_funding ? parseFloat(org.total_funding) : null,
+          funding_rounds: org.funding_rounds || [],
+          last_funding_round_date: org.latest_funding_round_date,
+          last_funding_round_amount: org.latest_funding_amount ? parseFloat(org.latest_funding_amount) : null,
+          investors: org.investors || [],
+          job_postings_count: org.job_postings_count || 0,
+          apollo_metadata: {
+            founded_year: org.founded_year,
+            ownership_type: org.ownership_type,
+            keywords: org.keywords || [],
+            parent_account_id: org.parent_account_id,
+            account_stage_id: org.account_stage_id,
+            total_funding_formatted: org.total_funding_formatted,
+            latest_funding_stage: org.latest_funding_stage
+          },
+          apollo_last_enriched_at: new Date().toISOString(),
+          technologies: org.technologies || company.technologies || [],
+          linkedin_url: org.linkedin_url || company.linkedin_url,
+        };
 
-      // Atualizar empresa com TODOS os dados do Apollo
-      const updateData = {
-        apollo_id: org.id,
-        employee_count_from_apollo: org.estimated_num_employees,
-        revenue_range_from_apollo: org.revenue_range,
-        market_segments: org.market_cap ? [org.market_cap] : [],
-        sic_codes: org.sic_codes || [],
-        naics_codes: org.naics_codes || [],
-        phone_numbers: org.phone ? [org.phone] : [],
-        social_urls: {
-          facebook: org.facebook_url,
-          twitter: org.twitter_url,
-          blog: org.blog_url,
-          linkedin: org.linkedin_url
-        },
-        account_score: org.account_score || 0,
-        apollo_signals: org.signals || [],
-        funding_total: org.total_funding ? parseFloat(org.total_funding) : null,
-        funding_rounds: org.funding_rounds || [],
-        last_funding_round_date: org.latest_funding_round_date,
-        last_funding_round_amount: org.latest_funding_amount ? parseFloat(org.latest_funding_amount) : null,
-        investors: org.investors || [],
-        job_postings_count: org.job_postings_count || 0,
-        apollo_metadata: {
-          founded_year: org.founded_year,
-          ownership_type: org.ownership_type,
-          keywords: org.keywords || [],
-          parent_account_id: org.parent_account_id,
-          account_stage_id: org.account_stage_id,
-          total_funding_formatted: org.total_funding_formatted,
-          latest_funding_stage: org.latest_funding_stage
-        },
-        apollo_last_enriched_at: new Date().toISOString(),
-        technologies: org.technologies || company.technologies || [],
-        linkedin_url: org.linkedin_url || company.linkedin_url,
-      };
+        const { error: updateError } = await supabase
+          .from('companies')
+          .update(updateData)
+          .eq('id', companyId);
 
-      const { error: updateError } = await supabase
-        .from('companies')
-        .update(updateData)
-        .eq('id', companyId);
-
-      if (updateError) {
-        throw updateError;
+        if (updateError) {
+          throw updateError;
+        }
       }
 
       // Buscar pessoas/decisores da organização

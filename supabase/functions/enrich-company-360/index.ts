@@ -683,7 +683,8 @@ serve(async (req) => {
             type: 'people',
             organizationName: searchName,
             ...(company.domain && { domain: company.domain }),
-            titles: ['CEO','CTO','CFO','CIO','Diretor','Diretora','Gerente','VP','Head','TI','Tecnologia','Financeiro','Compras','Procurement','Operations','COO']
+            // Amplo espectro corporativo: de assistente/analista para cima
+            titles: ['CEO','CTO','CFO','CIO','COO','President','Owner','Founder','Partner','VP','Vice President','Head','Director','Diretor','Diretora','Superintendent','Superintendente','Manager','Gerente','Coordinator','Coordenador','Coordenadora','Supervisor','Supervisora','Lead','Especialista','Analyst','Analista','Assistant','Assistente','Sales','Inside Sales','Vendas','Comercial','Marketing','Finance','Financeiro','Compras','Procurement','Operations','Operações','Supply Chain','RH','HR','TI','Tecnologia']
           }
         });
 
