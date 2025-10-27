@@ -69,7 +69,7 @@ export default function SDRPipelinePage() {
 
     const channel = supabase
       .channel('sdr-pipeline')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sdr_opportunities' }, loadPipeline)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sdr_deals' }, loadPipeline)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -79,18 +79,16 @@ export default function SDRPipelinePage() {
   const loadPipeline = async () => {
     setLoading(true);
     try {
-      // DADOS REAIS da tabela sdr_opportunities
+      // DADOS REAIS da tabela sdr_deals (unificado)
       const { data, error } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .select(`
           id,
           contact_id,
           company_id,
-          conversation_id,
           stage,
           value,
           probability,
-          next_action,
           metadata,
           created_at,
           updated_at,
@@ -121,7 +119,7 @@ export default function SDRPipelinePage() {
         company: opp.company,
         estimated_value: Number(opp.value) || 0,
         win_probability: opp.probability || 0,
-        next_action: opp.next_action || 'Definir próxima ação',
+        next_action: 'Definir próxima ação',
         ai_insight: opp.metadata?.ai_insight || null,
       }));
 
@@ -155,13 +153,10 @@ export default function SDRPipelinePage() {
 
     if (PIPELINE_STAGES.some(stage => stage.id === newStatus)) {
       try {
-        // Atualizar tabela REAL sdr_opportunities
+        // Atualizar tabela REAL sdr_deals (unificado)
         const { error } = await supabase
-          .from('sdr_opportunities')
-          .update({ 
-            stage: newStatus,
-            won_date: newStatus === 'won' ? new Date().toISOString() : null,
-          })
+          .from('sdr_deals')
+          .update({ stage: newStatus })
           .eq('id', dealId);
 
         if (error) throw error;

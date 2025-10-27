@@ -4669,6 +4669,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_deal_health_score: {
+        Args: { deal_id: string }
+        Returns: number
+      }
       calculate_intent_score: {
         Args: { company_uuid: string }
         Returns: number

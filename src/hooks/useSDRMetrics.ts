@@ -156,13 +156,13 @@ export function useSDRMetrics() {
         }
       }
 
-      // Conversion rate REAL - opportunities won / total opportunities
+      // Conversion rate REAL - deals won / total deals (unificado)
       const { count: totalOpps } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .select('*', { count: 'exact', head: true });
 
       const { count: wonOpps } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .select('*', { count: 'exact', head: true })
         .eq('stage', 'won');
 
@@ -170,9 +170,9 @@ export function useSDRMetrics() {
         ? Math.round((wonOpps || 0) / totalOpps * 100)
         : 0;
 
-      // Qualified leads today (opportunities created today with stage >= qualified)
+      // Qualified leads today (deals created today with stage >= qualified)
       const { count: qualifiedToday } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', `${today}T00:00:00`)
         .in('stage', ['qualified', 'proposal', 'negotiation', 'won']);

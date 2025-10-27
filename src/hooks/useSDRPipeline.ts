@@ -33,21 +33,17 @@ export function useSDRPipeline() {
     setError(null);
 
     try {
-      // Get REAL opportunities from sdr_opportunities table
+      // Get REAL opportunities from sdr_deals table (unificado)
       const { data: opportunities, error: oppError } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .select(`
           id,
           company_id,
           contact_id,
-          conversation_id,
-          canvas_id,
           title,
           stage,
           value,
           probability,
-          next_action,
-          next_action_date,
           created_at,
           updated_at,
           company:companies(id, name, website, industry),
@@ -65,14 +61,14 @@ export function useSDRPipeline() {
         stage: opp.stage,
         value: Number(opp.value) || 0,
         probability: opp.probability || 0,
-        next_action: opp.next_action || 'Follow-up agendado',
-        next_action_date: opp.next_action_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        next_action: 'Follow-up agendado',
+        next_action_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: opp.created_at,
         updated_at: opp.updated_at,
         company: opp.company as any,
         contact: opp.contact as any,
-        conversation_id: opp.conversation_id || undefined,
-        canvas_id: opp.canvas_id || undefined,
+        conversation_id: undefined,
+        canvas_id: undefined,
         title: opp.title,
       }));
 
@@ -87,9 +83,9 @@ export function useSDRPipeline() {
 
   const updateLeadStage = async (leadId: string, newStage: string) => {
     try {
-      // Update opportunity stage in sdr_opportunities table
+      // Update opportunity stage in sdr_deals table (unificado)
       const { error } = await supabase
-        .from('sdr_opportunities')
+        .from('sdr_deals')
         .update({ 
           stage: newStage,
           won_date: newStage === 'won' ? new Date().toISOString() : null,
