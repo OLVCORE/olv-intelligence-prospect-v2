@@ -327,10 +327,30 @@ serve(async (req) => {
           if (!cnpjError && cnpjData) {
             if (cnpjData.success && cnpjData.cnpj) {
               console.log('[Apollo] ✅ CNPJ descoberto automaticamente:', cnpjData.cnpj);
+              // Persistir no banco
+              const { data: updated, error: updErr } = await supabase
+                .from('companies')
+                .update({ cnpj: cnpjData.cnpj, cnpj_status: 'ativo' })
+                .eq('id', company.id)
+                .select()
+                .single();
+              if (updErr) {
+                console.warn('[Apollo] ⚠️ Falha ao salvar CNPJ descoberto:', updErr.message);
+              }
               (company as any).cnpj = cnpjData.cnpj;
               (company as any).cnpj_status = 'ativo';
             } else if (cnpjData.status === 'review' && cnpjData.candidates?.length > 0) {
-              console.log('[Apollo] ⚠️ CNPJ requer revisão manual -', cnpjData.candidates.length, 'candidatos');
+              const top = cnpjData.candidates[0];
+              console.log('[Apollo] ⚠️ CNPJ requer revisão manual - usando melhor candidato provisório:', top?.cnpj);
+              // Salvar candidato principal para habilitar botões
+              const { error: updErr2 } = await supabase
+                .from('companies')
+                .update({ cnpj: top?.cnpj || null, cnpj_status: 'pendente' })
+                .eq('id', company.id);
+              if (updErr2) {
+                console.warn('[Apollo] ⚠️ Falha ao salvar CNPJ candidato:', updErr2.message);
+              }
+              (company as any).cnpj = top?.cnpj || null;
               (company as any).cnpj_status = 'pendente';
             } else {
               console.log('[Apollo] ℹ️ CNPJ não encontrado automaticamente');
