@@ -6,7 +6,9 @@ import {
   Zap, AlertCircle, Clock, TrendingUp, Target, 
   CheckCircle2, X, Sparkles, Play 
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAutomationEngine } from '@/hooks/useAutomationEngine';
+import { WorkflowBuilder } from './WorkflowBuilder';
 import { cn } from '@/lib/utils';
 
 export function AutomationPanel() {
@@ -51,8 +53,20 @@ export function AutomationPanel() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header Stats */}
+    <Tabs defaultValue="auto" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="auto" className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          Automações Inteligentes
+        </TabsTrigger>
+        <TabsTrigger value="workflows" className="gap-2">
+          <Zap className="h-4 w-4" />
+          Workflows Customizados
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="auto" className="space-y-4">
+        {/* Header Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3">
           <div className="flex items-center gap-2">
@@ -160,11 +174,16 @@ export function AutomationPanel() {
         )}
       </ScrollArea>
 
-      <Card className="p-3 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
-        <p className="text-xs text-center">
-          🤖 Engine de automação analisando deals em tempo real
-        </p>
-      </Card>
-    </div>
+        <Card className="p-3 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
+          <p className="text-xs text-center">
+            🤖 Engine de automação analisando deals em tempo real
+          </p>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="workflows">
+        <WorkflowBuilder />
+      </TabsContent>
+    </Tabs>
   );
 }
