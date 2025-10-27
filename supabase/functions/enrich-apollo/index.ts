@@ -38,18 +38,27 @@ serve(async (req) => {
     // BUSCAR ORGANIZAÇÃO COM TODOS OS CAMPOS
     // ============================================
     if (type === 'organization') {
-      const params = new URLSearchParams({
-        api_key: APOLLO_API_KEY,
-        q_organization_name: name,
-        ...(domain && { q_organization_domains: domain })
-      });
+      const payload: Record<string, unknown> = {
+        page: 1,
+        per_page: 1,
+      };
+      if (name) payload.q_organization_name = name;
+      if (domain) payload.q_organization_domains = domain;
 
-      const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+      const response = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': APOLLO_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
       
       if (!response.ok) {
-        console.error('[Apollo] ❌ Erro na API:', response.status);
+        const errText = await response.text();
+        console.error('[Apollo] ❌ Erro na API:', response.status, errText);
         return new Response(
-          JSON.stringify({ error: `Apollo API retornou status ${response.status}` }),
+          JSON.stringify({ error: `Apollo API retornou status ${response.status}`, details: errText }),
           { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -80,23 +89,27 @@ serve(async (req) => {
         ? titles.join(',')
         : 'CEO,CTO,CFO,CMO,COO,Diretor,VP,Gerente,Head,Manager,President,Owner';
 
-      const params = new URLSearchParams({
-        api_key: APOLLO_API_KEY,
-        q_organization_name: organizationName,
-        per_page: '50',
-        person_titles: defaultTitles
+      const payload: Record<string, unknown> = {
+        per_page: 50,
+        person_titles: defaultTitles,
+      };
+      if (organizationName) payload.q_organization_name = organizationName;
+      if (domain) payload.q_organization_domains = domain;
+
+      const response = await fetch(`https://api.apollo.io/v1/people/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': APOLLO_API_KEY,
+        },
+        body: JSON.stringify(payload)
       });
-
-      if (domain) {
-        params.append('q_organization_domains', domain);
-      }
-
-      const response = await fetch(`https://api.apollo.io/v1/people/search?${params}`);
       
       if (!response.ok) {
-        console.error('[Apollo] ❌ Erro na busca de pessoas:', response.status);
+        const errText = await response.text();
+        console.error('[Apollo] ❌ Erro na busca de pessoas:', response.status, errText);
         return new Response(
-          JSON.stringify({ error: `Apollo API retornou status ${response.status}` }),
+          JSON.stringify({ error: `Apollo API retornou status ${response.status}`, details: errText }),
           { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -120,17 +133,35 @@ serve(async (req) => {
     // IMPORTAR LEADS DO APOLLO COM DADOS COMPLETOS
     // ============================================
     if (type === 'import_leads') {
-      // Buscar organizações com os parâmetros fornecidos
-      const params = new URLSearchParams({
-        api_key: APOLLO_API_KEY,
-        per_page: '100',
-        ...searchParams
-      });
+      // Montar payload com os parâmetros fornecidos na UI
+      const payload: Record<string, unknown> = {
+        page: 1,
+        per_page: Number(searchParams?.per_page) || 100,
+      };
+      if (searchParams && typeof searchParams === 'object') {
+        for (const [k, v] of Object.entries(searchParams)) {
+          if (v !== undefined && v !== null && String(v).trim() !== '') {
+            if (k !== 'per_page' && k !== 'api_key') payload[k] = v;
+          }
+        }
+      }
 
-      const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+      const response = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': APOLLO_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
       
       if (!response.ok) {
-        throw new Error(`Apollo API error: ${response.status}`);
+        const errText = await response.text();
+        console.error('[Apollo] ❌ Erro import_leads:', response.status, errText);
+        return new Response(
+          JSON.stringify({ error: `Apollo API error: ${response.status}`, details: errText }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const data = await response.json();
@@ -138,7 +169,7 @@ serve(async (req) => {
 
       console.log('[Apollo] 📥 Importando', organizations.length, 'empresas');
 
-      const imported = [];
+      const imported: any[] = [];
       
       for (const org of organizations) {
         // Verificar se empresa já existe
@@ -146,7 +177,7 @@ serve(async (req) => {
           .from('companies')
           .select('id')
           .or(`name.eq.${org.name},domain.eq.${org.primary_domain}`)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           console.log('[Apollo] ⏭️ Empresa já existe:', org.name);
@@ -251,29 +282,26 @@ serve(async (req) => {
         throw new Error('Empresa não encontrada');
       }
 
-      // Buscar organização no Apollo usando POST (não GET com query params)
+      // Buscar organização no Apollo usando POST com header X-Api-Key
       const searchDomain = domain || company.website || company.domain;
       
-      const searchPayload: any = {
-        api_key: APOLLO_API_KEY,
-        page: 1,
-        per_page: 1,
+      const baseHeaders = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': APOLLO_API_KEY,
+      } as const;
+      
+      const buildPayload = (opts: { byName?: boolean; byDomain?: boolean }) => {
+        const p: Record<string, unknown> = { page: 1, per_page: 1 };
+        if (opts.byName && company.name) p.q_organization_name = company.name;
+        if (opts.byDomain && searchDomain) p.q_organization_domains = searchDomain;
+        return p;
       };
-
-      if (company.name) {
-        searchPayload.q_organization_name = company.name;
-      }
-      if (searchDomain) {
-        searchPayload.q_organization_domains = searchDomain;
-      }
 
       let orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        body: JSON.stringify(searchPayload)
+        headers: baseHeaders,
+        body: JSON.stringify(buildPayload({ byName: true, byDomain: true }))
       });
       
       if (!orgResponse.ok) {
@@ -284,8 +312,8 @@ serve(async (req) => {
         if (searchDomain) {
           const resp2 = await fetch('https://api.apollo.io/v1/organizations/search', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-            body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_domains: searchDomain })
+            headers: baseHeaders,
+            body: JSON.stringify(buildPayload({ byDomain: true }))
           });
 
           if (resp2.ok) {
@@ -298,8 +326,8 @@ serve(async (req) => {
             if (company.name) {
               const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-                body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_name: company.name })
+                headers: baseHeaders,
+                body: JSON.stringify(buildPayload({ byName: true }))
               });
 
               if (resp3.ok) {
@@ -322,8 +350,8 @@ serve(async (req) => {
         } else if (company.name) {
           const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-            body: JSON.stringify({ api_key: APOLLO_API_KEY, page: 1, per_page: 1, q_organization_name: company.name })
+            headers: baseHeaders,
+            body: JSON.stringify(buildPayload({ byName: true }))
           });
           if (resp3.ok) {
             orgResponse = resp3;
@@ -401,13 +429,20 @@ serve(async (req) => {
       }
 
       // Buscar pessoas/decisores da organização
-      const peopleParams = new URLSearchParams({
-        api_key: APOLLO_API_KEY,
-        q_organization_domains: searchDomain,
-        per_page: '50'
-      });
+      const peoplePayload: Record<string, unknown> = {
+        per_page: 50,
+      };
+      if (searchDomain) peoplePayload.q_organization_domains = searchDomain;
+      if (company.name) peoplePayload.q_organization_name = company.name;
 
-      const peopleResponse = await fetch(`https://api.apollo.io/v1/people/search?${peopleParams}`);
+      const peopleResponse = await fetch(`https://api.apollo.io/v1/people/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': APOLLO_API_KEY,
+        },
+        body: JSON.stringify(peoplePayload)
+      });
       
       let peopleCount = 0;
       if (peopleResponse.ok) {
