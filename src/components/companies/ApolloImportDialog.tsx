@@ -296,14 +296,17 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
               <div className="space-y-2">
                 <Label htmlFor="email_status">Status do E-mail</Label>
                 <Select
-                  value={peopleParams.contact_email_status}
-                  onValueChange={(value) => setPeopleParams(prev => ({ ...prev, contact_email_status: value }))}
+                  value={peopleParams.contact_email_status || "all"}
+                  onValueChange={(value) => setPeopleParams(prev => ({ 
+                    ...prev, 
+                    contact_email_status: value === "all" ? "" : value 
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="verified">Verificado</SelectItem>
                     <SelectItem value="guessed">Estimado</SelectItem>
                     <SelectItem value="unavailable">Indisponível</SelectItem>
