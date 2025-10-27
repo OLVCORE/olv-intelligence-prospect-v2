@@ -1,94 +1,53 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Plus, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useCompetitorSearch, DetectedCompetitor } from "@/hooks/useCompetitorSearch";
+import { Search, TrendingUp, DollarSign, Target } from "lucide-react";
+import { useState } from "react";
 
-interface FoundCompetitor {
-  name: string;
-  domain: string;
-  description: string;
-  source_url: string;
+interface AutoSearchCompetitorsProps {
+  companyId: string;
+  companyName: string;
+  sector?: string;
+  employees?: number;
 }
 
-export function AutoSearchCompetitors() {
-  const [searching, setSearching] = useState(false);
-  const [productCategory, setProductCategory] = useState("ERP");
-  const [keywords, setKeywords] = useState("");
-  const [results, setResults] = useState<FoundCompetitor[]>([]);
-  const [adding, setAdding] = useState<Set<string>>(new Set());
+export function AutoSearchCompetitors({
+  companyId,
+  companyName,
+  sector,
+  employees,
+}: AutoSearchCompetitorsProps) {
+  const searchMutation = useCompetitorSearch();
+  const [competitors, setCompetitors] = useState<DetectedCompetitor[]>([]);
 
   const handleSearch = async () => {
-    if (!productCategory) {
-      toast.error("Informe a categoria do produto");
-      return;
-    }
+    const result = await searchMutation.mutateAsync({
+      companyId,
+      companyName,
+      sector,
+      employees,
+    });
+    setCompetitors(result.competitors);
+  };
 
-    setSearching(true);
-    setResults([]);
-
-    try {
-      console.log('[Auto Search] Buscando concorrentes:', { productCategory, keywords });
-
-      const { data, error } = await supabase.functions.invoke('search-competitors', {
-        body: { productCategory, keywords }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.competitors) {
-        setResults(data.competitors);
-        toast.success(`${data.competitors.length} concorrentes encontrados!`);
-      } else {
-        toast.warning('Nenhum concorrente encontrado');
-      }
-
-    } catch (error: any) {
-      console.error('[Auto Search] Erro:', error);
-      toast.error(`Erro na busca: ${error.message}`);
-    } finally {
-      setSearching(false);
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'erp': return '🏢';
+      case 'crm': return '👥';
+      case 'financial': return '💰';
+      case 'ecommerce': return '🛒';
+      default: return '📦';
     }
   };
 
-  const handleAddCompetitor = async (competitor: FoundCompetitor) => {
-    const key = competitor.domain;
-    setAdding(prev => new Set(prev).add(key));
-
-    try {
-      const { error } = await supabase
-        .from('competitors')
-        .insert({
-          name: competitor.name,
-          category: productCategory,
-          description: competitor.description,
-          website: competitor.source_url,
-          website_url: competitor.source_url,
-          market_position: 'Emerging',
-          active: true,
-          strengths: [],
-          weaknesses: [],
-          totvs_advantages: []
-        });
-
-      if (error) throw error;
-
-      toast.success(`${competitor.name} adicionado aos concorrentes!`);
-      setResults(prev => prev.filter(c => c.domain !== key));
-
-    } catch (error: any) {
-      console.error('[Auto Search] Erro ao adicionar:', error);
-      toast.error(`Erro: ${error.message}`);
-    } finally {
-      setAdding(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(key);
-        return newSet;
-      });
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'erp': return 'ERP';
+      case 'crm': return 'CRM';
+      case 'financial': return 'Financeiro';
+      case 'ecommerce': return 'E-commerce';
+      default: return 'Outro';
     }
   };
 
@@ -97,90 +56,95 @@ export function AutoSearchCompetitors() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="h-5 w-5" />
-          Busca Automática de Concorrentes
+          Busca Inteligente de Concorrentes SMB/PME
         </CardTitle>
         <CardDescription>
-          Busque concorrentes automaticamente na web baseado em categoria e palavras-chave
+          Descubra os concorrentes reais mais prováveis para esta empresa baseado em portais de comparação e análise de IA
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria do Produto</Label>
-            <Input
-              id="category"
-              value={productCategory}
-              onChange={(e) => setProductCategory(e.target.value)}
-              placeholder="Ex: ERP, CRM, BI"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="keywords">Palavras-chave (opcional)</Label>
-            <Input
-              id="keywords"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Ex: cloud, enterprise"
-            />
-          </div>
-        </div>
-
-        <Button onClick={handleSearch} disabled={searching} className="w-full">
-          {searching ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Buscando...
-            </>
-          ) : (
-            <>
-              <Search className="mr-2 h-4 w-4" />
-              Buscar Concorrentes
-            </>
-          )}
+        <Button
+          onClick={handleSearch}
+          disabled={searchMutation.isPending}
+          className="w-full"
+        >
+          <Search className="mr-2 h-4 w-4" />
+          {searchMutation.isPending ? 'Buscando...' : 'Buscar Concorrentes na Web'}
         </Button>
 
-        {results.length > 0 && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-semibold text-sm">Concorrentes Encontrados:</h4>
-            {results.map((competitor) => (
-              <Card key={competitor.domain} className="border-l-4 border-l-primary">
+        {competitors.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Top {competitors.length} Concorrentes Detectados
+            </h3>
+            
+            {competitors.map((competitor, idx) => (
+              <Card key={idx} className="border-l-4 border-l-primary">
                 <CardContent className="pt-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-1">
-                      <h5 className="font-semibold">{competitor.name}</h5>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {competitor.description}
-                      </p>
-                      <div className="flex items-center gap-2 pt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {competitor.domain}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{getTypeIcon(competitor.type)}</span>
+                      <div>
+                        <h4 className="font-semibold">{competitor.name}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {getTypeLabel(competitor.type)}
                         </Badge>
-                        <a
-                          href={competitor.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
-                        >
-                          Ver site <ExternalLink className="h-3 w-3" />
-                        </a>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddCompetitor(competitor)}
-                      disabled={adding.has(competitor.domain)}
-                    >
-                      {adding.has(competitor.domain) ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Plus className="mr-1 h-3 w-3" />
-                          Adicionar
-                        </>
-                      )}
-                    </Button>
+                    {competitor.relevance_score && (
+                      <Badge variant="outline" className="ml-2">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        {competitor.relevance_score}% relevância
+                      </Badge>
+                    )}
                   </div>
+
+                  {competitor.reasoning && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {competitor.reasoning}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {competitor.priceRange && (
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{competitor.priceRange}</span>
+                      </div>
+                    )}
+                    {competitor.targetMarket && (
+                      <div className="flex items-center gap-1">
+                        <Target className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{competitor.targetMarket}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {competitor.key_differentiators && competitor.key_differentiators.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-semibold mb-1">Diferenciais TOTVS:</p>
+                      <ul className="text-xs space-y-1">
+                        {competitor.key_differentiators.map((diff, i) => (
+                          <li key={i} className="flex items-start gap-1">
+                            <span className="text-primary">✓</span>
+                            <span>{diff}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {competitor.typical_objections && competitor.typical_objections.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-semibold mb-1">Objeções Típicas:</p>
+                      <ul className="text-xs space-y-1">
+                        {competitor.typical_objections.map((obj, i) => (
+                          <li key={i} className="text-muted-foreground">• {obj}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

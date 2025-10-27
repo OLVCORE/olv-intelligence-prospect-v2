@@ -86,48 +86,68 @@ serve(async (req) => {
 
     console.log('[Battle Card] Context:', JSON.stringify(context, null, 2));
 
-    // 5. Gerar Battle Card com IA
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    // 5. Gerar Battle Card com IA usando Lovable AI
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `Você é um especialista em análise competitiva de ERPs no mercado brasileiro.
+    const systemPrompt = `Você é um especialista em análise competitiva de ERPs no mercado brasileiro para PMEs.
 
-Sua missão: Gerar um Battle Card PERSONALIZADO para ajudar um vendedor TOTVS a vencer contra o concorrente atual da empresa.
+CONCORRENTES REAIS DE TOTVS PARA PMEs (FOCO PRINCIPAL):
+- **Bling**: Forte em e-commerce, marketplaces
+- **Conta Azul**: Financeiro para micro/pequenas
+- **Omie**: ERP completo para PMEs, preço competitivo
+- **Tiny**: E-commerce, integrações populares
+- **vhsys**: ERP completo PME, diversas áreas
+- **Senior Sistemas**: Consolidado, PMEs e grandes
+- **Sankhya**: Médias empresas, bem posicionado
+- **eGestor**: 100% online, PMEs
+- **Jiva ERP**: Indústrias PMEs
+- **Procfy**: Gestão financeira, custo-benefício
+- **Mastermaq**: Gestão PMEs, diversos segmentos
+- **WebMais**: Varejo
+- **Mysoft**: Diversos segmentos PMEs
 
-IMPORTANTE:
-- Se TOTVS Score < 30: Empresa provavelmente NÃO usa ERP estruturado → competir contra "Planilhas Excel" ou sistemas legados
-- Se TOTVS Score 30-70: Empresa pode usar SAP, Oracle, Microsiga, Protheus, ou outro ERP
-- Se TOTVS Score > 70: Empresa JÁ USA TOTVS → foco em upsell/cross-sell
+CRMs CONCORRENTES:
+- **RD Station**: Marketing/vendas
+- **HubSpot**: Marketing/vendas/serviços
+- **Zoho CRM**: Vendas PMEs
+
+IMPORTANTE - REGRAS DE DETECÇÃO:
+- Se TOTVS Score < 30 E empresa pequena (< 50 func): Provavelmente usa Bling, Conta Azul, Omie ou Planilhas
+- Se TOTVS Score 30-70 E média empresa (50-200 func): Pode usar Senior, Sankhya, vhsys, Omie
+- Se TOTVS Score > 70: Já é cliente TOTVS → upsell/cross-sell
+- NUNCA sugira SAP/Oracle para PMEs - são muito caros e complexos!
 
 Estruture o Battle Card em JSON com:
 {
-  "competitor_name": "Nome do principal concorrente detectado",
+  "competitor_name": "Nome do concorrente SMB detectado (Bling, Omie, Conta Azul, etc)",
   "competitor_type": "erp" | "legacy" | "spreadsheet" | "other",
   "detection_confidence": 0-100,
-  "win_strategy": "Estratégia de 2-3 parágrafos para vencer esse competidor NESTA empresa específica",
+  "win_strategy": "Estratégia específica para vencer este concorrente SMB",
   "objection_handling": [
     {
-      "objection": "Objeção comum deste competidor",
-      "response": "Resposta personalizada com dados desta empresa"
+      "objection": "Objeção comum (ex: preço, integração, suporte)",
+      "response": "Resposta focada em ROI e valor para PME"
     }
   ],
   "proof_points": [
     {
-      "title": "Caso de sucesso ou métrica relevante",
+      "title": "Caso de sucesso PME similar",
       "type": "case_study" | "metric" | "testimonial",
-      "result": "Resultado específico",
-      "relevance": "Por que isso importa para ESTA empresa"
+      "result": "Resultado quantificável",
+      "relevance": "Relevância para esta empresa PME"
     }
   ],
   "totvs_advantages": [
-    "Vantagem específica para o setor/tamanho desta empresa",
-    "Vantagem relacionada aos sinais de intenção detectados",
-    "Vantagem comparando com o competidor atual"
+    "Vantagens TOTVS vs concorrente SMB específico",
+    "Escala, suporte nacional, integrações",
+    "TCO e ROI para PMEs"
   ],
   "next_steps": [
-    "Ação concreta 1",
-    "Ação concreta 2"
+    "Ação concreta para PME",
+    "Demo focada no concorrente"
   ]
 }`;
 
@@ -155,30 +175,29 @@ ${totvsScore >= 70 ? '✅ Alto score = Já é cliente TOTVS - foco em expansão'
 
 Gere um Battle Card ULTRA ESPECÍFICO para esta empresa. Use os sinais de intenção para personalizar a estratégia.`;
 
-    console.log('[Battle Card] Calling OpenAI...');
+    console.log('[Battle Card] Calling Lovable AI...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
         response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('[Battle Card] OpenAI error:', error);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('[Battle Card] Lovable AI error:', error);
+      throw new Error(`Lovable AI error: ${response.status}`);
     }
 
     const aiData = await response.json();

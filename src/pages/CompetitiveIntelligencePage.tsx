@@ -5,8 +5,8 @@ import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
 import { CompanyBattleCard } from "@/components/competitive/CompanyBattleCard";
 import { WinProbabilityCard } from "@/components/competitive/WinProbabilityCard";
 import { NegotiationAssistantPanel } from "@/components/competitive/NegotiationAssistantPanel";
-import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
+import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
 import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
@@ -286,7 +286,21 @@ export default function CompetitiveIntelligencePage() {
             </TabsContent>
 
             <TabsContent value="auto-search" className="space-y-4">
-              <AutoSearchCompetitors />
+              {companyId && company ? (
+                <AutoSearchCompetitors
+                  companyId={companyId}
+                  companyName={company.name}
+                  sector={company.sector || company.vertical}
+                  employees={company.employees}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Search className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p>Selecione uma empresa para buscar concorrentes</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="manage" className="space-y-4">
