@@ -1,153 +1,135 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCompetitorSearch, DetectedCompetitor } from "@/hooks/useCompetitorSearch";
-import { Search, TrendingUp, DollarSign, Target } from "lucide-react";
+import { Search, ExternalLink, TrendingUp, Globe } from "lucide-react";
 import { useState } from "react";
 
 interface AutoSearchCompetitorsProps {
-  companyId: string;
   companyName: string;
   sector?: string;
-  employees?: number;
+  totvsProduct?: string;
 }
 
 export function AutoSearchCompetitors({
-  companyId,
   companyName,
   sector,
-  employees,
+  totvsProduct,
 }: AutoSearchCompetitorsProps) {
   const searchMutation = useCompetitorSearch();
-  const [competitors, setCompetitors] = useState<DetectedCompetitor[]>([]);
+  const [searchResult, setSearchResult] = useState<any>(null);
 
   const handleSearch = async () => {
     const result = await searchMutation.mutateAsync({
-      companyId,
       companyName,
       sector,
-      employees,
+      productCategory: sector,
+      keywords: 'PME SMB Brasil',
+      totvsProduct: totvsProduct || 'TOTVS Protheus',
     });
-    setCompetitors(result.competitors);
+    setSearchResult(result);
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'erp': return '🏢';
-      case 'crm': return '👥';
-      case 'financial': return '💰';
-      case 'ecommerce': return '🛒';
-      default: return '📦';
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'erp': return 'ERP';
-      case 'crm': return 'CRM';
-      case 'financial': return 'Financeiro';
-      case 'ecommerce': return 'E-commerce';
-      default: return 'Outro';
-    }
-  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5" />
-          Busca Inteligente de Concorrentes SMB/PME
+          <Globe className="h-5 w-5" />
+          Busca em Portais de Comparação
         </CardTitle>
         <CardDescription>
-          Descubra os concorrentes reais mais prováveis para esta empresa baseado em portais de comparação e análise de IA
+          Busca automática em G2, Capterra, B2B Stack, Gartner e outros 15+ portais de comparação de tecnologia
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button
-          onClick={handleSearch}
-          disabled={searchMutation.isPending}
-          className="w-full"
-        >
-          <Search className="mr-2 h-4 w-4" />
-          {searchMutation.isPending ? 'Buscando...' : 'Buscar Concorrentes na Web'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSearch}
+            disabled={searchMutation.isPending}
+            className="flex-1"
+          >
+            <Search className="mr-2 h-4 w-4" />
+            {searchMutation.isPending ? 'Buscando em Portais...' : 'Buscar Concorrentes'}
+          </Button>
+        </div>
 
-        {competitors.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Top {competitors.length} Concorrentes Detectados
-            </h3>
-            
-            {competitors.map((competitor, idx) => (
-              <Card key={idx} className="border-l-4 border-l-primary">
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{getTypeIcon(competitor.type)}</span>
-                      <div>
-                        <h4 className="font-semibold">{competitor.name}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {getTypeLabel(competitor.type)}
-                        </Badge>
+        {searchResult && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                {searchResult.portals_searched} portais pesquisados
+              </Badge>
+              <Badge variant="secondary">
+                {searchResult.total_comparisons_found} comparações encontradas
+              </Badge>
+            </div>
+
+            <div className="text-sm font-semibold">
+              Top {searchResult.competitors.length} Concorrentes Mencionados:
+            </div>
+
+            <ScrollArea className="h-[500px] pr-4">
+              <div className="space-y-3">
+                {searchResult.competitors.map((competitor: DetectedCompetitor, idx: number) => (
+                  <Card key={idx} className="border-l-4 border-l-primary">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold text-lg">{competitor.name}</h4>
+                          <div className="flex gap-2 mt-1">
+                            <Badge variant="secondary">
+                              {competitor.mentions} menções
+                            </Badge>
+                            <Badge variant="outline">
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              Score: {competitor.relevance_score}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    {competitor.relevance_score && (
-                      <Badge variant="outline" className="ml-2">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        {competitor.relevance_score}% relevância
-                      </Badge>
-                    )}
-                  </div>
 
-                  {competitor.reasoning && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {competitor.reasoning}
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {competitor.priceRange && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">{competitor.priceRange}</span>
+                      <div className="text-xs text-muted-foreground">
+                        Encontrado em: {competitor.portals.join(', ')}
                       </div>
-                    )}
-                    {competitor.targetMarket && (
-                      <div className="flex items-center gap-1">
-                        <Target className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">{competitor.targetMarket}</span>
+
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold">Links de Comparação:</p>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {competitor.comparison_links.map((link, linkIdx) => (
+                            <a
+                              key={linkIdx}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block p-2 rounded-md border hover:bg-accent transition-colors"
+                            >
+                              <div className="flex items-start gap-2">
+                                <ExternalLink className="h-3 w-3 mt-1 text-primary flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-medium truncate">
+                                    {link.title}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {link.snippet}
+                                  </div>
+                                  <div className="text-xs text-primary mt-1 flex items-center gap-1">
+                                    <Globe className="h-3 w-3" />
+                                    {link.portal}
+                                  </div>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {competitor.key_differentiators && competitor.key_differentiators.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-semibold mb-1">Diferenciais TOTVS:</p>
-                      <ul className="text-xs space-y-1">
-                        {competitor.key_differentiators.map((diff, i) => (
-                          <li key={i} className="flex items-start gap-1">
-                            <span className="text-primary">✓</span>
-                            <span>{diff}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {competitor.typical_objections && competitor.typical_objections.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-semibold mb-1">Objeções Típicas:</p>
-                      <ul className="text-xs space-y-1">
-                        {competitor.typical_objections.map((obj, i) => (
-                          <li key={i} className="text-muted-foreground">• {obj}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
       </CardContent>

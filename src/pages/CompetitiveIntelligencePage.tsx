@@ -288,10 +288,9 @@ export default function CompetitiveIntelligencePage() {
             <TabsContent value="auto-search" className="space-y-4">
               {companyId && company ? (
                 <AutoSearchCompetitors
-                  companyId={companyId}
                   companyName={company.name}
                   sector={company.sector || company.vertical}
-                  employees={company.employees}
+                  totvsProduct="TOTVS Protheus"
                 />
               ) : (
                 <Card>

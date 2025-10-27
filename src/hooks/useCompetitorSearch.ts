@@ -2,46 +2,52 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface ComparisonLink {
+  portal: string;
+  title: string;
+  url: string;
+  snippet: string;
+}
+
 export interface DetectedCompetitor {
   name: string;
-  type: 'erp' | 'crm' | 'financial' | 'ecommerce';
-  relevance_score?: number;
-  confidence?: number;
-  reasoning?: string;
-  key_differentiators?: string[];
-  typical_objections?: string[];
-  source?: string;
-  priceRange?: string;
-  targetMarket?: string;
+  mentions: number;
+  comparison_links: ComparisonLink[];
+  portals: string[];
+  avg_position: number;
+  relevance_score: number;
 }
 
 export interface CompetitorSearchResult {
-  company_id: string;
-  company_name: string;
+  success: boolean;
   competitors: DetectedCompetitor[];
+  total_comparisons_found: number;
+  portals_searched: number;
   search_date: string;
-  sources_checked: number;
 }
 
 export function useCompetitorSearch() {
   return useMutation({
     mutationFn: async ({
-      companyId,
       companyName,
       sector,
-      employees,
+      productCategory,
+      keywords,
+      totvsProduct,
     }: {
-      companyId: string;
       companyName: string;
       sector?: string;
-      employees?: number;
+      productCategory?: string;
+      keywords?: string;
+      totvsProduct?: string;
     }) => {
-      const { data, error } = await supabase.functions.invoke('search-competitors-web', {
+      const { data, error } = await supabase.functions.invoke('search-competitors', {
         body: {
-          company_id: companyId,
           company_name: companyName,
           sector,
-          employees,
+          productCategory,
+          keywords,
+          totvs_product: totvsProduct,
         },
       });
 
@@ -50,7 +56,7 @@ export function useCompetitorSearch() {
     },
     onSuccess: (data) => {
       toast.success('🔍 Busca de Concorrentes Concluída', {
-        description: `${data.competitors.length} concorrentes SMB/PME detectados`,
+        description: `${data.competitors.length} concorrentes encontrados em ${data.portals_searched} portais`,
       });
     },
     onError: (error: Error) => {
