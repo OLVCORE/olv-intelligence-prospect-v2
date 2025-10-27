@@ -78,24 +78,64 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
     }
   };
 
-  const handleApplyCNPJ = async (cnpj: string) => {
+  const handleApplyCNPJ = async (cnpj: string, candidateData?: any) => {
     setApplying(cnpj);
     
     try {
+      // Atualizar CNPJ e dados da empresa
+      const updateData: any = { 
+        cnpj: cnpj,
+        cnpj_status: 'valido',
+        updated_at: new Date().toISOString()
+      };
+
+      // Se temos dados do candidato, atualizar também
+      if (candidateData) {
+        if (candidateData.razao_social || candidateData.nome) {
+          updateData.name = candidateData.razao_social || candidateData.nome;
+        }
+        if (candidateData.fantasia) {
+          updateData.domain = candidateData.fantasia;
+        }
+        if (candidateData.email) {
+          updateData.email = candidateData.email;
+        }
+        if (candidateData.telefone) {
+          const phones = candidateData.telefone.split('/').map((p: string) => p.trim());
+          updateData.phone_numbers = phones;
+        }
+        if (candidateData.municipio || candidateData.uf) {
+          updateData.location = {
+            ...company.location,
+            city: candidateData.municipio || company.location?.city,
+            state: candidateData.uf || company.location?.state
+          };
+        }
+        if (candidateData.porte) {
+          updateData.revenue = candidateData.porte;
+        }
+      }
+
       const { error } = await supabase
         .from('companies')
-        .update({ 
-          cnpj: cnpj,
-          cnpj_status: 'validado',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', company.id);
       
       if (error) throw error;
       
       toast.success('✅ CNPJ aplicado com sucesso!', {
-        description: `CNPJ ${cnpj} vinculado à empresa`
+        description: `Dados atualizados e CNPJ vinculado`
       });
+      
+      // Disparar enriquecimento automático
+      try {
+        console.log('[CNPJ Discovery] 🔄 Disparando enriquecimento automático...');
+        await supabase.functions.invoke('auto-enrich-company', {
+          body: { companyId: company.id }
+        });
+      } catch (enrichError) {
+        console.error('[CNPJ Discovery] ⚠️ Erro ao disparar enriquecimento:', enrichError);
+      }
       
       onCNPJApplied?.();
       onOpenChange(false);
@@ -456,7 +496,7 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
                     </div>
 
                     <Button
-                      onClick={() => handleApplyCNPJ(candidate.cnpj)}
+                      onClick={() => handleApplyCNPJ(candidate.cnpj, candidate.data)}
                       disabled={applying === candidate.cnpj}
                       className="w-full"
                       variant={index === 0 ? "default" : "outline"}
