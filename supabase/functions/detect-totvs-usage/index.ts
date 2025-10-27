@@ -66,11 +66,15 @@ serve(async (req) => {
         if (jobsResponse.ok) {
           const jobsData = await jobsResponse.json();
           
-          // Filtrar APENAS resultados do LinkedIn Jobs
+          // Lista de termos TOTVS que DEVEM aparecer no conteúdo
+          const totvsKeywords = ['totvs', 'protheus', 'rm totvs', 'linha protheus', 'datasul', 'logix', 'winthor'];
+          
+          // Filtrar APENAS resultados do LinkedIn Jobs que mencionem TOTVS explicitamente
           const validResults = jobsData.organic?.filter((result: any) => {
             const url = result.link?.toLowerCase() || '';
             const snippet = result.snippet?.toLowerCase() || '';
             const title = result.title?.toLowerCase() || '';
+            const fullText = `${snippet} ${title}`;
             
             // Deve ser uma vaga real do LinkedIn
             const isLinkedInJob = url.includes('linkedin.com/jobs');
@@ -79,12 +83,20 @@ serve(async (req) => {
             const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com', 'loja.totvs.com'];
             const notTOTVSDomain = !totvsOwnDomains.some(domain => url.includes(domain));
             
-            // Deve mencionar TOTVS E a empresa
-            const mentionsTOTVS = snippet.includes('totvs') || snippet.includes('protheus') || title.includes('totvs');
-            const mentionsCompany = snippet.includes(company_name.toLowerCase()) || title.includes(company_name.toLowerCase());
+            // DEVE mencionar EXPLICITAMENTE algum termo TOTVS no texto
+            const mentionsTOTVS = totvsKeywords.some(keyword => fullText.includes(keyword));
+            
+            // Deve mencionar a empresa
+            const mentionsCompany = fullText.includes(company_name.toLowerCase());
             
             // Não deve ser PDF ou arquivo
             const notFile = !url.includes('.pdf') && !url.includes('.doc');
+            
+            console.log(`[TOTVS Detection] Job check: ${title}`);
+            console.log(`  - isLinkedInJob: ${isLinkedInJob}`);
+            console.log(`  - notTOTVSDomain: ${notTOTVSDomain}`);
+            console.log(`  - mentionsTOTVS: ${mentionsTOTVS}`);
+            console.log(`  - mentionsCompany: ${mentionsCompany}`);
             
             return isLinkedInJob && notTOTVSDomain && mentionsTOTVS && mentionsCompany && notFile;
           });
@@ -100,6 +112,8 @@ serve(async (req) => {
             });
             totalScore += 40;
             console.log('[TOTVS Detection] ✅ Found TOTVS mention in LinkedIn jobs (40 pts)');
+          } else {
+            console.log('[TOTVS Detection] ❌ No valid LinkedIn jobs found mentioning TOTVS');
           }
         }
       }
@@ -128,33 +142,47 @@ serve(async (req) => {
         if (newsResponse.ok) {
           const newsData = await newsResponse.json();
           
+          // Lista de termos TOTVS que DEVEM aparecer no conteúdo
+          const totvsKeywords = ['totvs', 'protheus', 'rm totvs', 'datasul', 'logix', 'winthor'];
+          
           // Validação rigorosa de notícias
           const validNews = newsData.news?.filter((article: any) => {
             const url = article.link?.toLowerCase() || '';
             const snippet = article.snippet?.toLowerCase() || '';
             const title = article.title?.toLowerCase() || '';
+            const fullText = `${snippet} ${title}`;
             
             // Não deve ser domínio TOTVS
             const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com', 'loja.totvs.com'];
             const notTOTVSDomain = !totvsOwnDomains.some(domain => url.includes(domain));
             
+            // DEVE mencionar EXPLICITAMENTE algum termo TOTVS no texto
+            const mentionsTOTVS = totvsKeywords.some(keyword => fullText.includes(keyword));
+            
             // Deve mencionar explicitamente uso/implementação
             const hasUsageKeywords = 
-              snippet.includes('usa totvs') || 
-              snippet.includes('cliente totvs') || 
-              snippet.includes('implementou totvs') ||
-              snippet.includes('case de sucesso') ||
-              snippet.includes('migrou para totvs') ||
-              title.includes('usa totvs') ||
-              title.includes('cliente totvs');
+              fullText.includes('usa totvs') || 
+              fullText.includes('cliente totvs') || 
+              fullText.includes('implementou totvs') ||
+              fullText.includes('case de sucesso') ||
+              fullText.includes('migrou para totvs') ||
+              fullText.includes('utiliza totvs') ||
+              fullText.includes('sistema totvs');
             
             // Deve mencionar a empresa
-            const mentionsCompany = snippet.includes(company_name.toLowerCase()) || title.includes(company_name.toLowerCase());
+            const mentionsCompany = fullText.includes(company_name.toLowerCase());
             
             // Não deve ser ranking genérico ou lista de empresas
             const notGenericList = !title.includes('ranking') && !title.includes('maiores empresas') && !title.includes('lista de');
             
-            return notTOTVSDomain && hasUsageKeywords && mentionsCompany && notGenericList;
+            console.log(`[TOTVS Detection] News check: ${title}`);
+            console.log(`  - notTOTVSDomain: ${notTOTVSDomain}`);
+            console.log(`  - mentionsTOTVS: ${mentionsTOTVS}`);
+            console.log(`  - hasUsageKeywords: ${hasUsageKeywords}`);
+            console.log(`  - mentionsCompany: ${mentionsCompany}`);
+            console.log(`  - notGenericList: ${notGenericList}`);
+            
+            return notTOTVSDomain && mentionsTOTVS && hasUsageKeywords && mentionsCompany && notGenericList;
           });
           
           if (validNews && validNews.length > 0) {
@@ -168,6 +196,8 @@ serve(async (req) => {
             });
             totalScore += 30;
             console.log('[TOTVS Detection] ✅ Found TOTVS usage in news (30 pts)');
+          } else {
+            console.log('[TOTVS Detection] ❌ No valid news found mentioning TOTVS usage');
           }
         }
       }
@@ -189,20 +219,27 @@ serve(async (req) => {
           const html = await websiteResponse.text();
           const lowerHtml = html.toLowerCase();
           
-          const hasTOTVSMention = lowerHtml.includes('totvs') || 
-                                   lowerHtml.includes('protheus') ||
-                                   lowerHtml.includes('linha protheus');
+          // Lista de termos TOTVS
+          const totvsKeywords = ['totvs', 'protheus', 'rm totvs', 'linha protheus', 'datasul', 'logix', 'winthor'];
+          
+          // Verificar se algum termo TOTVS aparece no HTML
+          const hasTOTVSMention = totvsKeywords.some(keyword => lowerHtml.includes(keyword));
 
           if (hasTOTVSMention) {
+            // Encontrar qual termo foi detectado para evidência
+            const detectedTerm = totvsKeywords.find(keyword => lowerHtml.includes(keyword));
+            
             sources.push({
               source: 'website_scraping',
               confidence: 20,
-              evidence: 'Menção a TOTVS encontrada no site da empresa',
+              evidence: `Menção a "${detectedTerm?.toUpperCase()}" encontrada no site da empresa`,
               url: `https://${company_domain}`,
               detected_at: new Date().toISOString(),
             });
             totalScore += 20;
-            console.log('[TOTVS Detection] ✅ Found TOTVS mention on website (20 pts)');
+            console.log(`[TOTVS Detection] ✅ Found ${detectedTerm} mention on website (20 pts)`);
+          } else {
+            console.log('[TOTVS Detection] ❌ No TOTVS mention found on website');
           }
         }
       }
@@ -231,24 +268,35 @@ serve(async (req) => {
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
           
+          // Lista de termos TOTVS que DEVEM aparecer no conteúdo
+          const totvsKeywords = ['totvs', 'protheus', 'rm totvs', 'datasul', 'logix', 'winthor'];
+          
           // Validação rigorosa de perfis
           const validResults = profileData.organic?.filter((result: any) => {
             const url = result.link?.toLowerCase() || '';
             const snippet = result.snippet?.toLowerCase() || '';
             const title = result.title?.toLowerCase() || '';
+            const fullText = `${snippet} ${title}`;
             
             // Deve ser perfil pessoal do LinkedIn
             const isLinkedInProfile = url.includes('linkedin.com/in/');
             
             // Não deve ser funcionário da TOTVS
-            const notTOTVSEmployee = !snippet.includes('totvs s.a') && !snippet.includes('trabalha na totvs');
+            const notTOTVSEmployee = !snippet.includes('totvs s.a') && !snippet.includes('trabalha na totvs') && !snippet.includes('totvs s/a');
+            
+            // DEVE mencionar EXPLICITAMENTE algum termo TOTVS no texto
+            const mentionsTOTVS = totvsKeywords.some(keyword => fullText.includes(keyword));
             
             // Deve mencionar experiência com TOTVS na empresa específica
-            const hasRelevantMention = 
-              (snippet.includes('totvs') || snippet.includes('protheus')) &&
-              snippet.includes(company_name.toLowerCase());
+            const mentionsCompany = fullText.includes(company_name.toLowerCase());
             
-            return isLinkedInProfile && notTOTVSEmployee && hasRelevantMention;
+            console.log(`[TOTVS Detection] Profile check: ${title}`);
+            console.log(`  - isLinkedInProfile: ${isLinkedInProfile}`);
+            console.log(`  - notTOTVSEmployee: ${notTOTVSEmployee}`);
+            console.log(`  - mentionsTOTVS: ${mentionsTOTVS}`);
+            console.log(`  - mentionsCompany: ${mentionsCompany}`);
+            
+            return isLinkedInProfile && notTOTVSEmployee && mentionsTOTVS && mentionsCompany;
           });
           
           if (validResults && validResults.length > 0) {
@@ -261,6 +309,8 @@ serve(async (req) => {
             });
             totalScore += 10;
             console.log('[TOTVS Detection] ✅ Found TOTVS mention in employee profiles (10 pts)');
+          } else {
+            console.log('[TOTVS Detection] ❌ No valid LinkedIn profiles found mentioning TOTVS');
           }
         }
       }
