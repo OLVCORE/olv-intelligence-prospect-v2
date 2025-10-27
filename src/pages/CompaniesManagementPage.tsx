@@ -1107,9 +1107,10 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => navigate(`/company/${company.id}`)}
+                                  className="h-9 w-9 hover:bg-accent transition-colors"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -1124,9 +1125,10 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => navigate(`/search?companyId=${company.id}`)}
+                                  className="h-9 w-9 hover:bg-accent transition-colors"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -1141,13 +1143,14 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => {
                                     const params = new URLSearchParams(location.search);
                                     const returnTab = params.get('tab') || 'roi';
                                     navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
                                   }}
+                                  className="h-9 w-9 hover:bg-accent transition-colors"
                                 >
                                   <Target className="h-4 w-4" />
                                 </Button>
@@ -1281,12 +1284,13 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="destructive"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => {
                                     setCompanyToDelete(company);
                                     setDeleteDialogOpen(true);
                                   }}
+                                  className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive transition-colors"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
