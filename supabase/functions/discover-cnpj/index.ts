@@ -40,7 +40,13 @@ serve(async (req) => {
 
     console.log('[CNPJ Discovery] 🔍 Buscando CNPJ para:', companyName);
 
-    const candidates: CNPJMatch[] = [];
+    // Timeout global de 15 segundos
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout: operação excedeu 15 segundos')), 15000)
+    );
+
+    const searchPromise = (async () => {
+      const candidates: CNPJMatch[] = [];
 
     // ============================================
     // MÉTODO 1: Busca via EmpresaQui (melhor match)
@@ -97,7 +103,6 @@ serve(async (req) => {
     try {
       console.log('[CNPJ Discovery] 📋 Tentando ReceitaWS...');
       
-      // Buscar no Google primeiro para encontrar possíveis CNPJs
       const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
       
       if (SERPER_API_KEY) {
@@ -121,9 +126,10 @@ serve(async (req) => {
           const searchData = await searchResponse.json();
           const results = searchData.organic || [];
           
-          // Extrair CNPJs dos resultados
           const cnpjPattern = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+          const foundCNPJs = new Set<string>();
           
+          // Extrair CNPJs únicos dos resultados (máximo 5)
           for (const result of results) {
             const text = `${result.title} ${result.snippet}`;
             const matches = text.match(cnpjPattern);
@@ -131,43 +137,58 @@ serve(async (req) => {
             if (matches) {
               for (const cnpjRaw of matches) {
                 const cnpj = cnpjRaw.replace(/\D/g, '');
-                
-                // Validar via ReceitaWS
-                try {
-                  const receitaResponse = await fetch(`https://receitaws.com.br/v1/cnpj/${cnpj}`);
-                  
-                  if (receitaResponse.ok) {
-                    const receitaData = await receitaResponse.json();
-                    
-                    if (receitaData.status !== 'ERROR') {
-                      const match = calculateMatch(companyName, domain, location, {
-                        razao_social: receitaData.nome,
-                        nome_fantasia: receitaData.fantasia,
-                        website: domain,
-                        municipio: receitaData.municipio,
-                        uf: receitaData.uf
-                      });
-                      
-                      if (match.confidence >= 50) {
-                        candidates.push({
-                          cnpj: cnpj,
-                          confidence: match.confidence,
-                          source: 'receitaws',
-                          validation: match.scores,
-                          data: receitaData
-                        });
-                        console.log('[CNPJ Discovery] ✅ ReceitaWS validou:', cnpj, `(${match.confidence}%)`);
-                      }
-                    }
-                  }
-                  
-                  // Rate limit ReceitaWS
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                } catch (error) {
-                  console.error('[CNPJ Discovery] ⚠️ Erro ao validar CNPJ via ReceitaWS:', error);
-                }
+                foundCNPJs.add(cnpj);
+                if (foundCNPJs.size >= 5) break;
               }
             }
+            if (foundCNPJs.size >= 5) break;
+          }
+          
+          // Validar todos os CNPJs em paralelo
+          if (foundCNPJs.size > 0) {
+            console.log(`[CNPJ Discovery] 🔎 Validando ${foundCNPJs.size} CNPJs em paralelo...`);
+            
+            const validationPromises = Array.from(foundCNPJs).map(async (cnpj, index) => {
+              try {
+                // Delay escalonado para evitar rate limit (0ms, 300ms, 600ms...)
+                await new Promise(resolve => setTimeout(resolve, index * 300));
+                
+                const receitaResponse = await fetch(`https://receitaws.com.br/v1/cnpj/${cnpj}`, {
+                  signal: AbortSignal.timeout(5000) // Timeout de 5s por request
+                });
+                
+                if (receitaResponse.ok) {
+                  const receitaData = await receitaResponse.json();
+                  
+                  if (receitaData.status !== 'ERROR') {
+                    const match = calculateMatch(companyName, domain, location, {
+                      razao_social: receitaData.nome,
+                      nome_fantasia: receitaData.fantasia,
+                      website: domain,
+                      municipio: receitaData.municipio,
+                      uf: receitaData.uf
+                    });
+                    
+                    if (match.confidence >= 50) {
+                      console.log('[CNPJ Discovery] ✅ ReceitaWS validou:', cnpj, `(${match.confidence}%)`);
+                      return {
+                        cnpj: cnpj,
+                        confidence: match.confidence,
+                        source: 'receitaws',
+                        validation: match.scores,
+                        data: receitaData
+                      } as CNPJMatch;
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('[CNPJ Discovery] ⚠️ Erro ao validar CNPJ via ReceitaWS:', error);
+              }
+              return null;
+            });
+            
+            const validationResults = await Promise.all(validationPromises);
+            candidates.push(...validationResults.filter((r): r is CNPJMatch => r !== null));
           }
         }
       }
@@ -228,78 +249,90 @@ serve(async (req) => {
       }
     }
 
-    // ============================================
-    // PROCESSAR RESULTADOS
-    // ============================================
-    
-    // Remover duplicatas (mesmo CNPJ de fontes diferentes)
-    const uniqueCandidates = Array.from(
-      new Map(candidates.map(c => [c.cnpj, c])).values()
-    ).sort((a, b) => b.confidence - a.confidence);
-
-    if (uniqueCandidates.length === 0) {
-      console.log('[CNPJ Discovery] ❌ Nenhum CNPJ encontrado');
+      // ============================================
+      // PROCESSAR RESULTADOS
+      // ============================================
       
-      return new Response(
-        JSON.stringify({ 
+      // Remover duplicatas (mesmo CNPJ de fontes diferentes)
+      const uniqueCandidates = Array.from(
+        new Map(candidates.map(c => [c.cnpj, c])).values()
+      ).sort((a, b) => b.confidence - a.confidence);
+
+      if (uniqueCandidates.length === 0) {
+        console.log('[CNPJ Discovery] ❌ Nenhum CNPJ encontrado');
+        
+        return {
           success: false,
           message: 'Nenhum CNPJ encontrado para esta empresa',
           company_id: companyId
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Pegar o melhor match
-    const bestMatch = uniqueCandidates[0];
-
-    // Se confiança >= 80% E tem companyId, aplicar automaticamente
-    if (bestMatch.confidence >= 80 && companyId) {
-      const { error } = await supabase
-        .from('companies')
-        .update({ 
-          cnpj: bestMatch.cnpj,
-          cnpj_status: 'validado',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', companyId);
-
-      if (error) {
-        console.error('[CNPJ Discovery] ❌ Erro ao salvar CNPJ:', error);
-      } else {
-        console.log('[CNPJ Discovery] ✅ CNPJ aplicado automaticamente:', bestMatch.cnpj);
+        };
       }
-      
-      return new Response(
-        JSON.stringify({ 
+
+      // Pegar o melhor match
+      const bestMatch = uniqueCandidates[0];
+
+      // Se confiança >= 80% E tem companyId, aplicar automaticamente
+      if (bestMatch.confidence >= 80 && companyId) {
+        const { error } = await supabase
+          .from('companies')
+          .update({ 
+            cnpj: bestMatch.cnpj,
+            cnpj_status: 'validado',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', companyId);
+
+        if (error) {
+          console.error('[CNPJ Discovery] ❌ Erro ao salvar CNPJ:', error);
+        } else {
+          console.log('[CNPJ Discovery] ✅ CNPJ aplicado automaticamente:', bestMatch.cnpj);
+        }
+        
+        return {
           success: true,
           auto_applied: true,
           cnpj: bestMatch.cnpj,
           confidence: bestMatch.confidence,
           source: bestMatch.source,
           candidates: uniqueCandidates
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+        };
+      }
 
-    // Se confiança < 80%, retornar candidatos para revisão manual
-    console.log('[CNPJ Discovery] 🤔 Match médio. Requer revisão:', bestMatch.cnpj, `(${bestMatch.confidence}%)`);
-    
-    return new Response(
-      JSON.stringify({ 
+      // Se confiança < 80%, retornar candidatos para revisão manual
+      console.log('[CNPJ Discovery] 🤔 Match médio. Requer revisão:', bestMatch.cnpj, `(${bestMatch.confidence}%)`);
+      
+      return {
         success: true,
         auto_applied: false,
         requires_review: true,
         best_match: bestMatch,
         candidates: uniqueCandidates,
         company_id: companyId
-      }),
+      };
+    })();
+
+    // Executar com timeout
+    const result = await Promise.race([searchPromise, timeoutPromise]);
+    
+    return new Response(
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('[CNPJ Discovery] ❌ Erro geral:', error);
+    console.error('[CNPJ Discovery] ❌ Erro:', error);
+    
+    // Se foi timeout, retornar mensagem específica
+    if (error.message?.includes('Timeout')) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'A busca está demorando muito. Tente novamente ou refine os dados da empresa.',
+          timeout: true
+        }),
+        { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
