@@ -109,10 +109,9 @@ serve(async (req) => {
 
     console.log('[Battle Card] Context:', JSON.stringify(context, null, 2));
 
-    // 5. Gerar Battle Card com IA usando Lovable AI
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // 5. Gerar Battle Card com IA usando OpenAI
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const systemPrompt = `Você é um especialista em análise competitiva de ERPs no mercado brasileiro para PMEs.
@@ -221,16 +220,16 @@ ${totvsScore >= 70 ? '✅ Alto score = Já é cliente TOTVS - foco em expansão'
 
 Gere um Battle Card ULTRA ESPECÍFICO para esta empresa. Use os sinais de intenção para personalizar a estratégia.`;
 
-    console.log('[Battle Card] Calling Lovable AI...');
+    console.log('[Battle Card] Calling OpenAI...');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
