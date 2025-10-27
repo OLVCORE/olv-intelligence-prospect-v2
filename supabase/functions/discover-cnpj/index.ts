@@ -400,43 +400,49 @@ function calculateMatch(
   location: any,
   candidate: any
 ): { confidence: number; scores: any } {
-  let totalScore = 0;
-  let maxScore = 0;
-
-  // 1. Match de nome (40 pontos)
-  maxScore += 40;
+  // Pesos base: Nome (40), Domínio (30)
   const nameScore = calculateNameSimilarity(
     companyName.toLowerCase(),
     (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase()
   );
-  totalScore += nameScore * 40;
 
-  // 2. Match de domínio (30 pontos)
+  let totalBase = nameScore * 40;
+  let baseMax = 40;
+
+  // Domínio contribui apenas se houver informações em ambas as pontas
+  let domainMatchPct = 0;
   if (domain && candidate.website) {
-    maxScore += 30;
-    const domainMatch = domain.toLowerCase().includes(candidate.website.toLowerCase()) ||
-                       candidate.website.toLowerCase().includes(domain.toLowerCase());
-    if (domainMatch) totalScore += 30;
+    const domainMatch =
+      domain.toLowerCase().includes(candidate.website.toLowerCase()) ||
+      candidate.website.toLowerCase().includes(domain.toLowerCase());
+    baseMax += 30;
+    if (domainMatch) {
+      totalBase += 30;
+      domainMatchPct = 100;
+    }
   }
 
-  // 3. Match de localização (30 pontos)
+  // BÔNUS de localização: NÃO penaliza se não bater (até +10 pts)
+  let locationMatchPct = 0;
+  let bonus = 0;
   if (location?.city && candidate.municipio) {
-    maxScore += 30;
     const cityMatch = location.city.toLowerCase() === candidate.municipio.toLowerCase();
-    if (cityMatch) totalScore += 30;
+    if (cityMatch) {
+      locationMatchPct = 100;
+      bonus = 10;
+    }
   }
 
-  const confidence = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+  const baseConfidence = baseMax > 0 ? Math.round((totalBase / baseMax) * 100) : 0;
+  const confidence = Math.min(100, baseConfidence + bonus);
 
   return {
     confidence,
     scores: {
       name_match: Math.round(nameScore * 100),
-      domain_match: domain && candidate.website ? 
-        (domain.toLowerCase().includes(candidate.website.toLowerCase()) ? 100 : 0) : 0,
-      location_match: location?.city && candidate.municipio ?
-        (location.city.toLowerCase() === candidate.municipio.toLowerCase() ? 100 : 0) : 0
-    }
+      domain_match: domainMatchPct,
+      location_match: locationMatchPct,
+    },
   };
 }
 

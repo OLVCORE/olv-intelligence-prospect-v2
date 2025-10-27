@@ -76,9 +76,11 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
   const handleSearchCNPJ = async () => {
     if (!currentItem) return;
 
-    const updated = [...reviewItems];
-    updated[currentIndex] = { ...currentItem, status: 'searching' };
-    setReviewItems(updated);
+    setReviewItems(prev => {
+      const arr = [...prev];
+      arr[currentIndex] = { ...arr[currentIndex], status: 'searching' };
+      return arr;
+    });
 
     try {
       console.log('[Apollo Review] 🔍 Buscando CNPJ para:', currentItem.apolloOrg.name);
@@ -87,11 +89,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
         body: {
           companyId: null, // Não salva ainda
           companyName: currentItem.apolloOrg.name,
-          domain: currentItem.apolloOrg.primary_domain || currentItem.apolloOrg.website_url,
-          location: {
-            city: currentItem.apolloOrg.city,
-            state: currentItem.apolloOrg.state
-          }
+          domain: currentItem.apolloOrg.primary_domain || currentItem.apolloOrg.website_url
         }
       });
 
@@ -100,37 +98,47 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
       console.log('[Apollo Review] 📊 Candidatos encontrados:', data);
 
       if (data.candidates && data.candidates.length > 0) {
-        updated[currentIndex] = {
-          ...currentItem,
-          cnpjCandidates: data.candidates,
-          selectedCNPJ: data.candidates[0].cnpj, // Melhor match por padrão
-          status: 'reviewed'
-        };
+        setReviewItems(prev => {
+          const arr = [...prev];
+          const base = arr[currentIndex];
+          arr[currentIndex] = {
+            ...base,
+            cnpjCandidates: data.candidates,
+            selectedCNPJ: data.candidates[0].cnpj,
+            status: 'reviewed'
+          };
+          return arr;
+        });
         toast.success(`${data.candidates.length} candidato(s) encontrado(s)`, {
           description: `Melhor match: ${data.candidates[0].confidence}%`
         });
       } else {
-        updated[currentIndex] = {
-          ...currentItem,
-          cnpjCandidates: [],
-          status: 'reviewed'
-        };
+        setReviewItems(prev => {
+          const arr = [...prev];
+          const base = arr[currentIndex];
+          arr[currentIndex] = {
+            ...base,
+            cnpjCandidates: [],
+            status: 'reviewed'
+          };
+          return arr;
+        });
         toast.info('Nenhum CNPJ encontrado', {
           description: 'Empresa será importada sem CNPJ'
         });
       }
 
-      setReviewItems(updated);
-
     } catch (error: any) {
       console.error('[Apollo Review] ❌ Erro na busca:', error);
-      const updated = [...reviewItems];
-      updated[currentIndex] = {
-        ...currentItem,
-        status: 'pending',
-        error: error.message
-      };
-      setReviewItems(updated);
+      setReviewItems(prev => {
+        const arr = [...prev];
+        arr[currentIndex] = {
+          ...arr[currentIndex],
+          status: 'pending',
+          error: (error as any)?.message || 'Erro desconhecido'
+        };
+        return arr;
+      });
       toast.error('Erro ao buscar CNPJ');
     }
   };
