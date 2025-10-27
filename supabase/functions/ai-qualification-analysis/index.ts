@@ -188,7 +188,6 @@ ${competitors ? `
           { role: 'system', content: systemPrompt },
           { role: 'user', content: context }
         ],
-        temperature: 0.7,
         max_completion_tokens: 2000,
       }),
     });
