@@ -25,16 +25,16 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
       console.error('[AI Qualification] Missing Supabase credentials');
       throw new Error('Supabase configuration error');
     }
 
-    if (!lovableApiKey) {
-      console.error('[AI Qualification] Missing LOVABLE_API_KEY');
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!openaiApiKey) {
+      console.error('[AI Qualification] Missing OPENAI_API_KEY');
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -172,51 +172,54 @@ ${competitors ? `
 - Se faltar informação, mencione isso claramente
 - Pense como um SDR experiente: contexto, timing, fit, urgência`;
 
-    // Chamar IA
-    console.log('[AI Qualification] Calling Lovable AI for deep analysis...');
+    // Chamar OpenAI (GPT-5)
+    console.log('[AI Qualification] Calling OpenAI GPT-5 for deep analysis...');
     console.log('[AI Qualification] Context length:', context.length, 'characters');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-5-2025-08-07',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: context }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('[AI Qualification] AI API error:', aiResponse.status, errorText);
+      console.error('[AI Qualification] OpenAI API error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         throw new Error('Rate limit excedido. Aguarde alguns instantes e tente novamente.');
       }
-      if (aiResponse.status === 402) {
-        throw new Error('Créditos de IA esgotados. Adicione créditos no workspace.');
+      if (aiResponse.status === 401) {
+        throw new Error('Chave da OpenAI inválida. Verifique a configuração.');
+      }
+      if (aiResponse.status === 402 || aiResponse.status === 403) {
+        throw new Error('Créditos da OpenAI esgotados. Adicione créditos na sua conta OpenAI.');
       }
       
-      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
+      throw new Error(`OpenAI API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
     
     if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
-      console.error('[AI Qualification] Invalid AI response structure:', aiData);
-      throw new Error('Invalid AI response structure');
+      console.error('[AI Qualification] Invalid OpenAI response structure:', aiData);
+      throw new Error('Invalid OpenAI response structure');
     }
 
     const aiContent = aiData.choices[0].message.content;
 
-    console.log('[AI Qualification] AI response received, length:', aiContent.length);
+    console.log('[AI Qualification] OpenAI response received, length:', aiContent.length);
 
     // Parse resposta da IA
     let analysis;

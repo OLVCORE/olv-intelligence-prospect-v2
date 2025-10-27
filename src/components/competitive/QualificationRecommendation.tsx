@@ -85,12 +85,17 @@ export function QualificationRecommendation({
     } catch (error) {
       console.error('[AI 360°] Error:', error);
       
-      // Verificar se é erro de créditos
+      // Verificar se é erro de créditos ou API
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      if (errorMessage.includes('Créditos de IA esgotados') || errorMessage.includes('Payment required')) {
-        toast.error('💳 Créditos de IA Esgotados', {
-          description: 'Adicione créditos ao seu workspace Lovable para continuar usando a análise 360° com IA.',
+      if (errorMessage.includes('Créditos') && errorMessage.includes('OpenAI')) {
+        toast.error('💳 Créditos da OpenAI Esgotados', {
+          description: 'Adicione créditos à sua conta OpenAI para continuar usando a análise 360°.',
+          duration: 8000,
+        });
+      } else if (errorMessage.includes('Chave') && errorMessage.includes('inválida')) {
+        toast.error('🔑 Chave OpenAI Inválida', {
+          description: 'Verifique a configuração da chave de API da OpenAI.',
           duration: 8000,
         });
       } else if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
