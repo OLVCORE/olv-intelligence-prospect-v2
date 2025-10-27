@@ -25,7 +25,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('[Apollo] 🚀 Requisição:', { type, name, domain, organizationName, companyId });
+    console.log('[Apollo] 🚀 Requisição:', { 
+      type, 
+      name, 
+      domain, 
+      organizationName, 
+      companyId,
+      hasCompanyId: !!companyId 
+    });
 
     // ============================================
     // BUSCAR ORGANIZAÇÃO COM TODOS OS CAMPOS
@@ -404,118 +411,7 @@ serve(async (req) => {
       );
     }
 
-    // ============================================
-    // IMPORTAR LEADS DO APOLLO COM DADOS COMPLETOS
-    // ============================================
-    if (type === 'import_leads') {
-      // Buscar organizações com os parâmetros fornecidos
-      const params = new URLSearchParams({
-        api_key: APOLLO_API_KEY,
-        per_page: '100',
-        ...searchParams
-      });
-
-      const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Apollo API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const organizations = data.organizations || [];
-
-      console.log('[Apollo] 📥 Importando', organizations.length, 'empresas');
-
-      const imported = [];
-      
-      for (const org of organizations) {
-        // Verificar se empresa já existe
-        const { data: existing } = await supabase
-          .from('companies')
-          .select('id')
-          .or(`name.eq.${org.name},domain.eq.${org.primary_domain}`)
-          .maybeSingle();
-
-        if (existing) {
-          console.log('[Apollo] ⏭️ Empresa já existe:', org.name);
-          continue;
-        }
-
-        // Criar nova empresa com TODOS os campos do Apollo
-        const companyData = {
-          name: org.name,
-          domain: org.primary_domain,
-          website: org.website_url,
-          industry: org.industry,
-          employees: org.estimated_num_employees,
-          employee_count_from_apollo: org.estimated_num_employees,
-          revenue_range_from_apollo: org.revenue_range,
-          apollo_id: org.id,
-          location: {
-            city: org.city,
-            state: org.state,
-            country: org.country,
-            street: org.street_address,
-            postal_code: org.postal_code
-          },
-          linkedin_url: org.linkedin_url,
-          technologies: org.technologies || [],
-          market_segments: org.market_cap ? [org.market_cap] : [],
-          sic_codes: org.sic_codes || [],
-          naics_codes: org.naics_codes || [],
-          phone_numbers: org.phone ? [org.phone] : [],
-          social_urls: {
-            facebook: org.facebook_url,
-            twitter: org.twitter_url,
-            blog: org.blog_url
-          },
-          account_score: org.account_score || 0,
-          apollo_signals: org.signals || [],
-          funding_total: org.total_funding ? parseFloat(org.total_funding) : null,
-          funding_rounds: org.funding_rounds || [],
-          last_funding_round_date: org.latest_funding_round_date,
-          last_funding_round_amount: org.latest_funding_amount ? parseFloat(org.latest_funding_amount) : null,
-          investors: org.investors || [],
-          job_postings_count: org.job_postings_count || 0,
-          apollo_metadata: {
-            founded_year: org.founded_year,
-            ownership_type: org.ownership_type,
-            keywords: org.keywords || [],
-            parent_account_id: org.parent_account_id,
-            ultimate_parent_account_id: org.ultimate_parent_account_id,
-            account_stage_id: org.account_stage_id
-          },
-          apollo_last_enriched_at: new Date().toISOString(),
-          enrichment_source: 'apollo',
-          enriched_at: new Date().toISOString(),
-          raw_data: org
-        };
-
-        const { data: newCompany, error } = await supabase
-          .from('companies')
-          .insert(companyData)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('[Apollo] ❌ Erro ao criar empresa:', error);
-          continue;
-        }
-
-        imported.push(newCompany);
-        console.log('[Apollo] ✅ Empresa importada:', org.name);
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          imported: imported.length,
-          total: organizations.length,
-          companies: imported
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Bloco 'import_leads' removido - estava duplicado
 
     // ============================================
     // BATCH ENRICHMENT - Atualizar várias empresas
@@ -700,8 +596,9 @@ serve(async (req) => {
       );
     }
 
+    console.log('[Apollo] ⚠️ Tipo de requisição não reconhecido:', type);
     return new Response(
-      JSON.stringify({ error: 'Tipo de requisição inválido' }),
+      JSON.stringify({ error: 'Tipo de requisição inválido', receivedType: type }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
