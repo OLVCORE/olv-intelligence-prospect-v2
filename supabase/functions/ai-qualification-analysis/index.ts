@@ -162,38 +162,71 @@ ${competitors ? `
 - Gerar recomendações executivas fundamentadas em evidências verificáveis
 - Identificar riscos, oportunidades e pontos de atenção críticos
 
-**REGRAS DE DECISÃO (CRITÉRIOS RÍGIDOS):**
+**REGRAS DE DECISÃO (CRITÉRIOS RÍGIDOS E INEGOCIÁVEIS):**
 
-1. **NO-GO IMEDIATO** → TOTVS Score ≥ 70
-   - Alta evidência de uso atual de TOTVS
-   - Recursos devem ser alocados para leads mais promissores
+⛔ **REGRA #1: NO-GO IMEDIATO (TOTVS Detectado)**
+- TOTVS Score ≥ 50 → **SEMPRE NO-GO**
+- Qualquer evidência concreta de uso TOTVS (vagas, funcionários com skill, menções diretas) → **NO-GO**
+- Prioridade: "disqualified"
+- Justificativa: Empresa já cliente TOTVS, não desperdiçar recursos
 
-2. **GO COM CAUTELA** → TOTVS Score 40-69
-   - Evidências inconclusivas de uso de TOTVS
-   - Requer investigação adicional antes de investimento comercial
+🔍 **REGRA #2: MONITOR (Sinais Insuficientes)**
+- Intent Score < 40 E TOTVS Score < 50 → **MONITOR** (não GO ativo)
+- Data quality = "low" → **MONITOR**
+- Poucos sinais válidos (< 3) → **MONITOR**
+- Prioridade: "cold" (apenas para nurturing futuro)
+- Justificativa: Dados insuficientes para investimento comercial ativo
 
-3. **GO PRIORIDADE HOT** → Intent Score ≥ 70 + TOTVS Score < 40
-   - Alta intenção de compra + sem uso confirmado de TOTVS
-   - Momento ideal para abordagem comercial agressiva
+🔥 **REGRA #3: GO PRIORIDADE HOT**
+- Intent Score ≥ 70 E TOTVS Score < 30 → **GO HOT**
+- Múltiplos sinais fortes (vagas ERP, expansão, investimento)
+- Prioridade: "hot"
+- Confidence: "high" ou "medium"
+- Justificativa: Momento de compra + não usa TOTVS
 
-4. **GO PRIORIDADE WARM** → Intent Score 40-69 + TOTVS Score < 40
-   - Sinais moderados de interesse + não usa TOTVS
-   - Oportunidade válida com abordagem estratégica
+🌡️ **REGRA #4: GO PRIORIDADE WARM**
+- Intent Score 40-69 E TOTVS Score < 30 → **GO WARM**
+- Sinais moderados de interesse
+- Prioridade: "warm"
+- Confidence: "medium"
+- Justificativa: Oportunidade válida com abordagem estratégica
 
-5. **GO PRIORIDADE COLD** → Intent Score < 40 + TOTVS Score < 40
-   - Baixos sinais de intenção, mas qualificado para nurturing
-   - Monitoramento contínuo e relacionamento de longo prazo
+❄️ **REGRA #5: GO PRIORIDADE COLD (Nurturing)**
+- Intent Score 30-39 E TOTVS Score < 20 → **GO COLD**
+- Apenas para nurturing de longo prazo
+- Prioridade: "cold"
+- Confidence: "medium" ou "high" (nunca low)
+- Justificativa: Perfil adequado mas sem urgência
 
-**LÓGICA DE CONFIANÇA (CONSISTENCY CHECK):**
-- Se data_quality = "low" → confidence DEVE ser "low"
-- Se poucos sinais válidos (< 2) → confidence DEVE ser "low" ou "medium"
-- Se contradições nos dados → confidence DEVE ser "low"
-- NUNCA retorne decision = "GO" com confidence = "low" E priority = "cold"
-  - Nesse caso, ajuste para "monitor" ou aumente confidence se justificável
+🚨 **LÓGICA DE CONSISTÊNCIA (VALIDAÇÃO OBRIGATÓRIA):**
+1. Se TOTVS Score ≥ 50 → decision SEMPRE "NO-GO", priority "disqualified"
+2. Se Intent Score < 40 E TOTVS Score ≥ 30 → decision "NO-GO" ou "MONITOR"
+3. Se data_quality = "low" E poucos sinais → decision "MONITOR", não "GO"
+4. Se confidence = "low" → decision NUNCA pode ser "GO", apenas "MONITOR"
+5. Se priority = "cold" E confidence = "low" → decision deve ser "MONITOR"
+
+📋 **EXEMPLOS CONCRETOS:**
+
+CASO 1: TOTVS Score 50, Intent Score 21
+→ Decision: NO-GO (TOTVS Score ≥ 50)
+→ Priority: disqualified
+→ Justificativa: "Empresa apresenta evidências de uso de produtos TOTVS"
+
+CASO 2: TOTVS Score 15, Intent Score 85
+→ Decision: GO
+→ Priority: hot
+→ Confidence: high
+→ Justificativa: "Alto sinal de intenção sem uso de TOTVS"
+
+CASO 3: TOTVS Score 20, Intent Score 25
+→ Decision: MONITOR
+→ Priority: cold
+→ Confidence: low
+→ Justificativa: "Sinais insuficientes para abordagem ativa"
 
 **FORMATO DE RESPOSTA ESTRUTURADO (JSON):**
 {
-  "decision": "GO" | "NO-GO",
+  "decision": "GO" | "NO-GO" | "MONITOR",
   "confidence": "high" | "medium" | "low",
   "priority": "hot" | "warm" | "cold" | "disqualified",
   "executive_summary": "Resumo executivo de 2-4 linhas explicando CLARAMENTE a decisão, citando AS EVIDÊNCIAS ESPECÍFICAS encontradas e o raciocínio estratégico por trás da recomendação.",
@@ -313,9 +346,9 @@ ${competitors ? `
       console.error('[AI Qualification] Failed to parse AI response:', parseError);
       // Fallback se parsing falhar
       analysis = {
-        decision: totvs_score >= 70 ? 'NO-GO' : 'GO',
+        decision: totvs_score >= 50 ? 'NO-GO' : (intent_score < 40 ? 'MONITOR' : 'GO'),
         confidence: 'low',
-        priority: totvs_score >= 70 ? 'disqualified' : 'cold',
+        priority: totvs_score >= 50 ? 'disqualified' : 'cold',
         executive_summary: 'Análise automática baseada apenas em scores numéricos.',
         deep_analysis: {
           totvs_analysis: `TOTVS Score: ${totvs_score}/100`,
@@ -335,6 +368,44 @@ ${competitors ? `
         }
       };
     }
+
+    // 🚨 VALIDAÇÃO DE CONSISTÊNCIA LÓGICA (Pós-processamento obrigatório)
+    console.log('[AI Qualification] Validating logical consistency...');
+    
+    // REGRA #1: TOTVS Score ≥ 50 → SEMPRE NO-GO
+    if (totvs_score >= 50) {
+      analysis.decision = 'NO-GO';
+      analysis.priority = 'disqualified';
+      if (analysis.executive_summary && !analysis.executive_summary.includes('TOTVS')) {
+        analysis.executive_summary = `❌ Empresa DESCARTADA: Evidências indicam uso de produtos TOTVS (Score: ${totvs_score}/100). ${analysis.executive_summary}`;
+      }
+      console.log('[AI Qualification] ⛔ Forced NO-GO: TOTVS Score >= 50');
+    }
+    
+    // REGRA #2: Intent Score < 40 + baixa confiança → MONITOR
+    if (intent_score < 40 && analysis.confidence === 'low' && analysis.decision === 'GO') {
+      analysis.decision = 'MONITOR';
+      analysis.priority = 'cold';
+      console.log('[AI Qualification] 🔍 Forced MONITOR: Low intent + low confidence');
+    }
+    
+    // REGRA #3: Confidence LOW + Priority COLD + Decision GO → MONITOR
+    if (analysis.confidence === 'low' && analysis.priority === 'cold' && analysis.decision === 'GO') {
+      analysis.decision = 'MONITOR';
+      console.log('[AI Qualification] 🔍 Forced MONITOR: Inconsistent GO with low confidence and cold priority');
+    }
+    
+    // REGRA #4: Data quality LOW + poucos sinais → MONITOR
+    if (analysis.sources_summary?.data_quality === 'low' && 
+        totvsources.length < 2 && 
+        (intentSignals?.length || 0) < 2 &&
+        analysis.decision === 'GO') {
+      analysis.decision = 'MONITOR';
+      analysis.priority = 'cold';
+      console.log('[AI Qualification] 🔍 Forced MONITOR: Insufficient data quality');
+    }
+    
+    console.log(`[AI Qualification] ✅ Final decision: ${analysis.decision} | Priority: ${analysis.priority} | Confidence: ${analysis.confidence}`);
 
     // Salvar análise no banco
     const { error: saveError } = await supabase
