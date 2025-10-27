@@ -236,7 +236,77 @@ serve(async (req) => {
       console.error('[TOTVS Detection] Error checking Reclame Aqui:', error);
     }
 
-    // SOURCE 5: Website Scraping (10 points)
+    // SOURCE 5: Grupo Econômico via CNPJ (10 points)
+    console.log('[TOTVS Detection] Checking economic group...');
+    try {
+      if (company_domain && serperApiKey) {
+        // Buscar CNPJ da empresa principal
+        const cnpjQuery = `"${company_name}" CNPJ`;
+        const cnpjResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': serperApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: cnpjQuery,
+            num: 5,
+          }),
+        });
+
+        if (cnpjResponse.ok) {
+          const cnpjData = await cnpjResponse.json();
+          
+          // Procurar por empresas relacionadas + TOTVS
+          const groupQuery = `"${company_name}" (holding OR controladora OR subsidiária OR grupo) TOTVS`;
+          const groupResponse = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': serperApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              q: groupQuery,
+              num: 5,
+            }),
+          });
+
+          if (groupResponse.ok) {
+            const groupData = await groupResponse.json();
+            
+            const totvsOwnDomains = ['totvs.com', 'produtos.totvs.com', 'blog.totvs.com'];
+            const validResults = groupData.organic?.filter((result: any) => {
+              const url = result.link?.toLowerCase() || '';
+              return !totvsOwnDomains.some(domain => url.includes(domain));
+            });
+            
+            const hasGroupMention = validResults?.some((result: any) => {
+              const text = `${result.snippet || ''} ${result.title || ''}`.toLowerCase();
+              return text.includes('totvs') && 
+                     (text.includes('grupo') || text.includes('holding') || 
+                      text.includes('subsidiária') || text.includes('controladora'));
+            });
+
+            if (hasGroupMention) {
+              const evidence = validResults[0];
+              sources.push({
+                source: 'economic_group',
+                confidence: 10,
+                evidence: `Empresa relacionada ao grupo econômico usa TOTVS: "${evidence.title}"`,
+                url: evidence.link,
+                detected_at: new Date().toISOString(),
+              });
+              totalScore += 10;
+              console.log('[TOTVS Detection] ✅ Economic Group: Related company uses TOTVS (10 pts)');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[TOTVS Detection] Error checking economic group:', error);
+    }
+
+    // SOURCE 6: Website Scraping (10 points)
     console.log('[TOTVS Detection] Checking website...');
     try {
       if (company_domain) {

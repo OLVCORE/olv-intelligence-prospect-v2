@@ -68,8 +68,8 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
     'financial_documents': { icon: Search, color: 'text-green-600', label: '📊 Docs Financeiros' },
     'google_news': { icon: Search, color: 'text-orange-500', label: '📰 Google News' },
     'reclame_aqui': { icon: AlertCircle, color: 'text-red-500', label: '⚠️ Reclame Aqui' },
-    'website_scraping': { icon: Globe, color: 'text-purple-500', label: '🌐 Website' },
-    'linkedin_profiles': { icon: Users, color: 'text-cyan-500', label: '👤 LinkedIn Profiles' }
+    'economic_group': { icon: Users, color: 'text-cyan-500', label: '🏢 Grupo Econômico' },
+    'website_scraping': { icon: Globe, color: 'text-purple-500', label: '🌐 Website' }
   };
 
   return (
@@ -99,7 +99,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               variant={company.totvs_detection_score === undefined ? "default" : "outline"}
             >
               <Play className="h-4 w-4 mr-2" />
-              {isPending ? 'Buscando em 5 fontes' : company.totvs_detection_score === undefined ? '🚀 Iniciar' : '🔄 Atualizar'}
+              {isPending ? 'Buscando em 6 fontes' : company.totvs_detection_score === undefined ? '🚀 Iniciar' : '🔄 Atualizar'}
             </Button>
           </div>
         </div>
@@ -154,6 +154,15 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 </div>
               </div>
               <div className="flex items-start gap-2">
+                <Users className="h-4 w-4 text-cyan-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-cyan-600">Grupo Econômico (10 pts)</strong>
+                  <p className="text-muted-foreground mt-0.5">
+                    Verifica se empresas relacionadas (holding, subsidiária, controladora) usam TOTVS. Importante para identificar casos como <strong>"Asun ERP"</strong> no balancete da matriz.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
                 <Globe className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-purple-600">Website Scraping (10 pts)</strong>
@@ -168,6 +177,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                   <li>• Serper API (Google Search/News)</li>
                   <li>• Web Scraping Direto (HTTPS/Fetch)</li>
                   <li>• Reclame Aqui (Dados Públicos)</li>
+                  <li>• Análise de Grupo Econômico (CNPJ/Receita)</li>
                   <li>• Supabase Database (armazenamento)</li>
                 </ul>
               </div>
@@ -203,6 +213,10 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                   <span><strong>⚠️ Reclame Aqui (15 pts):</strong> Reclamações/menções sobre TOTVS</span>
                 </div>
                 <div className="flex items-start gap-2">
+                  <Users className="h-3 w-3 text-cyan-500 shrink-0 mt-0.5" />
+                  <span><strong>🏢 Grupo Econômico (10 pts):</strong> Empresas relacionadas (holding/subsidiária) usando TOTVS</span>
+                </div>
+                <div className="flex items-start gap-2">
                   <Globe className="h-3 w-3 text-purple-500 shrink-0 mt-0.5" />
                   <span><strong>🌐 Website (10 pts):</strong> Site menciona TOTVS como parceiro/sistema</span>
                 </div>
@@ -236,7 +250,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 <AlertDescription className="text-green-800">
                   <strong>✅ Nenhuma evidência de uso de TOTVS encontrada!</strong>
                   <p className="text-xs mt-1">
-                    As 5 fontes foram consultadas em tempo real via APIs (LinkedIn Jobs, Docs Financeiros, Google News, Reclame Aqui, Website) 
+                    As 6 fontes foram consultadas em tempo real via APIs (LinkedIn Jobs, Docs Financeiros, Google News, Reclame Aqui, Grupo Econômico, Website) 
                     e não encontraram menções. <strong>Lead qualificado para prospecção! 🎯</strong>
                   </p>
                 </AlertDescription>
@@ -330,7 +344,7 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
               <div className="text-center py-4 px-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
                 <p className="text-sm font-medium text-green-800">✅ Nenhuma fonte detectou uso de TOTVS</p>
-                <p className="text-xs text-green-700 mt-1">5 fontes consultadas via API em tempo real</p>
+                <p className="text-xs text-green-700 mt-1">6 fontes consultadas via API em tempo real</p>
               </div>
             ) : null}
 
@@ -362,6 +376,10 @@ export function TOTVSDetectionCard({ company }: TOTVSDetectionCardProps) {
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-3 w-3 text-red-500" />
                   <span>Reclame Aqui (Dados Públicos)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-3 w-3 text-cyan-500" />
+                  <span>Grupo Econômico (Holdings/Subsidiárias)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Globe className="h-3 w-3 text-purple-500" />

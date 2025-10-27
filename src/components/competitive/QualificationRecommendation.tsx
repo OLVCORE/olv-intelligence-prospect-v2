@@ -320,18 +320,28 @@ export function QualificationRecommendation({
             {/* Recomendação Executiva */}
             <Alert 
               variant={aiAnalysis.decision === 'NO-GO' ? 'destructive' : 'default'}
-              className="border-2 shadow-sm"
+              className={`border-2 shadow-lg ${
+                aiAnalysis.decision === 'NO-GO' 
+                  ? 'bg-gradient-to-br from-destructive/20 via-destructive/10 to-destructive/5 border-destructive' 
+                  : 'bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-primary'
+              }`}
             >
               <div className="flex items-start gap-3">
                 {aiAnalysis.decision === 'NO-GO' ? (
-                  <XCircle className="h-6 w-6 mt-0.5" />
+                  <div className="p-2 rounded-full bg-destructive/20 shrink-0">
+                    <XCircle className="h-6 w-6 text-destructive" />
+                  </div>
                 ) : (
-                  <CheckCircle2 className="h-6 w-6 mt-0.5" />
+                  <div className="p-2 rounded-full bg-primary/20 shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
                 )}
                 <AlertDescription className="flex-1">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="font-bold text-lg">
+                      <h3 className={`font-bold text-lg ${
+                        aiAnalysis.decision === 'NO-GO' ? 'text-destructive' : 'text-primary'
+                      }`}>
                         {aiAnalysis.decision === 'GO' ? 'RECOMENDAÇÃO: PROSSEGUIR' : 'RECOMENDAÇÃO: DESQUALIFICAR'}
                       </h3>
                       <Badge 
@@ -339,7 +349,7 @@ export function QualificationRecommendation({
                           aiAnalysis.confidence === 'high' ? 'default' : 
                           aiAnalysis.confidence === 'medium' ? 'secondary' : 'outline'
                         }
-                        className="text-xs"
+                        className="text-xs font-medium"
                       >
                         Confiança: {aiAnalysis.confidence === 'high' ? 'Alta' : aiAnalysis.confidence === 'medium' ? 'Média' : 'Baixa'}
                       </Badge>
@@ -349,7 +359,7 @@ export function QualificationRecommendation({
                           aiAnalysis.priority === 'warm' ? 'secondary' :
                           aiAnalysis.priority === 'cold' ? 'outline' : 'destructive'
                         }
-                        className="text-sm font-medium"
+                        className="text-sm font-bold"
                       >
                         {aiAnalysis.priority === 'hot' && '🔥 Hot Lead'}
                         {aiAnalysis.priority === 'warm' && '🌡️ Warm Lead'}
@@ -357,7 +367,13 @@ export function QualificationRecommendation({
                         {aiAnalysis.priority === 'disqualified' && '⛔ Descartado'}
                       </Badge>
                     </div>
-                    <p className="text-sm leading-relaxed">{aiAnalysis.executive_summary}</p>
+                    <div className={`p-4 rounded-lg border ${
+                      aiAnalysis.decision === 'NO-GO' 
+                        ? 'bg-destructive/5 border-destructive/30' 
+                        : 'bg-background/80 border-primary/20'
+                    }`}>
+                      <p className="text-sm leading-relaxed font-medium">{aiAnalysis.executive_summary}</p>
+                    </div>
                   </div>
                 </AlertDescription>
               </div>
@@ -365,41 +381,71 @@ export function QualificationRecommendation({
 
             {/* Tabela Executiva de Scores */}
             <div className="grid grid-cols-2 gap-4">
-              <div className={`border rounded-lg p-4 ${totvsScore > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-foreground">Detecção TOTVS</span>
-                  <Shield className={`h-4 w-4 ${totvsScore > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all ${
+                totvsScore > 0 
+                  ? 'bg-gradient-to-br from-destructive/15 via-destructive/5 to-background border-destructive/50 shadow-destructive/10 shadow-lg' 
+                  : 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-background border-green-500/30 shadow-green-500/5 shadow-lg'
+              }`}>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-foreground">Detecção TOTVS</span>
+                    <div className={`p-2 rounded-full ${totvsScore > 0 ? 'bg-destructive/20' : 'bg-green-500/20'}`}>
+                      <Shield className={`h-5 w-5 ${totvsScore > 0 ? 'text-destructive' : 'text-green-600'}`} />
+                    </div>
+                  </div>
+                  <div className={`text-4xl font-black ${totvsScore > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                    {totvsScore}<span className="text-xl text-muted-foreground font-normal">/100</span>
+                  </div>
+                  <Badge 
+                    variant={totvsScore > 0 ? 'destructive' : 'outline'} 
+                    className={`mt-3 text-xs font-bold ${totvsScore === 0 ? 'border-green-600 text-green-700 bg-green-50' : ''}`}
+                  >
+                    {totvsScore > 0 ? '⛔ Cliente TOTVS - Bloqueado' : '✅ Sem TOTVS - Liberado'}
+                  </Badge>
+                  {totvsScore > 0 && (
+                    <p className="text-xs text-destructive mt-3 font-semibold leading-tight">
+                      Empresa já possui produtos TOTVS embarcados em sua tecnologia. OLV não pode prospectar clientes TOTVS existentes.
+                    </p>
+                  )}
                 </div>
-                <div className={`text-3xl font-bold ${totvsScore > 0 ? 'text-destructive' : ''}`}>
-                  {totvsScore}<span className="text-lg text-muted-foreground">/100</span>
-                </div>
-                <Badge variant={totvsScore > 0 ? 'destructive' : 'outline'} className="mt-2 text-xs font-semibold">
-                  {totvsScore > 0 ? '⛔ Cliente TOTVS - Bloqueado' : '✅ Sem TOTVS - Liberado'}
-                </Badge>
-                {totvsScore > 0 && (
-                  <p className="text-xs text-destructive mt-2 font-medium">
-                    Empresa já possui produtos TOTVS. OLV não pode prospectar.
-                  </p>
-                )}
               </div>
 
-              <div className={`border rounded-lg p-4 ${intentScore >= 70 ? 'bg-primary/10 border-primary/30' : 'bg-muted/30'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-foreground">Intenção de Compra</span>
-                  <TrendingDown className={`h-4 w-4 ${intentScore >= 70 ? 'text-primary' : 'text-muted-foreground'} rotate-180`} />
+              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all ${
+                intentScore >= 70 
+                  ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-background border-primary/50 shadow-primary/10 shadow-lg' 
+                  : intentScore >= 40
+                  ? 'bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-background border-yellow-500/30 shadow-yellow-500/5 shadow-lg'
+                  : 'bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-background border-blue-500/30 shadow-blue-500/5 shadow-lg'
+              }`}>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-foreground">Intenção de Compra</span>
+                    <div className={`p-2 rounded-full ${
+                      intentScore >= 70 ? 'bg-primary/20' : 
+                      intentScore >= 40 ? 'bg-yellow-500/20' : 'bg-blue-500/20'
+                    }`}>
+                      <TrendingDown className={`h-5 w-5 rotate-180 ${
+                        intentScore >= 70 ? 'text-primary' : 
+                        intentScore >= 40 ? 'text-yellow-600' : 'text-blue-600'
+                      }`} />
+                    </div>
+                  </div>
+                  <div className={`text-4xl font-black ${
+                    intentScore >= 70 ? 'text-primary' : 
+                    intentScore >= 40 ? 'text-yellow-600' : 'text-blue-600'
+                  }`}>
+                    {intentScore}<span className="text-xl text-muted-foreground font-normal">/100</span>
+                  </div>
+                  <Badge variant={
+                    intentScore >= 70 ? 'default' : 
+                    intentScore >= 40 ? 'secondary' : 
+                    'outline'
+                  } className="mt-3 text-xs font-bold">
+                    {intentScore >= 70 && '🔥 Hot - Ação Imediata'}
+                    {intentScore >= 40 && intentScore < 70 && '🌡️ Warm - Nurturing'}
+                    {intentScore < 40 && '❄️ Cold - Monitorar'}
+                  </Badge>
                 </div>
-                <div className={`text-3xl font-bold ${intentScore >= 70 ? 'text-primary' : ''}`}>
-                  {intentScore}<span className="text-lg text-muted-foreground">/100</span>
-                </div>
-                <Badge variant={
-                  intentScore >= 70 ? 'default' : 
-                  intentScore >= 40 ? 'secondary' : 
-                  'outline'
-                } className="mt-2 text-xs font-semibold">
-                  {intentScore >= 70 && '🔥 Hot - Ação Imediata'}
-                  {intentScore >= 40 && intentScore < 70 && '🌡️ Warm - Nurturing'}
-                  {intentScore < 40 && '❄️ Cold - Monitorar'}
-                </Badge>
               </div>
             </div>
 
