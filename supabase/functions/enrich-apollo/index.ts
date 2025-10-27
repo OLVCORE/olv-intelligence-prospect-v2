@@ -308,29 +308,42 @@ serve(async (req) => {
           continue;
         }
 
-        imported.push(company);
         console.log('[Apollo] ✅ Empresa importada:', org.name);
 
-        // Disparar busca de CNPJ em background (best-effort)
+        // 🔍 AGUARDAR descoberta de CNPJ (com timeout de 15s)
         try {
           const loc = (company as any)?.location || {};
-          supabase.functions.invoke('discover-cnpj', {
+          console.log('[Apollo] 🔍 Iniciando busca de CNPJ para:', company.name);
+          
+          const { data: cnpjData, error: cnpjError } = await supabase.functions.invoke('discover-cnpj', {
             body: {
               companyId: company.id,
               companyName: company.name,
               domain: (company as any)?.domain || (company as any)?.website || org.primary_domain || org.website_url || null,
               location: { city: loc.city, state: loc.state }
             }
-          })
-          .then(() => {
-            console.log('[Apollo] ▶️ CNPJ discovery iniciado para:', company.name);
-          })
-          .catch((e) => {
-            console.warn('[Apollo] ⚠️ Falha ao iniciar discovery de CNPJ:', e?.message || e);
           });
+
+          if (!cnpjError && cnpjData) {
+            if (cnpjData.success && cnpjData.cnpj) {
+              console.log('[Apollo] ✅ CNPJ descoberto automaticamente:', cnpjData.cnpj);
+              (company as any).cnpj = cnpjData.cnpj;
+              (company as any).cnpj_status = 'ativo';
+            } else if (cnpjData.status === 'review' && cnpjData.candidates?.length > 0) {
+              console.log('[Apollo] ⚠️ CNPJ requer revisão manual -', cnpjData.candidates.length, 'candidatos');
+              (company as any).cnpj_status = 'pendente';
+            } else {
+              console.log('[Apollo] ℹ️ CNPJ não encontrado automaticamente');
+              (company as any).cnpj_status = 'nao_encontrado';
+            }
+          } else {
+            console.warn('[Apollo] ⚠️ Erro ao buscar CNPJ:', cnpjError?.message || 'unknown');
+          }
         } catch (e) {
-          console.warn('[Apollo] ⚠️ Erro ao agendar discovery de CNPJ:', (e as any)?.message || e);
+          console.warn('[Apollo] ⚠️ Erro ao descobrir CNPJ:', (e as any)?.message || e);
         }
+
+        imported.push(company);
       }
 
       return new Response(
