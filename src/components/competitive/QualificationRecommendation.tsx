@@ -84,9 +84,25 @@ export function QualificationRecommendation({
       }
     } catch (error) {
       console.error('[AI 360°] Error:', error);
-      toast.error('Não foi possível gerar análise', {
-        description: error instanceof Error ? error.message : 'Tente novamente em instantes'
-      });
+      
+      // Verificar se é erro de créditos
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('Créditos de IA esgotados') || errorMessage.includes('Payment required')) {
+        toast.error('💳 Créditos de IA Esgotados', {
+          description: 'Adicione créditos ao seu workspace Lovable para continuar usando a análise 360° com IA.',
+          duration: 8000,
+        });
+      } else if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
+        toast.error('⏱️ Limite de Requisições Atingido', {
+          description: 'Muitas requisições em pouco tempo. Aguarde alguns instantes e tente novamente.',
+          duration: 6000,
+        });
+      } else {
+        toast.error('Erro ao Gerar Análise', {
+          description: 'Não foi possível gerar a análise 360°. Tente novamente em instantes.',
+        });
+      }
     } finally {
       setIsLoadingAnalysis(false);
     }

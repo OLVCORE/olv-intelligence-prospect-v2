@@ -210,8 +210,28 @@ export default function CompetitiveIntelligencePage() {
             </TabsList>
 
             <TabsContent value="lead-qualification" className="space-y-6">
-              <Alert className="bg-blue-500/10 border-blue-500/20">
+              {/* Instrução de uso */}
+              <Alert className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
                 <Target className="h-4 w-4 text-blue-500" />
+                <AlertDescription>
+                  <div className="space-y-3">
+                    <p className="font-bold text-base">📋 Como Gerar a Análise 360° com IA</p>
+                    <ol className="text-sm space-y-2 list-decimal list-inside">
+                      <li><strong>ETAPA 1:</strong> Execute a "Detecção de Uso de TOTVS" no card abaixo</li>
+                      <li><strong>ETAPA 2:</strong> Execute a "Detecção de Sinais de Intenção" no card abaixo</li>
+                      <li><strong>ETAPA 3:</strong> Role a página até o final e clique no botão "Gerar Qualificação 360° Powered by IA"</li>
+                    </ol>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>⚡ O relatório completo de análise 360° está localizado no final desta página</span>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+
+              {/* Critérios de Qualificação */}
+              <Alert className="bg-muted/50">
+                <Target className="h-4 w-4" />
                 <AlertDescription>
                   <p className="font-semibold mb-2">Estratégia de Qualificação ICP</p>
                   <ol className="text-sm space-y-1 list-decimal list-inside">
