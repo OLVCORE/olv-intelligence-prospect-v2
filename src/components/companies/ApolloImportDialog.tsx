@@ -211,14 +211,14 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
                     <SelectValue placeholder="Selecione a faixa" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1,10">1-10 funcionários</SelectItem>
-                    <SelectItem value="11,50">11-50 funcionários</SelectItem>
-                    <SelectItem value="51,200">51-200 funcionários</SelectItem>
-                    <SelectItem value="201,500">201-500 funcionários</SelectItem>
-                    <SelectItem value="501,1000">501-1000 funcionários</SelectItem>
-                    <SelectItem value="1001,5000">1001-5000 funcionários</SelectItem>
-                    <SelectItem value="5001,10000">5001-10000 funcionários</SelectItem>
-                    <SelectItem value="10001,max">10001+ funcionários</SelectItem>
+                    <SelectItem value="1-10">1-10 funcionários</SelectItem>
+                    <SelectItem value="11-50">11-50 funcionários</SelectItem>
+                    <SelectItem value="51-200">51-200 funcionários</SelectItem>
+                    <SelectItem value="201-500">201-500 funcionários</SelectItem>
+                    <SelectItem value="501-1000">501-1000 funcionários</SelectItem>
+                    <SelectItem value="1001-5000">1001-5000 funcionários</SelectItem>
+                    <SelectItem value="5001-10000">5001-10000 funcionários</SelectItem>
+                    <SelectItem value="10001-max">10001+ funcionários</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -133,10 +133,30 @@ serve(async (req) => {
     // BUSCAR ORGANIZAÇÕES SEM SALVAR (para revisão)
     // ============================================
     if (type === 'search_organizations') {
+      const cleanDomainStr = (d?: string) => {
+        if (!d) return undefined;
+        try {
+          const first = String(d).split(/\n|,|\s/)[0] || '';
+          return first
+            .replace(/^https?:\/\//i, '')
+            .replace(/^www\./i, '')
+            .replace(/http$/i, '')
+            .replace(/\/.*/, '')
+            .trim();
+        } catch { return undefined; }
+      };
+
       const sanitizeIndustryIds = (val: unknown) => {
         if (!val) return undefined;
         const cleaned = String(val).split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s));
         return cleaned.length ? cleaned.join(',') : undefined;
+      };
+
+      const normalizeEmployeesRange = (val: unknown) => {
+        if (!val) return undefined;
+        const v = String(val).trim();
+        // UI envia "1,10" ou "10001,max" — Apollo espera "1-10" ou "10001-max"
+        return v.replace(/,(?=\d|max)/g, '-');
       };
 
       const allowedKeys = new Set([
@@ -154,9 +174,19 @@ serve(async (req) => {
           if (!allowedKeys.has(k)) continue;
           const sv = typeof v === 'string' ? v.trim() : v;
           if (sv === undefined || sv === null || String(sv).trim() === '') continue;
+
           if (k === 'q_organization_industry_tag_ids') {
             const cleaned = sanitizeIndustryIds(sv);
             if (cleaned) basePayload[k] = cleaned;
+          } else if (k === 'q_organization_num_employees_ranges') {
+            const rng = normalizeEmployeesRange(sv);
+            if (rng) basePayload[k] = rng;
+          } else if (k === 'q_organization_domains') {
+            const dom = cleanDomainStr(String(sv));
+            if (dom) basePayload[k] = dom;
+          } else if (k === 'q_organization_keyword_tags') {
+            // Apollo usa q_keywords — fazer o mapeamento e NÃO enviar a chave antiga
+            basePayload['q_keywords'] = sv;
           } else if (k !== 'per_page' && k !== 'api_key') {
             basePayload[k] = sv;
           }
@@ -171,9 +201,9 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error('[Apollo] ❌ Erro search_organizations:', response.status, errText);
+        console.error('[Apollo] ❌ Erro search_organizations:', response.status, errText, '\nPayload:', basePayload);
         return new Response(
-          JSON.stringify({ error: `Apollo API error: ${response.status}`, details: errText }),
+          JSON.stringify({ error: `Apollo API error: ${response.status}`, details: errText, sent: basePayload }),
           { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
