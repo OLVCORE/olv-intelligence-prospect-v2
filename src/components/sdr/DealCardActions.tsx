@@ -1,11 +1,10 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreVertical, Eye, Edit, Trash2, UserPlus, Mail, Phone } from 'lucide-react';
+import { MoreVertical, Eye, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useDeleteDeal } from '@/hooks/useDeals';
 
 interface DealCardActionsProps {
   dealId: string;
@@ -16,36 +15,16 @@ interface DealCardActionsProps {
 
 export function DealCardActions({ dealId, dealTitle, companyId, onDeleted }: DealCardActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const deleteDeal = useDeleteDeal();
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('sdr_deals')
-        .delete()
-        .eq('id', dealId);
-
-      if (error) throw error;
-
-      toast({
-        title: '✅ Deal deletado',
-        description: `"${dealTitle}" foi removido do pipeline`,
-      });
-
+      await deleteDeal.mutateAsync(dealId);
       setShowDeleteDialog(false);
       onDeleted?.();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting deal:', error);
-      toast({
-        title: 'Erro ao deletar deal',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -92,13 +71,13 @@ export function DealCardActions({ dealId, dealTitle, companyId, onDeleted }: Dea
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteDeal.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleteDeal.isPending}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {deleting ? 'Deletando...' : 'Deletar'}
+              {deleteDeal.isPending ? 'Deletando...' : 'Deletar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
