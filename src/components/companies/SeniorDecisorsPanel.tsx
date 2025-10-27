@@ -134,6 +134,7 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedEmailStatuses, setSelectedEmailStatuses] = useState<Array<'verified' | 'guessed' | 'unavailable'>>([]);
   const [selectedDecisors, setSelectedDecisors] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'senior'>('all');
@@ -142,16 +143,19 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
   const processedDecisors = useMemo(() => {
     return decisors.map(d => {
       const seniorityInfo = getSeniorityLevel(d.title);
-      const department = getDepartment(d.title);
+      const department = (d as any).department || (Array.isArray((d as any).departments) && (d as any).departments[0]) || getDepartment(d.title);
+      const meta = (d as any).apollo_person_metadata || {};
+      const location = d.location || (meta.city && meta.state ? `${meta.city}, ${meta.state}` : meta.city || meta.state || meta.country || undefined);
       const quality = getContactQuality(d);
 
       return {
         ...d,
+        location,
         seniorityLevel: seniorityInfo.level,
         seniorityRank: seniorityInfo.rank,
         department,
         quality,
-      };
+      } as any;
     }).sort((a, b) => a.seniorityRank - b.seniorityRank);
   }, [decisors]);
 
@@ -171,6 +175,11 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
     Array.from(new Set(processedDecisors.map(d => d.department).filter(d => d !== 'N/A'))).sort(),
     [processedDecisors]
   );
+
+  const uniqueEmailStatuses = useMemo(() => {
+    const set = new Set(processedDecisors.map(d => d.email_status).filter(Boolean));
+    return Array.from(set) as Array<'verified' | 'guessed' | 'unavailable'>;
+  }, [processedDecisors]);
 
   // Filtrar decisores
   const filteredDecisors = useMemo(() => {
@@ -202,6 +211,11 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
     // Filtro por departamentos
     if (selectedDepartments.length > 0) {
       filtered = filtered.filter(d => selectedDepartments.includes(d.department));
+    }
+
+    // Filtro por status de e-mail
+    if (selectedEmailStatuses.length > 0) {
+      filtered = filtered.filter(d => selectedEmailStatuses.includes(((d.email_status || 'unavailable') as any)));
     }
 
     return filtered;
