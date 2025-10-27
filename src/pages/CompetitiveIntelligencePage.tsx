@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
 import { CompanyBattleCard } from "@/components/competitive/CompanyBattleCard";
+import { WinProbabilityCard } from "@/components/competitive/WinProbabilityCard";
+import { NegotiationAssistantPanel } from "@/components/competitive/NegotiationAssistantPanel";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
@@ -256,9 +258,23 @@ export default function CompetitiveIntelligencePage() {
               />
             </TabsContent>
 
-            <TabsContent value="battle-cards" className="space-y-4">
+            <TabsContent value="battle-cards" className="space-y-6">
               {company ? (
-                <CompanyBattleCard companyId={company.id} companyName={company.name} />
+                <>
+                  <CompanyBattleCard companyId={company.id} companyName={company.name} />
+                  
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    <WinProbabilityCard 
+                      companyId={company.id} 
+                      companyName={company.name}
+                    />
+                    
+                    <NegotiationAssistantPanel
+                      companyId={company.id}
+                      companyName={company.name}
+                    />
+                  </div>
+                </>
               ) : (
                 <Card>
                   <CardContent className="py-12 text-center text-muted-foreground">
