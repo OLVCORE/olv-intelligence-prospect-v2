@@ -256,13 +256,15 @@ serve(async (req) => {
       
       const searchPayload: any = {
         api_key: APOLLO_API_KEY,
-        per_page: 1
+        page: 1,
+        per_page: 1,
       };
 
+      if (company.name) {
+        searchPayload.q_organization_name = company.name;
+      }
       if (searchDomain) {
         searchPayload.q_organization_domains = searchDomain;
-      } else if (company.name) {
-        searchPayload.q_organization_name = company.name;
       }
 
       const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
@@ -275,7 +277,12 @@ serve(async (req) => {
       });
       
       if (!orgResponse.ok) {
-        throw new Error(`Apollo API error: ${orgResponse.status}`);
+        const errText = await orgResponse.text();
+        console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, errText);
+        return new Response(
+          JSON.stringify({ error: `Apollo organizations ${orgResponse.status}`, details: errText }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const orgData = await orgResponse.json();
