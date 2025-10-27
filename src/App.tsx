@@ -47,7 +47,6 @@ const Analysis360Page = lazy(() => import("./pages/Analysis360Page"));
 const SDRWorkspacePage = lazy(() => import("./pages/SDRWorkspacePage"));
 const SDRInboxPage = lazy(() => import("./pages/SDRInboxPage"));
 const SDRDashboardPage = lazy(() => import("./pages/SDRDashboardPage"));
-const SDRPipelinePage = lazy(() => import("./pages/SDRPipelinePage"));
 const SDRSequencesPage = lazy(() => import("./pages/SDRSequencesPage"));
 const SDRTasksPage = lazy(() => import("./pages/SDRTasksPage"));
 const SDRIntegrationsPage = lazy(() => import("./pages/SDRIntegrationsPage"));
@@ -317,14 +316,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SDRDashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/sdr/pipeline"
-              element={
-                <ProtectedRoute>
-                  <SDRPipelinePage />
                 </ProtectedRoute>
               }
             />

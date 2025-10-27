@@ -205,7 +205,6 @@ const menuGroups: MenuGroup[] = [
         submenu: [
           { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
           { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
-          { title: "Pipeline Kanban", icon: TrendingUp, url: "/sdr/pipeline", description: "Gestão visual de oportunidades em progresso" },
           { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
           { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
           { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
