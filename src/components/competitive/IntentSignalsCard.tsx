@@ -261,10 +261,13 @@ export function IntentSignalsCard({ company }: IntentSignalsCardProps) {
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDistanceToNow(new Date(signal.detected_at), { 
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
+                      {signal.detected_at && !isNaN(new Date(signal.detected_at).getTime()) 
+                        ? formatDistanceToNow(new Date(signal.detected_at), { 
+                            addSuffix: true,
+                            locale: ptBR,
+                          })
+                        : 'Data indisponível'
+                      }
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-primary">{signal.signal_title}</p>
