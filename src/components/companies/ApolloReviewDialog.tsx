@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Building2, MapPin, Globe, Users, DollarSign, AlertCircle, Search, XCircle, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle, Building2, MapPin, Globe, Users, DollarSign, AlertCircle, Search, XCircle, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface ApolloOrganization {
@@ -67,6 +67,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [importing, setImporting] = useState(false);
+  const [coverExpanded, setCoverExpanded] = useState(false);
 
   const currentItem = reviewItems[currentIndex];
   const progress = ((currentIndex + 1) / reviewItems.length) * 100;
@@ -457,126 +458,145 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
                         {/* CAPA DA RECEITA FEDERAL */}
                         {candidate.data && isSelected && (
-                          <div className="space-y-3 pt-3 border-t-2 bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-green-950/30 dark:to-blue-950/30 -mx-4 px-4 py-4 rounded-lg max-h-[400px] overflow-y-auto">
+                          <div
+                            className={`space-y-3 pt-3 border-t-2 bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-green-950/30 dark:to-blue-950/30 ${coverExpanded ? "fixed inset-0 z-50 bg-background px-4 md:px-8 py-4 md:py-8 rounded-none mx-0" : "-mx-4 px-4 py-4 rounded-lg max-h-[calc(90vh-180px)] overflow-y-auto"}`}
+                          >
                             <div className="flex items-center justify-between border-b-2 border-green-600/30 pb-2">
                               <p className="text-sm font-bold text-primary uppercase">
                                 📄 Comprovante de Inscrição e Situação Cadastral
                               </p>
-                              {candidate.data.situacao && (
-                                <Badge 
-                                  variant={candidate.data.situacao === 'ATIVA' ? 'default' : 'destructive'}
-                                  className="font-semibold"
+                              <div className="flex items-center gap-2">
+                                {candidate.data.situacao && (
+                                  <Badge 
+                                    variant={candidate.data.situacao === 'ATIVA' ? 'default' : 'destructive'}
+                                    className="font-semibold"
+                                  >
+                                    {candidate.data.situacao}
+                                  </Badge>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setCoverExpanded(!coverExpanded)}
+                                  aria-label={coverExpanded ? "Minimizar capa" : "Expandir capa em tela cheia"}
+                                  title={coverExpanded ? "Minimizar" : "Expandir"}
                                 >
-                                  {candidate.data.situacao}
-                                </Badge>
-                              )}
+                                  {coverExpanded ? (
+                                    <Minimize2 className="h-4 w-4" />
+                                  ) : (
+                                    <Maximize2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Número de Inscrição</p>
-                                <p className="font-mono font-bold text-base">
-                                  {candidate.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}
-                                </p>
-                              </div>
-                              
-                              {candidate.data.abertura && (
+                            <div className={coverExpanded ? "h-[calc(100vh-160px)] overflow-y-auto pr-2" : ""}>
+                              <div className="grid grid-cols-2 gap-3">
                                 <div className="text-sm space-y-1">
-                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Data de Abertura</p>
-                                  <p className="font-medium">{candidate.data.abertura}</p>
-                                </div>
-                              )}
-                            </div>
-
-                            {candidate.data.nome && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Empresarial</p>
-                                <p className="font-bold">{candidate.data.nome}</p>
-                              </div>
-                            )}
-
-                            {candidate.data.fantasia && candidate.data.fantasia !== candidate.data.nome && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Fantasia</p>
-                                <p className="font-medium">{candidate.data.fantasia}</p>
-                              </div>
-                            )}
-
-                            {(candidate.data.logradouro || candidate.data.municipio) && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Endereço Completo</p>
-                                <p className="font-medium text-xs leading-relaxed">
-                                  {candidate.data.logradouro && `${candidate.data.logradouro}`}
-                                  {candidate.data.numero && `, ${candidate.data.numero}`}
-                                  {candidate.data.complemento && ` - ${candidate.data.complemento}`}
-                                  {candidate.data.bairro && <><br />{candidate.data.bairro}</>}
-                                  {candidate.data.municipio && <><br />{candidate.data.municipio}</>}
-                                  {candidate.data.uf && `-${candidate.data.uf}`}
-                                  {candidate.data.cep && ` - CEP: ${candidate.data.cep}`}
-                                </p>
-                              </div>
-                            )}
-
-                            {candidate.data.atividade_principal && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Atividade Principal</p>
-                                {Array.isArray(candidate.data.atividade_principal) ? (
-                                  candidate.data.atividade_principal.map((ativ: any, i: number) => (
-                                    <p key={i} className="text-xs bg-primary/10 px-2 py-1 rounded font-medium">
-                                      {ativ.code} - {ativ.text}
-                                    </p>
-                                  ))
-                                ) : (
-                                  <p className="text-xs bg-primary/10 px-2 py-1 rounded font-medium">
-                                    {candidate.data.atividade_principal}
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Número de Inscrição</p>
+                                  <p className="font-mono font-bold text-base">
+                                    {candidate.cnpj.replace(/(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/, '$1.$2.$3/$4-$5')}
                                   </p>
+                                </div>
+                                
+                                {candidate.data.abertura && (
+                                  <div className="text-sm space-y-1">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase">Data de Abertura</p>
+                                    <p className="font-medium">{candidate.data.abertura}</p>
+                                  </div>
                                 )}
                               </div>
-                            )}
 
-                            <div className="grid grid-cols-2 gap-3">
-                              {candidate.data.porte && (
+                              {candidate.data.nome && (
                                 <div className="text-sm space-y-1">
-                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Porte</p>
-                                  <p className="font-medium">{candidate.data.porte}</p>
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Empresarial</p>
+                                  <p className="font-bold">{candidate.data.nome}</p>
                                 </div>
                               )}
 
-                              {candidate.data.capital_social && (
+                              {candidate.data.fantasia && candidate.data.fantasia !== candidate.data.nome && (
                                 <div className="text-sm space-y-1">
-                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Capital Social</p>
-                                  <p className="font-bold text-green-600">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(candidate.data.capital_social))}
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Fantasia</p>
+                                  <p className="font-medium">{candidate.data.fantasia}</p>
+                                </div>
+                              )}
+
+                              {(candidate.data.logradouro || candidate.data.municipio) && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Endereço Completo</p>
+                                  <p className="font-medium text-xs leading-relaxed">
+                                    {candidate.data.logradouro && `${candidate.data.logradouro}`}
+                                    {candidate.data.numero && `, ${candidate.data.numero}`}
+                                    {candidate.data.complemento && ` - ${candidate.data.complemento}`}
+                                    {candidate.data.bairro && <><br />{candidate.data.bairro}</>}
+                                    {candidate.data.municipio && <><br />{candidate.data.municipio}</>}
+                                    {candidate.data.uf && `-${candidate.data.uf}`}
+                                    {candidate.data.cep && ` - CEP: ${candidate.data.cep}`}
                                   </p>
                                 </div>
                               )}
-                            </div>
 
-                            {candidate.data.natureza_juridica && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Natureza Jurídica</p>
-                                <p className="font-medium text-xs">{candidate.data.natureza_juridica}</p>
+                              {candidate.data.atividade_principal && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Atividade Principal</p>
+                                  {Array.isArray(candidate.data.atividade_principal) ? (
+                                    candidate.data.atividade_principal.map((ativ: any, i: number) => (
+                                      <p key={i} className="text-xs bg-primary/10 px-2 py-1 rounded font-medium">
+                                        {ativ.code} - {ativ.text}
+                                      </p>
+                                    ))
+                                  ) : (
+                                    <p className="text-xs bg-primary/10 px-2 py-1 rounded font-medium">
+                                      {candidate.data.atividade_principal}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-3">
+                                {candidate.data.porte && (
+                                  <div className="text-sm space-y-1">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase">Porte</p>
+                                    <p className="font-medium">{candidate.data.porte}</p>
+                                  </div>
+                                )}
+
+                                {candidate.data.capital_social && (
+                                  <div className="text-sm space-y-1">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase">Capital Social</p>
+                                    <p className="font-bold text-green-600">
+                                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(candidate.data.capital_social))}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
-                            )}
 
-                            {candidate.data.email && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">E-mail</p>
-                                <p className="font-medium text-xs">{candidate.data.email}</p>
+                              {candidate.data.natureza_juridica && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Natureza Jurídica</p>
+                                  <p className="font-medium text-xs">{candidate.data.natureza_juridica}</p>
+                                </div>
+                              )}
+
+                              {candidate.data.email && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">E-mail</p>
+                                  <p className="font-medium text-xs">{candidate.data.email}</p>
+                                </div>
+                              )}
+
+                              {candidate.data.telefone && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Telefone</p>
+                                  <p className="font-medium">{candidate.data.telefone}</p>
+                                </div>
+                              )}
+
+                              <div className="pt-2 border-t border-green-600/20">
+                                <p className="text-xs text-muted-foreground italic">
+                                  ✓ Dados validados via {candidate.source === 'receitaws' ? 'ReceitaWS - API Oficial da Receita Federal' : candidate.source}
+                                </p>
                               </div>
-                            )}
-
-                            {candidate.data.telefone && (
-                              <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Telefone</p>
-                                <p className="font-medium">{candidate.data.telefone}</p>
-                              </div>
-                            )}
-
-                            <div className="pt-2 border-t border-green-600/20">
-                              <p className="text-xs text-muted-foreground italic">
-                                ✓ Dados validados via {candidate.source === 'receitaws' ? 'ReceitaWS - API Oficial da Receita Federal' : candidate.source}
-                              </p>
                             </div>
                           </div>
                         )}
