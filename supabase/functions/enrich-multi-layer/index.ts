@@ -68,7 +68,7 @@ serve(async (req) => {
         });
         console.log('[Multi-Layer] ⚠️ EmpresaQui falhou, continuando...');
       }
-    } catch (error) {
+    } catch (error: any) {
       results.push({
         layer: 'layer_1',
         source: 'empresaqui',
@@ -148,7 +148,7 @@ serve(async (req) => {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       results.push({
         layer: 'layer_2',
         source: 'apollo',
@@ -177,7 +177,7 @@ serve(async (req) => {
         totalFieldsEnriched += 10;
         console.log('[Multi-Layer] ✅ ReceitaWS concluído');
       }
-    } catch (error) {
+    } catch (error: any) {
       results.push({
         layer: 'layer_2',
         source: 'receitaws',
@@ -234,7 +234,7 @@ serve(async (req) => {
             totalFieldsEnriched += 50;
             console.log('[Multi-Layer] ✅ Econodata concluído (${currentUsage + 1}/${ECONODATA_MONTHLY_LIMIT})');
           }
-        } catch (error) {
+        } catch (error: any) {
           results.push({
             layer: 'layer_3',
             source: 'econodata',
@@ -269,7 +269,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Multi-Layer] ❌ Erro geral:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

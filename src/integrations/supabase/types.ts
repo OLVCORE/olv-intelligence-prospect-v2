@@ -2128,6 +2128,71 @@ export type Database = {
         }
         Relationships: []
       }
+      enrichment_field_mapping: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          priority: number | null
+          source_field: string
+          source_name: string
+          target_field: string
+          transformation_rule: Json | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          source_field: string
+          source_name: string
+          target_field: string
+          transformation_rule?: Json | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          source_field?: string
+          source_name?: string
+          target_field?: string
+          transformation_rule?: Json | null
+        }
+        Relationships: []
+      }
+      enrichment_usage: {
+        Row: {
+          company_id: string | null
+          count: number | null
+          created_at: string | null
+          id: string
+          source: string
+        }
+        Insert: {
+          company_id?: string | null
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          source: string
+        }
+        Update: {
+          company_id?: string | null
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_usage_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_reports: {
         Row: {
           company_id: string
