@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BattleCardViewer } from "@/components/competitive/BattleCardViewer";
+import { CompanyBattleCard } from "@/components/competitive/CompanyBattleCard";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
@@ -256,7 +257,16 @@ export default function CompetitiveIntelligencePage() {
             </TabsContent>
 
             <TabsContent value="battle-cards" className="space-y-4">
-              <BattleCardViewer />
+              {company ? (
+                <CompanyBattleCard companyId={company.id} companyName={company.name} />
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Shield className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p>Selecione uma empresa para gerar o Battle Card personalizado</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="auto-search" className="space-y-4">

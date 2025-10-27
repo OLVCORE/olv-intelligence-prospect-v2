@@ -1285,6 +1285,65 @@ export type Database = {
         }
         Relationships: []
       }
+      company_battle_cards: {
+        Row: {
+          company_id: string
+          competitor_name: string
+          competitor_type: string | null
+          context_snapshot: Json | null
+          created_at: string | null
+          detection_confidence: number | null
+          generated_at: string | null
+          id: string
+          next_steps: string[] | null
+          objection_handling: Json | null
+          proof_points: Json | null
+          totvs_advantages: string[] | null
+          updated_at: string | null
+          win_strategy: string
+        }
+        Insert: {
+          company_id: string
+          competitor_name: string
+          competitor_type?: string | null
+          context_snapshot?: Json | null
+          created_at?: string | null
+          detection_confidence?: number | null
+          generated_at?: string | null
+          id?: string
+          next_steps?: string[] | null
+          objection_handling?: Json | null
+          proof_points?: Json | null
+          totvs_advantages?: string[] | null
+          updated_at?: string | null
+          win_strategy: string
+        }
+        Update: {
+          company_id?: string
+          competitor_name?: string
+          competitor_type?: string | null
+          context_snapshot?: Json | null
+          created_at?: string | null
+          detection_confidence?: number | null
+          generated_at?: string | null
+          id?: string
+          next_steps?: string[] | null
+          objection_handling?: Json | null
+          proof_points?: Json | null
+          totvs_advantages?: string[] | null
+          updated_at?: string | null
+          win_strategy?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_battle_cards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_enrichment: {
         Row: {
           company_id: string
