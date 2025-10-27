@@ -292,7 +292,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 h-[calc(90vh-280px)]">
+        <ScrollArea className="flex-1 pr-4 max-h-[calc(90vh-220px)] overflow-y-auto">
           <div className="space-y-4 py-4">
             {/* Dados do Apollo */}
             <Card className="border-2 border-blue-200 dark:border-blue-800">
@@ -436,13 +436,11 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                               )}
                             </div>
                             
-                            {candidate.data?.nome && (
-                              <p className="text-sm font-medium text-foreground">
-                                {candidate.data.nome}
-                              </p>
-                            )}
+                            <p className="text-sm font-medium text-foreground">
+                              {candidate.data?.nome || candidate.data?.razao_social || candidate.data?.razaoSocial || candidate.data?.name}
+                            </p>
                             
-                            {candidate.data?.fantasia && candidate.data.fantasia !== candidate.data.nome && (
+                            {candidate.data?.fantasia && candidate.data.fantasia !== (candidate.data?.nome || candidate.data?.razao_social || candidate.data?.razaoSocial || candidate.data?.name) && (
                               <p className="text-xs text-muted-foreground">
                                 Nome Fantasia: {candidate.data.fantasia}
                               </p>
@@ -470,9 +468,14 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                             className={`space-y-3 pt-3 border-t-2 bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-green-950/30 dark:to-blue-950/30 ${coverExpanded ? "fixed inset-0 z-50 bg-background px-4 md:px-8 py-4 md:py-8 rounded-none mx-0" : "-mx-4 px-4 py-4 rounded-lg"}`}
                           >
                             <div className="flex items-center justify-between border-b-2 border-green-600/30 pb-2">
-                              <p className="text-sm font-bold text-primary uppercase">
-                                📄 Comprovante de Inscrição e Situação Cadastral
-                              </p>
+                              <div className="flex flex-col">
+                                <p className="text-base font-bold text-foreground">
+                                  {candidate.data?.nome || candidate.data?.razao_social || candidate.data?.razaoSocial || candidate.data?.name}
+                                </p>
+                                <p className="text-xs font-semibold text-primary uppercase">
+                                  📄 Comprovante de Inscrição e Situação Cadastral
+                                </p>
+                              </div>
                               <div className="flex items-center gap-2">
                                 {candidate.data.situacao && (
                                   <Badge 
@@ -515,10 +518,10 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                                 )}
                               </div>
 
-                              {candidate.data.nome && (
+                              {(candidate.data?.nome || candidate.data?.razao_social || candidate.data?.razaoSocial || candidate.data?.name) && (
                                 <div className="text-sm space-y-1">
                                   <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Empresarial</p>
-                                  <p className="font-bold">{candidate.data.nome}</p>
+                                  <p className="font-bold">{candidate.data?.nome || candidate.data?.razao_social || candidate.data?.razaoSocial || candidate.data?.name}</p>
                                 </div>
                               )}
 
