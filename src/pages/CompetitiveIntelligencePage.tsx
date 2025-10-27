@@ -6,6 +6,8 @@ import { CompanyBattleCard } from "@/components/competitive/CompanyBattleCard";
 import { WinProbabilityCard } from "@/components/competitive/WinProbabilityCard";
 import { NegotiationAssistantPanel } from "@/components/competitive/NegotiationAssistantPanel";
 import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompetitors";
+import { CompetitorInsightsIntegration } from "@/components/competitive/CompetitorInsightsIntegration";
+import { useState } from "react";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
 import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
@@ -22,7 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
 
 export default function CompetitiveIntelligencePage() {
   const [searchParams] = useSearchParams();

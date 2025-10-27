@@ -69,7 +69,30 @@ serve(async (req) => {
     const totvsScore = totvsDetection?.[0]?.score || company.totvs_detection_score || 0;
     const currentErp = totvsDetection?.[0]?.detected_erp || 'Desconhecido';
 
-    // 4. Montar contexto completo
+    // 4. 🎯 BUSCAR CONCORRENTES REAIS DOS 41 PORTAIS
+    console.log('[Battle Card] Buscando concorrentes reais nos portais...');
+    let competitorSearchData = null;
+    
+    try {
+      const searchResponse = await supabase.functions.invoke('search-competitors', {
+        body: {
+          company_name: company.name,
+          sector: company.sector || company.vertical,
+          productCategory: company.sector || 'ERP',
+          keywords: 'PME SMB Brasil ERP',
+          totvs_product: currentErp || 'TOTVS'
+        }
+      });
+      
+      if (searchResponse.data && searchResponse.data.success) {
+        competitorSearchData = searchResponse.data;
+        console.log('[Battle Card] ✅ Encontrados', competitorSearchData.competitors?.length || 0, 'concorrentes reais');
+      }
+    } catch (searchError) {
+      console.warn('[Battle Card] ⚠️ Erro ao buscar concorrentes:', searchError);
+    }
+
+    // 5. Montar contexto completo COM DADOS REAIS DE CONCORRENTES
     const context: CompanyContext = {
       id: company.id,
       name: company.name,
@@ -94,7 +117,39 @@ serve(async (req) => {
 
     const systemPrompt = `Você é um especialista em análise competitiva de ERPs no mercado brasileiro para PMEs.
 
-CONCORRENTES REAIS DE TOTVS PARA PMEs (FOCO PRINCIPAL):
+🎯 **CONCORRENTES REAIS DETECTADOS EM 41 PORTAIS DE COMPARAÇÃO:**
+
+${competitorSearchData && competitorSearchData.competitors?.length > 0 ? `
+✅ **BUSCA REALIZADA EM ${competitorSearchData.total_portals || 41} PORTAIS**
+- Portais pesquisados: ${competitorSearchData.portals_searched || 0}/${competitorSearchData.total_portals || 41}
+- Total de comparações encontradas: ${competitorSearchData.total_comparisons_found || 0}
+- Produto pesquisado: ${competitorSearchData.product_searched || 'ERP'}
+
+**TOP ${competitorSearchData.competitors.length} CONCORRENTES REAIS ENCONTRADOS:**
+
+${competitorSearchData.competitors.slice(0, 10).map((comp: any, idx: number) => `
+${idx + 1}. **${comp.name}**
+   - Menções em portais: ${comp.mentions}
+   - Portais onde aparece: ${comp.portals?.join(', ') || 'N/A'}
+   - Score de relevância: ${comp.relevance_score}
+   - Links de comparação: ${comp.comparison_links?.length || 0} encontrados
+   ${comp.comparison_links?.slice(0, 3).map((link: any) => `
+     • ${link.portal}: "${link.title}"
+       Snippet: "${link.snippet?.substring(0, 100)}..."
+       URL: ${link.url}
+   `).join('') || ''}
+`).join('\n')}
+
+🔥 **INSIGHTS DOS PORTAIS:**
+Use esses dados REAIS dos portais (G2, Capterra, Gartner, B2B Stack, etc.) para:
+1. Identificar o concorrente MAIS PROVÁVEL que esta empresa usa
+2. Criar objeções baseadas nas comparações REAIS encontradas
+3. Usar os snippets dos portais como proof points
+4. Focar nos concorrentes com MAIS menções e MAIOR relevância
+` : `
+⚠️ **BUSCA EM PORTAIS NÃO REALIZADA - USANDO LISTA PADRÃO:**
+
+CONCORRENTES CONHECIDOS DE TOTVS PARA PMEs:
 - **Bling**: Forte em e-commerce, marketplaces
 - **Conta Azul**: Financeiro para micro/pequenas
 - **Omie**: ERP completo para PMEs, preço competitivo
@@ -103,22 +158,13 @@ CONCORRENTES REAIS DE TOTVS PARA PMEs (FOCO PRINCIPAL):
 - **Senior Sistemas**: Consolidado, PMEs e grandes
 - **Sankhya**: Médias empresas, bem posicionado
 - **eGestor**: 100% online, PMEs
-- **Jiva ERP**: Indústrias PMEs
-- **Procfy**: Gestão financeira, custo-benefício
-- **Mastermaq**: Gestão PMEs, diversos segmentos
-- **WebMais**: Varejo
-- **Mysoft**: Diversos segmentos PMEs
-
-CRMs CONCORRENTES:
-- **RD Station**: Marketing/vendas
-- **HubSpot**: Marketing/vendas/serviços
-- **Zoho CRM**: Vendas PMEs
+`}
 
 IMPORTANTE - REGRAS DE DETECÇÃO:
 - Se TOTVS Score < 30 E empresa pequena (< 50 func): Provavelmente usa Bling, Conta Azul, Omie ou Planilhas
 - Se TOTVS Score 30-70 E média empresa (50-200 func): Pode usar Senior, Sankhya, vhsys, Omie
 - Se TOTVS Score > 70: Já é cliente TOTVS → upsell/cross-sell
-- NUNCA sugira SAP/Oracle para PMEs - são muito caros e complexos!
+- PRIORIZE concorrentes que apareceram na busca real dos portais!
 
 Estruture o Battle Card em JSON com:
 {
