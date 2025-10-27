@@ -1,0 +1,212 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Mail, 
+  Phone, 
+  Linkedin, 
+  CheckCircle, 
+  AlertCircle,
+  User,
+  Building2,
+  Target
+} from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import apolloIcon from '@/assets/logos/apollo-icon.ico';
+
+interface DecisorWithApollo {
+  id: string;
+  name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  direct_phone?: string;
+  mobile_phone?: string;
+  linkedin_url?: string;
+  email_status?: string;
+  contact_accuracy_score?: number;
+  seniority_level?: string;
+  departments?: string[];
+  persona_tags?: string[];
+  photo_url?: string;
+  intent_strength?: string;
+  show_intent?: boolean;
+  apollo_person_metadata?: any;
+}
+
+interface ApolloDecisorsCardProps {
+  decisors: DecisorWithApollo[];
+}
+
+export function ApolloDecisorsCard({ decisors }: ApolloDecisorsCardProps) {
+  if (!decisors || decisors.length === 0) {
+    return null;
+  }
+
+  const apolloDecisors = decisors.filter(d => d.email_status || d.apollo_person_metadata);
+
+  if (apolloDecisors.length === 0) {
+    return null;
+  }
+
+  const getEmailStatusColor = (status?: string) => {
+    switch (status) {
+      case 'verified': return 'text-green-500';
+      case 'guessed': return 'text-yellow-500';
+      case 'unavailable': return 'text-red-500';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  const getEmailStatusIcon = (status?: string) => {
+    switch (status) {
+      case 'verified': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'guessed': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      default: return <Mail className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <img src={apolloIcon} alt="Apollo" className="h-5 w-5" />
+          <div>
+            <CardTitle>Decisores & Contatos Apollo</CardTitle>
+            <CardDescription>
+              {apolloDecisors.length} contato(s) enriquecido(s) com dados verificados
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {apolloDecisors.map((decisor, idx) => (
+            <div key={decisor.id}>
+              {idx > 0 && <Separator className="my-4" />}
+              
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <Avatar className="h-12 w-12">
+                  {decisor.photo_url && (
+                    <AvatarImage src={decisor.photo_url} alt={decisor.name} />
+                  )}
+                  <AvatarFallback>
+                    {decisor.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0">
+                  {/* Nome e Cargo */}
+                  <div className="mb-2">
+                    <h4 className="font-semibold text-base">{decisor.name}</h4>
+                    {decisor.title && (
+                      <p className="text-sm text-muted-foreground">{decisor.title}</p>
+                    )}
+                  </div>
+
+                  {/* Seniority e Departamentos */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {decisor.seniority_level && (
+                      <Badge variant="secondary" className="text-xs">
+                        {decisor.seniority_level}
+                      </Badge>
+                    )}
+                    {decisor.departments && decisor.departments.length > 0 && (
+                      decisor.departments.map((dept: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {dept}
+                        </Badge>
+                      ))
+                    )}
+                    {decisor.persona_tags && decisor.persona_tags.length > 0 && (
+                      decisor.persona_tags.slice(0, 2).map((tag: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Contatos */}
+                  <div className="space-y-2">
+                    {decisor.email && (
+                      <div className="flex items-center gap-2 text-sm">
+                        {getEmailStatusIcon(decisor.email_status)}
+                        <a 
+                          href={`mailto:${decisor.email}`}
+                          className="text-primary hover:underline"
+                        >
+                          {decisor.email}
+                        </a>
+                        {decisor.email_status && (
+                          <Badge variant="outline" className="text-xs">
+                            {decisor.email_status}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {(decisor.direct_phone || decisor.mobile_phone || decisor.phone) && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-mono">
+                          {decisor.direct_phone || decisor.mobile_phone || decisor.phone}
+                        </span>
+                        {decisor.direct_phone && (
+                          <Badge variant="secondary" className="text-xs">Direto</Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {decisor.linkedin_url && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(decisor.linkedin_url, '_blank')}
+                          className="h-8 gap-2"
+                        >
+                          <Linkedin className="h-3 w-3" />
+                          LinkedIn
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Contact Accuracy Score */}
+                  {decisor.contact_accuracy_score !== undefined && decisor.contact_accuracy_score > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Precisão do Contato</span>
+                        <div className="flex items-center gap-2">
+                          <Progress 
+                            value={decisor.contact_accuracy_score} 
+                            className="h-1.5 w-20"
+                          />
+                          <span className="text-xs font-medium">{decisor.contact_accuracy_score}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Intent Signal */}
+                  {decisor.show_intent && decisor.intent_strength && (
+                    <div className="mt-2">
+                      <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600">
+                        <Target className="h-3 w-3 mr-1" />
+                        Intent: {decisor.intent_strength}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

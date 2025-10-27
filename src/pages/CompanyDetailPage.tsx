@@ -37,6 +37,8 @@ import { RichContactsCard } from "@/components/companies/RichContactsCard";
 import { FinancialDebtCard } from "@/components/companies/FinancialDebtCard";
 import { EconodataEnrichButton } from "@/components/companies/EconodataEnrichButton";
 import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsCard';
+import { ApolloDataSection } from '@/components/companies/ApolloDataSection';
+import { ApolloDecisorsCard } from '@/components/companies/ApolloDecisorsCard';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -1270,6 +1272,14 @@ export default function CompanyDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Seção Apollo com todos os dados enriquecidos */}
+          <ApolloDataSection company={company} />
+          
+          {/* Decisores Apollo com dados verificados */}
+          {decisors.length > 0 && (
+            <ApolloDecisorsCard decisors={decisors} />
+          )}
         </TabsContent>
 
         {/* TAB 9: Receita Federal */}

@@ -1215,79 +1215,148 @@ export type Database = {
       }
       companies: {
         Row: {
+          account_score: number | null
+          apollo_id: string | null
+          apollo_last_enriched_at: string | null
+          apollo_metadata: Json | null
+          apollo_signals: Json | null
+          buying_intent_score: number | null
+          buying_intent_signals: Json | null
           cnpj: string | null
           cnpj_status: string | null
           created_at: string
           digital_maturity_score: number | null
           disqualification_reason: string | null
           domain: string | null
+          employee_count_from_apollo: number | null
           employees: number | null
+          funding_rounds: Json | null
+          funding_total: number | null
           id: string
           industry: string | null
+          investors: Json | null
           is_disqualified: boolean | null
+          job_postings: Json | null
+          job_postings_count: number | null
+          last_funding_round_amount: number | null
+          last_funding_round_date: string | null
           lead_score: number | null
           lead_score_updated_at: string | null
           linkedin_url: string | null
           location: Json | null
+          market_segments: string[] | null
+          naics_codes: string[] | null
           name: string
+          phone_numbers: string[] | null
           raw_data: Json | null
           revenue: string | null
+          revenue_range_from_apollo: string | null
+          sic_codes: string[] | null
+          social_urls: Json | null
           technologies: string[] | null
           totvs_detection_score: number | null
           totvs_detection_sources: Json | null
           totvs_last_checked_at: string | null
           updated_at: string
           website: string | null
+          website_visitors_count: number | null
+          website_visitors_data: Json | null
         }
         Insert: {
+          account_score?: number | null
+          apollo_id?: string | null
+          apollo_last_enriched_at?: string | null
+          apollo_metadata?: Json | null
+          apollo_signals?: Json | null
+          buying_intent_score?: number | null
+          buying_intent_signals?: Json | null
           cnpj?: string | null
           cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
           disqualification_reason?: string | null
           domain?: string | null
+          employee_count_from_apollo?: number | null
           employees?: number | null
+          funding_rounds?: Json | null
+          funding_total?: number | null
           id?: string
           industry?: string | null
+          investors?: Json | null
           is_disqualified?: boolean | null
+          job_postings?: Json | null
+          job_postings_count?: number | null
+          last_funding_round_amount?: number | null
+          last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
           linkedin_url?: string | null
           location?: Json | null
+          market_segments?: string[] | null
+          naics_codes?: string[] | null
           name: string
+          phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
+          revenue_range_from_apollo?: string | null
+          sic_codes?: string[] | null
+          social_urls?: Json | null
           technologies?: string[] | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
+          website_visitors_count?: number | null
+          website_visitors_data?: Json | null
         }
         Update: {
+          account_score?: number | null
+          apollo_id?: string | null
+          apollo_last_enriched_at?: string | null
+          apollo_metadata?: Json | null
+          apollo_signals?: Json | null
+          buying_intent_score?: number | null
+          buying_intent_signals?: Json | null
           cnpj?: string | null
           cnpj_status?: string | null
           created_at?: string
           digital_maturity_score?: number | null
           disqualification_reason?: string | null
           domain?: string | null
+          employee_count_from_apollo?: number | null
           employees?: number | null
+          funding_rounds?: Json | null
+          funding_total?: number | null
           id?: string
           industry?: string | null
+          investors?: Json | null
           is_disqualified?: boolean | null
+          job_postings?: Json | null
+          job_postings_count?: number | null
+          last_funding_round_amount?: number | null
+          last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
           linkedin_url?: string | null
           location?: Json | null
+          market_segments?: string[] | null
+          naics_codes?: string[] | null
           name?: string
+          phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
+          revenue_range_from_apollo?: string | null
+          sic_codes?: string[] | null
+          social_urls?: Json | null
           technologies?: string[] | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
+          website_visitors_count?: number | null
+          website_visitors_data?: Json | null
         }
         Relationships: []
       }
@@ -1967,52 +2036,97 @@ export type Database = {
       }
       decision_makers: {
         Row: {
+          apollo_person_id: string | null
+          apollo_person_metadata: Json | null
           company_id: string | null
+          contact_accuracy_score: number | null
           created_at: string
           department: string | null
+          departments: string[] | null
+          direct_phone: string | null
           email: string | null
+          email_status: string | null
+          email_verification_date: string | null
+          extrapolated_email_confidence: number | null
           id: string
+          intent_strength: string | null
           linkedin_url: string | null
+          mobile_phone: string | null
           name: string
+          persona_tags: string[] | null
           phone: string | null
+          photo_url: string | null
           raw_data: Json | null
           seniority: string | null
+          seniority_level: string | null
+          show_intent: boolean | null
           source: string | null
           title: string | null
           updated_at: string
           verified_email: boolean | null
+          work_direct_phone: string | null
         }
         Insert: {
+          apollo_person_id?: string | null
+          apollo_person_metadata?: Json | null
           company_id?: string | null
+          contact_accuracy_score?: number | null
           created_at?: string
           department?: string | null
+          departments?: string[] | null
+          direct_phone?: string | null
           email?: string | null
+          email_status?: string | null
+          email_verification_date?: string | null
+          extrapolated_email_confidence?: number | null
           id?: string
+          intent_strength?: string | null
           linkedin_url?: string | null
+          mobile_phone?: string | null
           name: string
+          persona_tags?: string[] | null
           phone?: string | null
+          photo_url?: string | null
           raw_data?: Json | null
           seniority?: string | null
+          seniority_level?: string | null
+          show_intent?: boolean | null
           source?: string | null
           title?: string | null
           updated_at?: string
           verified_email?: boolean | null
+          work_direct_phone?: string | null
         }
         Update: {
+          apollo_person_id?: string | null
+          apollo_person_metadata?: Json | null
           company_id?: string | null
+          contact_accuracy_score?: number | null
           created_at?: string
           department?: string | null
+          departments?: string[] | null
+          direct_phone?: string | null
           email?: string | null
+          email_status?: string | null
+          email_verification_date?: string | null
+          extrapolated_email_confidence?: number | null
           id?: string
+          intent_strength?: string | null
           linkedin_url?: string | null
+          mobile_phone?: string | null
           name?: string
+          persona_tags?: string[] | null
           phone?: string | null
+          photo_url?: string | null
           raw_data?: Json | null
           seniority?: string | null
+          seniority_level?: string | null
+          show_intent?: boolean | null
           source?: string | null
           title?: string | null
           updated_at?: string
           verified_email?: boolean | null
+          work_direct_phone?: string | null
         }
         Relationships: [
           {
