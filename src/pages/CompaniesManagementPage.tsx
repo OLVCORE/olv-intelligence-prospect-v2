@@ -40,6 +40,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
+import { CNPJDiscoveryDialog } from '@/components/companies/CNPJDiscoveryDialog';
 
 
 export default function CompaniesManagementPage() {
@@ -77,6 +78,10 @@ export default function CompaniesManagementPage() {
   const [isBatchEnrichingEconodata, setIsBatchEnrichingEconodata] = useState(false);
   const [isApolloImportOpen, setIsApolloImportOpen] = useState(false);
   const hasSelection = selectedCompanies.length > 0;
+
+  // CNPJ Discovery dialog state
+  const [cnpjDialogOpen, setCnpjDialogOpen] = useState(false);
+  const [cnpjCompany, setCnpjCompany] = useState<any | null>(null);
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -1159,6 +1164,28 @@ export default function CompaniesManagementPage() {
                             </Tooltip>
                           </TooltipProvider>
 
+
+                          {/* Descobrir CNPJ (só quando não há CNPJ) */}
+                          {!company.cnpj && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => { setCnpjCompany(company); setCnpjDialogOpen(true); }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Search className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Descobrir CNPJ</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1348,6 +1375,23 @@ export default function CompaniesManagementPage() {
             refetch();
           }}
         />
+
+        {cnpjCompany && (
+          <CNPJDiscoveryDialog
+            open={cnpjDialogOpen}
+            onOpenChange={(open) => {
+              setCnpjDialogOpen(open);
+              if (!open) setCnpjCompany(null);
+            }}
+            company={cnpjCompany}
+            onCNPJApplied={() => {
+              setCnpjDialogOpen(false);
+              setCnpjCompany(null);
+              refetch();
+            }}
+          />
+        )}
+
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
