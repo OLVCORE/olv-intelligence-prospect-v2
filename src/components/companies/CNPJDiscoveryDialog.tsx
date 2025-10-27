@@ -237,6 +237,81 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
                       </div>
                     </div>
 
+                    {/* Dados principais da empresa encontrada */}
+                    {candidate.data && (
+                      <div className="space-y-2 pt-2 border-t bg-muted/30 -mx-4 px-4 py-3 rounded">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">Dados da Empresa</p>
+                        
+                        {candidate.data.razao_social && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Razão Social: </span>
+                            <span className="font-medium">{candidate.data.razao_social}</span>
+                          </div>
+                        )}
+                        
+                        {candidate.data.nome_fantasia && candidate.data.nome_fantasia !== candidate.data.razao_social && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Nome Fantasia: </span>
+                            <span className="font-medium">{candidate.data.nome_fantasia}</span>
+                          </div>
+                        )}
+                        
+                        {candidate.data.situacao && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Situação: </span>
+                            <Badge variant={candidate.data.situacao === 'ATIVA' ? 'default' : 'secondary'} className="text-xs">
+                              {candidate.data.situacao}
+                            </Badge>
+                          </div>
+                        )}
+                        
+                        {candidate.data.porte && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Porte: </span>
+                            <span className="font-medium">{candidate.data.porte}</span>
+                          </div>
+                        )}
+                        
+                        {(candidate.data.municipio || candidate.data.uf) && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Endereço: </span>
+                            <span className="font-medium">
+                              {candidate.data.municipio}{candidate.data.municipio && candidate.data.uf ? ', ' : ''}{candidate.data.uf}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {candidate.data.capital_social && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Capital Social: </span>
+                            <span className="font-medium">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                parseFloat(candidate.data.capital_social)
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {candidate.data.abertura && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Data Abertura: </span>
+                            <span className="font-medium">
+                              {new Date(candidate.data.abertura).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {candidate.data.cnae_principal && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">CNAE Principal: </span>
+                            <span className="font-medium text-xs">
+                              {candidate.data.cnae_principal.codigo} - {candidate.data.cnae_principal.descricao}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Scores de validação */}
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t">
                       <div className="text-center">
