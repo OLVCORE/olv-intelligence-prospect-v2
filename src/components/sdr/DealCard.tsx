@@ -11,6 +11,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import { CallInterface } from './CallInterface';
 import { LeadScoreBadge } from '@/components/common/LeadScoreBadge';
+import { DealCardActions } from './DealCardActions';
 
 interface DealCardProps {
   deal: {
@@ -95,13 +96,18 @@ export function DealCard({ deal }: DealCardProps) {
                 </p>
               )}
             </div>
-            <Badge
-              variant={priorityColors[deal.priority as keyof typeof priorityColors] || 'secondary'}
-              className="text-xs shrink-0"
-            >
-              {deal.priority}
-            </Badge>
-          </div>
+              <Badge
+                variant={priorityColors[deal.priority as keyof typeof priorityColors] || 'secondary'}
+                className="text-xs shrink-0"
+              >
+                {deal.priority}
+              </Badge>
+              <DealCardActions
+                dealId={deal.id}
+                dealTitle={deal.contact?.name || 'Deal'}
+                companyId={deal.company_id}
+              />
+            </div>
 
           {/* Métricas */}
           <div className="grid grid-cols-2 gap-2 text-xs">

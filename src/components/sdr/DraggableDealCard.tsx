@@ -8,6 +8,7 @@ import type { Deal } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DealCardActions } from './DealCardActions';
 
 interface DraggableDealCardProps {
   deal: Deal;
@@ -122,6 +123,12 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
               {deal.priority.toUpperCase()}
             </Badge>
           </div>
+          
+          <DealCardActions
+            dealId={deal.id}
+            dealTitle={deal.title}
+            companyId={deal.company_id}
+          />
         </div>
       </CardContent>
     </Card>
