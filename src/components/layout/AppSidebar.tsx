@@ -302,13 +302,29 @@ export function AppSidebar() {
             <Collapsible key={group.label} className="group/group mb-1" defaultOpen={isGroupActive}>
               <SidebarGroup className="px-3">
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="flex items-center gap-3 text-sm font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-3 px-2 mb-1 rounded-lg bg-primary/10 hover:bg-primary/15 group-data-[collapsible=icon]:justify-center">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
-                      <group.icon className="h-5 w-5 text-sidebar-primary" />
-                    </div>
-                    <span className="flex-1 group-data-[collapsible=icon]:hidden text-left">{group.label}</span>
-                    <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden flex-shrink-0" />
-                  </CollapsibleTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CollapsibleTrigger className="flex items-center gap-3 text-sm font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-3 px-2 mb-1 rounded-lg bg-primary/10 hover:bg-primary/15 group-data-[collapsible=icon]:justify-center">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
+                          <group.icon className="h-5 w-5 text-sidebar-primary" />
+                        </div>
+                        <span className="flex-1 group-data-[collapsible=icon]:hidden text-left">{group.label}</span>
+                        <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden flex-shrink-0" />
+                      </CollapsibleTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[300px] z-[100]">
+                      <p className="font-semibold text-sm mb-1">{group.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {group.label === "Central de Comando" && "Visão executiva e busca global de inteligência comercial"}
+                        {group.label === "Prospecção & Qualificação" && "Gestão de base de empresas e análise 360° com IA"}
+                        {group.label === "Análise Competitiva" && "Battle cards, win/loss e monitoramento em tempo real"}
+                        {group.label === "Planejamento Estratégico" && "ROI, CPQ, cenários, propostas e canvas colaborativo"}
+                        {group.label === "Execução & Prospecção Ativa" && "Suite completa de automação de vendas e outbound"}
+                        {group.label === "Métricas & Performance" && "Dashboards, metas e analytics de conversão"}
+                        {group.label === "Governança & Administração" && "Transformação digital, migração de dados e consultoria"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </SidebarGroupLabel>
                 <CollapsibleContent className="mt-1">
                   <SidebarGroupContent>
