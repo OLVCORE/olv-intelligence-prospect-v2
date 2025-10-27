@@ -251,15 +251,28 @@ serve(async (req) => {
         throw new Error('Empresa não encontrada');
       }
 
-      // Buscar organização no Apollo
+      // Buscar organização no Apollo usando POST (não GET com query params)
       const searchDomain = domain || company.website || company.domain;
-      const params = new URLSearchParams({
+      
+      const searchPayload: any = {
         api_key: APOLLO_API_KEY,
-        q_organization_name: company.name,
-        ...(searchDomain && { q_organization_domains: searchDomain })
-      });
+        per_page: 1
+      };
 
-      const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
+      if (searchDomain) {
+        searchPayload.q_organization_domains = searchDomain;
+      } else if (company.name) {
+        searchPayload.q_organization_name = company.name;
+      }
+
+      const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify(searchPayload)
+      });
       
       if (!orgResponse.ok) {
         throw new Error(`Apollo API error: ${orgResponse.status}`);
