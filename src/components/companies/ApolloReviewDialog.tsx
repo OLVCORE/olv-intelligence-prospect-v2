@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Building2, MapPin, Globe, Users, DollarSign, AlertCircle, Search, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, Building2, MapPin, Globe, Users, DollarSign, AlertCircle, Search, XCircle, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface ApolloOrganization {
@@ -142,6 +142,26 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
       selectedCNPJ: cnpj
     };
     setReviewItems(updated);
+  };
+
+  // Abrir verificação oficial na Receita Federal
+  const handleOpenReceita = async () => {
+    const cnpj = reviewItems[currentIndex]?.selectedCNPJ;
+    if (!cnpj) {
+      toast.message('Selecione um CNPJ para verificar', {
+        description: 'Escolha um candidato antes de abrir a Receita.'
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(cnpj.replace(/\D/g, ''));
+      toast.success('CNPJ copiado', {
+        description: 'Cole na página da Receita Federal para validar.'
+      });
+    } catch (e) {
+      // Ignorar erro de clipboard em navegadores sem permissão
+    }
+    window.open('https://solucoes.receita.fazenda.gov.br/servicos/cnpjreva/cnpjreva_solicitacao.asp', '_blank', 'noopener,noreferrer');
   };
 
   // Importar empresa atual
@@ -562,6 +582,17 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
               >
                 <Search className="mr-2 h-4 w-4" />
                 Buscar CNPJ
+              </Button>
+            )}
+
+            {currentItem.selectedCNPJ && (
+              <Button
+                variant="outline"
+                onClick={handleOpenReceita}
+                title="Abrir verificação oficial (abre em nova aba)"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Verificar na Receita Federal
               </Button>
             )}
             
