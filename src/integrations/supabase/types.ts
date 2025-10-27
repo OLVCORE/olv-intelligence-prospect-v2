@@ -1225,6 +1225,8 @@ export type Database = {
           id: string
           industry: string | null
           is_disqualified: boolean | null
+          lead_score: number | null
+          lead_score_updated_at: string | null
           linkedin_url: string | null
           location: Json | null
           name: string
@@ -1248,6 +1250,8 @@ export type Database = {
           id?: string
           industry?: string | null
           is_disqualified?: boolean | null
+          lead_score?: number | null
+          lead_score_updated_at?: string | null
           linkedin_url?: string | null
           location?: Json | null
           name: string
@@ -1271,6 +1275,8 @@ export type Database = {
           id?: string
           industry?: string | null
           is_disqualified?: boolean | null
+          lead_score?: number | null
+          lead_score_updated_at?: string | null
           linkedin_url?: string | null
           location?: Json | null
           name?: string
@@ -3342,6 +3348,7 @@ export type Database = {
           external_id: string | null
           id: string
           last_activity_at: string | null
+          lead_score: number | null
           lost_reason: string | null
           pipeline_id: string | null
           priority: string | null
@@ -3372,6 +3379,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           last_activity_at?: string | null
+          lead_score?: number | null
           lost_reason?: string | null
           pipeline_id?: string | null
           priority?: string | null
@@ -3402,6 +3410,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           last_activity_at?: string | null
+          lead_score?: number | null
           lost_reason?: string | null
           pipeline_id?: string | null
           priority?: string | null
@@ -4718,10 +4727,16 @@ export type Database = {
         Args: { deal_id: string }
         Returns: number
       }
+      calculate_engagement_score: {
+        Args: { p_company_id: string }
+        Returns: number
+      }
       calculate_intent_score: {
         Args: { company_uuid: string }
         Returns: number
       }
+      calculate_lead_score: { Args: { p_company_id: string }; Returns: number }
+      calculate_size_score: { Args: { p_company_id: string }; Returns: number }
       create_canvas_version: {
         Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
         Returns: string
@@ -4764,6 +4779,15 @@ export type Database = {
       promote_canvas_decision: {
         Args: { p_block_id: string; p_target_type: string }
         Returns: string
+      }
+      recalculate_all_lead_scores: {
+        Args: { batch_size?: number }
+        Returns: {
+          company_id: string
+          company_name: string
+          new_score: number
+          old_score: number
+        }[]
       }
     }
     Enums: {

@@ -10,6 +10,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import { CallInterface } from './CallInterface';
+import { LeadScoreBadge } from '@/components/common/LeadScoreBadge';
 
 interface DealCardProps {
   deal: {
@@ -32,6 +33,7 @@ interface DealCardProps {
     win_probability?: number;
     next_action?: string;
     ai_insight?: string;
+    lead_score?: number;
   };
 }
 
@@ -80,9 +82,14 @@ export function DealCard({ deal }: DealCardProps) {
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold truncate">{deal.contact?.name}</h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold truncate">{deal.contact?.name}</h3>
+                {deal.lead_score !== undefined && deal.lead_score > 0 && (
+                  <LeadScoreBadge score={deal.lead_score} size="sm" showLabel={false} />
+                )}
+              </div>
               {deal.company && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Building2 className="h-3 w-3" />
                   <span className="truncate">{deal.company.name}</span>
                 </p>
