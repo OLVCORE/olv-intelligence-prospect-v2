@@ -365,23 +365,22 @@ export function QualificationRecommendation({
 
             {/* Tabela Executiva de Scores */}
             <div className="grid grid-cols-2 gap-4">
-              <div className={`border rounded-lg p-4 ${totvsScore >= 50 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30'}`}>
+              <div className={`border rounded-lg p-4 ${totvsScore > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-foreground">Detecção TOTVS</span>
-                  <Shield className={`h-4 w-4 ${totvsScore >= 50 ? 'text-destructive' : 'text-muted-foreground'}`} />
+                  <Shield className={`h-4 w-4 ${totvsScore > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
                 </div>
-                <div className={`text-3xl font-bold ${totvsScore >= 50 ? 'text-destructive' : ''}`}>
+                <div className={`text-3xl font-bold ${totvsScore > 0 ? 'text-destructive' : ''}`}>
                   {totvsScore}<span className="text-lg text-muted-foreground">/100</span>
                 </div>
-                <Badge variant={
-                  totvsScore >= 50 ? 'destructive' : 
-                  totvsScore >= 30 ? 'secondary' : 
-                  'outline'
-                } className="mt-2 text-xs font-semibold">
-                  {totvsScore >= 50 && '⛔ Usa TOTVS - Descartado'}
-                  {totvsScore >= 30 && totvsScore < 50 && '⚠️ Indícios TOTVS - Validar'}
-                  {totvsScore < 30 && '✅ Sem TOTVS - Qualificado'}
+                <Badge variant={totvsScore > 0 ? 'destructive' : 'outline'} className="mt-2 text-xs font-semibold">
+                  {totvsScore > 0 ? '⛔ Cliente TOTVS - Bloqueado' : '✅ Sem TOTVS - Liberado'}
                 </Badge>
+                {totvsScore > 0 && (
+                  <p className="text-xs text-destructive mt-2 font-medium">
+                    Empresa já possui produtos TOTVS. OLV não pode prospectar.
+                  </p>
+                )}
               </div>
 
               <div className={`border rounded-lg p-4 ${intentScore >= 70 ? 'bg-primary/10 border-primary/30' : 'bg-muted/30'}`}>

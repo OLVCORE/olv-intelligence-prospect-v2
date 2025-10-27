@@ -226,19 +226,15 @@ serve(async (req) => {
       console.error('[TOTVS Detection] Error checking LinkedIn profiles:', error);
     }
 
-    // Calculate final result - CRITÉRIO RÍGIDO: >= 50 desqualifica
-    const shouldDisqualify = totalScore >= 50;
+    // Calculate final result - CRITÉRIO ABSOLUTO: Qualquer evidência de TOTVS desqualifica
+    const shouldDisqualify = totalScore > 0;
     const result: TOTVSDetectionResult = {
       total_score: totalScore,
       sources,
       should_disqualify: shouldDisqualify,
       reasoning: shouldDisqualify 
-        ? `Score: ${totalScore}/100 - Empresa utiliza produtos TOTVS. Lead descartado automaticamente.`
-        : totalScore >= 30
-        ? `Score: ${totalScore}/100 - Indícios de uso TOTVS. Validação manual obrigatória antes de prospectar.`
-        : totalScore > 0
-        ? `Score: ${totalScore}/100 - Sinais fracos de TOTVS. Pode prosseguir com cautela.`
-        : `Score: 0/100 - Sem evidências de uso TOTVS. Lead qualificado para prospecção.`,
+        ? `⛔ EMPRESA DESCARTADA - Detectado uso de produtos TOTVS (Score: ${totalScore}/100). OLV não pode ofertar para clientes TOTVS existentes. Lead bloqueado automaticamente.`
+        : `✅ Lead qualificado - Sem evidências de uso TOTVS. Empresa pode ser prospectada.`,
     };
 
     console.log(`[TOTVS Detection] Final score: ${totalScore}/100, Should disqualify: ${shouldDisqualify}`);
@@ -251,7 +247,7 @@ serve(async (req) => {
         totvs_detection_sources: sources,
         totvs_last_checked_at: new Date().toISOString(),
         is_disqualified: shouldDisqualify,
-        disqualification_reason: shouldDisqualify ? `Empresa utiliza produtos TOTVS (Score: ${totalScore}/100)` : null,
+        disqualification_reason: shouldDisqualify ? `⛔ Cliente TOTVS - Empresa já possui produtos TOTVS embarcados em sua tecnologia. OLV não pode prospectar clientes TOTVS existentes. (Score: ${totalScore}/100)` : null,
       })
       .eq('id', company_id);
 

@@ -28,15 +28,10 @@ export function useTOTVSDetection() {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       
-      if (data.result.should_disqualify || data.result.total_score >= 50) {
-        toast.error('⛔ EMPRESA DESCARTADA - Utiliza produtos TOTVS', {
-          description: `Score TOTVS: ${data.result.total_score}/100 - Não é prospect válido`,
-          duration: 6000,
-        });
-      } else if (data.result.total_score >= 30) {
-        toast.warning('⚠️ Indícios de uso TOTVS detectados', {
-          description: `Score: ${data.result.total_score}/100 - Requer validação manual antes de prospectar`,
-          duration: 5000,
+      if (data.result.should_disqualify || data.result.total_score > 0) {
+        toast.error('⛔ EMPRESA DESCARTADA - JÁ É CLIENTE TOTVS', {
+          description: `Detectado uso de produtos TOTVS (Score: ${data.result.total_score}/100). OLV não pode prospectar clientes TOTVS existentes.`,
+          duration: 8000,
         });
       } else {
         toast.success('✅ Empresa qualificada - Sem uso de TOTVS detectado', {
