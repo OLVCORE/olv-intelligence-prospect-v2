@@ -1,156 +1,129 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { suggestionId, action } = await req.json();
     
-    console.log('[AI Copilot Execute] Executando ação:', action.type);
+    if (!action) {
+      throw new Error("Action is required");
+    }
 
-    let result;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let result: any = { success: true };
 
     switch (action.type) {
-      case 'create_task':
-        // Criar tarefa de follow-up
-        result = await supabase
-          .from('sdr_tasks')
+      case "navigate":
+        // Apenas retornar a URL para navegação no frontend
+        result = {
+          success: true,
+          url: action.payload.url || `/sdr/deals/${action.payload.dealId}`
+        };
+        break;
+
+      case "create_task":
+        // Criar tarefa no SDR
+        const { data: task, error: taskError } = await supabase
+          .from("sdr_tasks")
           .insert({
             deal_id: action.payload.dealId,
-            title: 'Follow-up sugerido pelo Copilot',
-            description: 'Retomar contato e manter deal aquecido',
-            priority: 'high',
-            due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'todo'
+            title: action.payload.title || "Ação sugerida pelo Copilot",
+            description: action.payload.description,
+            status: "todo",
+            priority: action.payload.priority || "high",
+            due_date: action.payload.dueDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           })
           .select()
           .single();
+
+        if (taskError) throw taskError;
+        
+        result = {
+          success: true,
+          taskId: task.id,
+          url: `/sdr/tasks`
+        };
         break;
 
-      case 'update_deal':
+      case "update_deal":
         // Atualizar deal
-        result = await supabase
-          .from('sdr_deals')
-          .update(action.payload.updates)
-          .eq('id', action.payload.dealId)
-          .select()
-          .single();
-        break;
-
-      case 'send_message':
-        // Preparar mensagem (criar rascunho)
-        result = await supabase
-          .from('messages')
-          .insert({
-            conversation_id: action.payload.conversationId,
-            content: action.payload.content,
-            direction: 'outbound',
-            status: 'draft'
+        const { data: deal, error: dealError } = await supabase
+          .from("sdr_deals")
+          .update({
+            stage: action.payload.stage,
+            priority: action.payload.priority,
+            last_activity_at: new Date().toISOString()
           })
+          .eq("id", action.payload.dealId)
           .select()
           .single();
-        break;
 
-      case 'navigate':
-        // Se for criar deal, criar o deal antes de navegar
-        if (action.payload.url?.includes('create_deal=')) {
-          const urlParams = new URLSearchParams(action.payload.url.split('?')[1]);
-          const companyId = urlParams.get('create_deal');
-          
-          if (companyId) {
-            // Buscar dados da empresa
-            const { data: company } = await supabase
-              .from('companies')
-              .select('name, cnpj')
-              .eq('id', companyId)
-              .single();
+        if (dealError) throw dealError;
 
-            if (company) {
-              // Criar o deal
-              const { data: deal, error: dealError } = await supabase
-                .from('sdr_deals')
-                .insert({
-                  company_id: companyId,
-                  title: `Oportunidade - ${company.name || company.cnpj}`,
-                  stage: 'prospecting',
-                  status: 'open',
-                  probability: 20,
-                  value: 0,
-                  expected_close_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                })
-                .select()
-                .single();
-
-              if (dealError) throw dealError;
-              
-              // Retornar URL para o deal criado
-              result = { 
-                success: true, 
-                url: `/sdr/workspace?deal=${deal.id}`,
-                dealId: deal.id 
-              };
-            }
-          }
-        } else {
-          // Navegação simples
-          result = { success: true, url: action.payload.url };
-        }
-        break;
-
-      case 'create_proposal':
-        // Iniciar criação de proposta
-        result = await supabase
-          .from('visual_proposals')
+        // Registrar atividade
+        await supabase
+          .from("sdr_deal_activities")
           .insert({
-            company_id: action.payload.companyId,
-            status: 'draft',
-            sections: []
-          })
-          .select()
-          .single();
+            deal_id: action.payload.dealId,
+            activity_type: "stage_change",
+            description: `Estágio alterado pelo AI Copilot para ${action.payload.stage}`,
+            new_value: { stage: action.payload.stage }
+          });
 
-        // Vincular ao deal
-        if (result.data) {
-          await supabase
-            .from('sdr_deals')
-            .update({ proposal_id: result.data.id })
-            .eq('id', action.payload.dealId);
-        }
+        result = {
+          success: true,
+          dealId: deal.id,
+          url: `/sdr/pipeline`
+        };
+        break;
+
+      case "send_message":
+        // Preparar mensagem (não enviar automaticamente)
+        result = {
+          success: true,
+          url: `/sdr/inbox?compose=true&dealId=${action.payload.dealId}&template=${action.payload.template || "follow_up"}`
+        };
+        break;
+
+      case "create_proposal":
+        // Navegar para criar proposta
+        result = {
+          success: true,
+          url: `/company/${action.payload.companyId}/proposals/new`
+        };
         break;
 
       default:
-        throw new Error(`Tipo de ação desconhecido: ${action.type}`);
+        throw new Error(`Unknown action type: ${action.type}`);
     }
 
-    console.log('[AI Copilot Execute] Ação executada com sucesso');
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        result: result?.data || result,
-        suggestionId 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ result }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error('[AI Copilot Execute] Erro:', error);
+    console.error("Copilot execute error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
     );
   }
 });
