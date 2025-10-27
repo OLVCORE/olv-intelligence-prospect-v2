@@ -6,9 +6,9 @@ import { z } from 'zod';
  */
 export const cnpjSchema = z.string()
   .trim()
-  .regex(/^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/, 'CNPJ inválido')
-  .transform(s => s.replace(/\D/g, ''))
-  .refine(s => s.length === 14, 'CNPJ deve ter 14 dígitos');
+  .transform(s => s.replace(/\D/g, '')) // Remove TODOS os não-dígitos PRIMEIRO
+  .refine(s => s.length === 14, 'CNPJ deve ter exatamente 14 dígitos')
+  .refine(s => /^\d{14}$/.test(s), 'CNPJ deve conter apenas números');
 
 /**
  * Schema de busca de empresa
