@@ -345,17 +345,16 @@ export function QualificationRecommendation({
                       </Badge>
                       <Badge 
                         variant={
-                          aiAnalysis.priority === 'hot' ? 'destructive' :
-                          aiAnalysis.priority === 'warm' ? 'default' :
-                          aiAnalysis.priority === 'cold' ? 'secondary' : 'outline'
+                          aiAnalysis.priority === 'hot' ? 'default' :
+                          aiAnalysis.priority === 'warm' ? 'secondary' :
+                          aiAnalysis.priority === 'cold' ? 'outline' : 'destructive'
                         }
-                        className="text-xs"
+                        className="text-sm font-medium"
                       >
-                        Prioridade: {
-                          aiAnalysis.priority === 'hot' ? 'Alta (Hot)' :
-                          aiAnalysis.priority === 'warm' ? 'Média (Warm)' :
-                          aiAnalysis.priority === 'cold' ? 'Baixa (Cold)' : 'Desqualificado'
-                        }
+                        {aiAnalysis.priority === 'hot' && '🔥 Hot Lead'}
+                        {aiAnalysis.priority === 'warm' && '🌡️ Warm Lead'}
+                        {aiAnalysis.priority === 'cold' && '❄️ Cold Lead'}
+                        {aiAnalysis.priority === 'disqualified' && '⛔ Descartado'}
                       </Badge>
                     </div>
                     <p className="text-sm leading-relaxed">{aiAnalysis.executive_summary}</p>
@@ -365,46 +364,43 @@ export function QualificationRecommendation({
             </Alert>
 
             {/* Tabela Executiva de Scores */}
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-muted/50 px-4 py-2 border-b">
-                <h4 className="font-semibold text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Métricas de Qualificação
-                </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`border rounded-lg p-4 ${totvsScore >= 50 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-foreground">Detecção TOTVS</span>
+                  <Shield className={`h-4 w-4 ${totvsScore >= 50 ? 'text-destructive' : 'text-muted-foreground'}`} />
+                </div>
+                <div className={`text-3xl font-bold ${totvsScore >= 50 ? 'text-destructive' : ''}`}>
+                  {totvsScore}<span className="text-lg text-muted-foreground">/100</span>
+                </div>
+                <Badge variant={
+                  totvsScore >= 50 ? 'destructive' : 
+                  totvsScore >= 30 ? 'secondary' : 
+                  'outline'
+                } className="mt-2 text-xs font-semibold">
+                  {totvsScore >= 50 && '⛔ Usa TOTVS - Descartado'}
+                  {totvsScore >= 30 && totvsScore < 50 && '⚠️ Indícios TOTVS - Validar'}
+                  {totvsScore < 30 && '✅ Sem TOTVS - Qualificado'}
+                </Badge>
               </div>
-              <div className="divide-y">
-                <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 items-center">
-                  <div>
-                    <p className="font-medium text-sm">TOTVS Detection Score</p>
-                    <p className="text-xs text-muted-foreground">Probabilidade de uso de TOTVS</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-3xl font-bold">{totvsScore}</span>
-                    <span className="text-sm text-muted-foreground">/100</span>
-                  </div>
-                  <Badge 
-                    variant={totvsScore >= 70 ? "destructive" : totvsScore >= 30 ? "outline" : "secondary"}
-                    className="whitespace-nowrap"
-                  >
-                    {totvsScore >= 70 ? "Risco Alto" : totvsScore >= 30 ? "Risco Médio" : "Risco Baixo"}
-                  </Badge>
+
+              <div className={`border rounded-lg p-4 ${intentScore >= 70 ? 'bg-primary/10 border-primary/30' : 'bg-muted/30'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-foreground">Intenção de Compra</span>
+                  <TrendingDown className={`h-4 w-4 ${intentScore >= 70 ? 'text-primary' : 'text-muted-foreground'} rotate-180`} />
                 </div>
-                <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 items-center">
-                  <div>
-                    <p className="font-medium text-sm">Intent Score</p>
-                    <p className="text-xs text-muted-foreground">Sinais de intenção de compra</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-3xl font-bold">{intentScore}</span>
-                    <span className="text-sm text-muted-foreground">/100</span>
-                  </div>
-                  <Badge 
-                    variant={intentScore >= 70 ? "default" : intentScore >= 40 ? "secondary" : "outline"}
-                    className="whitespace-nowrap"
-                  >
-                    {intentScore >= 70 ? "Hot Lead" : intentScore >= 40 ? "Warm Lead" : "Cold Lead"}
-                  </Badge>
+                <div className={`text-3xl font-bold ${intentScore >= 70 ? 'text-primary' : ''}`}>
+                  {intentScore}<span className="text-lg text-muted-foreground">/100</span>
                 </div>
+                <Badge variant={
+                  intentScore >= 70 ? 'default' : 
+                  intentScore >= 40 ? 'secondary' : 
+                  'outline'
+                } className="mt-2 text-xs font-semibold">
+                  {intentScore >= 70 && '🔥 Hot - Ação Imediata'}
+                  {intentScore >= 40 && intentScore < 70 && '🌡️ Warm - Nurturing'}
+                  {intentScore < 40 && '❄️ Cold - Monitorar'}
+                </Badge>
               </div>
             </div>
 

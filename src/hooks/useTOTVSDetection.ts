@@ -28,17 +28,19 @@ export function useTOTVSDetection() {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       
-      if (data.result.should_disqualify) {
-        toast.error('⛔ Empresa usa TOTVS - Lead desqualificado automaticamente', {
-          description: `Score: ${data.result.total_score}/100 - ${data.result.sources.length} fonte(s) detectada(s)`,
+      if (data.result.should_disqualify || data.result.total_score >= 50) {
+        toast.error('⛔ EMPRESA DESCARTADA - Utiliza produtos TOTVS', {
+          description: `Score TOTVS: ${data.result.total_score}/100 - Não é prospect válido`,
+          duration: 6000,
         });
-      } else if (data.result.total_score > 0) {
-        toast.warning('⚠️ Possível uso de TOTVS detectado', {
-          description: `Score: ${data.result.total_score}/100 - Verificação manual recomendada`,
+      } else if (data.result.total_score >= 30) {
+        toast.warning('⚠️ Indícios de uso TOTVS detectados', {
+          description: `Score: ${data.result.total_score}/100 - Requer validação manual antes de prospectar`,
+          duration: 5000,
         });
       } else {
-        toast.success('✅ Nenhum uso de TOTVS detectado!', {
-          description: 'Lead qualificado para prospecção 🎯',
+        toast.success('✅ Empresa qualificada - Sem uso de TOTVS detectado', {
+          description: 'Lead válido para prospecção ativa',
         });
       }
     },

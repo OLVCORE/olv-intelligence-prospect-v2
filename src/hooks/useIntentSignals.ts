@@ -65,17 +65,23 @@ export function useDetectIntentSignals() {
       queryClient.invalidateQueries({ queryKey: ['hot-leads'] });
       
       if (data.intent_score >= 70) {
-        toast.success('🔥 HOT LEAD detectado!', {
-          description: `Score: ${data.intent_score}/100 - ${data.signals_detected} sinais encontrados`,
-          duration: 5000,
+        toast.success('🔥 HOT LEAD - Alta intenção de compra', {
+          description: `Score: ${data.intent_score}/100 | ${data.signals_detected} sinais identificados - Ação imediata recomendada`,
+          duration: 6000,
+        });
+      } else if (data.intent_score >= 40) {
+        toast.info('📊 Sinais de intenção moderados detectados', {
+          description: `Score: ${data.intent_score}/100 | ${data.signals_detected} sinais - Lead morno para nurturing`,
+          duration: 4000,
         });
       } else if (data.signals_detected > 0) {
-        toast.info('📊 Sinais de intenção detectados', {
-          description: `Score: ${data.intent_score}/100 - ${data.signals_detected} sinais`,
+        toast('ℹ️ Sinais fracos de intenção', {
+          description: `Score: ${data.intent_score}/100 - Lead frio, apenas monitorar`,
+          duration: 3000,
         });
       } else {
-        toast('ℹ️ Nenhum sinal de intenção detectado', {
-          description: 'Continue monitorando esta empresa',
+        toast('❄️ Nenhum sinal de intenção detectado', {
+          description: 'Sem indícios de momento de compra',
         });
       }
     },
