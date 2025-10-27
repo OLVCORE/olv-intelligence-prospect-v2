@@ -304,7 +304,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 pr-4 max-h-[calc(90vh-280px)]">
           <div className="space-y-4 py-4">
             {/* Dados do Apollo */}
             <Card className="border-2 border-blue-200 dark:border-blue-800">
