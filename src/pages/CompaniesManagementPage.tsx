@@ -4,6 +4,7 @@ import { BackButton } from '@/components/common/BackButton';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { logger } from '@/lib/utils/logger';
 import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
+import { ApolloImportDialog } from '@/components/companies/ApolloImportDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,7 @@ export default function CompaniesManagementPage() {
   const [isExporting, setIsExporting] = useState(false);
   
   const [isBatchEnrichingEconodata, setIsBatchEnrichingEconodata] = useState(false);
+  const [isApolloImportOpen, setIsApolloImportOpen] = useState(false);
   const hasSelection = selectedCompanies.length > 0;
 
   const handleDelete = async () => {
@@ -687,6 +689,22 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => setIsApolloImportOpen(true)}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Importar Leads do Apollo.io</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
                     variant="default"
                     size="icon"
                     onClick={handleBatchEnrichReceitaWS}
@@ -1234,6 +1252,15 @@ export default function CompaniesManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        <ApolloImportDialog
+          open={isApolloImportOpen}
+          onOpenChange={setIsApolloImportOpen}
+          onImportComplete={() => {
+            setIsApolloImportOpen(false);
+            refetch();
+          }}
+        />
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
