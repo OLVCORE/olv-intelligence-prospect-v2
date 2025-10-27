@@ -39,6 +39,7 @@ import { EconodataEnrichButton } from "@/components/companies/EconodataEnrichBut
 import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsCard';
 import { ApolloDataSection } from '@/components/companies/ApolloDataSection';
 import { ApolloDecisorsCard } from '@/components/companies/ApolloDecisorsCard';
+import { SeniorDecisorsPanel } from '@/components/companies/SeniorDecisorsPanel';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -319,13 +320,13 @@ export default function CompanyDetailPage() {
                           variant="outline"
                           size="icon"
                           onClick={() => handleEnrichReceita(id!)}
-                          disabled={isEnrichingReceita}
+                          disabled={isEnrichingReceita || !company.cnpj}
                         >
                           {isEnrichingReceita ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Receita Federal</p>
+                        <p>{company.cnpj ? 'Receita Federal' : 'Receita Federal (requer CNPJ)'}</p>
                       </TooltipContent>
                     </Tooltip>
 
@@ -1326,6 +1327,12 @@ export default function CompanyDetailPage() {
           {decisors.length > 0 && (
             <ApolloDecisorsCard decisors={decisors} />
           )}
+
+          {/* Painel de Decisores Seniores Filtrados */}
+          <SeniorDecisorsPanel 
+            decisors={decisors}
+            companyName={company.name}
+          />
         </TabsContent>
 
         {/* TAB 9: Receita Federal */}

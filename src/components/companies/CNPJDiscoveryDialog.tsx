@@ -80,9 +80,15 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
     setApplying(cnpj);
     
     try {
+      console.log('[CNPJ Discovery] 📝 Aplicando CNPJ:', cnpj);
+      console.log('[CNPJ Discovery] 📦 Dados do candidato:', candidateData);
+      
+      // Remover formatação do CNPJ (deixar só números)
+      const cleanCNPJ = cnpj.replace(/\D/g, '');
+      
       // Atualizar CNPJ e dados da empresa
       const updateData: any = { 
-        cnpj: cnpj,
+        cnpj: cleanCNPJ,
         cnpj_status: 'ativo',
         updated_at: new Date().toISOString()
       };
@@ -111,15 +117,21 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
         }
       }
 
-      const { error } = await supabase
+      console.log('[CNPJ Discovery] 💾 Dados a atualizar:', updateData);
+
+      const { error, data: updatedData } = await supabase
         .from('companies')
         .update(updateData)
-        .eq('id', company.id);
+        .eq('id', company.id)
+        .select()
+        .single();
       
       if (error) throw error;
       
+      console.log('[CNPJ Discovery] ✅ CNPJ salvo no banco:', updatedData);
+      
       toast.success('✅ CNPJ aplicado com sucesso!', {
-        description: `Dados atualizados e CNPJ vinculado`
+        description: `CNPJ ${cleanCNPJ} vinculado à empresa`
       });
       
       // Disparar enriquecimento automático
@@ -132,8 +144,11 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
         console.error('[CNPJ Discovery] ⚠️ Erro ao disparar enriquecimento:', enrichError);
       }
       
-      onCNPJApplied?.();
-      onOpenChange(false);
+      // Aguardar um momento antes de fechar para garantir que a query será invalidada
+      setTimeout(() => {
+        onCNPJApplied?.();
+        onOpenChange(false);
+      }, 500);
       
     } catch (error: any) {
       console.error('[CNPJ Discovery] ❌ Erro ao aplicar:', error);
