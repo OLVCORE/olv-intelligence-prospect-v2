@@ -237,76 +237,203 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
                       </div>
                     </div>
 
-                    {/* Dados principais da empresa encontrada */}
+                    {/* Dados completos da empresa - Formato Receita Federal */}
                     {candidate.data && (
-                      <div className="space-y-2 pt-2 border-t bg-muted/30 -mx-4 px-4 py-3 rounded">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase">Dados da Empresa</p>
-                        
-                        {candidate.data.razao_social && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Razão Social: </span>
-                            <span className="font-medium">{candidate.data.razao_social}</span>
-                          </div>
-                        )}
-                        
-                        {candidate.data.nome_fantasia && candidate.data.nome_fantasia !== candidate.data.razao_social && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Nome Fantasia: </span>
-                            <span className="font-medium">{candidate.data.nome_fantasia}</span>
-                          </div>
-                        )}
-                        
-                        {candidate.data.situacao && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Situação: </span>
-                            <Badge variant={candidate.data.situacao === 'ATIVA' ? 'default' : 'secondary'} className="text-xs">
-                              {candidate.data.situacao}
+                      <div className="space-y-3 pt-3 border-t bg-gradient-to-br from-blue-50/50 to-green-50/50 dark:from-blue-950/20 dark:to-green-950/20 -mx-4 px-4 py-4 rounded-lg">
+                        <div className="flex items-center justify-between border-b pb-2">
+                          <p className="text-sm font-bold text-primary uppercase">Comprovante de Inscrição e Situação Cadastral</p>
+                          {candidate.data.tipo && (
+                            <Badge variant="outline" className="font-semibold">
+                              {candidate.data.tipo}
                             </Badge>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Número de Inscrição e Data de Abertura */}
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Número de Inscrição</p>
+                            <p className="font-mono font-bold text-base">
+                              {candidate.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}
+                            </p>
+                          </div>
+                          
+                          {candidate.data.abertura && (
+                            <div className="text-sm space-y-1">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Data de Abertura</p>
+                              <p className="font-medium">{candidate.data.abertura}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Nome Empresarial */}
+                        {(candidate.data.nome || candidate.data.razao_social) && (
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Empresarial</p>
+                            <p className="font-bold text-base">{candidate.data.nome || candidate.data.razao_social}</p>
                           </div>
                         )}
-                        
-                        {candidate.data.porte && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Porte: </span>
-                            <span className="font-medium">{candidate.data.porte}</span>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Nome Fantasia */}
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Fantasia</p>
+                            <p className="font-medium">{candidate.data.fantasia || '********'}</p>
+                          </div>
+                          
+                          {/* Porte */}
+                          {candidate.data.porte && (
+                            <div className="text-sm space-y-1">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Porte</p>
+                              <p className="font-medium">{candidate.data.porte}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Atividade Principal */}
+                        {candidate.data.atividade_principal && (
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Atividade Econômica Principal</p>
+                            {Array.isArray(candidate.data.atividade_principal) ? (
+                              candidate.data.atividade_principal.map((ativ: any, idx: number) => (
+                                <p key={idx} className="font-medium text-xs bg-primary/10 px-2 py-1 rounded">
+                                  {ativ.code} - {ativ.text}
+                                </p>
+                              ))
+                            ) : (
+                              <p className="font-medium text-xs bg-primary/10 px-2 py-1 rounded">
+                                {candidate.data.atividade_principal.codigo} - {candidate.data.atividade_principal.descricao}
+                              </p>
+                            )}
                           </div>
                         )}
-                        
-                        {(candidate.data.municipio || candidate.data.uf) && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Endereço: </span>
-                            <span className="font-medium">
-                              {candidate.data.municipio}{candidate.data.municipio && candidate.data.uf ? ', ' : ''}{candidate.data.uf}
-                            </span>
+
+                        {/* Atividades Secundárias */}
+                        {candidate.data.atividades_secundarias && candidate.data.atividades_secundarias.length > 0 && (
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Atividades Econômicas Secundárias</p>
+                            <div className="space-y-1">
+                              {candidate.data.atividades_secundarias.map((ativ: any, idx: number) => (
+                                <p key={idx} className="font-medium text-xs bg-muted/50 px-2 py-1 rounded">
+                                  {ativ.code} - {ativ.text}
+                                </p>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        
+
+                        {/* Natureza Jurídica */}
+                        {candidate.data.natureza_juridica && (
+                          <div className="text-sm space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Natureza Jurídica</p>
+                            <p className="font-medium">{candidate.data.natureza_juridica}</p>
+                          </div>
+                        )}
+
+                        {/* Endereço Completo */}
+                        {(candidate.data.logradouro || candidate.data.municipio) && (
+                          <div className="text-sm space-y-2 border-t pt-3">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Endereço</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {candidate.data.logradouro && (
+                                <div className="col-span-2">
+                                  <p className="text-xs text-muted-foreground">Logradouro</p>
+                                  <p className="font-medium">{candidate.data.logradouro}</p>
+                                </div>
+                              )}
+                              {candidate.data.numero && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Número</p>
+                                  <p className="font-medium">{candidate.data.numero}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {candidate.data.complemento && (
+                              <div>
+                                <p className="text-xs text-muted-foreground">Complemento</p>
+                                <p className="font-medium">{candidate.data.complemento}</p>
+                              </div>
+                            )}
+                            
+                            <div className="grid grid-cols-3 gap-2">
+                              {candidate.data.cep && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">CEP</p>
+                                  <p className="font-medium">{candidate.data.cep}</p>
+                                </div>
+                              )}
+                              {candidate.data.bairro && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Bairro</p>
+                                  <p className="font-medium">{candidate.data.bairro}</p>
+                                </div>
+                              )}
+                              {candidate.data.municipio && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Município</p>
+                                  <p className="font-medium">{candidate.data.municipio}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {candidate.data.uf && (
+                              <div className="w-20">
+                                <p className="text-xs text-muted-foreground">UF</p>
+                                <p className="font-medium">{candidate.data.uf}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Contato */}
+                        {(candidate.data.email || candidate.data.telefone) && (
+                          <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                            {candidate.data.email && (
+                              <div className="text-sm space-y-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">E-mail</p>
+                                <p className="font-medium text-xs break-all">{candidate.data.email}</p>
+                              </div>
+                            )}
+                            {candidate.data.telefone && (
+                              <div className="text-sm space-y-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">Telefone</p>
+                                <p className="font-medium">{candidate.data.telefone}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Situação Cadastral */}
+                        <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                          {candidate.data.situacao && (
+                            <div className="text-sm space-y-1">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Situação Cadastral</p>
+                              <Badge 
+                                variant={candidate.data.situacao === 'ATIVA' ? 'default' : 'secondary'} 
+                                className="text-sm font-bold"
+                              >
+                                {candidate.data.situacao}
+                              </Badge>
+                            </div>
+                          )}
+                          {candidate.data.data_situacao && (
+                            <div className="text-sm space-y-1">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Data da Situação</p>
+                              <p className="font-medium">{candidate.data.data_situacao}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Capital Social */}
                         {candidate.data.capital_social && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Capital Social: </span>
-                            <span className="font-medium">
+                          <div className="text-sm space-y-1 border-t pt-3">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Capital Social</p>
+                            <p className="font-bold text-lg text-primary">
                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                                 parseFloat(candidate.data.capital_social)
                               )}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {candidate.data.abertura && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Data Abertura: </span>
-                            <span className="font-medium">
-                              {new Date(candidate.data.abertura).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {candidate.data.cnae_principal && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">CNAE Principal: </span>
-                            <span className="font-medium text-xs">
-                              {candidate.data.cnae_principal.codigo} - {candidate.data.cnae_principal.descricao}
-                            </span>
+                            </p>
                           </div>
                         )}
                       </div>
