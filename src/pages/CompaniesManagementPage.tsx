@@ -30,7 +30,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image, Upload, Database, Target } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image, Upload, Database, Target, Users } from 'lucide-react';
+import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -724,32 +725,16 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="secondary"
-                    size="default"
-                    onClick={() => setIsApolloImportOpen(true)}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold shadow-lg"
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    Importar do Apollo
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Importar Leads do Apollo.io</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
+                    variant="ghost"
                     size="icon"
                     onClick={handleBatchEnrichReceitaWS}
                     disabled={isBatchEnriching}
+                    className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     {isBatchEnriching ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Database className="h-4 w-4" />
+                      <Building2 className="h-4 w-4" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -761,10 +746,11 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="default"
+                    variant="ghost"
                     size="icon"
                     onClick={handleBatchEnrich360}
                     disabled={isBatchEnriching360}
+                    className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     {isBatchEnriching360 ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -781,21 +767,23 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="default"
+                    variant="ghost"
                     size="icon"
                     onClick={handleBatchEnrichApollo}
                     disabled={isBatchEnrichingApollo}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                    className="h-9 w-9 hover:bg-purple-500/10 hover:border-purple-500/20 transition-colors"
                   >
                     {isBatchEnrichingApollo ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Target className="h-4 w-4" />
+                      <div className="h-4 w-4 flex items-center justify-center">
+                        <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
+                      </div>
                     )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Atualizar Apollo (Decisores & Contatos)</p>
+                  <p>Apollo (Decisores & Contatos)</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -1174,15 +1162,16 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => handleEnrichReceita(company.id)}
                                   disabled={enrichingReceitaId === company.id || !company.cnpj}
+                                  className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                   {enrichingReceitaId === company.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
-                                    <Database className="h-4 w-4" />
+                                    <Building2 className="h-4 w-4" />
                                   )}
                                 </Button>
                               </TooltipTrigger>
@@ -1196,10 +1185,11 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => handleEnrich(company.id)}
                                   disabled={enrichingId === company.id}
+                                  className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                   {enrichingId === company.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1218,7 +1208,7 @@ export default function CompaniesManagementPage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="default"
+                                  variant="ghost"
                                   size="icon"
                                   onClick={async () => {
                                     if (!company.cnpj) {
@@ -1239,12 +1229,50 @@ export default function CompaniesManagementPage() {
                                     }
                                   }}
                                   disabled={!company.cnpj}
+                                  className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                   <Zap className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Eco-Booster</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={async () => {
+                                    try {
+                                      toast.info('Buscando decisores com Apollo...');
+                                      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+                                        body: { 
+                                          type: 'enrich_company',
+                                          companyId: company.id,
+                                          domain: company.website || company.domain
+                                        }
+                                      });
+                                      if (error) throw error;
+                                      toast.success('Dados Apollo atualizados!');
+                                      refetch();
+                                    } catch (error) {
+                                      console.error('Error enriching Apollo:', error);
+                                      toast.error('Erro ao buscar dados Apollo');
+                                    }
+                                  }}
+                                  className="h-9 w-9 hover:bg-purple-500/10 hover:border-purple-500/20 transition-colors"
+                                >
+                                  <div className="h-4 w-4 flex items-center justify-center">
+                                    <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
+                                  </div>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Apollo (Decisores)</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

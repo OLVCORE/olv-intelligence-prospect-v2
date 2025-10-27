@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, Building2, Loader2, Users, BarChart, Globe, Instagram, Linkedin, MapPin, CheckCircle2, Package, Sparkles, Upload, X, FileText, Briefcase, DollarSign, Scale, Save, Plus, AlertTriangle, XCircle, CheckCircle, Clock, Target } from "lucide-react";
+import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -646,7 +647,9 @@ export default function SearchPage() {
             onClick={() => setIsApolloImportOpen(true)}
             className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold shadow-lg"
           >
-            <Target className="h-4 w-4 mr-2" />
+            <div className="h-4 w-4 mr-2 flex items-center justify-center">
+              <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
+            </div>
             Importar do Apollo
           </Button>
         </div>
