@@ -101,7 +101,7 @@ ${totvsources.map((s: any, i: number) => `
 - **Confiança**: ${s.confidence}%
 - **Evidência**: ${s.evidence}
 - **URL**: ${s.url || 'N/A'}
-- **Data**: ${new Date(s.detected_at).toLocaleDateString('pt-BR')}
+- **Data**: ${(s.detected_at && !isNaN(new Date(s.detected_at).getTime())) ? new Date(s.detected_at).toLocaleDateString('pt-BR') : 'N/A'}
 `).join('\n')}
 
 ## 💡 SINAIS DE INTENÇÃO (${intentSignals?.length || 0} sinal(is))
@@ -111,7 +111,7 @@ ${intentSignals?.map((sig: any, i: number) => `
 - **Confiança**: ${sig.confidence_score}/100
 - **Descrição**: ${sig.description || 'N/A'}
 - **Fonte**: ${sig.source || 'N/A'}
-- **Data**: ${new Date(sig.detected_at).toLocaleDateString('pt-BR')}
+- **Data**: ${(sig.detected_at && !isNaN(new Date(sig.detected_at).getTime())) ? new Date(sig.detected_at).toLocaleDateString('pt-BR') : 'N/A'}
 `).join('\n') || 'Nenhum sinal detectado'}
 
 ## 🏢 DADOS DA EMPRESA
@@ -126,8 +126,8 @@ ${intentSignals?.map((sig: any, i: number) => `
 ## 🎯 MONITORAMENTO
 ${competitors ? `
 - **Monitoramento ativo**: Sim
-- **Última verificação TOTVS**: ${competitors.last_totvs_check_at ? new Date(competitors.last_totvs_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
-- **Última verificação Intent**: ${competitors.last_intent_check_at ? new Date(competitors.last_intent_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
+- **Última verificação TOTVS**: {(competitors.last_totvs_check_at && !isNaN(new Date(competitors.last_totvs_check_at).getTime())) ? new Date(competitors.last_totvs_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
+- **Última verificação Intent**: {(competitors.last_intent_check_at && !isNaN(new Date(competitors.last_intent_check_at).getTime())) ? new Date(competitors.last_intent_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
 ` : '- **Monitoramento ativo**: Não'}
 `;
 
