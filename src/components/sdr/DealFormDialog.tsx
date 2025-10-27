@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, ChevronsUpDown, Building2 } from 'lucide-react';
+import { Loader2, Check, ChevronsUpDown, Building2, Sparkles, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DealFormDialogProps {
@@ -28,16 +29,24 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   
+  const [enriching, setEnriching] = useState(false);
+  const [contacts, setContacts] = useState<Array<{
+    name: string;
+    email: string;
+    phone: string;
+    role?: string;
+  }>>([{ name: '', email: '', phone: '', role: '' }]);
+  
   const [formData, setFormData] = useState({
     title: '',
     company_name: '',
-    contact_name: '',
-    contact_email: '',
-    contact_phone: '',
+    cnpj: '',
+    employees: '',
+    industry: '',
     value: '',
     stage: 'discovery',
     priority: 'medium',
-    notes: '',
+    description: '',
   });
 
   // Buscar empresas ao abrir
@@ -52,11 +61,13 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     try {
       let queryBuilder = supabase
         .from('companies')
-        .select('id, name, employees, revenue, industry, cnpj')
-        .order('name');
+        .select('id, name, employees, revenue, industry, cnpj, lead_score')
+        .order('lead_score', { ascending: false, nullsFirst: false });
 
       if (query) {
-        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,cnpj.ilike.%${query}%`);
+        // Remove apenas pontuação para busca de CNPJ
+        const cleanQuery = query.replace(/[^\w\s]/g, '');
+        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,cnpj.ilike.%${cleanQuery}%`);
       }
 
       const { data, error } = await queryBuilder.limit(50);
@@ -65,6 +76,11 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
       setCompanies(data || []);
     } catch (error: any) {
       console.error('Error searching companies:', error);
+      toast({
+        title: 'Erro ao buscar empresas',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setSearchingCompanies(false);
     }
@@ -75,9 +91,71 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     setFormData({
       ...formData,
       company_name: company.name,
+      cnpj: company.cnpj || '',
+      employees: company.employees?.toString() || '',
+      industry: company.industry || '',
       title: `Prospecção - ${company.name}`,
     });
     setComboboxOpen(false);
+  };
+
+  const handleEnrichCompany = async () => {
+    if (!formData.cnpj) {
+      toast({
+        title: 'CNPJ obrigatório',
+        description: 'Digite o CNPJ para buscar dados da empresa',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
+        body: { cnpj: formData.cnpj }
+      });
+
+      if (error) throw error;
+
+      if (data.company) {
+        setFormData({
+          ...formData,
+          company_name: data.company.name || formData.company_name,
+          employees: data.company.employees?.toString() || formData.employees,
+          industry: data.company.industry || formData.industry,
+        });
+        
+        toast({
+          title: '✅ Empresa enriquecida!',
+          description: `Dados atualizados de ${data.company.name}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Enrichment error:', error);
+      toast({
+        title: 'Erro ao enriquecer empresa',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  const addContact = () => {
+    setContacts([...contacts, { name: '', email: '', phone: '', role: '' }]);
+  };
+
+  const removeContact = (index: number) => {
+    if (contacts.length > 1) {
+      setContacts(contacts.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateContact = (index: number, field: string, value: string) => {
+    const updated = [...contacts];
+    updated[index] = { ...updated[index], [field]: value };
+    setContacts(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,7 +184,7 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           const { data: existingCompany } = await supabase
             .from('companies')
             .select('id')
-            .eq('name', formData.company_name)
+            .or(`name.eq.${formData.company_name}${formData.cnpj ? `,cnpj.eq.${formData.cnpj}` : ''}`)
             .maybeSingle();
 
           if (existingCompany) {
@@ -114,7 +192,12 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           } else {
             const { data: newCompany, error: companyError } = await supabase
               .from('companies')
-              .insert({ name: formData.company_name })
+              .insert({ 
+                name: formData.company_name,
+                cnpj: formData.cnpj || null,
+                employees: formData.employees ? parseInt(formData.employees) : null,
+                industry: formData.industry || null,
+              })
               .select('id')
               .single();
 
@@ -124,19 +207,34 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
         }
       }
 
-      // 2. Criar contato
-      const { data: contact, error: contactError } = await supabase
+      // 2. Criar contatos (múltiplos)
+      const validContacts = contacts.filter(c => c.name.trim());
+      if (validContacts.length === 0) {
+        toast({
+          title: 'Erro ao criar deal',
+          description: 'Adicione pelo menos um contato',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      const contactsToInsert = validContacts.map(c => ({
+        name: c.name,
+        email: c.email || null,
+        phone: c.phone || null,
+        company_id: companyId,
+        meta: c.role ? { role: c.role } : {},
+      }));
+
+      const { data: createdContacts, error: contactError } = await supabase
         .from('contacts')
-        .insert({
-          name: formData.contact_name,
-          email: formData.contact_email || null,
-          phone: formData.contact_phone || null,
-          company_id: companyId,
-        })
-        .select('id')
-        .single();
+        .insert(contactsToInsert)
+        .select('id');
 
       if (contactError) throw contactError;
+      
+      const primaryContactId = createdContacts[0].id;
 
       // 3. Criar deal
       const { error: dealError } = await supabase
@@ -144,13 +242,13 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
         .insert({
           title: formData.title,
           company_id: companyId,
-          contact_id: contact.id,
+          contact_id: primaryContactId,
           stage: formData.stage,
           priority: formData.priority,
           value: formData.value ? parseFloat(formData.value) : 0,
           probability: 30,
           status: 'open',
-          notes: formData.notes || null,
+          description: formData.description || null,
         });
 
       if (dealError) throw dealError;
@@ -164,14 +262,15 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
       setFormData({
         title: '',
         company_name: '',
-        contact_name: '',
-        contact_email: '',
-        contact_phone: '',
+        cnpj: '',
+        employees: '',
+        industry: '',
         value: '',
         stage: 'discovery',
         priority: 'medium',
-        notes: '',
+        description: '',
       });
+      setContacts([{ name: '', email: '', phone: '', role: '' }]);
       setSelectedCompany(null);
       setMode('select');
 
@@ -199,10 +298,16 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual')}>
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual')} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="select">🔍 Selecionar Empresa</TabsTrigger>
-            <TabsTrigger value="manual">✏️ Criar Manual</TabsTrigger>
+            <TabsTrigger value="select">
+              <Building2 className="h-4 w-4 mr-2" />
+              Selecionar Empresa
+            </TabsTrigger>
+            <TabsTrigger value="manual">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Criar Manual
+            </TabsTrigger>
           </TabsList>
 
           {/* MODO: Selecionar Empresa Existente */}
@@ -211,64 +316,124 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
               {/* Company Autocomplete */}
               <div className="space-y-2">
                 <Label>Buscar Empresa *</Label>
-                <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={comboboxOpen}
-                      className="w-full justify-between"
-                    >
-                      {selectedCompany ? (
-                        <span className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          {selectedCompany.name}
-                        </span>
-                      ) : (
-                        "Digite para buscar empresa..."
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command shouldFilter={false}>
-                      <CommandInput 
-                        placeholder="Digite nome ou CNPJ..." 
-                        onValueChange={(value) => searchCompanies(value)}
-                      />
-                      <CommandEmpty>
-                        {searchingCompanies ? 'Buscando...' : 'Nenhuma empresa encontrada'}
-                      </CommandEmpty>
-                      <CommandList>
-                        <CommandGroup>
-                          {companies.map((company) => (
-                            <CommandItem
-                              key={company.id}
-                              value={company.id}
-                              onSelect={() => handleSelectCompany(company)}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedCompany?.id === company.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span className="font-medium">{company.name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {company.cnpj && `CNPJ: ${company.cnpj} • `}
-                                  {company.industry || 'Sem setor'} 
-                                  {company.employees && ` • ${company.employees} funcionários`}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <div className="flex gap-2">
+                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={comboboxOpen}
+                        className="flex-1 justify-between"
+                      >
+                        {selectedCompany ? (
+                          <span className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            {selectedCompany.name}
+                            {selectedCompany.lead_score > 0 && (
+                              <Badge variant="secondary" className="ml-auto">
+                                Score: {selectedCompany.lead_score}
+                              </Badge>
+                            )}
+                          </span>
+                        ) : (
+                          "Digite nome ou CNPJ..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[500px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput 
+                          placeholder="Buscar por nome ou CNPJ (em tempo real)..." 
+                          onValueChange={(value) => searchCompanies(value)}
+                        />
+                        <CommandEmpty>
+                          {searchingCompanies ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Buscando empresas...
+                            </div>
+                          ) : (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              Nenhuma empresa encontrada
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => setMode('manual')}
+                                className="block mx-auto mt-2"
+                              >
+                                Criar nova empresa
+                              </Button>
+                            </div>
+                          )}
+                        </CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            {companies.map((company) => (
+                              <CommandItem
+                                key={company.id}
+                                value={company.id}
+                                onSelect={() => handleSelectCompany(company)}
+                                className="flex items-start gap-3 py-3"
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4 mt-1",
+                                    selectedCompany?.id === company.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{company.name}</span>
+                                    {company.lead_score > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        {company.lead_score}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {company.cnpj && `📄 ${company.cnpj}`}
+                                    {company.industry && ` • 🏭 ${company.industry}`}
+                                    {company.employees && ` • 👥 ${company.employees} funcionários`}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
+
+              {selectedCompany && (
+                <div className="p-4 bg-muted rounded-lg space-y-2">
+                  <h4 className="font-medium text-sm">Dados da Empresa</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedCompany.cnpj && (
+                      <div>
+                        <span className="text-muted-foreground">CNPJ:</span> {selectedCompany.cnpj}
+                      </div>
+                    )}
+                    {selectedCompany.industry && (
+                      <div>
+                        <span className="text-muted-foreground">Setor:</span> {selectedCompany.industry}
+                      </div>
+                    )}
+                    {selectedCompany.employees && (
+                      <div>
+                        <span className="text-muted-foreground">Funcionários:</span> {selectedCompany.employees}
+                      </div>
+                    )}
+                    {selectedCompany.revenue && (
+                      <div>
+                        <span className="text-muted-foreground">Faturamento:</span> {selectedCompany.revenue}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Resto do formulário SELECT */}
               <div className="space-y-2">
@@ -309,38 +474,68 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="contact-name-select">Nome do Contato *</Label>
-                <Input
-                  id="contact-name-select"
-                  placeholder="João Silva"
-                  value={formData.contact_name}
-                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact-email-select">Email</Label>
-                  <Input
-                    id="contact-email-select"
-                    type="email"
-                    placeholder="joao@empresa.com"
-                    value={formData.contact_email}
-                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                  />
+              {/* Múltiplos Contatos */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Contatos *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addContact}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Adicionar Contato
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact-phone-select">Telefone</Label>
-                  <Input
-                    id="contact-phone-select"
-                    type="tel"
-                    placeholder="(11) 98765-4321"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                  />
-                </div>
+                
+                {contacts.map((contact, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Contato {index + 1}</span>
+                      {contacts.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeContact(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Nome completo *"
+                          value={contact.name}
+                          onChange={(e) => updateContact(index, 'name', e.target.value)}
+                          required={index === 0}
+                        />
+                      </div>
+                      <Input
+                        type="email"
+                        placeholder="email@empresa.com"
+                        value={contact.email}
+                        onChange={(e) => updateContact(index, 'email', e.target.value)}
+                      />
+                      <Input
+                        type="tel"
+                        placeholder="(11) 98765-4321"
+                        value={contact.phone}
+                        onChange={(e) => updateContact(index, 'phone', e.target.value)}
+                      />
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Cargo (ex: Gerente de TI)"
+                          value={contact.role}
+                          onChange={(e) => updateContact(index, 'role', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="space-y-2">
@@ -359,12 +554,12 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes-select">Observações</Label>
+                <Label htmlFor="description-select">Observações</Label>
                 <Textarea
-                  id="notes-select"
+                  id="description-select"
                   placeholder="Notas sobre o deal..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                 />
               </div>
@@ -390,6 +585,10 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           {/* MODO: Criar Manual */}
           <TabsContent value="manual" className="space-y-4 mt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+                💡 <strong>Dica:</strong> Preencha o CNPJ e clique em "Buscar Dados" para preencher automaticamente
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Título do Deal *</Label>
                 <Input
@@ -401,14 +600,69 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
                 />
               </div>
 
+              {/* CNPJ com Enriquecimento */}
               <div className="space-y-2">
-                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Label htmlFor="cnpj">CNPJ</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cnpj"
+                    placeholder="00.000.000/0000-00"
+                    value={formData.cnpj}
+                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleEnrichCompany}
+                    disabled={!formData.cnpj || enriching}
+                  >
+                    {enriching ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Buscando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Buscar Dados
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Nome da Empresa *</Label>
                 <Input
                   id="company_name"
                   placeholder="Empresa XPTO Ltda"
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  required
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Setor</Label>
+                  <Input
+                    id="industry"
+                    placeholder="Indústria"
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employees">Funcionários</Label>
+                  <Input
+                    id="employees"
+                    type="number"
+                    placeholder="50"
+                    value={formData.employees}
+                    onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -438,38 +692,68 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="contact_name">Nome do Contato *</Label>
-                <Input
-                  id="contact_name"
-                  placeholder="João Silva"
-                  value={formData.contact_name}
-                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact_email">Email</Label>
-                  <Input
-                    id="contact_email"
-                    type="email"
-                    placeholder="joao@empresa.com"
-                    value={formData.contact_email}
-                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                  />
+              {/* Múltiplos Contatos */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Contatos *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addContact}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Adicionar Contato
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact_phone">Telefone</Label>
-                  <Input
-                    id="contact_phone"
-                    type="tel"
-                    placeholder="(11) 98765-4321"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                  />
-                </div>
+                
+                {contacts.map((contact, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Contato {index + 1}</span>
+                      {contacts.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeContact(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Nome completo *"
+                          value={contact.name}
+                          onChange={(e) => updateContact(index, 'name', e.target.value)}
+                          required={index === 0}
+                        />
+                      </div>
+                      <Input
+                        type="email"
+                        placeholder="email@empresa.com"
+                        value={contact.email}
+                        onChange={(e) => updateContact(index, 'email', e.target.value)}
+                      />
+                      <Input
+                        type="tel"
+                        placeholder="(11) 98765-4321"
+                        value={contact.phone}
+                        onChange={(e) => updateContact(index, 'phone', e.target.value)}
+                      />
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Cargo (ex: Gerente de TI)"
+                          value={contact.role}
+                          onChange={(e) => updateContact(index, 'role', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="space-y-2">
@@ -488,12 +772,12 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
+                <Label htmlFor="description">Observações</Label>
                 <Textarea
-                  id="notes"
+                  id="description"
                   placeholder="Notas sobre o deal..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                 />
               </div>
