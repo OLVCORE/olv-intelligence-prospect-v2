@@ -135,8 +135,20 @@ const menuGroups: MenuGroup[] = [
           { title: "Tech Stack", icon: Code, url: "/tech-stack", description: "Tecnologias em uso: ERP, CRM, e-commerce" },
           { title: "Análise Geográfica", icon: MapPin, url: "/geographic-analysis", description: "Distribuição territorial e insights regionais" },
           { title: "Benchmark Setorial", icon: Award, url: "/benchmark", description: "Comparação com mercado e concorrentes diretos" },
-          { title: "Competitive Intelligence", icon: Shield, url: "/competitive-intelligence", description: "Battle cards, win/loss analysis e monitoramento competitivo" },
         ],
+      },
+    ]
+  },
+  {
+    label: "Análise Competitiva",
+    icon: Shield,
+    items: [
+      {
+        title: "Competitive Intelligence",
+        icon: Shield,
+        url: "/competitive-intelligence",
+        competitive: true,
+        description: "Battle cards, win/loss analysis e monitoramento competitivo em tempo real"
       },
     ]
   },
@@ -304,7 +316,8 @@ export function AppSidebar() {
                       <p className="font-semibold text-sm mb-1">{group.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {group.label === "Central de Comando" && "Visão executiva e busca global de inteligência comercial"}
-                        {group.label === "Prospecção & Qualificação" && "Gestão de base de empresas e análise 360° com IA e inteligência competitiva"}
+                        {group.label === "Prospecção & Qualificação" && "Gestão de base de empresas e análise 360° com IA"}
+                        {group.label === "Análise Competitiva" && "Battle cards, win/loss e monitoramento em tempo real"}
                         {group.label === "Planejamento Estratégico" && "ROI, CPQ, cenários, propostas e canvas colaborativo"}
                         {group.label === "Execução & Prospecção Ativa" && "Suite completa de automação de vendas e outbound"}
                         {group.label === "Métricas & Performance" && "Dashboards, metas e analytics de conversão"}
