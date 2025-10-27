@@ -389,15 +389,16 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
             {/* Candidatos CNPJ Encontrados */}
             {currentItem.status === 'reviewed' && currentItem.cnpjCandidates && currentItem.cnpjCandidates.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">📋 Candidatos Receita Federal</h3>
-                  <Badge variant="outline">{currentItem.cnpjCandidates.length} encontrado(s)</Badge>
+                  <h3 className="font-semibold text-lg">📋 Receita Federal do Brasil</h3>
+                  <Badge variant="outline">{currentItem.cnpjCandidates.length} candidato(s)</Badge>
                 </div>
 
                 {currentItem.cnpjCandidates.map((candidate, idx) => {
                   const isSelected = candidate.cnpj === currentItem.selectedCNPJ;
                   const isBestMatch = idx === 0;
+                  const receitaData = candidate.data;
 
                   return (
                     <Card 
@@ -494,6 +495,28 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                               </div>
                             )}
 
+                            {candidate.data.fantasia && candidate.data.fantasia !== candidate.data.nome && (
+                              <div className="text-sm space-y-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">Nome Fantasia</p>
+                                <p className="font-medium">{candidate.data.fantasia}</p>
+                              </div>
+                            )}
+
+                            {(candidate.data.logradouro || candidate.data.municipio) && (
+                              <div className="text-sm space-y-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">Endereço Completo</p>
+                                <p className="font-medium text-xs leading-relaxed">
+                                  {candidate.data.logradouro && `${candidate.data.logradouro}`}
+                                  {candidate.data.numero && `, ${candidate.data.numero}`}
+                                  {candidate.data.complemento && ` - ${candidate.data.complemento}`}
+                                  {candidate.data.bairro && <><br />{candidate.data.bairro}</>}
+                                  {candidate.data.municipio && <><br />{candidate.data.municipio}</>}
+                                  {candidate.data.uf && `-${candidate.data.uf}`}
+                                  {candidate.data.cep && ` - CEP: ${candidate.data.cep}`}
+                                </p>
+                              </div>
+                            )}
+
                             {candidate.data.atividade_principal && (
                               <div className="text-sm space-y-1">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase">Atividade Principal</p>
@@ -511,19 +534,50 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                               </div>
                             )}
 
-                            {candidate.data.municipio && (
+                            <div className="grid grid-cols-2 gap-3">
+                              {candidate.data.porte && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Porte</p>
+                                  <p className="font-medium">{candidate.data.porte}</p>
+                                </div>
+                              )}
+
+                              {candidate.data.capital_social && (
+                                <div className="text-sm space-y-1">
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Capital Social</p>
+                                  <p className="font-bold text-green-600">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(candidate.data.capital_social))}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {candidate.data.natureza_juridica && (
                               <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Município</p>
-                                <p className="font-medium">{candidate.data.municipio} - {candidate.data.uf}</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">Natureza Jurídica</p>
+                                <p className="font-medium text-xs">{candidate.data.natureza_juridica}</p>
                               </div>
                             )}
 
-                            {candidate.data.porte && (
+                            {candidate.data.email && (
                               <div className="text-sm space-y-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Porte</p>
-                                <p className="font-medium">{candidate.data.porte}</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">E-mail</p>
+                                <p className="font-medium text-xs">{candidate.data.email}</p>
                               </div>
                             )}
+
+                            {candidate.data.telefone && (
+                              <div className="text-sm space-y-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase">Telefone</p>
+                                <p className="font-medium">{candidate.data.telefone}</p>
+                              </div>
+                            )}
+
+                            <div className="pt-2 border-t border-green-600/20">
+                              <p className="text-xs text-muted-foreground italic">
+                                ✓ Dados validados via {candidate.source === 'receitaws' ? 'ReceitaWS - API Oficial da Receita Federal' : candidate.source}
+                              </p>
+                            </div>
                           </div>
                         )}
 
