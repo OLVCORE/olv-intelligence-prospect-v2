@@ -46,16 +46,14 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
   const isStale = daysInStage > 7; // Mais de 7 dias no mesmo estágio
 
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "cursor-move hover:shadow-md transition-all",
-        isSelected && "ring-2 ring-primary"
-      )}
-      {...attributes}
-      {...listeners}
-    >
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "cursor-default hover:shadow-md transition-all",
+          isSelected && "ring-2 ring-primary"
+        )}
+      >
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
           {onSelect && (
@@ -66,7 +64,9 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
               className="mt-1"
             />
           )}
-          <GripVertical className="h-4 w-4 text-muted-foreground mt-1" />
+          <div className="mt-1 cursor-grab active:cursor-grabbing" {...attributes} {...listeners} aria-label="Arrastar deal">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <div 
             className="flex-1 space-y-2 cursor-pointer" 
             onClick={(e) => {
