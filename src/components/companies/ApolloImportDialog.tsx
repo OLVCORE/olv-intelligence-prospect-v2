@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Download, Building2, Users } from "lucide-react";
+import { ApolloReviewDialog } from "./ApolloReviewDialog";
 
 interface ApolloImportDialogProps {
   open: boolean;
@@ -18,6 +19,8 @@ interface ApolloImportDialogProps {
 export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: ApolloImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'companies' | 'people'>('companies');
+  const [foundOrganizations, setFoundOrganizations] = useState<any[]>([]);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
   
   // Parâmetros de busca para Companies
   const [companyParams, setCompanyParams] = useState({
@@ -57,43 +60,63 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
             apolloParams[key] = value.trim();
           }
         });
+        
+        // Para companies: buscar sem salvar, mostrar tela de revisão
+        console.log('[Apollo Import] 📦 Parâmetros finais:', apolloParams);
+        
+        const { data, error } = await supabase.functions.invoke('enrich-apollo', { 
+          body: { type: 'search_organizations', searchParams: apolloParams }
+        });
+        
+        if (error) throw error;
+        
+        const orgs = data.organizations || [];
+        console.log('[Apollo Import] 🔍 Empresas encontradas:', orgs.length);
+        
+        if (orgs.length === 0) {
+          toast.info('Nenhuma empresa encontrada', {
+            description: 'Tente ajustar os filtros de busca'
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Mostrar tela de revisão com matching CNPJ
+        setFoundOrganizations(orgs);
+        setShowReviewDialog(true);
+        onOpenChange(false); // Fecha o diálogo de busca
+        
       } else {
+        // Para people: fluxo direto (sem revisão)
         Object.entries(peopleParams).forEach(([key, value]) => {
           if (value && value.trim()) {
             apolloParams[key] = value.trim();
           }
         });
-      }
-      
-      console.log('[Apollo Import] 📦 Parâmetros finais:', apolloParams);
-      
-      // Chamar edge function
-      const type = activeTab === 'people' ? 'people' : 'import_leads';
-      const body = type === 'people'
-        ? {
-            type,
-            organizationName: apolloParams.q_organization_name,
-            domain: apolloParams.q_organization_domains,
-            titles: (apolloParams.person_titles || '')
-              .split(',')
-              .map((t: string) => t.trim())
-              .filter(Boolean)
-          }
-        : { type, searchParams: apolloParams };
+        
+        const body = {
+          type: 'people',
+          organizationName: apolloParams.q_organization_name,
+          domain: apolloParams.q_organization_domains,
+          titles: (apolloParams.person_titles || '')
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
+        };
 
-      const { data, error } = await supabase.functions.invoke('enrich-apollo', { body });
-      
-      if (error) throw error;
-      
-      console.log('[Apollo Import] ✅ Importação concluída:', data);
-      
-      const entityType = activeTab === 'companies' ? 'empresas' : 'contatos';
-      toast.success(`🎉 ${data.imported} de ${data.total} ${entityType} importados do Apollo!`, {
-        description: 'Dados adicionados com sucesso à plataforma'
-      });
-      
-      onImportComplete?.();
-      onOpenChange(false);
+        const { data, error } = await supabase.functions.invoke('enrich-apollo', { body });
+        
+        if (error) throw error;
+        
+        console.log('[Apollo Import] ✅ Pessoas importadas:', data);
+        
+        toast.success(`🎉 ${data.imported} de ${data.total} contatos importados do Apollo!`, {
+          description: 'Dados adicionados com sucesso à plataforma'
+        });
+        
+        onImportComplete?.();
+        onOpenChange(false);
+      }
       
     } catch (error: any) {
       console.error('[Apollo Import] ❌ Erro:', error);
@@ -214,9 +237,9 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
             <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
               <Building2 className="h-5 w-5 text-blue-600" />
               <div className="text-sm text-blue-900 dark:text-blue-100">
-                <p className="font-medium">Importa até 100 empresas por busca</p>
+                <p className="font-medium">📋 Busca até 100 empresas com revisão</p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Empresas duplicadas serão ignoradas automaticamente
+                  Você revisará cada empresa com matching % de CNPJ da Receita Federal antes de importar
                 </p>
               </div>
             </div>
@@ -340,10 +363,24 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Importando...' : (activeTab === 'companies' ? 'Importar Empresas' : 'Buscar Contatos')}
+            {loading ? 'Buscando...' : (activeTab === 'companies' ? '🔍 Buscar e Revisar' : 'Buscar Contatos')}
           </Button>
         </div>
       </DialogContent>
+      
+      {/* 🎯 Dialog de Revisão com Matching CNPJ + Capa Receita Federal */}
+      {showReviewDialog && (
+        <ApolloReviewDialog 
+          open={showReviewDialog}
+          onOpenChange={setShowReviewDialog}
+          organizations={foundOrganizations}
+          onImportComplete={() => {
+            setShowReviewDialog(false);
+            setFoundOrganizations([]);
+            onImportComplete?.();
+          }}
+        />
+      )}
     </Dialog>
   );
 }

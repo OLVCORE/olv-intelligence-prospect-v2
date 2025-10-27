@@ -130,7 +130,71 @@ serve(async (req) => {
     }
 
     // ============================================
-    // IMPORTAR LEADS DO APOLLO COM DADOS COMPLETOS
+    // BUSCAR ORGANIZAÇÕES SEM SALVAR (para revisão)
+    // ============================================
+    if (type === 'search_organizations') {
+      const sanitizeIndustryIds = (val: unknown) => {
+        if (!val) return undefined;
+        const cleaned = String(val).split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s));
+        return cleaned.length ? cleaned.join(',') : undefined;
+      };
+
+      const allowedKeys = new Set([
+        'q_organization_name',
+        'q_organization_domains',
+        'q_organization_locations',
+        'q_organization_industry_tag_ids',
+        'q_organization_num_employees_ranges',
+        'q_organization_keyword_tags'
+      ]);
+
+      const basePayload: Record<string, unknown> = { page: 1, per_page: Number(searchParams?.per_page) || 100 };
+      if (searchParams && typeof searchParams === 'object') {
+        for (const [k, v] of Object.entries(searchParams)) {
+          if (!allowedKeys.has(k)) continue;
+          const sv = typeof v === 'string' ? v.trim() : v;
+          if (sv === undefined || sv === null || String(sv).trim() === '') continue;
+          if (k === 'q_organization_industry_tag_ids') {
+            const cleaned = sanitizeIndustryIds(sv);
+            if (cleaned) basePayload[k] = cleaned;
+          } else if (k !== 'per_page' && k !== 'api_key') {
+            basePayload[k] = sv;
+          }
+        }
+      }
+
+      const response = await fetch('https://api.apollo.io/v1/organizations/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY },
+        body: JSON.stringify(basePayload)
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[Apollo] ❌ Erro search_organizations:', response.status, errText);
+        return new Response(
+          JSON.stringify({ error: `Apollo API error: ${response.status}`, details: errText }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const data = await response.json();
+      const organizations = data.organizations || [];
+
+      console.log('[Apollo] 🔍 Organizações encontradas (sem salvar):', organizations.length);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          organizations,
+          total: organizations.length
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ============================================
+    // IMPORTAR LEADS DO APOLLO COM DADOS COMPLETOS (OLD - mantido para compatibilidade)
     // ============================================
     if (type === 'import_leads') {
       // Montar payload com os parâmetros fornecidos na UI, com limpeza e fallback
