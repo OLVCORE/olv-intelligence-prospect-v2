@@ -710,7 +710,7 @@ export default function CompaniesManagementPage() {
                 <TooltipTrigger asChild>
                   <BulkUploadDialog>
                     <Button
-                      variant="secondary"
+                      variant="default"
                       size="icon"
                     >
                       <Upload className="h-4 w-4" />
@@ -725,11 +725,10 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="icon"
                     onClick={handleBatchEnrichReceitaWS}
                     disabled={isBatchEnriching}
-                    className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     {isBatchEnriching ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -746,11 +745,10 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="icon"
                     onClick={handleBatchEnrich360}
                     disabled={isBatchEnriching360}
-                    className="h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     {isBatchEnriching360 ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -767,11 +765,11 @@ export default function CompaniesManagementPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="icon"
                     onClick={handleBatchEnrichApollo}
                     disabled={isBatchEnrichingApollo}
-                    className="h-9 w-9 hover:bg-purple-500/10 hover:border-purple-500/20 transition-colors"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                   >
                     {isBatchEnrichingApollo ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1108,9 +1106,9 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => navigate(`/company/${company.id}`)}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -1126,9 +1124,9 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => navigate(`/search?companyId=${company.id}`)}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -1144,13 +1142,13 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => {
                                     const params = new URLSearchParams(location.search);
                                     const returnTab = params.get('tab') || 'roi';
                                     navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
                                   }}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   <Target className="h-4 w-4" />
                                 </Button>
@@ -1166,10 +1164,10 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => handleEnrichReceita(company.id)}
                                   disabled={enrichingReceitaId === company.id || !company.cnpj}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   {enrichingReceitaId === company.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1189,10 +1187,10 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => handleEnrich(company.id)}
                                   disabled={enrichingId === company.id}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   {enrichingId === company.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1212,7 +1210,7 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={async () => {
                                     if (!company.cnpj) {
                                       toast.error('CNPJ não disponível');
@@ -1232,7 +1230,7 @@ export default function CompaniesManagementPage() {
                                     }
                                   }}
                                   disabled={!company.cnpj}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   <Zap className="h-4 w-4" />
                                 </Button>
@@ -1248,7 +1246,7 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="default"
-                                  size="icon"
+                                  size="sm"
                                   onClick={async () => {
                                     try {
                                       toast.info('Buscando decisores com Apollo...');
@@ -1267,7 +1265,7 @@ export default function CompaniesManagementPage() {
                                       toast.error('Erro ao buscar dados Apollo');
                                     }
                                   }}
-                                  className="h-9 w-9 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                                  className="h-8 w-8 p-0 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                                 >
                                   <div className="h-4 w-4 flex items-center justify-center">
                                     <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
@@ -1285,12 +1283,12 @@ export default function CompaniesManagementPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="destructive"
-                                  size="icon"
+                                  size="sm"
                                   onClick={() => {
                                     setCompanyToDelete(company);
                                     setDeleteDialogOpen(true);
                                   }}
-                                  className="h-9 w-9"
+                                  className="h-8 w-8 p-0"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
