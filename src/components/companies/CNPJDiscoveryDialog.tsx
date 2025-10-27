@@ -85,7 +85,7 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
       // Atualizar CNPJ e dados da empresa
       const updateData: any = { 
         cnpj: cnpj,
-        cnpj_status: 'valido',
+        cnpj_status: 'ativo',
         updated_at: new Date().toISOString()
       };
 
