@@ -17,7 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [insightsOpen, setInsightsOpen] = useState(false);
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full">
         {/* Top Bar - Fixo no topo */}
         <header className="fixed top-0 left-0 right-0 h-16 border-b flex items-center justify-between px-3 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
