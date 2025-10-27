@@ -17,7 +17,13 @@ import {
   XCircle,
   ExternalLink,
   Loader2,
-  Zap
+  Zap,
+  Target,
+  Activity,
+  Shield,
+  TrendingDown,
+  FileText,
+  BarChart3
 } from "lucide-react";
 import { useCreateDeal } from "@/hooks/useDeals";
 import { toast } from "sonner";
@@ -223,27 +229,27 @@ export function QualificationRecommendation({
   const IconComponent = recommendation.icon;
 
   return (
-    <Card className="border-2">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Análise de Qualificação 360° com IA
+    <Card className="border-2 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+        <CardTitle className="flex items-center gap-3 text-xl">
+          <Target className="h-6 w-6 text-primary" />
+          Análise de Qualificação Estratégica 360°
         </CardTitle>
-        <CardDescription>
-          Análise profunda baseada em múltiplas fontes: detecção TOTVS, sinais de intenção, notícias, vagas e dados públicos
+        <CardDescription className="text-sm">
+          Inteligência de mercado baseada em múltiplas fontes: detecção competitiva TOTVS, sinais de intenção de compra, análise de vagas, notícias corporativas e dados públicos
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Botão CHAMATIVO para gerar análise */}
+        {/* Botão para gerar análise */}
         {!aiAnalysis && !isLoadingAnalysis && (
-          <div className="text-center py-8 space-y-6">
+          <div className="text-center py-12 space-y-6">
             {!canGenerateAnalysis ? (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
+              <Alert variant="default" className="text-left">
+                <AlertCircle className="h-5 w-5" />
                 <AlertDescription>
-                  <p className="font-semibold mb-2">Complete as etapas obrigatórias primeiro:</p>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
+                  <p className="font-semibold mb-3">Pré-requisitos para Análise 360°:</p>
+                  <ul className="list-disc list-inside space-y-2 text-sm">
                     {!company.totvs_last_checked_at && (
                       <li>Execute a <strong>Detecção de Uso de TOTVS</strong></li>
                     )}
@@ -255,26 +261,30 @@ export function QualificationRecommendation({
               </Alert>
             ) : (
               <>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold">🚀 Pronto para Análise Profunda!</h3>
-                  <p className="text-muted-foreground">
-                    Todas as fontes foram consultadas. Clique abaixo para gerar sua análise 360° com IA.
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm font-medium">Fontes Verificadas</span>
+                  </div>
+                  <h3 className="text-2xl font-bold">Análise Estratégica Disponível</h3>
+                  <p className="text-muted-foreground max-w-2xl mx-auto">
+                    Todas as fontes de inteligência foram consultadas. Inicie a análise 360° para obter uma recomendação executiva fundamentada em dados.
                   </p>
                 </div>
                 
                 <Button
                   onClick={handleGenerateAnalysis}
                   size="lg"
-                  className="h-16 px-8 text-lg font-bold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all"
+                  className="h-14 px-10 text-base font-semibold bg-gradient-to-r from-primary via-primary to-primary/90 hover:shadow-lg transition-all"
                   disabled={isLoadingAnalysis}
                 >
-                  <Zap className="h-6 w-6 mr-2 animate-pulse" />
-                  Gerar Qualificação 360° Powered by IA
-                  <Sparkles className="h-5 w-5 ml-2" />
+                  <Activity className="h-5 w-5 mr-2" />
+                  Gerar Análise de Qualificação 360°
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
 
                 <p className="text-xs text-muted-foreground">
-                  ✅ Análise gerada por IA com base em múltiplas fontes de dados
+                  Powered by Advanced AI Analytics
                 </p>
               </>
             )}
@@ -283,20 +293,23 @@ export function QualificationRecommendation({
 
         {/* Loading state */}
         {isLoadingAnalysis && (
-          <div className="space-y-4 py-8">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <div className="text-center space-y-2">
-                <p className="font-semibold text-lg">Gerando Análise 360°...</p>
-                <p className="text-sm text-muted-foreground">
-                  Analisando fontes TOTVS, sinais de intenção, notícias e dados públicos
+          <div className="space-y-6 py-12">
+            <div className="flex flex-col items-center justify-center gap-5">
+              <div className="relative">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="absolute inset-0 h-16 w-16 rounded-full border-4 border-primary/20" />
+              </div>
+              <div className="text-center space-y-3">
+                <p className="font-semibold text-xl">Processando Análise Estratégica</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Analisando detecção competitiva TOTVS, sinais de intenção de compra, notícias corporativas e dados de mercado
                 </p>
               </div>
             </div>
-            <div className="space-y-2">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-24 w-full" />
+            <div className="space-y-3 max-w-3xl mx-auto">
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-40 w-full rounded-lg" />
+              <Skeleton className="h-32 w-full rounded-lg" />
             </div>
           </div>
         )}
@@ -304,133 +317,185 @@ export function QualificationRecommendation({
         {/* Análise gerada */}
         {aiAnalysis && (
           <>
-            {/* Recomendação IA */}
+            {/* Recomendação Executiva */}
             <Alert 
               variant={aiAnalysis.decision === 'NO-GO' ? 'destructive' : 'default'}
-              className="border-2"
+              className="border-2 shadow-sm"
             >
-              {aiAnalysis.decision === 'NO-GO' ? (
-                <XCircle className="h-5 w-5" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5" />
-              )}
-              <AlertDescription className="ml-2">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-lg">
-                      {aiAnalysis.decision === 'GO' ? '✅ GO - Prosseguir' : '⛔ NO-GO - Desqualificar'}
-                    </p>
-                    <Badge variant={
-                      aiAnalysis.confidence === 'high' ? 'default' : 
-                      aiAnalysis.confidence === 'medium' ? 'secondary' : 'outline'
-                    }>
-                      Confiança: {aiAnalysis.confidence === 'high' ? 'Alta' : aiAnalysis.confidence === 'medium' ? 'Média' : 'Baixa'}
-                    </Badge>
-                    <Badge variant={
-                      aiAnalysis.priority === 'hot' ? 'destructive' :
-                      aiAnalysis.priority === 'warm' ? 'default' :
-                      aiAnalysis.priority === 'cold' ? 'secondary' : 'outline'
-                    }>
-                      {aiAnalysis.priority === 'hot' ? '🔥 Quente' :
-                       aiAnalysis.priority === 'warm' ? '🌤️ Morno' :
-                       aiAnalysis.priority === 'cold' ? '❄️ Frio' : '🚫 Desqualificado'}
-                    </Badge>
+              <div className="flex items-start gap-3">
+                {aiAnalysis.decision === 'NO-GO' ? (
+                  <XCircle className="h-6 w-6 mt-0.5" />
+                ) : (
+                  <CheckCircle2 className="h-6 w-6 mt-0.5" />
+                )}
+                <AlertDescription className="flex-1">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className="font-bold text-lg">
+                        {aiAnalysis.decision === 'GO' ? 'RECOMENDAÇÃO: PROSSEGUIR' : 'RECOMENDAÇÃO: DESQUALIFICAR'}
+                      </h3>
+                      <Badge 
+                        variant={
+                          aiAnalysis.confidence === 'high' ? 'default' : 
+                          aiAnalysis.confidence === 'medium' ? 'secondary' : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        Confiança: {aiAnalysis.confidence === 'high' ? 'Alta' : aiAnalysis.confidence === 'medium' ? 'Média' : 'Baixa'}
+                      </Badge>
+                      <Badge 
+                        variant={
+                          aiAnalysis.priority === 'hot' ? 'destructive' :
+                          aiAnalysis.priority === 'warm' ? 'default' :
+                          aiAnalysis.priority === 'cold' ? 'secondary' : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        Prioridade: {
+                          aiAnalysis.priority === 'hot' ? 'Alta (Hot)' :
+                          aiAnalysis.priority === 'warm' ? 'Média (Warm)' :
+                          aiAnalysis.priority === 'cold' ? 'Baixa (Cold)' : 'Desqualificado'
+                        }
+                      </Badge>
+                    </div>
+                    <p className="text-sm leading-relaxed">{aiAnalysis.executive_summary}</p>
                   </div>
-                  <p className="text-sm font-medium">{aiAnalysis.executive_summary}</p>
-                </div>
-              </AlertDescription>
+                </AlertDescription>
+              </div>
             </Alert>
 
-            {/* Scores Visual */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-muted/50 rounded-lg p-3 border">
-                <p className="text-xs text-muted-foreground mb-1">TOTVS Detection</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{totvsScore}</span>
-                  <Badge variant={totvsScore >= 70 ? "destructive" : totvsScore >= 30 ? "outline" : "secondary"}>
-                    {totvsScore >= 70 ? "Alto" : totvsScore >= 30 ? "Médio" : "Baixo"}
+            {/* Tabela Executiva de Scores */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-muted/50 px-4 py-2 border-b">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Métricas de Qualificação
+                </h4>
+              </div>
+              <div className="divide-y">
+                <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 items-center">
+                  <div>
+                    <p className="font-medium text-sm">TOTVS Detection Score</p>
+                    <p className="text-xs text-muted-foreground">Probabilidade de uso de TOTVS</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-3xl font-bold">{totvsScore}</span>
+                    <span className="text-sm text-muted-foreground">/100</span>
+                  </div>
+                  <Badge 
+                    variant={totvsScore >= 70 ? "destructive" : totvsScore >= 30 ? "outline" : "secondary"}
+                    className="whitespace-nowrap"
+                  >
+                    {totvsScore >= 70 ? "Risco Alto" : totvsScore >= 30 ? "Risco Médio" : "Risco Baixo"}
                   </Badge>
                 </div>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 border">
-                <p className="text-xs text-muted-foreground mb-1">Intent Score</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{intentScore}</span>
-                  <Badge variant={intentScore >= 70 ? "default" : intentScore >= 40 ? "secondary" : "outline"}>
-                    {intentScore >= 70 ? "Hot" : intentScore >= 40 ? "Warm" : "Cold"}
+                <div className="grid grid-cols-[1fr,auto,auto] gap-4 p-4 items-center">
+                  <div>
+                    <p className="font-medium text-sm">Intent Score</p>
+                    <p className="text-xs text-muted-foreground">Sinais de intenção de compra</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-3xl font-bold">{intentScore}</span>
+                    <span className="text-sm text-muted-foreground">/100</span>
+                  </div>
+                  <Badge 
+                    variant={intentScore >= 70 ? "default" : intentScore >= 40 ? "secondary" : "outline"}
+                    className="whitespace-nowrap"
+                  >
+                    {intentScore >= 70 ? "Hot Lead" : intentScore >= 40 ? "Warm Lead" : "Cold Lead"}
                   </Badge>
                 </div>
               </div>
             </div>
 
             {/* Análise Profunda Acordeão */}
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="deep-analysis">
-                <AccordionTrigger className="text-base font-semibold">
-                  📊 Análise Profunda 360°
+            <Accordion type="single" collapsible className="w-full border rounded-lg">
+              <AccordionItem value="deep-analysis" className="border-none">
+                <AccordionTrigger className="text-base font-semibold px-4 hover:no-underline hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Análise Estratégica Detalhada
+                  </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
+                <AccordionContent className="px-4 pb-4 pt-2">
                   <div className="grid gap-4">
-                    <div className="rounded-lg border p-4 bg-muted/50">
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">🎯 Análise TOTVS</h4>
-                      <p className="text-sm">{aiAnalysis.deep_analysis.totvs_analysis}</p>
+                    <div className="rounded-lg border p-4 bg-muted/30">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                        <Shield className="h-4 w-4 text-destructive" />
+                        Detecção Competitiva TOTVS
+                      </h4>
+                      <p className="text-sm leading-relaxed text-foreground/90">{aiAnalysis.deep_analysis.totvs_analysis}</p>
                     </div>
 
-                    <div className="rounded-lg border p-4 bg-muted/50">
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">💡 Análise de Intenção</h4>
-                      <p className="text-sm">{aiAnalysis.deep_analysis.intent_analysis}</p>
+                    <div className="rounded-lg border p-4 bg-muted/30">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                        <Activity className="h-4 w-4 text-primary" />
+                        Sinais de Intenção de Compra
+                      </h4>
+                      <p className="text-sm leading-relaxed text-foreground/90">{aiAnalysis.deep_analysis.intent_analysis}</p>
                     </div>
 
-                    <div className="rounded-lg border p-4 bg-muted/50">
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">🚀 Análise de Oportunidade</h4>
-                      <p className="text-sm">{aiAnalysis.deep_analysis.opportunity_analysis}</p>
+                    <div className="rounded-lg border p-4 bg-muted/30">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        Análise de Oportunidade
+                      </h4>
+                      <p className="text-sm leading-relaxed text-foreground/90">{aiAnalysis.deep_analysis.opportunity_analysis}</p>
                     </div>
 
-                    <div className="rounded-lg border p-4 bg-muted/50">
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">⚠️ Análise de Riscos</h4>
-                      <p className="text-sm">{aiAnalysis.deep_analysis.risk_analysis}</p>
+                    <div className="rounded-lg border p-4 bg-muted/30">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        Avaliação de Riscos
+                      </h4>
+                      <p className="text-sm leading-relaxed text-foreground/90">{aiAnalysis.deep_analysis.risk_analysis}</p>
                     </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="action-plan">
-                <AccordionTrigger className="text-base font-semibold">
-                  🎬 Plano de Ação
+              <AccordionItem value="action-plan" className="border-none">
+                <AccordionTrigger className="text-base font-semibold px-4 hover:no-underline hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Plano de Ação Tático
+                  </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Ações Imediatas</h4>
-                    <ul className="space-y-1 ml-4">
+                <AccordionContent className="px-4 pb-4 pt-2 space-y-5">
+                  <div className="rounded-lg border p-4 bg-muted/30">
+                    <h4 className="font-semibold mb-3 text-sm">Ações Imediatas Recomendadas</h4>
+                    <ul className="space-y-2">
                       {aiAnalysis.action_plan.immediate_actions.map((action: string, i: number) => (
-                        <li key={i} className="text-sm flex items-start gap-2">
-                          <span className="text-primary font-bold">{i + 1}.</span>
-                          {action}
+                        <li key={i} className="text-sm flex items-start gap-3">
+                          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-semibold text-xs">
+                            {i + 1}
+                          </span>
+                          <span className="flex-1 leading-relaxed">{action}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div>
-                    <h4 className="font-semibold mb-2">Talking Points</h4>
-                    <ul className="space-y-1 ml-4">
+                  <div className="rounded-lg border p-4 bg-muted/30">
+                    <h4 className="font-semibold mb-3 text-sm">Argumentos de Venda (Talking Points)</h4>
+                    <ul className="space-y-2">
                       {aiAnalysis.action_plan.talking_points.map((point: string, i: number) => (
-                        <li key={i} className="text-sm flex items-start gap-2">
-                          <span className="text-primary">•</span>
-                          {point}
+                        <li key={i} className="text-sm flex items-start gap-3">
+                          <ArrowRight className="flex-shrink-0 h-4 w-4 text-primary mt-0.5" />
+                          <span className="flex-1 leading-relaxed">{point}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {aiAnalysis.action_plan.objections_to_anticipate?.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Objeções a Antecipar</h4>
-                      <ul className="space-y-1 ml-4">
+                    <div className="rounded-lg border p-4 bg-muted/30">
+                      <h4 className="font-semibold mb-3 text-sm">Objeções Prováveis</h4>
+                      <ul className="space-y-2">
                         {aiAnalysis.action_plan.objections_to_anticipate.map((obj: string, i: number) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="text-primary">•</span>
-                            {obj}
+                          <li key={i} className="text-sm flex items-start gap-3">
+                            <AlertCircle className="flex-shrink-0 h-4 w-4 text-orange-600 mt-0.5" />
+                            <span className="flex-1 leading-relaxed">{obj}</span>
                           </li>
                         ))}
                       </ul>
@@ -439,45 +504,63 @@ export function QualificationRecommendation({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="sources">
-                <AccordionTrigger className="text-base font-semibold">
-                  🔍 Fontes e Dados Brutos
+              <AccordionItem value="sources" className="border-none">
+                <AccordionTrigger className="text-base font-semibold px-4 hover:no-underline hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Fontes de Inteligência e Qualidade dos Dados
+                  </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
-                  <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
-                    <p className="text-sm"><strong>Evidência mais forte:</strong> {aiAnalysis.sources_summary.strongest_evidence}</p>
-                    <p className="text-sm"><strong>Ponto mais fraco:</strong> {aiAnalysis.sources_summary.weakest_point}</p>
-                    <p className="text-sm">
-                      <strong>Qualidade dos dados:</strong>{' '}
-                      <Badge variant={
-                        aiAnalysis.sources_summary.data_quality === 'high' ? 'default' :
-                        aiAnalysis.sources_summary.data_quality === 'medium' ? 'secondary' : 'outline'
-                      }>
-                        {aiAnalysis.sources_summary.data_quality === 'high' ? 'Alta' :
-                         aiAnalysis.sources_summary.data_quality === 'medium' ? 'Média' : 'Baixa'}
-                      </Badge>
-                    </p>
+                <AccordionContent className="px-4 pb-4 pt-2 space-y-5">
+                  <div className="rounded-lg border p-4 bg-muted/30 space-y-3">
+                    <div className="grid gap-3">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Evidência Mais Relevante</p>
+                        <p className="text-sm leading-relaxed">{aiAnalysis.sources_summary.strongest_evidence}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Limitações Identificadas</p>
+                        <p className="text-sm leading-relaxed">{aiAnalysis.sources_summary.weakest_point}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Qualidade dos Dados Coletados</p>
+                        <Badge 
+                          variant={
+                            aiAnalysis.sources_summary.data_quality === 'high' ? 'default' :
+                            aiAnalysis.sources_summary.data_quality === 'medium' ? 'secondary' : 'outline'
+                          }
+                          className="mt-1"
+                        >
+                          {aiAnalysis.sources_summary.data_quality === 'high' ? 'Alta Confiabilidade' :
+                           aiAnalysis.sources_summary.data_quality === 'medium' ? 'Confiabilidade Média' : 'Confiabilidade Baixa'}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
 
                   {rawContext?.totvs_sources && rawContext.totvs_sources.length > 0 && (
                     <div>
-                      <h4 className="font-semibold mb-2">Fontes TOTVS ({rawContext.totvs_sources.length})</h4>
-                      <div className="space-y-2">
+                      <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-destructive" />
+                        Fontes de Detecção TOTVS ({rawContext.totvs_sources.length})
+                      </h4>
+                      <div className="space-y-3">
                         {rawContext.totvs_sources.map((source: any, i: number) => (
-                          <div key={i} className="rounded border p-3 bg-background text-xs">
-                            <div className="flex items-center justify-between mb-1">
-                              <Badge variant="outline">{source.source}</Badge>
-                              <Badge>{source.confidence}%</Badge>
+                          <div key={i} className="rounded-lg border p-3 bg-background">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs">{source.source}</Badge>
+                              <Badge className="text-xs">{source.confidence}% confiança</Badge>
                             </div>
-                            <p className="text-sm mb-1">{source.evidence}</p>
+                            <p className="text-sm mb-2 leading-relaxed">{source.evidence}</p>
                             {source.url && (
                               <a 
                                 href={source.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center gap-1"
+                                className="text-primary hover:underline text-xs flex items-center gap-1.5"
                               >
-                                Ver fonte <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3" />
+                                Verificar fonte original
                               </a>
                             )}
                           </div>
@@ -488,15 +571,32 @@ export function QualificationRecommendation({
 
                   {rawContext?.intent_signals && rawContext.intent_signals.length > 0 && (
                     <div>
-                      <h4 className="font-semibold mb-2">Sinais de Intenção ({rawContext.intent_signals.length})</h4>
-                      <div className="space-y-2">
+                      <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-primary" />
+                        Sinais de Intenção Detectados ({rawContext.intent_signals.length})
+                      </h4>
+                      <div className="space-y-3">
                         {rawContext.intent_signals.map((signal: any, i: number) => (
-                          <div key={i} className="rounded border p-3 bg-background text-xs">
-                            <div className="flex items-center justify-between mb-1">
-                              <Badge variant="outline">{signal.signal_type}</Badge>
-                              <Badge>{signal.confidence_score}/100</Badge>
+                          <div key={i} className="rounded-lg border p-3 bg-background">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs">{signal.signal_type}</Badge>
+                              <Badge className="text-xs">{signal.confidence_score}/100</Badge>
                             </div>
-                            <p className="text-sm">{signal.description}</p>
+                            <p className="text-sm mb-1 leading-relaxed font-medium">{signal.description || 'Sinal detectado sem descrição detalhada'}</p>
+                            {signal.source && (
+                              <p className="text-xs text-muted-foreground">Fonte: {signal.source}</p>
+                            )}
+                            {signal.url && (
+                              <a 
+                                href={signal.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline text-xs flex items-center gap-1.5 mt-2"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Ver referência
+                              </a>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -506,19 +606,18 @@ export function QualificationRecommendation({
               </AccordionItem>
             </Accordion>
 
-            {/* CTA Button */}
-            <div className="flex gap-3">
+            {/* CTA Buttons */}
+            <div className="flex gap-3 pt-2">
               {!dealCreated && aiAnalysis.decision === 'GO' && (
                 <Button
                   onClick={handleAddToPipeline}
                   disabled={isPending}
                   size="lg"
-                  className="flex-1"
+                  className="flex-1 font-semibold"
                   variant={recommendation.buttonVariant}
                 >
                   <IconComponent className="h-5 w-5 mr-2" />
                   {recommendation.buttonLabel}
-                  {recommendation.action === 'contact_now' && <span className="ml-2">🔥</span>}
                 </Button>
               )}
 
@@ -527,17 +626,18 @@ export function QualificationRecommendation({
                 variant="outline"
                 size="lg"
                 disabled={isLoadingAnalysis}
+                className="font-medium"
               >
-                <Zap className="h-4 w-4 mr-2" />
-                Gerar Nova Análise
+                <Activity className="h-4 w-4 mr-2" />
+                Regenerar Análise
               </Button>
             </div>
 
             {dealCreated && (
-              <Alert className="border-green-600 bg-green-50 dark:bg-green-950">
+              <Alert className="border-green-600 bg-green-50 dark:bg-green-950/20">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <AlertDescription>
-                  ✅ Deal criado com sucesso! Acesse o pipeline para dar continuidade.
+                  Deal criado com sucesso e adicionado ao pipeline de vendas.
                 </AlertDescription>
               </Alert>
             )}
@@ -545,11 +645,11 @@ export function QualificationRecommendation({
         )}
 
         {/* Metadata */}
-        <div className="pt-3 border-t">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Análise gerada por IA com base em múltiplas fontes de dados
+        <div className="pt-4 border-t mt-2">
+          <div className="flex items-center justify-center text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Powered by Advanced AI Analytics & Multi-Source Intelligence
             </span>
           </div>
         </div>

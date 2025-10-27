@@ -87,90 +87,169 @@ serve(async (req) => {
       .eq('company_id', company_id)
       .single();
 
-    // Construir contexto rico para IA
+    // Construir contexto RICO e DETALHADO para IA
     const context = `
 # ANÁLISE DE QUALIFICAÇÃO 360° - ${company_name}
 
-## 📊 SCORES ATUAIS
+## MÉTRICAS DE QUALIFICAÇÃO
 - **TOTVS Detection Score**: ${totvs_score}/100
 - **Intent Score**: ${intent_score}/100
 
-## 🔍 FONTES DE DETECÇÃO TOTVS (${totvsources.length} fonte(s))
-${totvsources.map((s: any, i: number) => `
-### Fonte ${i + 1}: ${s.source}
-- **Confiança**: ${s.confidence}%
-- **Evidência**: ${s.evidence}
-- **URL**: ${s.url || 'N/A'}
-- **Data**: ${(s.detected_at && !isNaN(new Date(s.detected_at).getTime())) ? new Date(s.detected_at).toLocaleDateString('pt-BR') : 'N/A'}
-`).join('\n')}
+## FONTES DE DETECÇÃO TOTVS (${totvsources.length} fonte(s) válida(s))
 
-## 💡 SINAIS DE INTENÇÃO (${intentSignals?.length || 0} sinal(is))
-${intentSignals?.map((sig: any, i: number) => `
-### Sinal ${i + 1}: ${sig.signal_type}
-- **Tipo**: ${sig.signal_type}
-- **Confiança**: ${sig.confidence_score}/100
-- **Descrição**: ${sig.description || 'N/A'}
-- **Fonte**: ${sig.source || 'N/A'}
-- **Data**: ${(sig.detected_at && !isNaN(new Date(sig.detected_at).getTime())) ? new Date(sig.detected_at).toLocaleDateString('pt-BR') : 'N/A'}
-`).join('\n') || 'Nenhum sinal detectado'}
+${totvsources.length > 0 ? totvsources.map((s: any, i: number) => `
+**Fonte ${i + 1}:**
+- Tipo: ${s.source}
+- Confiança: ${s.confidence}%
+- Evidência Encontrada: "${s.evidence}"
+- URL de Referência: ${s.url || 'Não disponível'}
+- Contexto da Detecção: ${s.context || 'N/A'}
+- Data: ${(s.detected_at && !isNaN(new Date(s.detected_at).getTime())) ? new Date(s.detected_at).toLocaleDateString('pt-BR') : 'Data não registrada'}
+`).join('\n') : 'Nenhuma fonte de detecção TOTVS encontrada.'}
 
-## 🏢 DADOS DA EMPRESA
-- **Nome**: ${company?.name}
-- **CNPJ**: ${company?.cnpj || 'N/A'}
-- **Segmento**: ${company?.segment || 'N/A'}
-- **Funcionários**: ${company?.employees || 'N/A'}
-- **Receita**: ${company?.revenue ? `R$ ${company.revenue.toLocaleString('pt-BR')}` : 'N/A'}
-- **Website**: ${company?.domain || 'N/A'}
-- **Digital Maturity**: ${company?.digital_maturity_score || 'N/A'}/100
+## SINAIS DE INTENÇÃO DE COMPRA (${intentSignals?.length || 0} sinal(is) detectado(s))
 
-## 🎯 MONITORAMENTO
+${intentSignals && intentSignals.length > 0 ? intentSignals.map((sig: any, i: number) => `
+**Sinal ${i + 1}:**
+- Categoria: ${sig.signal_type}
+- Score de Confiança: ${sig.confidence_score}/100
+- Descrição Completa: "${sig.description || 'Sem descrição disponível'}"
+- Fonte de Informação: ${sig.source || 'Fonte não especificada'}
+- URL/Referência: ${sig.url || 'N/A'}
+- Metadata Adicional: ${sig.metadata ? JSON.stringify(sig.metadata) : 'N/A'}
+- Data de Detecção: ${(sig.detected_at && !isNaN(new Date(sig.detected_at).getTime())) ? new Date(sig.detected_at).toLocaleDateString('pt-BR') : 'Data não registrada'}
+- Validade: ${sig.expires_at ? `Válido até ${new Date(sig.expires_at).toLocaleDateString('pt-BR')}` : 'Sem expiração'}
+`).join('\n') : 'Nenhum sinal de intenção detectado para esta empresa.'}
+
+## DADOS CORPORATIVOS DA EMPRESA
+- Nome Oficial: ${company?.name}
+- CNPJ: ${company?.cnpj || 'Não disponível'}
+- Segmento de Atuação: ${company?.segment || 'Não identificado'}
+- Porte (Funcionários): ${company?.employees || 'Não disponível'}
+- Receita Anual Estimada: ${company?.revenue ? `R$ ${company.revenue.toLocaleString('pt-BR')}` : 'Não disponível'}
+- Website Oficial: ${company?.domain || 'Não disponível'}
+- Maturidade Digital (Score): ${company?.digital_maturity_score || 'Não avaliado'}/100
+- Localização: ${company?.city || 'N/A'}, ${company?.state || 'N/A'}
+
+## STATUS DE MONITORAMENTO
 ${competitors ? `
-- **Monitoramento ativo**: Sim
-- **Última verificação TOTVS**: {(competitors.last_totvs_check_at && !isNaN(new Date(competitors.last_totvs_check_at).getTime())) ? new Date(competitors.last_totvs_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
-- **Última verificação Intent**: {(competitors.last_intent_check_at && !isNaN(new Date(competitors.last_intent_check_at).getTime())) ? new Date(competitors.last_intent_check_at).toLocaleDateString('pt-BR') : 'Nunca'}
-` : '- **Monitoramento ativo**: Não'}
+- Monitoramento Ativo: Sim
+- Última Verificação TOTVS: ${(competitors.last_totvs_check_at && !isNaN(new Date(competitors.last_totvs_check_at).getTime())) ? new Date(competitors.last_totvs_check_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Nunca verificado'}
+- Última Verificação Intent: ${(competitors.last_intent_check_at && !isNaN(new Date(competitors.last_intent_check_at).getTime())) ? new Date(competitors.last_intent_check_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Nunca verificado'}
+- Frequência de Verificação: A cada ${competitors.check_frequency_hours || 24} horas
+` : '- Monitoramento Ativo: Não configurado'}
+
+---
+
+## INSTRUÇÕES PARA ANÁLISE CONTEXTUAL:
+
+1. **ANALISE PROFUNDAMENTE** cada fonte e sinal listado acima
+2. **CITE ESPECIFICAMENTE** as evidências encontradas (URLs, descrições, contextos)
+3. **INTERPRETE O CONTEXTO**: não basta listar scores, explique O QUE FOI ENCONTRADO e POR QUE IMPORTA
+4. **VALIDE A QUALIDADE**: questione se as fontes são realmente relevantes para a empresa específica
+5. **SEJA CRÍTICO**: identifique falsos positivos (ex: "funcionário lista TOTVS" vs "empresa usa TOTVS")
+6. **DECISÃO LÓGICA**: sua recomendação DEVE ser consistente com os dados:
+   - Se confidence = "low" e priority = "cold" → NÃO pode ser decision = "GO"
+   - Se TOTVS Score alto → NÃO pode recomendar prospecção
+   - Se Intent Score baixo + poucos sinais válidos → deve ser "cold" ou "monitor", não "hot"
 `;
 
-    const systemPrompt = `Você é um analista sênior de vendas B2B especializado em qualificação de leads para soluções ERP.
+    const systemPrompt = `Você é um Analista Sênior de Inteligência Comercial B2B, especializado em qualificação estratégica de leads para soluções ERP corporativas.
 
-**SUA MISSÃO**: Analisar PROFUNDAMENTE todos os dados coletados sobre a empresa e gerar uma recomendação FUNDAMENTADA sobre GO (seguir com prospecção) ou NO-GO (desqualificar lead).
+**RESPONSABILIDADES PRINCIPAIS:**
+- Conduzir análise 360° profunda baseada em múltiplas fontes de inteligência de mercado
+- Avaliar viabilidade comercial com base em dados concretos, não suposições
+- Gerar recomendações executivas fundamentadas em evidências verificáveis
+- Identificar riscos, oportunidades e pontos de atenção críticos
 
-**REGRAS DE DECISÃO**:
-1. **NO-GO AUTOMÁTICO** se TOTVS Score >= 70 (alta evidência de uso de TOTVS)
-2. **GO CAUTELOSO** se TOTVS Score entre 40-69 (possível uso, investigar mais)
-3. **GO QUENTE** se Intent Score >= 70 + TOTVS Score < 40 (alta intenção + não usa TOTVS)
-4. **GO MORNO** se Intent Score entre 40-69 + TOTVS Score < 40 (alguma intenção)
-5. **GO FRIO** se Intent Score < 40 + TOTVS Score < 40 (baixa intenção mas qualificado)
+**REGRAS DE DECISÃO (CRITÉRIOS RÍGIDOS):**
 
-**FORMATO DE RESPOSTA** (JSON):
+1. **NO-GO IMEDIATO** → TOTVS Score ≥ 70
+   - Alta evidência de uso atual de TOTVS
+   - Recursos devem ser alocados para leads mais promissores
+
+2. **GO COM CAUTELA** → TOTVS Score 40-69
+   - Evidências inconclusivas de uso de TOTVS
+   - Requer investigação adicional antes de investimento comercial
+
+3. **GO PRIORIDADE HOT** → Intent Score ≥ 70 + TOTVS Score < 40
+   - Alta intenção de compra + sem uso confirmado de TOTVS
+   - Momento ideal para abordagem comercial agressiva
+
+4. **GO PRIORIDADE WARM** → Intent Score 40-69 + TOTVS Score < 40
+   - Sinais moderados de interesse + não usa TOTVS
+   - Oportunidade válida com abordagem estratégica
+
+5. **GO PRIORIDADE COLD** → Intent Score < 40 + TOTVS Score < 40
+   - Baixos sinais de intenção, mas qualificado para nurturing
+   - Monitoramento contínuo e relacionamento de longo prazo
+
+**LÓGICA DE CONFIANÇA (CONSISTENCY CHECK):**
+- Se data_quality = "low" → confidence DEVE ser "low"
+- Se poucos sinais válidos (< 2) → confidence DEVE ser "low" ou "medium"
+- Se contradições nos dados → confidence DEVE ser "low"
+- NUNCA retorne decision = "GO" com confidence = "low" E priority = "cold"
+  - Nesse caso, ajuste para "monitor" ou aumente confidence se justificável
+
+**FORMATO DE RESPOSTA ESTRUTURADO (JSON):**
 {
   "decision": "GO" | "NO-GO",
   "confidence": "high" | "medium" | "low",
   "priority": "hot" | "warm" | "cold" | "disqualified",
-  "executive_summary": "Resumo executivo em 2-3 linhas do porquê da decisão",
+  "executive_summary": "Resumo executivo de 2-4 linhas explicando CLARAMENTE a decisão, citando AS EVIDÊNCIAS ESPECÍFICAS encontradas e o raciocínio estratégico por trás da recomendação.",
   "deep_analysis": {
-    "totvs_analysis": "Análise detalhada das evidências de uso de TOTVS (ou ausência delas)",
-    "intent_analysis": "Análise dos sinais de intenção de compra encontrados",
-    "opportunity_analysis": "Análise do potencial de negócio e fit com solução",
-    "risk_analysis": "Análise de riscos e pontos de atenção"
+    "totvs_analysis": "Análise crítica e detalhada de CADA fonte de detecção TOTVS listada. Cite URLs, contextos específicos, e avalie se são realmente indicativos de uso pela EMPRESA (não apenas menções genéricas). Identifique falsos positivos. Mínimo 4 linhas.",
+    "intent_analysis": "Análise aprofundada de CADA sinal de intenção detectado. Cite as descrições completas, fontes, URLs e explique O QUE cada sinal significa no contexto comercial. Avalie a qualidade e relevância de cada sinal. Mínimo 4 linhas.",
+    "opportunity_analysis": "Avaliação estratégica do potencial de negócio. Considere: tamanho da empresa, segmento, maturidade digital, sinais de crescimento/investimento. Identifique fit com solução e tamanho de deal potencial. Seja específico sobre VALOR e TIMING. Mínimo 3 linhas.",
+    "risk_analysis": "Identificação crítica de riscos comerciais: uso de TOTVS, concorrência, timing inadequado, falta de budget, falta de dor identificada. Seja honesto sobre limitações dos dados. Mínimo 3 linhas."
   },
   "action_plan": {
-    "immediate_actions": ["ação 1", "ação 2", "ação 3"],
-    "talking_points": ["ponto 1", "ponto 2", "ponto 3"],
-    "objections_to_anticipate": ["objeção 1", "objeção 2"]
+    "immediate_actions": [
+      "Ação específica e acionável 1 (ex: 'Ligar para João Silva, Diretor de TI, telefone encontrado no LinkedIn')",
+      "Ação específica e acionável 2 (ex: 'Enviar case de ROI do segmento X baseado em métrica Y identificada')",
+      "Ação específica e acionável 3 (ex: 'Pesquisar mais sobre projeto Z mencionado na notícia de DD/MM/AAAA')"
+    ],
+    "talking_points": [
+      "Argumento de venda específico 1 baseado nos dados coletados",
+      "Argumento de venda específico 2 que conecta à dor/oportunidade identificada",
+      "Argumento de venda específico 3 que diferencia da concorrência"
+    ],
+    "objections_to_anticipate": [
+      "Objeção provável 1 com base nos dados (ex: 'Já usamos TOTVS há X anos')",
+      "Objeção provável 2 (ex: 'Não temos budget aprovado para mudança de ERP')"
+    ]
   },
   "sources_summary": {
-    "strongest_evidence": "Qual a evidência mais forte encontrada?",
-    "weakest_point": "Qual o ponto mais fraco da análise?",
-    "data_quality": "high" | "medium" | "low"
+    "strongest_evidence": "Cite ESPECIFICAMENTE qual foi a evidência mais forte encontrada (fonte, descrição, URL) e POR QUE ela é relevante.",
+    "weakest_point": "Identifique HONESTAMENTE qual é a maior lacuna ou ponto fraco na análise. O que falta saber?",
+    "data_quality": "high" | "medium" | "low" (baseado na quantidade, relevância e confiabilidade das fontes)"
   }
 }
 
-**IMPORTANTE**: 
-- Seja ESPECÍFICO citando as fontes reais encontradas
-- Não invente dados, use APENAS o que foi coletado
-- Se faltar informação, mencione isso claramente
-- Pense como um SDR experiente: contexto, timing, fit, urgência`;
+**DIRETRIZES CRÍTICAS DE ANÁLISE:**
+
+✅ FAÇA:
+- Cite URLs, descrições e contextos específicos das fontes
+- Seja crítico e questione a relevância de cada fonte
+- Identifique falsos positivos (ex: "vaga menciona TOTVS" ≠ "empresa usa TOTVS")
+- Conecte os sinais ao contexto de negócio da empresa específica
+- Seja honesto sobre limitações e lacunas nos dados
+- Garanta consistência lógica entre decision, confidence e priority
+
+❌ NÃO FAÇA:
+- Gerar respostas genéricas sem citar fontes específicas
+- Repetir os scores sem interpretar o que significam
+- Inventar dados que não foram fornecidos
+- Ignorar contradições ou dados de baixa qualidade
+- Recomendar "GO" quando confidence é "low" e priority é "cold"
+- Usar termos vagos como "alguns sinais" - seja específico: "3 sinais encontrados: X, Y, Z"
+
+**CHECKLIST FINAL ANTES DE RESPONDER:**
+1. ✓ Citei fontes específicas com URLs e contextos?
+2. ✓ Minha decisão é logicamente consistente com os scores e prioridade?
+3. ✓ Identifiquei falsos positivos e avaliei qualidade das fontes?
+4. ✓ Fui específico nas ações imediatas (não genérico "pesquisar mais")?
+5. ✓ Avaliei honestamente as limitações dos dados disponíveis?`;
 
     // Chamar OpenAI (GPT-5)
     console.log('[AI Qualification] Calling OpenAI GPT-5 for deep analysis...');
@@ -188,7 +267,7 @@ ${competitors ? `
           { role: 'system', content: systemPrompt },
           { role: 'user', content: context }
         ],
-        max_completion_tokens: 2000,
+        max_completion_tokens: 4000, // Aumentado para permitir análises mais detalhadas
       }),
     });
 
