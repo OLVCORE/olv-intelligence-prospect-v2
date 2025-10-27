@@ -26,9 +26,9 @@ serve(async (req) => {
   try {
     const { companyId, companyName, domain, location } = await req.json();
     
-    if (!companyId || !companyName) {
+    if (!companyName) {
       return new Response(
-        JSON.stringify({ error: 'companyId e companyName são obrigatórios' }),
+        JSON.stringify({ error: 'companyName é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -253,8 +253,8 @@ serve(async (req) => {
     // Pegar o melhor match
     const bestMatch = uniqueCandidates[0];
 
-    // Se confiança >= 80%, aplicar automaticamente
-    if (bestMatch.confidence >= 80) {
+    // Se confiança >= 80% E tem companyId, aplicar automaticamente
+    if (bestMatch.confidence >= 80 && companyId) {
       const { error } = await supabase
         .from('companies')
         .update({ 
