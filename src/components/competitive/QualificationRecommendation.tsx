@@ -322,8 +322,8 @@ export function QualificationRecommendation({
               variant={aiAnalysis.decision === 'NO-GO' ? 'destructive' : 'default'}
               className={`border-2 shadow-lg ${
                 aiAnalysis.decision === 'NO-GO' 
-                  ? 'bg-gradient-to-br from-destructive/20 via-destructive/10 to-destructive/5 border-destructive' 
-                  : 'bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-primary'
+                  ? 'bg-destructive/10 border-destructive' 
+                  : 'bg-primary/10 border-primary'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -367,12 +367,12 @@ export function QualificationRecommendation({
                         {aiAnalysis.priority === 'disqualified' && '⛔ Descartado'}
                       </Badge>
                     </div>
-                    <div className={`p-4 rounded-lg border ${
+                    <div className={`p-4 rounded-lg border bg-card ${
                       aiAnalysis.decision === 'NO-GO' 
-                        ? 'bg-destructive/5 border-destructive/30' 
-                        : 'bg-background/80 border-primary/20'
+                        ? 'border-destructive/30' 
+                        : 'border-primary/20'
                     }`}>
-                      <p className="text-sm leading-relaxed font-medium">{aiAnalysis.executive_summary}</p>
+                      <p className="text-sm leading-relaxed font-medium text-card-foreground">{aiAnalysis.executive_summary}</p>
                     </div>
                   </div>
                 </AlertDescription>
@@ -381,14 +381,14 @@ export function QualificationRecommendation({
 
             {/* Tabela Executiva de Scores */}
             <div className="grid grid-cols-2 gap-4">
-              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all ${
+              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all bg-card ${
                 totvsScore > 0 
-                  ? 'bg-gradient-to-br from-destructive/15 via-destructive/5 to-background border-destructive/50 shadow-destructive/10 shadow-lg' 
-                  : 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-background border-green-500/30 shadow-green-500/5 shadow-lg'
+                  ? 'border-destructive/50 shadow-destructive/10 shadow-lg' 
+                  : 'border-green-500/30 shadow-green-500/5 shadow-lg'
               }`}>
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-foreground">Detecção TOTVS</span>
+                    <span className="text-sm font-bold text-card-foreground">Detecção TOTVS</span>
                     <div className={`p-2 rounded-full ${totvsScore > 0 ? 'bg-destructive/20' : 'bg-green-500/20'}`}>
                       <Shield className={`h-5 w-5 ${totvsScore > 0 ? 'text-destructive' : 'text-green-600'}`} />
                     </div>
@@ -398,7 +398,7 @@ export function QualificationRecommendation({
                   </div>
                   <Badge 
                     variant={totvsScore > 0 ? 'destructive' : 'outline'} 
-                    className={`mt-3 text-xs font-bold ${totvsScore === 0 ? 'border-green-600 text-green-700 bg-green-50' : ''}`}
+                    className={`mt-3 text-xs font-bold ${totvsScore === 0 ? 'border-green-600 text-green-700 bg-green-500/10' : ''}`}
                   >
                     {totvsScore > 0 ? '⛔ Cliente TOTVS - Bloqueado' : '✅ Sem TOTVS - Liberado'}
                   </Badge>
@@ -410,16 +410,16 @@ export function QualificationRecommendation({
                 </div>
               </div>
 
-              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all ${
+              <div className={`relative border-2 rounded-lg p-5 overflow-hidden transition-all bg-card ${
                 intentScore >= 70 
-                  ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-background border-primary/50 shadow-primary/10 shadow-lg' 
+                  ? 'border-primary/50 shadow-primary/10 shadow-lg' 
                   : intentScore >= 40
-                  ? 'bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-background border-yellow-500/30 shadow-yellow-500/5 shadow-lg'
-                  : 'bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-background border-blue-500/30 shadow-blue-500/5 shadow-lg'
+                  ? 'border-yellow-500/30 shadow-yellow-500/5 shadow-lg'
+                  : 'border-blue-500/30 shadow-blue-500/5 shadow-lg'
               }`}>
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-foreground">Intenção de Compra</span>
+                    <span className="text-sm font-bold text-card-foreground">Intenção de Compra</span>
                     <div className={`p-2 rounded-full ${
                       intentScore >= 70 ? 'bg-primary/20' : 
                       intentScore >= 40 ? 'bg-yellow-500/20' : 'bg-blue-500/20'
