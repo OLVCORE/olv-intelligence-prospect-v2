@@ -1,28 +1,39 @@
-import { useState, useMemo } from 'react';
+// ==========================================
+// SeniorDecisorsPanel - Interface Apollo-Style Completa
+// ==========================================
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Mail, Linkedin, Phone, Search, Filter, Users, Building2, MapPin, CheckCircle2, ChevronDown, UserCheck, Download, ListPlus, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Search, Filter, Mail, Phone, Linkedin, MapPin, Building2, Target, Download, UserPlus, ExternalLink, CheckCircle, AlertCircle, Info, Users } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 interface Decisor {
-  id: string;
+  id?: string;
   name: string;
   title?: string;
   email?: string;
   phone?: string;
   linkedin_url?: string;
-  department?: string;
   seniority?: string;
+  department?: string;
+  location?: string;
   email_status?: 'verified' | 'guessed' | 'unavailable';
+  contact_accuracy_score?: number;
+  intent_signal?: string;
   source?: string;
+  company_name?: string;
+  employee_count?: number;
+  company_industries?: string[];
+  company_keywords?: string[];
+  raw_data?: any;
 }
 
 interface SeniorDecisorsPanelProps {
@@ -30,470 +41,503 @@ interface SeniorDecisorsPanelProps {
   companyName?: string;
 }
 
-// Função para determinar senioridade baseada no título
+// ==========================================
+// Função para determinar nível de senioridade
+// ==========================================
 const getSeniorityLevel = (title?: string): { level: string; rank: number } => {
-  if (!title) return { level: 'Unknown', rank: 0 };
-  
-  const titleLower = title.toLowerCase();
-  
-  // C-Level (Rank 6)
-  if (titleLower.match(/\b(ceo|cto|cfo|coo|cio|cmo|president|presidente|chairman|owner|proprietário|sócio)\b/)) {
-    return { level: 'C-Level', rank: 6 };
+  if (!title) return { level: 'N/A', rank: 99 };
+  const t = title.toLowerCase();
+
+  // C-Level
+  if (/\b(ceo|cto|cfo|coo|cmo|cio|cso|chief|presidente|president)\b/.test(t)) {
+    return { level: 'C-Level', rank: 1 };
   }
-  
-  // VP / Vice President (Rank 5)
-  if (titleLower.match(/\b(vp|vice.president|vice.presidente)\b/)) {
-    return { level: 'VP', rank: 5 };
+  // VP / Vice President
+  if (/\b(vp|vice.?president|vice.?presidente)\b/.test(t)) {
+    return { level: 'VP', rank: 2 };
   }
-  
-  // Director / Diretor (Rank 4)
-  if (titleLower.match(/\b(director|diretor|diretora|head of|head da)\b/)) {
-    return { level: 'Director', rank: 4 };
+  // Director / Diretor
+  if (/\b(director|diretor|diretora)\b/.test(t)) {
+    return { level: 'Director', rank: 3 };
   }
-  
-  // Manager / Gerente (Rank 3)
-  if (titleLower.match(/\b(manager|gerente|coordinator|coordenador|coordenadora|account manager)\b/)) {
-    return { level: 'Manager', rank: 3 };
+  // Head / Líder
+  if (/\b(head|líder|leader|lider)\b/.test(t)) {
+    return { level: 'Head', rank: 4 };
   }
-  
-  // Supervisor (Rank 2)
-  if (titleLower.match(/\b(supervisor|supervisora|lead|líder|team lead)\b/)) {
-    return { level: 'Supervisor', rank: 2 };
+  // Manager / Gerente
+  if (/\b(manager|gerente|gestor)\b/.test(t)) {
+    return { level: 'Manager', rank: 5 };
   }
-  
-  // Specialist / Analyst / Professional (Rank 1)
-  if (titleLower.match(/\b(specialist|especialista|analyst|analista|consultant|consultor|buyer|comprador|purchaser|inside sales|sales|vendas|vendedor|executive|executivo|professional|profissional|pleno|senior|sênior|jr|junior|júnior)\b/)) {
-    return { level: 'Professional', rank: 1 };
+  // Coordinator / Coordenador
+  if (/\b(coordinator|coordenador|coordenadora)\b/.test(t)) {
+    return { level: 'Coordinator', rank: 6 };
   }
-  
-  // Assistant / Auxiliary (Rank 1)
-  if (titleLower.match(/\b(assistant|assistente|auxiliar|auxiliary|secretary|secretária|administrative|administrativo|administrativa|intern|estagiário|trainee|aprendiz)\b/)) {
-    return { level: 'Corporate', rank: 1 };
+  // Specialist / Especialista
+  if (/\b(specialist|especialista|senior|pleno)\b/.test(t)) {
+    return { level: 'Specialist', rank: 7 };
   }
-  
-  // Department roles (Rank 1)
-  if (titleLower.match(/\b(department|departamento|finance|financeiro|financial|sales|commercial|comercial|marketing|operations|operações|hr|rh|human resources|it|ti|technology|procurement|suprimentos|logistics|logística)\b/)) {
-    return { level: 'Corporate', rank: 1 };
+  // Analyst / Analista
+  if (/\b(analyst|analista|junior)\b/.test(t)) {
+    return { level: 'Analyst', rank: 8 };
   }
-  
-  // Excluir apenas cargos operacionais
-  if (titleLower.match(/\b(operator|operador|operadora|driver|motorista|forklift|empilhadeira|production worker|operário|ajudante|helper|mechanic|mecânico|technician|técnico de manutenção|porter|porteiro|cleaner|faxineiro|guard|segurança)\b/)) {
-    return { level: 'Operational', rank: 0 };
+  // Assistant / Assistente
+  if (/\b(assistant|assistente|auxiliar)\b/.test(t)) {
+    return { level: 'Assistant', rank: 9 };
   }
-  
-  return { level: 'Corporate', rank: 1 };
+
+  return { level: 'Other', rank: 10 };
 };
 
+// ==========================================
+// Função para determinar departamento
+// ==========================================
+const getDepartment = (title?: string): string => {
+  if (!title) return 'N/A';
+  const t = title.toLowerCase();
+
+  if (/\b(sales|vendas|comercial|account)\b/.test(t)) return 'Sales';
+  if (/\b(marketing|mkt|brand)\b/.test(t)) return 'Marketing';
+  if (/\b(tech|tecnologia|ti|it|desenvolvimento|developer|engenharia|engineering|cto)\b/.test(t)) return 'Technology';
+  if (/\b(finance|financeiro|contabil|contabilidade|cfo|tesouraria)\b/.test(t)) return 'Finance';
+  if (/\b(operations|operações|logística|supply|coo)\b/.test(t)) return 'Operations';
+  if (/\b(hr|rh|recursos.?humanos|human.?resources|people)\b/.test(t)) return 'HR';
+  if (/\b(product|produto|pmo)\b/.test(t)) return 'Product';
+  if (/\b(legal|jurídico|compliance)\b/.test(t)) return 'Legal';
+  if (/\b(customer|cliente|success|suporte|support|atendimento)\b/.test(t)) return 'Customer Success';
+
+  return 'Other';
+};
+
+// ==========================================
+// Função para qualidade do contato
+// ==========================================
+const getContactQuality = (decisor: Decisor): { label: string; color: string; score: number } => {
+  let score = decisor.contact_accuracy_score || 0;
+  
+  if (!score) {
+    if (decisor.email) score += 40;
+    if (decisor.phone) score += 20;
+    if (decisor.linkedin_url) score += 20;
+    if (decisor.email_status === 'verified') score += 20;
+  }
+
+  if (score >= 80) return { label: 'Excellent', color: 'text-green-600', score };
+  if (score >= 50) return { label: 'Good', color: 'text-blue-600', score };
+  if (score >= 30) return { label: 'Fair', color: 'text-orange-600', score };
+  return { label: 'Poor', color: 'text-gray-500', score };
+};
+
+// ==========================================
+// Componente Principal
+// ==========================================
 export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [selectedDecisors, setSelectedDecisors] = useState<string[]>([]);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  const [selectedDecisors, setSelectedDecisors] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'senior'>('all');
 
-  // Processar todos os decisores
-  const allDecisors = useMemo(() => {
-    return decisors
-      .map(d => ({
+  // Processar decisores
+  const processedDecisors = useMemo(() => {
+    return decisors.map(d => {
+      const seniorityInfo = getSeniorityLevel(d.title);
+      const department = getDepartment(d.title);
+      const quality = getContactQuality(d);
+
+      return {
         ...d,
-        seniorityInfo: getSeniorityLevel(d.title)
-      }))
-      .sort((a, b) => b.seniorityInfo.rank - a.seniorityInfo.rank);
+        seniorityLevel: seniorityInfo.level,
+        seniorityRank: seniorityInfo.rank,
+        department,
+        quality,
+      };
+    }).sort((a, b) => a.seniorityRank - b.seniorityRank);
   }, [decisors]);
 
-  // Aplicar filtros
+  // Extrair opções únicas para filtros
+  const uniqueLevels = useMemo(() => {
+    const levels = Array.from(new Set(processedDecisors.map(d => d.seniorityLevel)))
+      .filter(l => l !== 'N/A');
+    
+    return levels.sort((a, b) => {
+      const rankA = processedDecisors.find(d => d.seniorityLevel === a)?.seniorityRank || 99;
+      const rankB = processedDecisors.find(d => d.seniorityLevel === b)?.seniorityRank || 99;
+      return rankA - rankB;
+    });
+  }, [processedDecisors]);
+
+  const uniqueDepartments = useMemo(() => 
+    Array.from(new Set(processedDecisors.map(d => d.department).filter(d => d !== 'N/A'))).sort(),
+    [processedDecisors]
+  );
+
+  // Filtrar decisores
   const filteredDecisors = useMemo(() => {
-    return allDecisors.filter(decisor => {
-      // Filtro de busca
-      const matchesSearch = !searchTerm || 
-        decisor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        decisor.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        decisor.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Filtro de nível
-      const matchesLevel = selectedLevels.length === 0 || selectedLevels.includes(decisor.seniorityInfo.level);
-      
-      // Filtro de departamento
-      const matchesDepartment = selectedDepartments.length === 0 || 
-        (decisor.department && selectedDepartments.includes(decisor.department));
-      
-      // Filtro de tab
-      let matchesTab = true;
-      if (activeTab === 'verified') {
-        matchesTab = decisor.email_status === 'verified';
-      } else if (activeTab === 'senior') {
-        matchesTab = decisor.seniorityInfo.rank >= 3;
-      }
-      
-      return matchesSearch && matchesLevel && matchesDepartment && matchesTab;
-    });
-  }, [allDecisors, searchTerm, selectedLevels, selectedDepartments, activeTab]);
+    let filtered = processedDecisors;
 
-  // Extrair níveis e departamentos únicos
-  const availableLevels = useMemo(() => {
-    const levels = new Set(allDecisors.map(d => d.seniorityInfo.level));
-    return Array.from(levels).sort((a, b) => {
-      const rankA = allDecisors.find(d => d.seniorityInfo.level === a)?.seniorityInfo.rank || 0;
-      const rankB = allDecisors.find(d => d.seniorityInfo.level === b)?.seniorityInfo.rank || 0;
-      return rankB - rankA;
-    });
-  }, [allDecisors]);
+    // Filtro por tab
+    if (activeTab === 'verified') {
+      filtered = filtered.filter(d => d.email_status === 'verified');
+    } else if (activeTab === 'senior') {
+      filtered = filtered.filter(d => ['C-Level', 'VP', 'Director'].includes(d.seniorityLevel));
+    }
 
-  const availableDepartments = useMemo(() => {
-    const depts = new Set(allDecisors.map(d => d.department).filter(Boolean));
-    return Array.from(depts) as string[];
-  }, [allDecisors]);
+    // Filtro por busca
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(d => 
+        d.name?.toLowerCase().includes(term) ||
+        d.title?.toLowerCase().includes(term) ||
+        d.email?.toLowerCase().includes(term) ||
+        d.department?.toLowerCase().includes(term)
+      );
+    }
+
+    // Filtro por níveis
+    if (selectedLevels.length > 0) {
+      filtered = filtered.filter(d => selectedLevels.includes(d.seniorityLevel));
+    }
+
+    // Filtro por departamentos
+    if (selectedDepartments.length > 0) {
+      filtered = filtered.filter(d => selectedDepartments.includes(d.department));
+    }
+
+    return filtered;
+  }, [processedDecisors, activeTab, searchTerm, selectedLevels, selectedDepartments]);
 
   // Estatísticas
-  const stats = useMemo(() => {
-    const withEmail = allDecisors.filter(d => d.email).length;
-    const withLinkedIn = allDecisors.filter(d => d.linkedin_url).length;
-    const withPhone = allDecisors.filter(d => d.phone).length;
-    
-    return {
-      total: allDecisors.length,
-      withEmail,
-      withLinkedIn,
-      withPhone,
-      emailRate: Math.round((withEmail / allDecisors.length) * 100) || 0,
-      linkedInRate: Math.round((withLinkedIn / allDecisors.length) * 100) || 0
-    };
-  }, [allDecisors]);
+  const stats = useMemo(() => ({
+    total: filteredDecisors.length,
+    withEmail: filteredDecisors.filter(d => d.email).length,
+    verified: filteredDecisors.filter(d => d.email_status === 'verified').length,
+    withLinkedIn: filteredDecisors.filter(d => d.linkedin_url).length,
+    senior: filteredDecisors.filter(d => d.seniorityRank <= 3).length,
+  }), [filteredDecisors]);
 
-  // Cálculo de razão de qualificação
-  const getLeadQualificationReason = (decisor: Decisor & { seniorityInfo: { level: string; rank: number } }): string => {
-    const reasons = [];
-    if (decisor.seniorityInfo.rank >= 3) reasons.push('Seniority');
-    if (decisor.email && decisor.email_status === 'verified') reasons.push('Email Verificado');
-    if (decisor.linkedin_url) reasons.push('LinkedIn');
-    return reasons.length > 0 ? reasons.join(', ') : 'Contato Identificado';
-  };
-
-  // Determinar qualidade do lead
-  const getLeadQuality = (decisor: Decisor & { seniorityInfo: { level: string; rank: number } }): 'excellent' | 'good' | 'fair' => {
-    if (decisor.seniorityInfo.rank >= 4 && decisor.email && decisor.email_status === 'verified') return 'excellent';
-    if (decisor.seniorityInfo.rank >= 3 || (decisor.email && decisor.email_status === 'verified')) return 'good';
-    return 'fair';
-  };
-
-  // Selecionar/desselecionar todos
-  const toggleSelectAll = () => {
-    if (selectedDecisors.length === filteredDecisors.length) {
-      setSelectedDecisors([]);
+  // Handlers
+  const toggleDecisor = (id: string) => {
+    const newSelected = new Set(selectedDecisors);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
     } else {
-      setSelectedDecisors(filteredDecisors.map(d => d.id));
+      newSelected.add(id);
     }
+    setSelectedDecisors(newSelected);
   };
 
-  // Selecionar/desselecionar um decisor
-  const toggleSelectDecisor = (id: string) => {
-    if (selectedDecisors.includes(id)) {
-      setSelectedDecisors(selectedDecisors.filter(d => d !== id));
-    } else {
-      setSelectedDecisors([...selectedDecisors, id]);
-    }
+  const toggleLevel = (level: string) => {
+    setSelectedLevels(prev => 
+      prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
+    );
   };
+
+  const toggleDepartment = (dept: string) => {
+    setSelectedDepartments(prev => 
+      prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]
+    );
+  };
+
+  const handleExport = () => {
+    const selected = filteredDecisors.filter(d => d.id && selectedDecisors.has(d.id));
+    console.log('Exportando contatos:', selected);
+    // TODO: Implementar exportação
+  };
+
+  if (decisors.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <p className="text-muted-foreground">Nenhum decisor encontrado</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Use os botões de enriquecimento para buscar contatos
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <>
-      <Card className="border-none shadow-none">
-        <CardHeader className="px-0 pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Apollo Intelligence
-              </CardTitle>
-              <CardDescription className="text-sm mt-1">
-                {filteredDecisors.length} contato(s) • {stats.withEmail} com email • {stats.emailRate}% cobertura
-              </CardDescription>
-            </div>
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Target className="h-6 w-6 text-primary" />
+              Decision Makers
+              {companyName && <span className="text-muted-foreground text-lg">@ {companyName}</span>}
+            </CardTitle>
+            <CardDescription className="mt-2">
+              {stats.total} contatos • {stats.withEmail} com email • {stats.verified} verificados • {stats.senior} seniores
+            </CardDescription>
           </div>
+        </div>
+      </CardHeader>
 
-          {/* Tabs e Busca */}
-          <div className="space-y-4 mt-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
-                <TabsTrigger 
-                  value="all" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Todos ({allDecisors.length})
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="verified" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Email Verificado ({allDecisors.filter(d => d.email_status === 'verified').length})
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="senior" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Seniores ({allDecisors.filter(d => d.seniorityInfo.rank >= 3).length})
-                </TabsTrigger>
-              </TabsList>
+      <CardContent className="space-y-4">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All ({processedDecisors.length})</TabsTrigger>
+            <TabsTrigger value="verified">
+              Verified Email ({processedDecisors.filter(d => d.email_status === 'verified').length})
+            </TabsTrigger>
+            <TabsTrigger value="senior">
+              Senior ({processedDecisors.filter(d => d.seniorityRank <= 3).length})
+            </TabsTrigger>
+          </TabsList>
 
-              <TabsContent value={activeTab} className="mt-4 space-y-4">
-                {/* Barra de Filtros e Busca */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Show Filters Button */}
-                  <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="gap-2 justify-start">
-                        <Filter className="h-4 w-4" />
-                        Filtros
-                        {(selectedLevels.length > 0 || selectedDepartments.length > 0) && (
-                          <Badge variant="secondary" className="ml-1">
-                            {selectedLevels.length + selectedDepartments.length}
-                          </Badge>
-                        )}
-                        <ChevronDown className="h-4 w-4 ml-auto" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium text-sm mb-3">Níveis de Senioridade</h4>
-                          <div className="space-y-2">
-                            {availableLevels.map((level) => (
-                              <div key={level} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`filter-level-${level}`}
-                                  checked={selectedLevels.includes(level)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedLevels([...selectedLevels, level]);
-                                    } else {
-                                      setSelectedLevels(selectedLevels.filter(l => l !== level));
-                                    }
-                                  }}
-                                />
-                                <Label htmlFor={`filter-level-${level}`} className="text-sm font-normal cursor-pointer">
-                                  {level}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+          {/* Barra de Busca e Filtros */}
+          <div className="flex items-center gap-2 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search people"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
 
-                        {availableDepartments.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-sm mb-3">Departamentos</h4>
-                            <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                              {availableDepartments.map((dept) => (
-                                <div key={dept} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`filter-dept-${dept}`}
-                                    checked={selectedDepartments.includes(dept)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedDepartments([...selectedDepartments, dept]);
-                                      } else {
-                                        setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
-                                      }
-                                    }}
-                                  />
-                                  <Label htmlFor={`filter-dept-${dept}`} className="text-sm font-normal cursor-pointer">
-                                    {dept}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {(selectedLevels.length > 0 || selectedDepartments.length > 0) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedLevels([]);
-                              setSelectedDepartments([]);
-                            }}
-                            className="w-full"
-                          >
-                            Limpar todos os filtros
-                          </Button>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Busca */}
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar pessoas..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                {/* Tabela de Contatos - Estilo Apollo */}
-                {filteredDecisors.length === 0 ? (
-                  <div className="text-center py-12 border rounded-lg">
-                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground">Nenhum contato encontrado</p>
-                    <p className="text-sm text-muted-foreground mt-1">Ajuste os filtros ou busque novamente</p>
-                  </div>
-                ) : (
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50 hover:bg-muted/50">
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={selectedDecisors.length === filteredDecisors.length && filteredDecisors.length > 0}
-                              onCheckedChange={toggleSelectAll}
-                            />
-                          </TableHead>
-                          <TableHead className="font-semibold">Nome</TableHead>
-                          <TableHead className="font-semibold">Razão</TableHead>
-                          <TableHead className="font-semibold">Email</TableHead>
-                          <TableHead className="font-semibold">Localização</TableHead>
-                          <TableHead className="font-semibold">Departamento</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredDecisors.map((decisor) => {
-                          const quality = getLeadQuality(decisor);
-                          
+            <Popover open={showFilters} onOpenChange={setShowFilters}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Show Filters
+                  {(selectedLevels.length > 0 || selectedDepartments.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedLevels.length + selectedDepartments.length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="space-y-4">
+                  {uniqueLevels.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Seniority Levels</h4>
+                      <div className="space-y-2">
+                        {uniqueLevels.map(level => {
+                          const count = processedDecisors.filter(d => d.seniorityLevel === level).length;
                           return (
-                            <TableRow key={decisor.id} className="hover:bg-muted/30">
-                              <TableCell>
+                            <div key={level} className="flex items-center justify-between">
+                              <label className="flex items-center gap-2 cursor-pointer flex-1">
                                 <Checkbox
-                                  checked={selectedDecisors.includes(decisor.id)}
-                                  onCheckedChange={() => toggleSelectDecisor(decisor.id)}
+                                  checked={selectedLevels.includes(level)}
+                                  onCheckedChange={() => toggleLevel(level)}
                                 />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="h-10 w-10">
-                                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                                      {decisor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium">{decisor.name}</div>
-                                    <div className="text-sm text-muted-foreground">{decisor.title || 'Cargo não especificado'}</div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-2">
-                                  {quality === 'fair' && (
-                                    <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800">
-                                      <span className="mr-1">⚠</span> Fair
-                                    </Badge>
-                                  )}
-                                  {quality === 'good' && (
-                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                      <UserCheck className="h-3 w-3 mr-1" /> Good
-                                    </Badge>
-                                  )}
-                                  {quality === 'excellent' && (
-                                    <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-                                      <CheckCircle2 className="h-3 w-3 mr-1" /> Excellent
-                                    </Badge>
-                                  )}
-                                  {decisor.seniorityInfo.rank >= 3 && (
-                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                      ⭐ Targeted Seniority
-                                    </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {decisor.email ? (
-                                  <div className="flex items-center gap-2">
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/30"
-                                            onClick={() => window.location.href = `mailto:${decisor.email}`}
-                                          >
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            Acessar Email
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p className="text-xs font-medium">{decisor.email}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            Status: {decisor.email_status === 'verified' ? '✓ Verificado' : '~ Estimado'}
-                                          </p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">Email não disponível</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <MapPin className="h-3 w-3" />
-                                  <span>São Paulo, Brazil</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm">{decisor.department || 'N/A'}</span>
-                              </TableCell>
-                            </TableRow>
+                                <span className="text-sm">{level}</span>
+                              </label>
+                              <Badge variant="secondary" className="text-xs">{count}</Badge>
+                            </div>
                           );
                         })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        </CardHeader>
-      </Card>
+                      </div>
+                    </div>
+                  )}
 
-      {/* Barra flutuante de seleção */}
-      {selectedDecisors.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5">
-          <Card className="shadow-2xl border-2 border-primary/20">
-            <CardContent className="py-4 px-6">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-semibold">
-                    {selectedDecisors.length} contato(s) selecionado(s)
-                  </span>
+                  {uniqueDepartments.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Departments</h4>
+                      <div className="space-y-2">
+                        {uniqueDepartments.map(dept => {
+                          const count = processedDecisors.filter(d => d.department === dept).length;
+                          return (
+                            <div key={dept} className="flex items-center justify-between">
+                              <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                <Checkbox
+                                  checked={selectedDepartments.includes(dept)}
+                                  onCheckedChange={() => toggleDepartment(dept)}
+                                />
+                                <span className="text-sm">{dept}</span>
+                              </label>
+                              <Badge variant="secondary" className="text-xs">{count}</Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(selectedLevels.length > 0 || selectedDepartments.length > 0) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedLevels([]);
+                        setSelectedDepartments([]);
+                      }}
+                    >
+                      Clear all filters
+                    </Button>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="default" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Exportar
-                  </Button>
-                  <Button size="sm" variant="secondary" className="gap-2">
-                    <ListPlus className="h-4 w-4" />
-                    Adicionar à Lista
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => setSelectedDecisors([])}
-                    className="gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Limpar
-                  </Button>
-                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <TabsContent value={activeTab} className="mt-4">
+            {filteredDecisors.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground border rounded-lg">
+                <Info className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum contato encontrado com os filtros atuais</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50 border-b">
+                    <tr>
+                      <th className="text-left p-3 font-medium text-sm w-8">
+                        <Checkbox
+                          checked={selectedDecisors.size === filteredDecisors.length && filteredDecisors.length > 0}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedDecisors(new Set(filteredDecisors.map(d => d.id || d.name)));
+                            } else {
+                              setSelectedDecisors(new Set());
+                            }
+                          }}
+                        />
+                      </th>
+                      <th className="text-left p-3 font-medium text-sm">Name</th>
+                      <th className="text-left p-3 font-medium text-sm">Reason</th>
+                      <th className="text-left p-3 font-medium text-sm">Emails</th>
+                      <th className="text-left p-3 font-medium text-sm">Location</th>
+                      <th className="text-left p-3 font-medium text-sm">Department</th>
+                      <th className="text-left p-3 font-medium text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDecisors.map((decisor, idx) => {
+                      const initials = decisor.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
+                      const isSelected = decisor.id ? selectedDecisors.has(decisor.id) : selectedDecisors.has(decisor.name);
+
+                      return (
+                        <tr key={decisor.id || idx} className={cn(
+                          "border-b hover:bg-muted/30 transition-colors",
+                          isSelected && "bg-primary/5"
+                        )}>
+                          <td className="p-3">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleDecisor(decisor.id || decisor.name)}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{decisor.name}</p>
+                                <p className="text-sm text-muted-foreground">{decisor.title || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="space-y-1">
+                              <Badge 
+                                variant="secondary" 
+                                className={cn("font-medium", decisor.quality.color)}
+                              >
+                                {decisor.quality.label}
+                              </Badge>
+                              {decisor.seniorityRank <= 3 && (
+                                <Badge variant="outline" className="ml-1 border-purple-500 text-purple-700">
+                                  <Target className="h-3 w-3 mr-1" />
+                                  Targeted Seniority
+                                </Badge>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              {decisor.email ? (
+                                <>
+                                  <span className="text-sm">{decisor.email}</span>
+                                  {decisor.email_status === 'verified' ? (
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                  ) : decisor.email_status === 'guessed' ? (
+                                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                                  ) : null}
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">—</span>
+                              )}
+                            </div>
+                            {decisor.phone && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <Phone className="h-3 w-3" />
+                                {decisor.phone}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1 text-sm">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              {decisor.location || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline">{decisor.department}</Badge>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1">
+                              {decisor.email && (
+                                <Button size="sm" variant="default" className="h-8 bg-green-600 hover:bg-green-700">
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  Access email
+                                </Button>
+                              )}
+                              {!decisor.email && decisor.linkedin_url && (
+                                <Button size="sm" variant="outline" className="h-8" asChild>
+                                  <a href={decisor.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                    <Linkedin className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Floating Action Bar */}
+        {selectedDecisors.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground shadow-2xl rounded-full px-6 py-3 flex items-center gap-4 z-50 animate-in slide-in-from-bottom-5">
+            <span className="font-medium">{selectedDecisors.size} selected</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button size="sm" variant="secondary">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add to list
+              </Button>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="text-primary-foreground hover:bg-white/20"
+                onClick={() => setSelectedDecisors(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

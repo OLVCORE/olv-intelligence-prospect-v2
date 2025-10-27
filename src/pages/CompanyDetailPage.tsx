@@ -177,6 +177,7 @@ export default function CompanyDetailPage() {
   const handleEnrichApollo = async (apolloOrgId?: string) => {
     setIsEnriching(true);
     try {
+      console.log('[CompanyDetail] 🚀 Iniciando enriquecimento Apollo para:', company.name);
       toast.info('Enriquecendo com Apollo.io...');
       
       // Enriquecer empresa completa com Apollo
@@ -189,13 +190,21 @@ export default function CompanyDetailPage() {
           ...(company.domain ? { domain: company.domain } : {})
         }
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('[CompanyDetail] ❌ Erro Apollo:', error);
+        throw error;
+      }
 
+      console.log('[CompanyDetail] ✅ Enriquecimento concluído:', apolloData);
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
       queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
       toast.success('Dados Apollo atualizados com sucesso!');
     } catch (e: any) {
-      toast.error('Erro ao enriquecer com Apollo', { description: e.message });
+      console.error('[CompanyDetail] ❌ Erro completo:', e);
+      toast.error('Erro ao enriquecer com Apollo', { 
+        description: e.message || 'Verifique se a API key do Apollo está configurada'
+      });
     } finally {
       setIsEnriching(false);
     }
@@ -205,6 +214,8 @@ export default function CompanyDetailPage() {
     setIsTestingApollo(true);
     try {
       const searchName = company.name;
+      console.log('[CompanyDetail] 🚀 Buscando decisores para:', searchName);
+      
       const { data: apolloData, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
           type: 'people',
@@ -213,9 +224,15 @@ export default function CompanyDetailPage() {
           titles: ['CEO','CTO','CFO','Diretor','Gerente','VP']
         }
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('[CompanyDetail] ❌ Erro ao buscar pessoas:', error);
+        throw error;
+      }
 
       const people = (apolloData as any)?.people || [];
+      console.log('[CompanyDetail] ✅ Pessoas encontradas:', people.length);
+      
       for (const person of people.slice(0, 5)) {
         await supabase.from('decision_makers').upsert({
           company_id: id,
@@ -231,7 +248,10 @@ export default function CompanyDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
       toast.success(`${people.length} contatos encontrados via Apollo`);
     } catch (e: any) {
-      toast.error('Erro ao buscar decisores via Apollo');
+      console.error('[CompanyDetail] ❌ Erro completo:', e);
+      toast.error('Erro ao buscar decisores via Apollo', {
+        description: e.message || 'Verifique se a API key do Apollo está configurada'
+      });
     } finally {
       setIsTestingApollo(false);
     }
