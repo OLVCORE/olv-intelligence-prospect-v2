@@ -265,7 +265,7 @@ serve(async (req) => {
           },
           linkedin_url: org.linkedin_url,
           technologies: org.technologies || [],
-          market_segments: org.market_cap ? [org.market_cap] : [],
+          market_segments: org.market_cap ? [String(org.market_cap)] : [],
           sic_codes: org.sic_codes || [],
           naics_codes: org.naics_codes || [],
           phone_numbers: org.phone ? [org.phone] : [],
@@ -294,8 +294,6 @@ serve(async (req) => {
           investors: org.investors || [],
           job_postings_count: org.job_postings_count || 0,
           apollo_last_enriched_at: new Date().toISOString(),
-          enrichment_source: 'apollo',
-          enriched_at: new Date().toISOString(),
           raw_data: org
         };
 
@@ -312,6 +310,27 @@ serve(async (req) => {
 
         imported.push(company);
         console.log('[Apollo] ✅ Empresa importada:', org.name);
+
+        // Disparar busca de CNPJ em background (best-effort)
+        try {
+          const loc = (company as any)?.location || {};
+          supabase.functions.invoke('discover-cnpj', {
+            body: {
+              companyId: company.id,
+              companyName: company.name,
+              domain: (company as any)?.domain || (company as any)?.website || org.primary_domain || org.website_url || null,
+              location: { city: loc.city, state: loc.state }
+            }
+          })
+          .then(() => {
+            console.log('[Apollo] ▶️ CNPJ discovery iniciado para:', company.name);
+          })
+          .catch((e) => {
+            console.warn('[Apollo] ⚠️ Falha ao iniciar discovery de CNPJ:', e?.message || e);
+          });
+        } catch (e) {
+          console.warn('[Apollo] ⚠️ Erro ao agendar discovery de CNPJ:', (e as any)?.message || e);
+        }
       }
 
       return new Response(
