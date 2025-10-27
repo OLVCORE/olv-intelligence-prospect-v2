@@ -289,12 +289,13 @@ CASO 3: TOTVS Score 20, Intent Score 25
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: context }
         ],
-        max_completion_tokens: 4000, // Aumentado para permitir análises mais detalhadas
+        temperature: 0.7,
+        max_tokens: 4000, // Aumentado para permitir análises mais detalhadas
       }),
     });
 
