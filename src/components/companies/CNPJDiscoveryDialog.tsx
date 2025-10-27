@@ -52,11 +52,9 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
       console.log('[CNPJ Discovery] 📊 Resultado:', data);
       
       if (data.auto_applied) {
-        toast.success(`🎉 CNPJ encontrado e validado: ${data.cnpj}`, {
-          description: `Confiança: ${data.confidence}% - Fonte: ${data.source}`
-        });
-        onCNPJApplied?.();
-        onOpenChange(false);
+        // Aplica imediatamente no registro da empresa e dispara enriquecimento
+        await handleApplyCNPJ(data.cnpj, data.data);
+        return;
       } else if (data.requires_review) {
         setCandidates(data.candidates || []);
         toast.info('📋 Candidatos encontrados', {
