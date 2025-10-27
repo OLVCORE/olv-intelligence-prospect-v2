@@ -97,9 +97,6 @@ export function CNPJDiscoveryDialog({ open, onOpenChange, company, onCNPJApplied
         if (candidateData.fantasia) {
           updateData.domain = candidateData.fantasia;
         }
-        if (candidateData.email) {
-          updateData.email = candidateData.email;
-        }
         if (candidateData.telefone) {
           const phones = candidateData.telefone.split('/').map((p: string) => p.trim());
           updateData.phone_numbers = phones;
