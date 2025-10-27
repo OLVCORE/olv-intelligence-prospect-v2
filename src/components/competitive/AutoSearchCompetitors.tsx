@@ -60,10 +60,10 @@ export function AutoSearchCompetitors({
             <div className="flex items-center justify-between text-sm">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />
-                {searchResult.portals_searched} portais pesquisados
+                {searchResult.portals_searched || 0} portais pesquisados
               </Badge>
               <Badge variant="secondary">
-                {searchResult.total_comparisons_found} comparações encontradas
+                {searchResult.total_comparisons_found || 0} comparações encontradas
               </Badge>
             </div>
 
@@ -91,9 +91,11 @@ export function AutoSearchCompetitors({
                         </div>
                       </div>
 
-                      <div className="text-xs text-muted-foreground">
-                        Encontrado em: {competitor.portals.join(', ')}
-                      </div>
+                      {competitor.portals && competitor.portals.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          Encontrado em: {competitor.portals.join(', ')}
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <p className="text-xs font-semibold">Links de Comparação:</p>

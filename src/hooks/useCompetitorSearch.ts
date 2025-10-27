@@ -55,8 +55,9 @@ export function useCompetitorSearch() {
       return data as CompetitorSearchResult;
     },
     onSuccess: (data) => {
+      const portalsCount = data.portals_searched || 0;
       toast.success('🔍 Busca de Concorrentes Concluída', {
-        description: `${data.competitors.length} concorrentes encontrados em ${data.portals_searched} portais`,
+        description: `${data.competitors.length} concorrentes encontrados em ${portalsCount} portais`,
       });
     },
     onError: (error: Error) => {
