@@ -133,35 +133,99 @@ serve(async (req) => {
     // IMPORTAR LEADS DO APOLLO COM DADOS COMPLETOS
     // ============================================
     if (type === 'import_leads') {
-      // Montar payload com os parâmetros fornecidos na UI
-      const payload: Record<string, unknown> = {
-        page: 1,
-        per_page: Number(searchParams?.per_page) || 100,
+      // Montar payload com os parâmetros fornecidos na UI, com limpeza e fallback
+      const sanitizeIndustryIds = (val: unknown) => {
+        if (!val) return undefined;
+        const cleaned = String(val).split(',').map(s => s.trim()).filter(s => /^\d+$/.test(s));
+        return cleaned.length ? cleaned.join(',') : undefined;
       };
+
+      const allowedKeys = new Set([
+        'q_organization_name',
+        'q_organization_domains',
+        'q_organization_locations',
+        'q_organization_industry_tag_ids',
+        'q_organization_num_employees_ranges',
+        'q_organization_keyword_tags'
+      ]);
+
+      const basePayload: Record<string, unknown> = { page: 1, per_page: Number(searchParams?.per_page) || 100 };
       if (searchParams && typeof searchParams === 'object') {
         for (const [k, v] of Object.entries(searchParams)) {
-          if (v !== undefined && v !== null && String(v).trim() !== '') {
-            if (k !== 'per_page' && k !== 'api_key') payload[k] = v;
+          if (!allowedKeys.has(k)) continue;
+          const sv = typeof v === 'string' ? v.trim() : v;
+          if (sv === undefined || sv === null || String(sv).trim() === '') continue;
+          if (k === 'q_organization_industry_tag_ids') {
+            const cleaned = sanitizeIndustryIds(sv);
+            if (cleaned) basePayload[k] = cleaned; // somente IDs numéricos
+          } else if (k !== 'per_page' && k !== 'api_key') {
+            basePayload[k] = sv;
           }
         }
       }
 
-      const response = await fetch(`https://api.apollo.io/v1/organizations/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': APOLLO_API_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
-      
+      const endpoint = 'https://api.apollo.io/v1/organizations/search';
+      const headers = { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY };
+
+      const tryRequest = async (payload: Record<string, unknown>) => {
+        const resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload) });
+        return resp;
+      };
+
+      let response = await tryRequest(basePayload);
+
       if (!response.ok) {
-        const errText = await response.text();
-        console.error('[Apollo] ❌ Erro import_leads:', response.status, errText);
-        return new Response(
-          JSON.stringify({ error: `Apollo API error: ${response.status}`, details: errText }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        const firstErr = await response.text();
+        console.error('[Apollo] ❌ Erro import_leads 1ª tentativa:', response.status, firstErr, '\nPayload:', basePayload);
+
+        // Fallback progressivo: remover campos mais problemáticos
+        const dropOrder = [
+          'q_organization_industry_tag_ids',
+          'q_organization_keyword_tags',
+          'q_organization_locations',
+          'q_organization_num_employees_ranges'
+        ];
+
+        const fallbackPayload = { ...basePayload } as Record<string, unknown>;
+        let fallbackResp = response;
+        for (const key of dropOrder) {
+          if (fallbackPayload[key] !== undefined) {
+            delete fallbackPayload[key];
+            const trial = await tryRequest(fallbackPayload);
+            if (trial.ok) {
+              response = trial;
+              break;
+            } else {
+              const errTxt = await trial.text();
+              console.error(`[Apollo] ❌ Fallback removendo ${key} falhou:`, trial.status, errTxt);
+              fallbackResp = trial;
+            }
+          }
+        }
+
+        if (!response.ok) {
+          // Último fallback: nome ou domínio apenas, se existirem
+          const minimal: Record<string, unknown> = { page: 1, per_page: basePayload.per_page };
+          if (basePayload.q_organization_name) minimal.q_organization_name = basePayload.q_organization_name;
+          if (basePayload.q_organization_domains) minimal.q_organization_domains = basePayload.q_organization_domains;
+          if (!minimal.q_organization_name && !minimal.q_organization_domains) {
+            return new Response(
+              JSON.stringify({ error: 'Parâmetros insuficientes para busca no Apollo', details: firstErr }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          const minimalResp = await tryRequest(minimal);
+          if (minimalResp.ok) {
+            response = minimalResp;
+          } else {
+            const errText = await minimalResp.text();
+            console.error('[Apollo] ❌ Fallback mínimo falhou:', minimalResp.status, errText, '\nPayload:', minimal);
+            return new Response(
+              JSON.stringify({ error: `Apollo API error: ${minimalResp.status}`, details: errText, sent: minimal }),
+              { status: minimalResp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
       }
 
       const data = await response.json();
@@ -172,7 +236,6 @@ serve(async (req) => {
       const imported: any[] = [];
       
       for (const org of organizations) {
-        // Verificar se empresa já existe
         const { data: existing } = await supabase
           .from('companies')
           .select('id')
@@ -184,7 +247,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Extrair todos os campos do Apollo
         const companyData = {
           name: org.name,
           domain: org.primary_domain,
@@ -567,13 +629,15 @@ serve(async (req) => {
             continue;
           }
 
-          // Buscar no Apollo
-          const params = new URLSearchParams({
-            api_key: APOLLO_API_KEY,
-            q_organization_domains: searchDomain
+          // Buscar no Apollo via POST com header X-Api-Key
+          const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Api-Key': APOLLO_API_KEY,
+            },
+            body: JSON.stringify({ q_organization_domains: searchDomain, page: 1, per_page: 1 })
           });
-
-          const orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
           
           if (!orgResponse.ok) {
             failed++;

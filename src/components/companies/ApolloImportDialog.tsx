@@ -68,12 +68,20 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
       console.log('[Apollo Import] 📦 Parâmetros finais:', apolloParams);
       
       // Chamar edge function
-      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
-        body: {
-          type: 'import_leads',
-          searchParams: apolloParams
-        }
-      });
+      const type = activeTab === 'people' ? 'people' : 'import_leads';
+      const body = type === 'people'
+        ? {
+            type,
+            organizationName: apolloParams.q_organization_name,
+            domain: apolloParams.q_organization_domains,
+            titles: (apolloParams.person_titles || '')
+              .split(',')
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          }
+        : { type, searchParams: apolloParams };
+
+      const { data, error } = await supabase.functions.invoke('enrich-apollo', { body });
       
       if (error) throw error;
       
@@ -329,7 +337,7 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Importando...' : `Importar ${activeTab === 'companies' ? 'Empresas' : 'Contatos'}`}
+            {loading ? 'Importando...' : (activeTab === 'companies' ? 'Importar Empresas' : 'Buscar Contatos')}
           </Button>
         </div>
       </DialogContent>
