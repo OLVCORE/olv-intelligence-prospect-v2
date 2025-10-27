@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { type, name, domain, organizationName, titles, companyId, company_ids, searchParams } = body;
+    const { type, name, domain, organizationName, titles, companyId, company_ids, searchParams, apolloOrgId } = body;
     
     const APOLLO_API_KEY = Deno.env.get('APOLLO_API_KEY');
     if (!APOLLO_API_KEY) {
@@ -379,6 +379,7 @@ serve(async (req) => {
 
     // ============================================
     // ENRIQUECER EMPRESA INDIVIDUAL COM APOLLO
+    // Aceita apolloOrgId opcional para busca direta
     // ============================================
     if (type === 'enrich_company') {
       if (!companyId) {
@@ -396,97 +397,104 @@ serve(async (req) => {
         throw new Error('Empresa não encontrada');
       }
 
-      // Buscar organização no Apollo usando POST com header X-Api-Key
-      const searchDomain = domain || company.website || company.domain;
-      
-      const baseHeaders = {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': APOLLO_API_KEY,
-      } as const;
-      
-      const buildPayload = (opts: { byName?: boolean; byDomain?: boolean }) => {
-        const p: Record<string, unknown> = { page: 1, per_page: 1 };
-        if (opts.byName && company.name) p.q_organization_name = company.name;
-        if (opts.byDomain && searchDomain) p.q_organization_domains = searchDomain;
-        return p;
-      };
+      let org: any = null;
+      let peopleCount = 0;
 
-      let orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
-        method: 'POST',
-        headers: baseHeaders,
-        body: JSON.stringify(buildPayload({ byName: true, byDomain: true }))
-      });
-      
-      if (!orgResponse.ok) {
-        const firstErr = await orgResponse.text();
-        console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, firstErr);
-
-        // Fallback 1: tentar por domínio apenas
-        if (searchDomain) {
-          const resp2 = await fetch('https://api.apollo.io/v1/organizations/search', {
-            method: 'POST',
-            headers: baseHeaders,
-            body: JSON.stringify(buildPayload({ byDomain: true }))
-          });
-
-          if (resp2.ok) {
-            orgResponse = resp2;
-          } else {
-            const secondErr = await resp2.text();
-            console.error('[Apollo] ❌ Fallback domínio falhou:', resp2.status, secondErr);
-
-            // Fallback 2: tentar por nome apenas
-            if (company.name) {
-              const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
-                method: 'POST',
-                headers: baseHeaders,
-                body: JSON.stringify(buildPayload({ byName: true }))
-              });
-
-              if (resp3.ok) {
-                orgResponse = resp3;
-              } else {
-                const thirdErr = await resp3.text();
-                console.error('[Apollo] ❌ Fallback nome falhou:', resp3.status, thirdErr);
-                return new Response(
-                  JSON.stringify({ error: 'Apollo organizations search failed', details: { first: firstErr, byDomain: secondErr, byName: thirdErr } }),
-                  { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-                );
-              }
-            } else {
-              return new Response(
-                JSON.stringify({ error: 'Apollo organizations search failed', details: firstErr }),
-                { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              );
-            }
+      // Se apolloOrgId foi fornecido, buscar diretamente
+      if (apolloOrgId) {
+        console.log('[Apollo] 🎯 Buscando organização por ID:', apolloOrgId);
+        
+        const orgByIdResponse = await fetch(`https://api.apollo.io/v1/organizations/${apolloOrgId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Api-Key': APOLLO_API_KEY,
           }
-        } else if (company.name) {
-          const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
-            method: 'POST',
-            headers: baseHeaders,
-            body: JSON.stringify(buildPayload({ byName: true }))
-          });
-          if (resp3.ok) {
-            orgResponse = resp3;
-          } else {
-            const thirdErr = await resp3.text();
-            console.error('[Apollo] ❌ Fallback nome (sem domínio) falhou:', resp3.status, thirdErr);
-            return new Response(
-              JSON.stringify({ error: 'Apollo organizations search failed', details: { first: firstErr, byName: thirdErr } }),
-              { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
+        });
+
+        if (orgByIdResponse.ok) {
+          const orgByIdData = await orgByIdResponse.json();
+          org = orgByIdData.organization;
+          console.log('[Apollo] ✅ Organização encontrada por ID:', org?.name);
         } else {
-          return new Response(
-            JSON.stringify({ error: 'Apollo organizations search failed - missing name/domain' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          console.error('[Apollo] ❌ Erro ao buscar por ID:', orgByIdResponse.status);
         }
       }
 
-      const orgData = await orgResponse.json();
-      const org = orgData.organizations?.[0];
+      // Se não encontrou por ID, tentar busca normal
+      if (!org) {
+        const searchDomain = domain || company.website || company.domain;
+        
+        const baseHeaders = {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'X-Api-Key': APOLLO_API_KEY,
+        } as const;
+        
+        const buildPayload = (opts: { byName?: boolean; byDomain?: boolean }) => {
+          const p: Record<string, unknown> = { page: 1, per_page: 1 };
+          if (opts.byName && company.name) p.q_organization_name = company.name;
+          if (opts.byDomain && searchDomain) p.q_organization_domains = searchDomain;
+          return p;
+        };
+
+        let orgResponse = await fetch(`https://api.apollo.io/v1/organizations/search`, {
+          method: 'POST',
+          headers: baseHeaders,
+          body: JSON.stringify(buildPayload({ byName: true, byDomain: true }))
+        });
+        
+        if (!orgResponse.ok) {
+          const firstErr = await orgResponse.text();
+          console.error('[Apollo] ❌ Erro organizations search:', orgResponse.status, firstErr);
+
+          // Fallback 1: tentar por domínio apenas
+          if (searchDomain) {
+            const resp2 = await fetch('https://api.apollo.io/v1/organizations/search', {
+              method: 'POST',
+              headers: baseHeaders,
+              body: JSON.stringify(buildPayload({ byDomain: true }))
+            });
+
+            if (resp2.ok) {
+              orgResponse = resp2;
+            } else {
+              const secondErr = await resp2.text();
+              console.error('[Apollo] ❌ Fallback domínio falhou:', resp2.status, secondErr);
+
+              // Fallback 2: tentar por nome apenas
+              if (company.name) {
+                const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+                  method: 'POST',
+                  headers: baseHeaders,
+                  body: JSON.stringify(buildPayload({ byName: true }))
+                });
+
+                if (resp3.ok) {
+                  orgResponse = resp3;
+                } else {
+                  const thirdErr = await resp3.text();
+                  console.error('[Apollo] ❌ Fallback nome falhou:', resp3.status, thirdErr);
+                }
+              }
+            }
+          } else if (company.name) {
+            const resp3 = await fetch('https://api.apollo.io/v1/organizations/search', {
+              method: 'POST',
+              headers: baseHeaders,
+              body: JSON.stringify(buildPayload({ byName: true }))
+            });
+            if (resp3.ok) {
+              orgResponse = resp3;
+            }
+          }
+        }
+
+        if (orgResponse.ok) {
+          const orgData = await orgResponse.json();
+          org = orgData.organizations?.[0];
+        }
+      }
 
       if (!org) {
         console.log('[Apollo] ⚠️ Organização não encontrada no Apollo - prosseguindo com busca de pessoas mesmo assim');
@@ -539,11 +547,20 @@ serve(async (req) => {
       }
 
       // Buscar pessoas/decisores da organização
+      // Usar o Apollo Org ID se disponível, caso contrário usar domínio/nome
       const peoplePayload: Record<string, unknown> = {
         per_page: 50,
       };
-      if (searchDomain) peoplePayload.q_organization_domains = searchDomain;
-      if (company.name) peoplePayload.q_organization_name = company.name;
+      
+      if (org?.id) {
+        // Se temos o org ID, usar para busca mais precisa
+        peoplePayload.q_organization_id = org.id;
+      } else {
+        // Fallback para domínio/nome
+        const searchDomain = domain || company.website || company.domain;
+        if (searchDomain) peoplePayload.q_organization_domains = searchDomain;
+        if (company.name) peoplePayload.q_organization_name = company.name;
+      }
 
       const peopleResponse = await fetch(`https://api.apollo.io/v1/people/search`, {
         method: 'POST',
@@ -554,7 +571,6 @@ serve(async (req) => {
         body: JSON.stringify(peoplePayload)
       });
       
-      let peopleCount = 0;
       if (peopleResponse.ok) {
         const peopleData = await peopleResponse.json();
         const people = peopleData.people || [];

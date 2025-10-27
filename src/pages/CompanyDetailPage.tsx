@@ -40,6 +40,7 @@ import { EnrichmentActionsCard } from '@/components/companies/EnrichmentActionsC
 import { ApolloDataSection } from '@/components/companies/ApolloDataSection';
 import { ApolloDecisorsCard } from '@/components/companies/ApolloDecisorsCard';
 import { SeniorDecisorsPanel } from '@/components/companies/SeniorDecisorsPanel';
+import { ApolloOrgIdDialog } from '@/components/companies/ApolloOrgIdDialog';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -173,7 +174,7 @@ export default function CompanyDetailPage() {
     }
   };
 
-  const handleEnrichApollo = async () => {
+  const handleEnrichApollo = async (apolloOrgId?: string) => {
     setIsEnriching(true);
     try {
       toast.info('Enriquecendo com Apollo.io...');
@@ -184,12 +185,14 @@ export default function CompanyDetailPage() {
           type: 'enrich_company',
           companyId: id,
           organizationName: company.name,
+          ...(apolloOrgId ? { apolloOrgId } : {}),
           ...(company.domain ? { domain: company.domain } : {})
         }
       });
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
       toast.success('Dados Apollo atualizados com sucesso!');
     } catch (e: any) {
       toast.error('Erro ao enriquecer com Apollo', { description: e.message });
@@ -351,7 +354,7 @@ export default function CompanyDetailPage() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={handleEnrichApollo}
+                          onClick={() => handleEnrichApollo()}
                           disabled={isEnriching}
                           className="relative"
                         >
@@ -366,6 +369,11 @@ export default function CompanyDetailPage() {
                         <p>Enriquecer com Apollo.io</p>
                       </TooltipContent>
                     </Tooltip>
+
+                    <ApolloOrgIdDialog 
+                      onEnrich={handleEnrichApollo}
+                      disabled={isEnriching}
+                    />
 
                     <EconodataEnrichButton
                       companyId={id!}
