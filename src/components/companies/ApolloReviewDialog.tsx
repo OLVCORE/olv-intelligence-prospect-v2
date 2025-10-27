@@ -457,7 +457,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
                         {/* CAPA DA RECEITA FEDERAL */}
                         {candidate.data && isSelected && (
-                          <div className="space-y-3 pt-3 border-t-2 bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-green-950/30 dark:to-blue-950/30 -mx-4 px-4 py-4 rounded-lg">
+                          <div className="space-y-3 pt-3 border-t-2 bg-gradient-to-br from-green-50/80 to-blue-50/80 dark:from-green-950/30 dark:to-blue-950/30 -mx-4 px-4 py-4 rounded-lg max-h-[400px] overflow-y-auto">
                             <div className="flex items-center justify-between border-b-2 border-green-600/30 pb-2">
                               <p className="text-sm font-bold text-primary uppercase">
                                 📄 Comprovante de Inscrição e Situação Cadastral
