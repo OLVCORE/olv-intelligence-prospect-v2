@@ -35,6 +35,7 @@ const ESTADOS_BRASIL = [
 export default function SearchPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [cnpjError, setCnpjError] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [previewData, setPreviewData] = useState<any>(null);
@@ -54,10 +55,50 @@ export default function SearchPage() {
     return cleanQuery.length === 14 ? "cnpj" : "query";
   };
   
-  // Validação de CNPJ
+  // Validação de CNPJ em tempo real
+  const validateCNPJInput = (value: string): string => {
+    if (!value.trim()) return "";
+    
+    const cleanValue = value.replace(/\D/g, '');
+    
+    // Verifica se tem letras ou caracteres especiais (exceto . / -)
+    if (/[a-zA-Z,;:!@#$%^&*()_+=[\]{}|\\<>?~`]/.test(value)) {
+      return "❌ CNPJ não pode conter letras ou caracteres especiais";
+    }
+    
+    // Verifica se tem espaços, vírgulas, etc
+    if (/[\s,;:]/.test(value)) {
+      return "❌ CNPJ não pode conter espaços ou vírgulas";
+    }
+    
+    // Verifica quantidade de dígitos
+    if (cleanValue.length > 0 && cleanValue.length < 14) {
+      return `⚠️ CNPJ incompleto (${cleanValue.length}/14 dígitos)`;
+    }
+    
+    if (cleanValue.length > 14) {
+      return "❌ CNPJ deve ter exatamente 14 dígitos";
+    }
+    
+    return "";
+  };
+  
   const isValidCNPJ = (query: string): boolean => {
     const cleanQuery = query.replace(/\D/g, '');
     return cleanQuery.length === 14;
+  };
+  
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value);
+    
+    // Valida apenas se parece ser CNPJ (tem números)
+    const cleanValue = value.replace(/\D/g, '');
+    if (cleanValue.length > 0) {
+      const error = validateCNPJInput(value);
+      setCnpjError(error);
+    } else {
+      setCnpjError("");
+    }
   };
   
   // Autocomplete states
@@ -305,6 +346,16 @@ export default function SearchPage() {
   };
 
   const handleSearch = async () => {
+    // Bloquear busca se houver erro de validação de CNPJ
+    if (cnpjError) {
+      toast({
+        title: "CNPJ inválido",
+        description: cnpjError,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Verificar se pelo menos um campo foi preenchido
     const hasSearchQuery = searchQuery.trim().length > 0;
     const hasRefinement = website || instagram || linkedin || produto || marca || linkProduto || 
@@ -619,21 +670,22 @@ export default function SearchPage() {
                         placeholder="00.000.000/0000-00 ou Nome da Empresa"
                         value={searchQuery}
                         onChange={(e) => {
-                          setSearchQuery(e.target.value);
+                          handleSearchQueryChange(e.target.value);
                           setShowSuggestions(true);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === 'Enter' && !cnpjError) {
                             e.preventDefault();
                             handleSearch();
                           }
                           if (e.key === 'Escape') {
                             setSearchQuery("");
+                            setCnpjError("");
                           }
                         }}
                         onFocus={() => searchQuery.length >= 3 && setShowSuggestions(true)}
                         disabled={isSearching}
-                        className="pr-10"
+                        className={`pr-10 ${cnpjError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                       />
                       {loadingSuggestions && (
                         <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
@@ -643,13 +695,22 @@ export default function SearchPage() {
                           variant="ghost"
                           size="sm"
                           className="absolute right-1 top-1 h-8 w-8 p-0"
-                          onClick={() => setSearchQuery("")}
+                          onClick={() => {
+                            setSearchQuery("");
+                            setCnpjError("");
+                          }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
                   </PopoverTrigger>
+                  {cnpjError && (
+                    <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {cnpjError}
+                    </p>
+                  )}
                   <PopoverContent className="w-[500px] p-0" align="start">
                     <Command>
                       <CommandList>
