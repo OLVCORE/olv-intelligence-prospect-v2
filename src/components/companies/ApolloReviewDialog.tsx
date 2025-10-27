@@ -292,7 +292,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 max-h-[calc(90vh-280px)]">
+        <ScrollArea className="flex-1 pr-4 h-[calc(90vh-280px)]">
           <div className="space-y-4 py-4">
             {/* Dados do Apollo */}
             <Card className="border-2 border-blue-200 dark:border-blue-800">

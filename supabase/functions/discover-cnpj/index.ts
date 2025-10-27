@@ -348,7 +348,6 @@ async function validateCNPJ(
       const match = calculateMatch(companyName, domain, location, {
         razao_social: receitaData.nome,
         nome_fantasia: receitaData.fantasia,
-        website: domain,
         municipio: receitaData.municipio,
         uf: receitaData.uf
       });
@@ -367,7 +366,6 @@ async function validateCNPJ(
       const match = calculateMatch(companyName, domain, location, {
         razao_social: razao,
         nome_fantasia: b.nome_fantasia,
-        website: domain,
         municipio,
         uf
       });
