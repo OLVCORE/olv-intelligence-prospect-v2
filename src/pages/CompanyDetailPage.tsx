@@ -172,6 +172,31 @@ export default function CompanyDetailPage() {
     }
   };
 
+  const handleEnrichApollo = async () => {
+    setIsEnriching(true);
+    try {
+      toast.info('Enriquecendo com Apollo.io...');
+      
+      // Enriquecer empresa completa com Apollo
+      const { data: apolloData, error } = await supabase.functions.invoke('enrich-apollo', {
+        body: {
+          type: 'enrich_company',
+          companyId: id,
+          organizationName: company.name,
+          ...(company.domain ? { domain: company.domain } : {})
+        }
+      });
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+      toast.success('Dados Apollo atualizados com sucesso!');
+    } catch (e: any) {
+      toast.error('Erro ao enriquecer com Apollo', { description: e.message });
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   const handleTestApollo = async () => {
     setIsTestingApollo(true);
     try {
@@ -317,6 +342,27 @@ export default function CompanyDetailPage() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Enriquecimento 360° Completo + IA</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleEnrichApollo}
+                          disabled={isEnriching}
+                          className="relative"
+                        >
+                          {isEnriching ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <img src={apolloLogo} alt="Apollo" className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Enriquecer com Apollo.io</p>
                       </TooltipContent>
                     </Tooltip>
 
