@@ -50,6 +50,10 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
     
     try {
       console.log('[Apollo Import] 🚀 Iniciando importação:', activeTab);
+      // Garantir cabeçalho de autorização
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
       
       // Montar parâmetros baseado na aba ativa
       const apolloParams: any = {};
@@ -76,7 +80,8 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
         console.log('[Apollo Import] 📦 Parâmetros finais:', apolloParams);
         
         const { data, error } = await supabase.functions.invoke('enrich-apollo', { 
-          body: { type: 'search_organizations', searchParams: apolloParams }
+          body: { type: 'search_organizations', searchParams: apolloParams },
+          headers
         });
         
         if (error) throw error;
@@ -115,7 +120,7 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
             .filter(Boolean)
         };
 
-        const { data, error } = await supabase.functions.invoke('enrich-apollo', { body });
+        const { data, error } = await supabase.functions.invoke('enrich-apollo', { body, headers });
         
         if (error) throw error;
         

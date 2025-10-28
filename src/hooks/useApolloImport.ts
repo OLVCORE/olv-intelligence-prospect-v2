@@ -38,11 +38,15 @@ export function useApolloImport() {
       }
       
       // Chamar edge function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
       const { data, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
           type: 'import_leads',
           searchParams: apolloParams
-        }
+        },
+        headers
       });
       
       if (error) throw error;
