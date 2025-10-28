@@ -812,10 +812,12 @@ serve(async (req) => {
         console.log('[Apollo] 📊 Amostra de 3 primeiros:', people.slice(0, 3).map((p: any) => ({
           name: p.name,
           title: p.title,
+          email: p.email,
           email_status: p.email_status,
           departments: p.departments,
           seniority: p.seniority
         })));
+        console.log('[Apollo] 📋 Detalhes completos do primeiro:', people[0]);
         
         // 🔁 Fallback progressivo se não houver pessoas
         if (people.length === 0) {
@@ -862,19 +864,33 @@ serve(async (req) => {
 
         // Salvar decisores com TODOS os campos
         for (const person of people) {
-          // Verificar se decisor já existe
-          const { data: existingDecisor } = await supabase
-            .from('decision_makers')
-            .select('id')
-            .eq('email', person.email)
-            .eq('company_id', companyId)
-            .maybeSingle();
+          // Verificar se decisor já existe (usar nome + company_id se não houver email)
+          let existingDecisor = null;
+          
+          if (person.email) {
+            const { data } = await supabase
+              .from('decision_makers')
+              .select('id')
+              .eq('email', person.email)
+              .eq('company_id', companyId)
+              .maybeSingle();
+            existingDecisor = data;
+          } else {
+            // Se não tem email, verificar por nome
+            const { data } = await supabase
+              .from('decision_makers')
+              .select('id')
+              .eq('name', person.name)
+              .eq('company_id', companyId)
+              .maybeSingle();
+            existingDecisor = data;
+          }
 
           const decisorData = {
             company_id: companyId,
             name: person.name,
             title: person.title,
-            email: person.email,
+            email: person.email || null, // ✅ Permitir nulo
             phone: person.phone || person.sanitized_phone,
             direct_phone: person.direct_phone,
             mobile_phone: person.mobile_phone,
@@ -945,19 +961,27 @@ serve(async (req) => {
 
           if (existingDecisor) {
             // Atualizar decisor existente
-            await supabase
+            const { error } = await supabase
               .from('decision_makers')
               .update(decisorData)
               .eq('id', existingDecisor.id);
+            
+            if (error) {
+              console.error('[Apollo] ❌ Erro ao atualizar decisor:', person.name, error);
+            }
           } else {
             // Criar novo decisor
-            await supabase
+            const { error } = await supabase
               .from('decision_makers')
               .insert(decisorData);
+            
+            if (error) {
+              console.error('[Apollo] ❌ Erro ao criar decisor:', person.name, error);
+            }
           }
         }
 
-        console.log('[Apollo] ✅ Decisores salvos:', people.length);
+        console.log('[Apollo] ✅ Decisores processados:', people.length);
       }
 
       return new Response(

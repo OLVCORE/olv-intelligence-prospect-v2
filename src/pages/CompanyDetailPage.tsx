@@ -41,6 +41,7 @@ import { ApolloDataSection } from '@/components/companies/ApolloDataSection';
 import { ApolloDecisorsCard } from '@/components/companies/ApolloDecisorsCard';
 import { SeniorDecisorsPanel } from '@/components/companies/SeniorDecisorsPanel';
 import { ApolloOrgIdDialog } from '@/components/companies/ApolloOrgIdDialog';
+import { ApolloDebugDialog } from '@/components/companies/ApolloDebugDialog';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -1390,9 +1391,25 @@ export default function CompanyDetailPage() {
           <ApolloDataSection company={company} />
           
           {/* Decisores Apollo com dados verificados */}
-          {decisors.length > 0 && (
-            <ApolloDecisorsCard decisors={decisors} />
-          )}
+          <ApolloDecisorsCard decisors={decisors} />
+
+          {/* Diagnóstico Apollo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Diagnóstico e Troubleshooting
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ApolloDebugDialog 
+                companyId={id!}
+                companyName={company.name}
+                apolloOrgId={company.apollo_id}
+                domain={company.domain || company.website}
+              />
+            </CardContent>
+          </Card>
 
           {/* Painel de Decisores Seniores Filtrados */}
           <SeniorDecisorsPanel 

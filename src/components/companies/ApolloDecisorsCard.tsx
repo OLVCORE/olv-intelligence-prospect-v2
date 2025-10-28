@@ -57,6 +57,7 @@ interface DecisorWithApollo {
     name?: string;
     industry?: string;
   };
+  apollo_last_enriched_at?: string;
 }
 
 interface ApolloDecisorsCardProps {
@@ -68,7 +69,15 @@ export function ApolloDecisorsCard({ decisors }: ApolloDecisorsCardProps) {
     return null;
   }
 
-  const apolloDecisors = decisors.filter(d => d.email_status || d.apollo_person_metadata);
+  // Filtrar decisores que foram enriquecidos pelo Apollo (têm apollo_last_enriched_at ou source='apollo')
+  const apolloDecisors = decisors.filter(d => 
+    d.apollo_person_metadata || 
+    d.email_status || 
+    d.headline || 
+    d.city || 
+    d.functions || 
+    d.apollo_last_enriched_at
+  );
 
   if (apolloDecisors.length === 0) {
     return null;
