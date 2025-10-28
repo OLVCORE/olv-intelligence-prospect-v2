@@ -228,6 +228,44 @@ serve(async (req) => {
         new Map(candidates.map(c => [c.cnpj, c])).values()
       ).sort((a, b) => b.confidence - a.confidence);
 
+      // Tiebreaker: se os dois melhores candidatos estão empatados (diff <= 3) 
+      // e apenas um tem brand match, priorizar o com brand
+      if (uniqueCandidates.length >= 2) {
+        const [first, second] = uniqueCandidates;
+        const diff = first.confidence - second.confidence;
+        if (diff <= 3) {
+          // Recalcular containsBrand para ambos
+          const q = normalize(companyName);
+          const tokens = q.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
+          const stop = new Set([
+            'ltda','sa','s.a','holding','grupo','comercio','comércio',
+            'industria','indústria','distribuidora','companhia','brasil',
+            'do','da','de','e','the','of','and',
+            'logistica','logística','internacional','transportes','transportadora',
+            'assessoria','despachos','agenciamento','carga','cargas','frete',
+            'aduaneiro','despacho','warehouse','armazenagem','supply','chain',
+            'serviços','service','solutions','soluções'
+          ]);
+          const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
+          
+          const firstBrand = brandTokens.some(t => 
+            normalize(`${first.data?.razao_social || ''} ${first.data?.nome_fantasia || ''}`).includes(t)
+          );
+          const secondBrand = brandTokens.some(t => 
+            normalize(`${second.data?.razao_social || ''} ${second.data?.nome_fantasia || ''}`).includes(t)
+          );
+          
+          if (firstBrand !== secondBrand) {
+            if (secondBrand) {
+              console.log(`[Tiebreaker] Priorizando #2 por brand match: ${second.cnpj}`);
+              [uniqueCandidates[0], uniqueCandidates[1]] = [second, first];
+            } else {
+              console.log(`[Tiebreaker] Mantendo #1 por brand match: ${first.cnpj}`);
+            }
+          }
+        }
+      }
+
       if (uniqueCandidates.length === 0) {
         console.log('[CNPJ Discovery] ❌ Nenhum CNPJ encontrado');
         
@@ -371,7 +409,7 @@ async function fetchWithRetry(
 }
 
 /**
- * Two-phase search: primeiro COM cidade, depois SEM cidade
+ * Four-phase search: razao+city, razao, fantasia+city, fantasia
  */
 async function searchEmpresaQui(
   apiKey: string,
@@ -381,16 +419,43 @@ async function searchEmpresaQui(
   const traceId = crypto.randomUUID().substring(0, 8);
   console.log(`[EmpresaQui:${traceId}] Iniciando busca para: ${companyName}`);
   
-  // FASE 1: Busca COM cidade (se disponível)
-  if (location?.city) {
-    const paramsWithCity = new URLSearchParams({
-      razao_social: companyName,
-      cidade: location.city,
-      limit: '5'
-    });
-    
-    const responseWithCity = await fetchWithRetry(
-      `https://api.empresaqui.com.br/v1/empresas/busca?${paramsWithCity}`,
+  const variants: Array<{ label: string; params: URLSearchParams }> = [
+    {
+      label: 'razao+city',
+      params: new URLSearchParams({
+        razao_social: companyName,
+        ...(location?.city && { cidade: location.city }),
+        limit: '5'
+      })
+    },
+    {
+      label: 'razao',
+      params: new URLSearchParams({
+        razao_social: companyName,
+        limit: '5'
+      })
+    },
+    {
+      label: 'fantasia+city',
+      params: new URLSearchParams({
+        nome_fantasia: companyName,
+        ...(location?.city && { cidade: location.city }),
+        limit: '5'
+      })
+    },
+    {
+      label: 'fantasia',
+      params: new URLSearchParams({
+        nome_fantasia: companyName,
+        limit: '5'
+      })
+    }
+  ];
+
+  // Executar todas as 4 variações em paralelo
+  const variantPromises = variants.map(async (variant) => {
+    const response = await fetchWithRetry(
+      `https://api.empresaqui.com.br/v1/empresas/busca?${variant.params}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -400,47 +465,40 @@ async function searchEmpresaQui(
       3, // 3 tentativas
       5000 // 5s timeout
     );
-    
-    if (responseWithCity?.ok) {
-      const data = await responseWithCity.json();
+
+    if (response?.ok) {
+      const data = await response.json();
       const empresas = data.empresas || [];
-      if (empresas.length > 0) {
-        console.log(`[EmpresaQui:${traceId}] ✅ ${empresas.length} resultados COM cidade`);
-        return empresas;
-      }
-      console.log(`[EmpresaQui:${traceId}] ⚠️ Sem resultados com cidade, tentando sem...`);
+      console.log(`[EmpresaQui:${traceId}] ✅ ${variant.label}: ${empresas.length} resultados`);
+      return empresas;
     } else {
-      console.log(`[EmpresaQui:${traceId}] ⚠️ Erro na busca com cidade, fallback para busca geral`);
+      console.log(`[EmpresaQui:${traceId}] ⚠️ ${variant.label}: sem resultados`);
+      return [];
+    }
+  });
+
+  const results = await Promise.allSettled(variantPromises);
+  
+  // Consolidar todos os resultados
+  const allEmpresas: any[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      allEmpresas.push(...result.value);
     }
   }
-  
-  // FASE 2: Busca SEM cidade (fallback ou primeira tentativa)
-  const paramsNoCity = new URLSearchParams({
-    razao_social: companyName,
-    limit: '5'
-  });
-  
-  const responseNoCity = await fetchWithRetry(
-    `https://api.empresaqui.com.br/v1/empresas/busca?${paramsNoCity}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    },
-    3,
-    5000
-  );
-  
-  if (responseNoCity?.ok) {
-    const data = await responseNoCity.json();
-    const empresas = data.empresas || [];
-    console.log(`[EmpresaQui:${traceId}] ✅ ${empresas.length} resultados SEM cidade`);
-    return empresas;
+
+  // Deduplir por CNPJ
+  const uniqueMap = new Map();
+  for (const empresa of allEmpresas) {
+    if (empresa.cnpj && !uniqueMap.has(empresa.cnpj)) {
+      uniqueMap.set(empresa.cnpj, empresa);
+    }
   }
+
+  const uniqueEmpresas = Array.from(uniqueMap.values());
+  console.log(`[EmpresaQui:${traceId}] 📊 Total deduplicado: ${uniqueEmpresas.length} empresas`);
   
-  console.error(`[EmpresaQui:${traceId}] ❌ Falha completa na busca`);
-  return [];
+  return uniqueEmpresas;
 }
 
 /**
@@ -504,6 +562,18 @@ async function validateCNPJ(
 }
 
 /**
+ * Normaliza string: lowercase, remove acentos, deduplicação de espaços
+ */
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Calcula score de match entre dados da empresa e candidato
  */
 function calculateMatch(
@@ -513,23 +583,36 @@ function calculateMatch(
   candidate: any,
   source?: string
 ): { confidence: number; scores: any } {
-  // Pesos base: Nome (40), Domínio (30)
-  const sourceName = (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase();
-  const queryName = companyName.toLowerCase();
+  // Normalizar strings para comparação justa
+  const q = normalize(companyName);
+  const rz = normalize(candidate.razao_social || '');
+  const nf = normalize(candidate.nome_fantasia || '');
 
-  // Tokenização para detectar marca única - stopwords mais conservadoras
-  const tokens = queryName.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
+  // Comparar query contra AMBOS razão social E nome fantasia
+  const nameR = calculateNameSimilarity(q, rz);
+  const nameF = calculateNameSimilarity(q, nf);
+  const nameScore = Math.max(nameR, nameF);
+  const winner = nameF > nameR ? 'fantasia' : 'razao';
+
+  // Tokenização para detectar marca única - stopwords expandidas
+  const tokens = q.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
   const stop = new Set([
-    'ltda','sa','s.a','holding','grupo',
-    'comercio','comércio','industria','indústria',
-    'distribuidora','companhia','brasil',
-    'do','da','de','e','the','of','and'
+    // Termos legais/comuns
+    'ltda','sa','s.a','holding','grupo','comercio','comércio',
+    'industria','indústria','distribuidora','companhia','brasil',
+    'do','da','de','e','the','of','and',
+    // Termos genéricos de setor (evita falsos positivos)
+    'logistica','logística','internacional','transportes','transportadora',
+    'assessoria','despachos','agenciamento','carga','cargas','frete',
+    'aduaneiro','despacho','warehouse','armazenagem','supply','chain',
+    'serviços','service','solutions','soluções'
   ]);
   const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
-  const containsBrand = brandTokens.some(t => sourceName.includes(t));
+  
+  const allNames = `${rz} ${nf}`.trim();
+  const containsBrand = brandTokens.some(t => allNames.includes(t));
 
-  const nameScore = calculateNameSimilarity(queryName, sourceName);
-
+  // Pesos base: Nome (40), Domínio (30)
   let totalBase = nameScore * 40;
   let baseMax = 40;
 
@@ -550,39 +633,36 @@ function calculateMatch(
   let locationMatchPct = 0;
   let bonus = 0;
   if (location?.city && candidate.municipio) {
-    const cityMatch = location.city.toLowerCase() === String(candidate.municipio).toLowerCase();
+    const cityMatch = normalize(location.city) === normalize(candidate.municipio);
     if (cityMatch) {
       locationMatchPct = 100;
       bonus += 10;
     }
   }
 
-  // Bônus/Penalidade de marca - menos agressivo
-  if (brandTokens.length > 0) {
-    if (containsBrand) {
-      bonus += 15; // Reduzido de 20 para 15
-    } else {
-      // Penalizar apenas se o nome for MUITO diferente
-      const isVeryDifferent = nameScore < 0.3; // Score < 30%
-      if (isVeryDifferent) {
-        bonus -= 5; // Reduzido de -10 para -5
-      }
-    }
+  // Bônus de fantasia: se fantasia venceu com >= 60%, adicionar +10
+  if (winner === 'fantasia' && nameF >= 0.6) {
+    bonus += 10;
   }
+
+  // Bônus de marca: apenas se brandTokens existir e for encontrado
+  if (brandTokens.length > 0 && containsBrand) {
+    bonus += 15;
+  }
+
+  // REMOVER penalidade por ausência de brand - deixa ordenação mais justa
 
   const baseConfidence = baseMax > 0 ? Math.round((totalBase / baseMax) * 100) : 0;
   const confidence = Math.max(0, Math.min(100, baseConfidence + bonus));
 
-  // Debug info
-  const debug = {
-    brandTokens,
-    containsBrand,
-    nameScore: Math.round(nameScore * 100),
-    baseConfidence,
-    bonus
-  };
-
-  console.log(`[Match Debug] ${candidate.razao_social || candidate.nome}: ${confidence}% | source:${source || 'unknown'} | name:${debug.nameScore}% domain:${domainMatchPct}% loc:${locationMatchPct}% | brand:[${brandTokens.join(',')}] found:${containsBrand}`);
+  // Log detalhado para debug
+  console.log(
+    `[Match Debug] ${candidate.razao_social || candidate.nome_fantasia}: ${confidence}% | ` +
+    `source:${source || 'unknown'} | winner:${winner} | ` +
+    `nameR:${Math.round(nameR * 100)}% nameF:${Math.round(nameF * 100)}% | ` +
+    `domain:${domainMatchPct}% loc:${locationMatchPct}% | ` +
+    `brand:[${brandTokens.join(',')}] found:${containsBrand}`
+  );
 
   return {
     confidence,
