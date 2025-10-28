@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as ciclo3Module from './ciclo3-handlers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,9 +41,6 @@ serve(async (req) => {
     );
 
     console.log('[Apollo] 🚀 Requisição:', { type, companyId });
-
-    // CICLO 3: Importar handlers avançados
-    const ciclo3Module = await import('./ciclo3-handlers.ts');
 
     // CICLO 3: RESOLUÇÃO E BUSCA DE ORGANIZAÇÕES
     if (type === 'ciclo3_resolve_organization') {
