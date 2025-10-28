@@ -61,17 +61,19 @@ export function UpdateNowButton({
 
         const { data, error } = await supabase.functions.invoke('enrich-apollo', {
           body: {
-            type: 'ciclo3_resolve_organization',
-            searchName: companyName,
+            type: 'search_organizations',
+            name: companyName,
             domain: cleanDomain
           }
         });
 
         if (error) throw error;
 
-        if (data?.organization) {
-          toast.success(`✅ Empresa encontrada no Apollo!`, {
-            description: `${data.organization.name} - Score: ${(data.matchScore * 100).toFixed(0)}%`
+        const total = data?.total ?? data?.organizations?.length ?? 0;
+        const first = data?.organizations?.[0];
+        if (total > 0 && first) {
+          toast.success(`✅ Empresas encontradas no Apollo (${total})`, {
+            description: `${first.name}${first.primary_domain ? ' · ' + first.primary_domain : ''}`
           });
         } else {
           toast.warning('Empresa não encontrada no Apollo', {
