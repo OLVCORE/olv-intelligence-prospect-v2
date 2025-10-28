@@ -859,7 +859,6 @@ serve(async (req) => {
       if (peopleResponse.ok) {
         const peopleData = await peopleResponse.json();
         let people = peopleData.people || [];
-        peopleCount = people.length;
 
         console.log('[Apollo] 👥 Encontrados', people.length, 'decisores');
         console.log('[Apollo] 📊 Amostra de 3 primeiros:', people.slice(0, 3).map((p: any) => ({
@@ -915,7 +914,7 @@ serve(async (req) => {
           seniority: p.seniority
         })));
 
-        // 🧹 Filtrar por organização/domínio correto (flexível)
+        // 🧹 Filtrar por organização/domínio correto (ESTRITO)
         const origPeople = people;
         const norm = (s?: string) => (s || '')
           .toLowerCase()
@@ -923,20 +922,30 @@ serve(async (req) => {
           .replace(/^www\./, '')
           .split('/')[0]
           .trim();
+        const normName = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
         const companyDomain = norm(domain || company.website || company.domain);
-        let afterFilter = people.filter((p: any) => {
+        const orgNameNorm = normName(org?.name);
+
+        const afterFilter = people.filter((p: any) => {
           const pOrgId = p.organization_id || p.organization?.id;
           const pDom = norm(p.organization?.primary_domain || (p.organization as any)?.domain);
-          return (org?.id && pOrgId === org.id) || (!!companyDomain && pDom === companyDomain);
+          const pOrgName = normName(p.organization?.name);
+          const matchesOrgId = !!org?.id && pOrgId === org.id;
+          const matchesDomain = !!companyDomain && pDom === companyDomain;
+          const matchesOrgName = !!org?.name && pOrgName && pOrgName === orgNameNorm;
+          return matchesOrgId || matchesDomain || matchesOrgName;
         });
-        console.log('[Apollo] 🧹 Filtro por organização/domínio:', { antes: people.length, depois: afterFilter.length, companyDomain, orgId: org?.id });
+        console.log('[Apollo] 🧹 Filtro por organização/domínio/nome:', { antes: people.length, depois: afterFilter.length, companyDomain, orgId: org?.id, orgName: org?.name });
 
         if (afterFilter.length === 0) {
-          console.warn('[Apollo] ⚠️ Filtro removeu todos. Mantendo lista original para não perder contatos.');
-          people = origPeople;
+          console.warn('[Apollo] ⚠️ Nenhum contato corresponde estritamente à organização/domínio. Não iremos manter lista ampla.');
+          people = [];
         } else {
           people = afterFilter;
         }
+
+        // Atualizar contador APÓS o filtro estrito
+        peopleCount = people.length;
 
         // 🔄 FALLBACK: Se Apollo não trouxe decisores, tentar PhantomBuster
         let dataSource = 'apollo';
