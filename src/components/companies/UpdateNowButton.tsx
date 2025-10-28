@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 type OrgResult = {
   id: string;
@@ -13,11 +13,15 @@ type OrgResult = {
   linkedin_url?: string | null;
   logo_url?: string | null;
   industry?: string | null;
+  industries?: string[] | null;
+  secondary_industries?: string[] | null;
+  keywords?: string[] | null;
   estimated_num_employees?: number | null;
   city?: string | null;
   state?: string | null;
   country?: string | null;
   founded_year?: number | null;
+  description?: string | null;
 };
 interface UpdateNowButtonProps {
   companyId: string;
@@ -119,7 +123,7 @@ export function UpdateNowButton({
       console.log('[UpdateNow] ✅ Atribuindo Apollo Org e enriquecendo:', selectedOrg.id);
       const { data, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
-          type: 'ciclo3_enrich_complete',
+          type: 'assign_apollo_org',
           companyId,
           apolloOrganizationId: selectedOrg.id
         }

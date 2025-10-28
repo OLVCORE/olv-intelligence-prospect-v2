@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -85,6 +84,97 @@ serve(async (req) => {
         JSON.stringify(result),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Atribuir Apollo Org à empresa e salvar campos principais (sem OpenAI)
+    if (type === 'assign_apollo_org') {
+      try {
+        const orgId = organizationId || apolloOrganizationId || apolloOrgId;
+        if (!companyId || !orgId) {
+          return new Response(
+            JSON.stringify({ error: 'Parâmetros ausentes', details: 'companyId e apolloOrganizationId são obrigatórios' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const resp = await fetch('https://api.apollo.io/v1/organizations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY },
+          body: JSON.stringify({ id: orgId })
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          console.error('[Apollo] ❌ Erro ao obter organização por ID:', resp.status, errText);
+          return new Response(
+            JSON.stringify({ error: `Apollo API error: ${resp.status}`, details: errText }),
+            { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const orgData = await resp.json();
+        const org = orgData.organization || orgData; // compatibilidade
+
+        const { data: existing } = await supabase
+          .from('companies')
+          .select('raw_data')
+          .eq('id', companyId)
+          .maybeSingle();
+
+        const updateData: Record<string, unknown> = {
+          apollo_organization_id: org.id || orgId,
+          apollo_id: org.id || orgId,
+          domain: org.primary_domain ?? null,
+          website: org.website_url ?? null,
+          industry: org.industry ?? (org.industries?.[0] ?? null),
+          employees: org.estimated_num_employees ?? null,
+          employee_count_from_apollo: org.estimated_num_employees ?? null,
+          sic_codes: org.sic_codes ?? [],
+          naics_codes: org.naics_codes ?? [],
+          phone_numbers: org.phone ? [org.phone] : (org.primary_phone?.sanitized_number ? [org.primary_phone.sanitized_number] : []),
+          social_urls: {
+            blog: org.blog_url ?? null,
+            twitter: org.twitter_url ?? null,
+            facebook: org.facebook_url ?? null,
+            linkedin: org.linkedin_url ?? null,
+          },
+          apollo_metadata: {
+            keywords: org.keywords ?? [],
+            founded_year: org.founded_year ?? null,
+          },
+          location: {
+            city: org.city ?? null,
+            state: org.state ?? null,
+            country: org.country ?? null,
+            street: org.street_address ?? null,
+            postal_code: org.postal_code ?? null,
+          },
+          apollo_last_enriched_at: new Date().toISOString(),
+          raw_data: { ...(existing?.raw_data || {}), apollo: org },
+        };
+
+        const { error: upErr } = await supabase
+          .from('companies')
+          .update(updateData)
+          .eq('id', companyId);
+
+        if (upErr) {
+          console.error('[Apollo] ❌ Erro atualizando empresa:', upErr);
+          return new Response(
+            JSON.stringify({ error: 'Falha ao salvar empresa', details: upErr.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, fields_enriched: Object.keys(updateData).length, decisors_saved: 0, similar_companies: 0 }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (e: any) {
+        console.error('[Apollo] ❌ Erro assign_apollo_org:', e);
+        return new Response(
+          JSON.stringify({ error: 'Erro interno', details: e?.message || String(e) }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // ============================================
