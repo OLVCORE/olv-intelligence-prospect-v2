@@ -93,6 +93,18 @@ serve(async (req) => {
         envVarName: 'SERPER_API_KEY',
         apiKey: maskApiKey(Deno.env.get('SERPER_API_KEY'))
       },
+      {
+        name: 'EmpresaQui',
+        status: Deno.env.get('EMPRESAQUI_API_KEY') ? 'online' : 'offline',
+        configured: !!Deno.env.get('EMPRESAQUI_API_KEY'),
+        category: 'data',
+        priority: 'critical',
+        description: 'Dados cadastrais CNPJ primários (ilimitado, sem rate limit)',
+        estimatedCost: 'R$ 99-299/mês',
+        signupUrl: 'https://empresaqui.com.br/pricing',
+        envVarName: 'EMPRESAQUI_API_KEY',
+        apiKey: maskApiKey(Deno.env.get('EMPRESAQUI_API_KEY'))
+      },
       
       // ALTA PRIORIDADE (Laranja) - Importantes para funcionalidade completa
       {

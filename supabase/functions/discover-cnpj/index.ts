@@ -57,39 +57,20 @@ serve(async (req) => {
       if (EMPRESAQUI_API_KEY) {
         console.log('[CNPJ Discovery] 📊 Tentando EmpresaQui...');
         
-        const params = new URLSearchParams({
-          razao_social: companyName,
-          limit: '5'
-        });
-
-        if (location?.city) {
-          params.append('cidade', location.city);
-        }
-
-        const response = await fetch(`https://api.empresaqui.com.br/v1/empresas/busca?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${EMPRESAQUI_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const empresas = data.empresas || [];
+        const empresas = await searchEmpresaQui(EMPRESAQUI_API_KEY, companyName, location);
+        
+        for (const empresa of empresas) {
+          const match = calculateMatch(companyName, domain, location, empresa);
           
-          for (const empresa of empresas) {
-            const match = calculateMatch(companyName, domain, location, empresa);
-            
-            if (match.confidence >= 30) {
-              candidates.push({
-                cnpj: empresa.cnpj,
-                confidence: match.confidence,
-                source: 'empresaqui',
-                validation: match.scores,
-                data: empresa
-              });
-              console.log('[CNPJ Discovery] ✅ EmpresaQui encontrou:', empresa.cnpj, `(${match.confidence}%)`);
-            }
+          if (match.confidence >= 40) { // Threshold aumentado para 40%
+            candidates.push({
+              cnpj: empresa.cnpj,
+              confidence: match.confidence,
+              source: 'empresaqui',
+              validation: match.scores,
+              data: empresa
+            });
+            console.log('[CNPJ Discovery] ✅ EmpresaQui encontrou:', empresa.cnpj, `(${match.confidence}%)`);
           }
         }
       }
@@ -213,7 +194,7 @@ serve(async (req) => {
             
             // Validar
             const validated = await validateCNPJ(cnpj, companyName, domain, location);
-            if (validated && validated.confidence >= 30) {
+            if (validated && validated.confidence >= 40) { // Threshold aumentado para 40%
               candidates.push(validated);
               console.log('[CNPJ Discovery] ✅ Website revelou:', cnpj, `(${validated.confidence}%) via ${validated.source}`);
             }
@@ -330,6 +311,125 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}, ms = 5000
 }
 
 /**
+ * Fetch com retry inteligente e exponential backoff
+ */
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 3,
+  timeoutMs = 5000
+): Promise<Response | null> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      
+      clearTimeout(id);
+      
+      // Sucesso ou erro permanente (4xx)
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        return response;
+      }
+      
+      // Erro temporário (5xx, rate limit), tentar novamente
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        console.log(`[Retry] Tentativa ${attempt}/${maxRetries} após ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (error: any) {
+      // DNS/Network/Timeout - só retry se não for última tentativa
+      if (attempt === maxRetries) {
+        console.error(`[Retry] Falha após ${maxRetries} tentativas:`, error.message);
+        return null;
+      }
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.log(`[Retry] Erro de rede, retry ${attempt}/${maxRetries} após ${delay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  return null;
+}
+
+/**
+ * Two-phase search: primeiro COM cidade, depois SEM cidade
+ */
+async function searchEmpresaQui(
+  apiKey: string,
+  companyName: string,
+  location?: any
+): Promise<any[]> {
+  const traceId = crypto.randomUUID().substring(0, 8);
+  console.log(`[EmpresaQui:${traceId}] Iniciando busca para: ${companyName}`);
+  
+  // FASE 1: Busca COM cidade (se disponível)
+  if (location?.city) {
+    const paramsWithCity = new URLSearchParams({
+      razao_social: companyName,
+      cidade: location.city,
+      limit: '5'
+    });
+    
+    const responseWithCity = await fetchWithRetry(
+      `https://api.empresaqui.com.br/v1/empresas/busca?${paramsWithCity}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      },
+      3, // 3 tentativas
+      5000 // 5s timeout
+    );
+    
+    if (responseWithCity?.ok) {
+      const data = await responseWithCity.json();
+      const empresas = data.empresas || [];
+      if (empresas.length > 0) {
+        console.log(`[EmpresaQui:${traceId}] ✅ ${empresas.length} resultados COM cidade`);
+        return empresas;
+      }
+      console.log(`[EmpresaQui:${traceId}] ⚠️ Sem resultados com cidade, tentando sem...`);
+    } else {
+      console.log(`[EmpresaQui:${traceId}] ⚠️ Erro na busca com cidade, fallback para busca geral`);
+    }
+  }
+  
+  // FASE 2: Busca SEM cidade (fallback ou primeira tentativa)
+  const paramsNoCity = new URLSearchParams({
+    razao_social: companyName,
+    limit: '5'
+  });
+  
+  const responseNoCity = await fetchWithRetry(
+    `https://api.empresaqui.com.br/v1/empresas/busca?${paramsNoCity}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    },
+    3,
+    5000
+  );
+  
+  if (responseNoCity?.ok) {
+    const data = await responseNoCity.json();
+    const empresas = data.empresas || [];
+    console.log(`[EmpresaQui:${traceId}] ✅ ${empresas.length} resultados SEM cidade`);
+    return empresas;
+  }
+  
+  console.error(`[EmpresaQui:${traceId}] ❌ Falha completa na busca`);
+  return [];
+}
+
+/**
  * Valida um CNPJ usando múltiplas fontes em corrida (ReceitaWS e BrasilAPI)
  */
 async function validateCNPJ(
@@ -374,7 +474,7 @@ async function validateCNPJ(
 
     // Pega o que responder primeiro com bom match
     const results = await Promise.any([receitaPromise, brasilPromise]);
-    if (results.match.confidence >= 30) {
+    if (results.match.confidence >= 40) { // Threshold aumentado para 40%
       return {
         cnpj,
         confidence: results.match.confidence,
@@ -402,10 +502,13 @@ function calculateMatch(
   const sourceName = (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase();
   const queryName = companyName.toLowerCase();
 
-  // Tokenização para detectar marca única
+  // Tokenização para detectar marca única - stopwords mais conservadoras
   const tokens = queryName.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
   const stop = new Set([
-    'logistica','logística','internacional','transportes','servicos','serviços','ltda','sa','s.a','holding','grupo','comercio','comércio','industria','indústria','tecnologia','solucoes','soluções','distribuidora','companhia','brasil','do','da','de','the','of','and'
+    'ltda','sa','s.a','holding','grupo',
+    'comercio','comércio','industria','indústria',
+    'distribuidora','companhia','brasil',
+    'do','da','de','e','the','of','and'
   ]);
   const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
   const containsBrand = brandTokens.some(t => sourceName.includes(t));
@@ -439,13 +542,32 @@ function calculateMatch(
     }
   }
 
-  // Bônus/Penalidade de marca
+  // Bônus/Penalidade de marca - menos agressivo
   if (brandTokens.length > 0) {
-    if (containsBrand) bonus += 20; else bonus -= 10;
+    if (containsBrand) {
+      bonus += 15; // Reduzido de 20 para 15
+    } else {
+      // Penalizar apenas se o nome for MUITO diferente
+      const isVeryDifferent = nameScore < 0.3; // Score < 30%
+      if (isVeryDifferent) {
+        bonus -= 5; // Reduzido de -10 para -5
+      }
+    }
   }
 
   const baseConfidence = baseMax > 0 ? Math.round((totalBase / baseMax) * 100) : 0;
   const confidence = Math.max(0, Math.min(100, baseConfidence + bonus));
+
+  // Debug info
+  const debug = {
+    brandTokens,
+    containsBrand,
+    nameScore: Math.round(nameScore * 100),
+    baseConfidence,
+    bonus
+  };
+
+  console.log(`[Match Debug] ${candidate.razao_social}: ${confidence}% | name:${debug.nameScore}% domain:${domainMatchPct}% loc:${locationMatchPct}% | brand:[${brandTokens.join(',')}] found:${containsBrand}`);
 
   return {
     confidence,
