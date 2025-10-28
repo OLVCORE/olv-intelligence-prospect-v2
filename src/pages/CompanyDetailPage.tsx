@@ -453,13 +453,13 @@ export default function CompanyDetailPage() {
       {/* Tabs Navigation */}
       <Tabs defaultValue="overview" className="w-full">
         <ScrollArea className="w-full whitespace-nowrap">
-          <TabsList className="inline-flex w-auto border-b">
+          <TabsList className="glass-card p-1.5 gap-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="overview" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
                   >
                     <Eye className="h-4 w-4" />
                     Visão Geral
@@ -476,7 +476,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="inteligencia" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
                   >
                     <Brain className="h-4 w-4" />
                     Inteligência
@@ -493,7 +493,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="financeiro" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
                   >
                     <Wallet className="h-4 w-4" />
                     Financeiro
@@ -510,7 +510,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="actions" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
                   >
                     <Zap className="h-4 w-4" />
                     Ações
