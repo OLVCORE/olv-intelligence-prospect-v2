@@ -506,6 +506,15 @@ export function AppSidebar() {
             </TooltipContent>
           </Tooltip>
           
+          {/* Marca registrada */}
+          {(open || isMobile) && (
+            <div className="px-3 py-2 text-center">
+              <p className="text-[10px] text-sidebar-foreground/40">
+                Powered by OLV Internacional + IA Intelligence 2025 *
+              </p>
+            </div>
+          )}
+          
           {/* Toggle button - sempre visível */}
           <div className="pt-2 border-t border-sidebar-border/50">
             <Button

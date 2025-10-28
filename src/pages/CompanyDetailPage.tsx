@@ -466,109 +466,7 @@ export default function CompanyDetailPage() {
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Resumo executivo com CNPJ, razão social, situação, porte e data de abertura
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="identificacao" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <IdCard className="h-4 w-4" />
-                    Identificação
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Dados cadastrais: CNPJ, razão social, nome fantasia, natureza jurídica, tipo unidade, situação cadastral
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="localizacao" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <MapPinned className="h-4 w-4" />
-                    Localização
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Endereço completo, telefones (assertividade, matriz, filiais, celulares), e-mails, WhatsApp e mapa
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="atividade" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <ActivityIcon className="h-4 w-4" />
-                    Atividade
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Setor, CNAEs primários e secundários, NCMs, regime tributário, importação/exportação
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="estrutura" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <UsersIcon className="h-4 w-4" />
-                    Estrutura
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Funcionários (matriz e filiais), sócios, decisores, colaboradores e quantidade de filiais
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="financeiro" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <Wallet className="h-4 w-4" />
-                    Financeiro
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Capital social, faturamento, recebimentos do governo, crescimento e todas as dívidas (CNPJ, sócios, FGTS, Previdência)
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger 
-                    value="digital" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
-                  >
-                    <Monitor className="h-4 w-4" />
-                    Digital
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Websites, redes sociais (Instagram, Facebook, LinkedIn, Twitter, YouTube), tecnologias, ferramentas, tags e notas
+                  Resumo completo: Identificação, Localização, Atividade, Estrutura e Receita Federal consolidados
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -585,7 +483,7 @@ export default function CompanyDetailPage() {
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Score digital, nível de atividade, classificação e insights capturados pela IA
+                  Hub analítico: empresa + decisores + similares + insights da IA
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -594,15 +492,15 @@ export default function CompanyDetailPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <TabsTrigger 
-                    value="receita" 
+                    value="financeiro" 
                     className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Receita
+                    <Wallet className="h-4 w-4" />
+                    Financeiro
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Dados oficiais completos da Receita Federal (JSON raw)
+                  Capital social, faturamento, dívidas e integração com Serasa
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -619,7 +517,7 @@ export default function CompanyDetailPage() {
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Enriquecimento de dados (Apollo, PhantomBuster, LinkedIn), adicionar decisores e excluir empresa
+                  Workspace de prospecção: Funil, Cadências, Comunicações, Agenda e Tarefas
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1089,7 +987,7 @@ export default function CompanyDetailPage() {
           )}
         </TabsContent>
 
-        {/* TAB 6: Financeiro */}
+        {/* TAB 3: Financeiro */}
         <TabsContent value="financeiro" className="space-y-4">
           <FinancialDebtCard rawData={rawData} />
           
@@ -1366,7 +1264,7 @@ export default function CompanyDetailPage() {
           </div>
         </TabsContent>
 
-        {/* TAB 8: Inteligência e Análise */}
+        {/* TAB 2: Inteligência e Análise */}
         <TabsContent value="inteligencia" className="space-y-4">
           {/* Diagnóstico 360° por IA */}
           <DiagnosticAIPanel company={company} />

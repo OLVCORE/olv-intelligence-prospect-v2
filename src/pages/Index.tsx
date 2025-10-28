@@ -347,7 +347,7 @@ export default function Index() {
       {/* Footer */}
       <div className="border-t border-white/10 py-8">
         <div className="container mx-auto px-4 text-center text-white/40 text-sm">
-          <p>© 2025 STRATEVO Intelligence. Powered by AI and Real-Time Data.</p>
+          <p>© 2025 STRATEVO Intelligence. Powered by OLV Internacional + IA Intelligence 2025 *</p>
         </div>
       </div>
     </div>

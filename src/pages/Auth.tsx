@@ -93,6 +93,9 @@ export default function Auth() {
           <CardDescription className="text-center">
             A Plataforma Definitiva de Inteligência de Vendas
           </CardDescription>
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            Powered by OLV Internacional + IA Intelligence 2025 *
+          </p>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
