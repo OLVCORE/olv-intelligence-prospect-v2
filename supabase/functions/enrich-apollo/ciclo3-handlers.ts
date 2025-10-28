@@ -7,7 +7,7 @@ import * as utils from './utils.ts';
 import * as apolloFields from './apollo-fields.ts';
 import * as peopleCollector from './people-collector.ts';
 
-const cors Headers = {
+const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };

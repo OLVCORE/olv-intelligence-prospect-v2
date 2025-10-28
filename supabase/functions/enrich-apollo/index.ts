@@ -41,44 +41,47 @@ serve(async (req) => {
 
     console.log('[Apollo] 🚀 Requisição:', { type, companyId });
 
-    // Importar handlers
-    const handlersModule = await import('./new-handlers.ts');
+    // CICLO 3: Importar handlers avançados
+    const ciclo3Module = await import('./ciclo3-handlers.ts');
 
-    // NOVO FLUXO: BUSCA INCREMENTAL DE ORGANIZAÇÕES
-    if (type === 'search_organizations') {
-      const result = await handlersModule.handleSearchOrganizations(
+    // CICLO 3: RESOLUÇÃO E BUSCA DE ORGANIZAÇÕES
+    if (type === 'ciclo3_resolve_organization') {
+      const result = await ciclo3Module.resolveAndEnrichOrganization(
         APOLLO_API_KEY,
-        searchName || name || '',
-        domain
+        {
+          name: searchName || name || '',
+          domain: domain,
+          location: body.location
+        }
       );
       
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify(result || { organization: null, matchScore: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // NOVO FLUXO: BUSCAR POR ID (URL MANUAL)
-    if (type === 'get_organization_by_id') {
-      const result = await handlersModule.handleGetOrganizationById(
+    // CICLO 3: BUSCAR ORGANIZAÇÃO POR ID
+    if (type === 'ciclo3_get_organization_by_id') {
+      const result = await ciclo3Module.getOrganizationById(
         APOLLO_API_KEY,
-        organizationId || apolloOrgId || ''
+        organizationId || apolloOrganizationId || apolloOrgId || ''
       );
       
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({ organization: result }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // NOVO FLUXO: ENRIQUECER EMPRESA (42 CAMPOS + DECISORES)
-    if (type === 'enrich_company') {
-      const result = await handlersModule.handleEnrichCompany(
+    // CICLO 3: ENRIQUECIMENTO COMPLETO (100% CAMPOS + DECISORES)
+    if (type === 'ciclo3_enrich_complete') {
+      const result = await ciclo3Module.enrichCompanyComplete(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
         APOLLO_API_KEY,
         companyId || '',
-        apolloOrganizationId || apolloOrgId || ''
+        apolloOrganizationId || apolloOrgId
       );
       
       return new Response(
