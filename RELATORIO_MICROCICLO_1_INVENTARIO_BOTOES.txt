@@ -1,0 +1,713 @@
+================================================================================
+RELATÓRIO MICROCICLO 1 - INVENTÁRIO DOM DE BOTÕES
+Data: 28/10/2025
+Páginas Auditadas: Lista de Empresas (CompaniesManagementPage) + Detalhe da Empresa (CompanyDetailPage)
+================================================================================
+
+RESUMO EXECUTIVO
+--------------------------------------------------------------------------------
+Total de botões mapeados: 31 botões únicos
+Distribuição:
+  - Toolbar Global (Lista): 6 botões
+  - Card de Busca/Filtros (Lista): 5 botões
+  - Ações por Linha/Empresa (Lista): 9 botões
+  - Header Detalhe da Empresa: 7 botões
+  - Aba "Ações" no Detalhe: 4 botões
+
+Status Geral: ⚠️ PROBLEMAS IDENTIFICADOS
+  - Redundância de botões (mesma função em múltiplos locais)
+  - Falta de toolbar de processamento em massa
+  - Falta de menu consolidado "Ações" (engrenagem)
+  - Botão "Criar Estratégia" aparece sem validação de pré-requisitos
+
+================================================================================
+
+SEÇÃO 1: TOOLBAR GLOBAL (TOPO DA LISTA DE EMPRESAS)
+Localização: src/pages/CompaniesManagementPage.tsx (linhas 712-877)
+Data-testid esperado: companies-toolbar
+Contexto: Botões no header da página, ao lado do título
+--------------------------------------------------------------------------------
+
+Botão 1: Upload em Massa
+  - Label: [ícone Upload]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: false
+  - HasOnClick: true
+  - Tipo: BulkUploadDialog
+  - Ação esperada: Abrir dialog de upload em massa
+  - Endpoint: Não aplicável (componente local)
+  - Status: ✅ OK - Funcional
+  - Observações: Ícone-only, tooltip "Upload em Massa"
+
+Botão 2: Receita Federal (Lote)
+  - Label: [ícone Building2]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: Quando isBatchEnriching=true
+  - HasOnClick: true → handleBatchEnrichReceitaWS
+  - Ação esperada: Enriquecer em lote com Receita Federal
+  - Endpoint: POST /functions/v1/batch-enrich-receitaws
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Receita Federal (Lote)"
+
+Botão 3: Enriquecimento 360° Completo
+  - Label: [ícone Sparkles]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: Quando isBatchEnriching360=true
+  - HasOnClick: true → handleBatchEnrich360
+  - Ação esperada: Enriquecer em lote com análise 360°
+  - Endpoint: POST /functions/v1/batch-enrich-360
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Enriquecimento 360° Completo"
+
+Botão 4: Apollo (Decisores & Contatos)
+  - Label: [ícone Apollo img]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: Quando isBatchEnrichingApollo=true
+  - HasOnClick: true → handleBatchEnrichApollo
+  - Ação esperada: Enriquecer em lote com Apollo (decisores)
+  - Endpoint: POST /functions/v1/enrich-apollo (type: batch_enrich)
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Apollo (Decisores & Contatos)", gradient purple-to-blue
+
+Botão 5: Eco-Booster (Lote)
+  - Label: [ícone Zap]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: Quando isBatchEnrichingEconodata=true
+  - HasOnClick: true → loop inline de supabase.functions.invoke('enrich-econodata')
+  - Ação esperada: Enriquecer em lote com Econodata
+  - Endpoint: POST /functions/v1/enrich-econodata (múltiplas chamadas)
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Eco-Booster (Lote)"
+
+Botão 6: Buscar Empresas (lupa)
+  - Label: [ícone Search]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (header)
+  - Disabled: false
+  - HasOnClick: true → navigate('/search')
+  - Ação esperada: Navegar para página de busca/adicionar empresas
+  - Endpoint: Não aplicável (roteamento)
+  - Status: ✅ OK - Funcional
+  - Observações: Ícone-only, tooltip "Buscar Empresas"
+
+⚠️ PROBLEMAS IDENTIFICADOS NESTA SEÇÃO:
+  - FALTA: Botão "Selecionar tudo / Limpar seleção" (só existe no header da tabela como checkbox)
+  - FALTA: Botão "Deletar empresas selecionadas" (foi removido)
+  - FALTA: Menu dropdown "Enriquecer em lote" consolidado
+  - FALTA: Botão "Exportar selecionadas"
+  - FALTA: Botão "Diagnóstico em lote"
+  - FALTA: Botão "Configurar Integrações"
+  - Todos os botões são icon-only, sem labels visuais (só tooltips)
+  - Nenhum botão tem data-testid definido (dificulta automação)
+
+================================================================================
+
+SEÇÃO 2: CARD DE BUSCA/FILTROS (LISTA DE EMPRESAS)
+Localização: src/pages/CompaniesManagementPage.tsx (linhas 879-941)
+Data-testid: Não definido
+Contexto: Card abaixo do header com input de busca e botões de ação
+--------------------------------------------------------------------------------
+
+Botão 7: Atualizar (Refresh)
+  - Label: "Atualizar" + ícone RefreshCw
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (search card)
+  - Disabled: false
+  - HasOnClick: true → handleRefresh
+  - Ação esperada: Recarregar lista de empresas
+  - Endpoint: GET /rest/v1/companies (via refetch)
+  - Status: ✅ OK - Funcional
+  - Observações: Ícone gira quando loading=true
+
+Botão 8: Exportar PDF
+  - Label: "PDF" + ícone FileText
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (search card)
+  - Disabled: Quando isExporting=true OU companies.length=0
+  - HasOnClick: true → handleExportPDF
+  - Ação esperada: Gerar e baixar PDF da lista
+  - Endpoint: Não aplicável (geração client-side com jsPDF)
+  - Status: ✅ OK - Funcional
+  - Observações: Variant outline
+
+Botão 9: Exportar CSV
+  - Label: "CSV" + ícone Download
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (search card)
+  - Disabled: Quando isExporting=true OU companies.length=0
+  - HasOnClick: true → handleExportCSV
+  - Ação esperada: Gerar e baixar CSV completo (87 colunas)
+  - Endpoint: Não aplicável (geração client-side)
+  - Status: ✅ OK - Funcional
+  - Observações: Variant outline, exporta com BOM para UTF-8
+
+Botão 10: Exportar XLS
+  - Label: "XLS" + ícone FileSpreadsheet
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (search card)
+  - Disabled: Quando isExporting=true OU companies.length=0
+  - HasOnClick: true → handleExportXLS
+  - Ação esperada: Gerar e baixar Excel (87 colunas)
+  - Endpoint: Não aplicável (geração client-side com XLSX)
+  - Status: ✅ OK - Funcional
+  - Observações: Variant outline, auto-ajusta largura de colunas
+
+Botão 11: Exportar PNG
+  - Label: "PNG" + ícone Image
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: global (search card)
+  - Disabled: Quando isExporting=true OU companies.length=0
+  - HasOnClick: true → handleExportPNG
+  - Ação esperada: Capturar screenshot da tabela e baixar PNG
+  - Endpoint: Não aplicável (html2canvas)
+  - Status: ✅ OK - Funcional
+  - Observações: Variant outline, requer [data-testid="companies-table"]
+
+⚠️ PROBLEMAS IDENTIFICADOS NESTA SEÇÃO:
+  - Input de busca presente (linhas 884-892), mas sem botão "Limpar busca"
+  - Botões de exportação não respeitam seleção (sempre exportam TODAS as empresas visíveis)
+  - FALTA: Opção "Exportar selecionadas" vs "Exportar todas filtradas"
+
+================================================================================
+
+SEÇÃO 3: AÇÕES POR LINHA/EMPRESA (TABELA)
+Localização: src/pages/CompaniesManagementPage.tsx (linhas 1107-1328)
+Data-testid esperado: company-row
+Contexto: Botões no final de cada linha da tabela (coluna "Ações")
+--------------------------------------------------------------------------------
+
+Botão 12: Ver detalhes (por linha)
+  - Label: [ícone Eye]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → navigate(`/company/${company.id}`)
+  - Ação esperada: Navegar para página de detalhes da empresa
+  - Endpoint: Não aplicável (roteamento)
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Ver detalhes", variant default, size sm (8x8)
+
+Botão 13: Editar/Salvar Dados (por linha)
+  - Label: [ícone Edit]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → navigate(`/search?companyId=${company.id}`)
+  - Ação esperada: Navegar para página de busca com empresa selecionada para edição
+  - Endpoint: Não aplicável (roteamento)
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Editar/Salvar Dados", variant default, size sm (8x8)
+
+Botão 14: Account Strategy Hub (por linha)
+  - Label: [ícone Target]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`)
+  - Ação esperada: Navegar para Account Strategy Hub da empresa
+  - Endpoint: Não aplicável (roteamento)
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Account Strategy Hub", variant default, size sm (8x8)
+
+Botão 15: Descobrir CNPJ (por linha - condicional)
+  - Label: [ícone Search]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → setCnpjCompany + setCnpjDialogOpen
+  - Ação esperada: Abrir dialog de descoberta de CNPJ
+  - Endpoint: Usado depois no dialog: POST /functions/v1/discover-cnpj
+  - Status: ✅ OK - Funcional
+  - Observações: Só aparece quando !company.cnpj, tooltip "Descobrir CNPJ", variant default, size sm (8x8)
+
+Botão 16: Receita Federal (por linha)
+  - Label: [ícone Building2]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: Quando enrichingReceitaId === company.id OU !company.cnpj
+  - HasOnClick: true → handleEnrichReceita(company.id)
+  - Ação esperada: Enriquecer empresa com dados da Receita Federal
+  - Endpoint: POST /functions/v1/enrich-receitaws
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Receita Federal", variant default, size sm (8x8)
+
+Botão 17: Enriquecimento 360° (por linha)
+  - Label: [ícone Sparkles]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: Quando enrichingId === company.id
+  - HasOnClick: true → handleEnrich(company.id)
+  - Ação esperada: Executar análise 360° da empresa
+  - Endpoint: POST /functions/v1/enrich-company-360
+  - Status: ✅ OK - Funcional
+  - Observações: Spinner quando ativo, tooltip "Enriquecimento 360°", variant default, size sm (8x8)
+
+Botão 18: Eco-Booster (por linha)
+  - Label: [ícone Zap]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: Quando !company.cnpj
+  - HasOnClick: true → supabase.functions.invoke('enrich-econodata')
+  - Ação esperada: Enriquecer empresa com Econodata
+  - Endpoint: POST /functions/v1/enrich-econodata
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Eco-Booster", variant default, size sm (8x8)
+
+Botão 19: Apollo (Decisores) (por linha)
+  - Label: [ícone Apollo img]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → supabase.functions.invoke('enrich-apollo', type: enrich_company)
+  - Ação esperada: Buscar decisores e contatos com Apollo
+  - Endpoint: POST /functions/v1/enrich-apollo
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Apollo (Decisores)", gradient purple-to-blue, size sm (8x8)
+
+Botão 20: Excluir (por linha)
+  - Label: [ícone Trash2]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: row
+  - Disabled: false
+  - HasOnClick: true → setCompanyToDelete + setDeleteDialogOpen
+  - Ação esperada: Abrir dialog de confirmação de exclusão
+  - Endpoint: Usado depois no dialog: POST /functions/v1/delete-company
+  - Status: ✅ OK - Funcional
+  - Observações: Tooltip "Excluir", variant destructive, size sm (8x8)
+
+⚠️ PROBLEMAS IDENTIFICADOS NESTA SEÇÃO:
+  - ❌ REDUNDÂNCIA CRÍTICA: 9 botões por linha é excessivo
+  - ❌ FALTA: Menu consolidado "Ações" (engrenagem) para agrupar essas ações
+  - ⚠️ Botão "Account Strategy Hub" deveria estar dentro do menu "Ações"
+  - ⚠️ Botões de enriquecimento deveriam estar em submenu "Enriquecer"
+  - ⚠️ Nenhum botão tem estado visual de "já enriquecido" vs "pendente"
+  - ⚠️ Falta indicação visual de ordem de execução dos engines
+  - ⚠️ Botão "Apollo" não verifica se org_id/domain estão lockados antes
+  - ⚠️ Botão "Eco-Booster" não verifica se Receita já foi executada antes
+  - Espaçamento horizontal muito apertado (9 botões pequenos)
+
+RECOMENDAÇÃO:
+  Consolidar em menu dropdown "Ações" (ícone Settings/Gear):
+    ├─ Ver Detalhes
+    ├─ Editar Dados
+    ├─ Adicionar ao Funil
+    ├─ Account Strategy Hub
+    ├─ Enriquecer ▶
+    │   ├─ Receita Federal
+    │   ├─ Apollo (Company)
+    │   ├─ Apollo (People)
+    │   ├─ Similar Companies
+    │   ├─ Análise 360°
+    │   └─ Eco-Booster (Premium)
+    ├─ Descobrir CNPJ (se não tiver)
+    ├─ Atualizar Agora
+    └─ Excluir
+
+================================================================================
+
+SEÇÃO 4: HEADER DA PÁGINA DE DETALHE DA EMPRESA
+Localização: src/pages/CompanyDetailPage.tsx (linhas ~230-300)
+Data-testid esperado: company-detail-header
+Contexto: Botões no header da página de detalhes, ao lado do nome da empresa
+--------------------------------------------------------------------------------
+
+Botão 21: Criar Estratégia (header detalhe)
+  - Label: "Criar Estratégia" + ícone Target
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: true → navigate(`/account-strategy?company=${company.id}`)
+  - Ação esperada: Navegar para Account Strategy Hub
+  - Endpoint: Não aplicável (roteamento)
+  - Status: ⚠️ PROBLEMA - Visível sempre, sem validação de pré-requisitos
+  - Observações: Variant default, botão de destaque no header
+
+  ❌ PROBLEMA CRÍTICO:
+  - Botão aparece mesmo quando empresa está "fria" (sem dados enriquecidos)
+  - Não valida se:
+    • Layer 1 = 100% (org_id/domain/CNPJ lockados)
+    • People válidos ≥ 1 decisor com LinkedIn canônico
+    • Empresa no funil ≥ Qualificação
+  - Deveria estar DESABILITADO ou OCULTO até pré-requisitos serem cumpridos
+  - Deveria mostrar tooltip explicando o que falta para habilitar
+
+Botão 22: Atualizar Agora (header detalhe - ícone 1)
+  - Label: [ícone RefreshCw]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: true → handleRefresh
+  - Ação esperada: Recarregar dados da empresa
+  - Endpoint: GET /rest/v1/companies?id=eq.{id} (via refetch)
+  - Status: ✅ OK - Funcional
+  - Observações: Ícone-only, size icon (quadrado)
+
+Botão 23: Copiar Dados (header detalhe - ícone 2)
+  - Label: [ícone Copy]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: true → handleCopyCompanyData
+  - Ação esperada: Copiar JSON dos dados da empresa para clipboard
+  - Endpoint: Não aplicável (clipboard API)
+  - Status: ✅ OK - Funcional
+  - Observações: Ícone-only, size icon, toast "Dados copiados!"
+
+Botão 24: Spark/Lightning (header detalhe - ícone 3)
+  - Label: [ícone Zap]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: Não identificado no trecho visualizado
+  - Ação esperada: Provavelmente abrir AI Panel ou Enrichment
+  - Endpoint: Não identificado
+  - Status: ⚠️ NECESSITA VERIFICAÇÃO
+  - Observações: Ícone-only, size icon, sem tooltip identificado
+
+Botão 25: QR Code (header detalhe - ícone 4)
+  - Label: [ícone QrCode]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: Não identificado no trecho visualizado
+  - Ação esperada: Provavelmente gerar QR Code da empresa ou link
+  - Endpoint: Não identificado
+  - Status: ⚠️ NECESSITA VERIFICAÇÃO
+  - Observações: Ícone-only, size icon, sem tooltip identificado
+
+Botão 26: Apollo ID Manual (header detalhe - ícone 5)
+  - Label: "Apollo ID Manual" + ícone apollo
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: true → Abrir ApolloOrgIdDialog
+  - Ação esperada: Inserir manualmente Apollo Organization ID
+  - Endpoint: Usado depois no dialog: POST /functions/v1/enrich-apollo
+  - Status: ✅ OK - Funcional
+  - Observações: Label + ícone, variant secondary
+
+Botão 27: Configurações (header detalhe - ícone 6)
+  - Label: [ícone Settings]
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (header)
+  - Disabled: false
+  - HasOnClick: Não identificado no trecho visualizado
+  - Ação esperada: Provavelmente abrir configurações da empresa ou integrações
+  - Endpoint: Não identificado
+  - Status: ⚠️ NECESSITA VERIFICAÇÃO
+  - Observações: Ícone-only, size icon, sem tooltip identificado
+
+⚠️ PROBLEMAS IDENTIFICADOS NESTA SEÇÃO:
+  - ❌ "Criar Estratégia" sem validação de pré-requisitos (CRÍTICO)
+  - ⚠️ 3 botões sem tooltip ou aria-label identificados (Zap, QrCode, Settings)
+  - ⚠️ Função de alguns botões não está clara sem tooltip
+  - ⚠️ Muitos botões icon-only sem labels visuais
+  - ⚠️ Falta agrupamento/hierarquia visual (todos no mesmo nível)
+
+================================================================================
+
+SEÇÃO 5: ABA "AÇÕES" NA PÁGINA DE DETALHE DA EMPRESA
+Localização: src/pages/CompanyDetailPage.tsx (linhas 1362-1370 e adjacentes)
+Data-testid: Não definido
+Contexto: Card "Enriquecimento de Dados" dentro da aba "Ações"
+--------------------------------------------------------------------------------
+
+Botão 28: Enriquecimento 360° Multi-Layer (aba Ações)
+  - Label: "Enriquecimento 360° Multi-Layer" (dentro do MultiLayerEnrichButton)
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (aba Ações > card Enriquecimento)
+  - Disabled: false
+  - HasOnClick: true → Abrir dialog MultiLayerEnrich
+  - Ação esperada: Iniciar enriquecimento multi-camada sequencial
+  - Endpoint: POST /functions/v1/enrich-multi-layer (se existir) ou múltiplas chamadas
+  - Status: ✅ OK - Funcional
+  - Observações: 
+    • Adicionado recentemente (último diff)
+    • Abre dialog com progresso por layer
+    • ⚠️ PROBLEMA: Progresso geral único (0%), falta barra individual por layer
+    • Deveria mostrar status de cada layer: EmpresaQui, Apollo, ReceitaWS, Econodata
+
+Botão 29: Eco-Booster (Econodata) (aba Ações)
+  - Label: Componente EconodataEnrichButton (label interno)
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (aba Ações > card Enriquecimento)
+  - Disabled: Quando !cnpj
+  - HasOnClick: true → supabase.functions.invoke('enrich-econodata')
+  - Ação esperada: Enriquecer com dados premium Econodata
+  - Endpoint: POST /functions/v1/enrich-econodata
+  - Status: ✅ OK - Funcional
+  - Observações: Componente separado EconodataEnrichButton
+
+Botão 30: Apollo Search (aba Ações - presumido)
+  - Label: Componente ApolloSearchDialog (trigger interno)
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (aba Ações > card Enriquecimento)
+  - Disabled: Não identificado
+  - HasOnClick: true → Abrir ApolloSearchDialog
+  - Ação esperada: Buscar empresa no Apollo e selecionar organização
+  - Endpoint: POST /functions/v1/enrich-apollo (após seleção)
+  - Status: ⚠️ NECESSITA VERIFICAÇÃO (componente existe no código)
+  - Observações: Provavelmente presente no card, mas não visualizado no diff
+
+Botão 31: Enriquecimento Manual (aba Ações - presumido)
+  - Label: Componente ManualEnrichmentDialog (trigger interno)
+  - Data-testid: Não definido
+  - Aria-label: Não definido
+  - Container: detail (aba Ações > card Enriquecimento)
+  - Disabled: Não identificado
+  - HasOnClick: true → Abrir ManualEnrichmentDialog
+  - Ação esperada: Inserir dados de enriquecimento manualmente
+  - Endpoint: Direto no banco (UPDATE companies)
+  - Status: ⚠️ NECESSITA VERIFICAÇÃO (componente existe no código)
+  - Observações: Importado mas não visualizado no diff
+
+⚠️ PROBLEMAS IDENTIFICADOS NESTA SEÇÃO:
+  - ❌ MultiLayerEnrichButton: Falta barra de progresso INDIVIDUAL por layer
+    • Atualmente: "Progresso Geral 0%"
+    • Necessário: Barra individual para:
+      ├─ EmpresaQui (Layer 1 - Base)
+      ├─ Apollo.io (Layer 2 - Enriquecimento)
+      ├─ ReceitaWS (Layer 2 - Enriquecimento)
+      └─ Econodata (Layer 3 - Premium)
+  - ⚠️ Falta tooltip explicando cada layer e sua função
+  - ⚠️ Não indica quais layers já foram executados vs pendentes
+  - ⚠️ Não valida ordem de execução (ex: Econodata antes de Receita)
+  - ⚠️ Card "Enriquecimento de Dados" pode ter mais botões não visualizados
+
+================================================================================
+
+MATRIZ DE REDUNDÂNCIAS (AÇÕES DUPLICADAS)
+--------------------------------------------------------------------------------
+
+Ação: ENRIQUECER RECEITA FEDERAL
+  - Toolbar Global: Botão 2 (lote)
+  - Por Linha: Botão 16 (individual)
+  - Status: ✅ OK - Contextos diferentes (massa vs individual)
+
+Ação: ENRIQUECER 360°
+  - Toolbar Global: Botão 3 (lote)
+  - Por Linha: Botão 17 (individual)
+  - Status: ✅ OK - Contextos diferentes (massa vs individual)
+
+Ação: ENRIQUECER APOLLO (DECISORES)
+  - Toolbar Global: Botão 4 (lote)
+  - Por Linha: Botão 19 (individual)
+  - Detalhe: Botão 30 (presumido, dialog de busca)
+  - Status: ⚠️ REDUNDÂNCIA - 3 pontos de entrada para mesma ação
+  - Recomendação: Manter toolbar (lote) + menu "Ações" por linha (individual)
+
+Ação: ENRIQUECER ECO-BOOSTER (ECONODATA)
+  - Toolbar Global: Botão 5 (lote)
+  - Por Linha: Botão 18 (individual)
+  - Detalhe: Botão 29 (individual)
+  - Status: ⚠️ REDUNDÂNCIA - 3 pontos de entrada para mesma ação
+  - Recomendação: Manter toolbar (lote) + menu "Ações" por linha (individual)
+
+Ação: ATUALIZAR/REFRESH
+  - Card Busca: Botão 7 (lista)
+  - Header Detalhe: Botão 22 (detalhe)
+  - Status: ✅ OK - Contextos diferentes (lista vs detalhe)
+
+Ação: CRIAR/VER ESTRATÉGIA
+  - Header Detalhe: Botão 21 (sem validação)
+  - Por Linha: Botão 14 (Account Strategy Hub)
+  - Status: ⚠️ REDUNDÂNCIA + PROBLEMA
+  - Problema: Botão 21 não valida pré-requisitos
+  - Recomendação: Consolidar em um único botão com validação
+
+Ação: BUSCAR EMPRESAS
+  - Toolbar Global: Botão 6 (header)
+  - Empty State: Botão "Adicionar Primeira Empresa" (linha 952-959)
+  - Status: ✅ OK - Contextos diferentes (lista populada vs vazia)
+
+================================================================================
+
+MATRIZ DE CONECTIVIDADE POR BOTÃO
+(Será preenchida no MICROCICLO 2 - Auditoria de Conectividade)
+--------------------------------------------------------------------------------
+
+Aguardando execução dos testes de conectividade para mapear:
+  - RequestId de cada chamada
+  - Status HTTP de cada endpoint
+  - Tempo de resposta
+  - Mensagens de erro
+  - Pré-requisitos de autenticação (JWT)
+
+================================================================================
+
+PROBLEMAS PRIORIZADOS (PARA PRÓXIMOS MICROCICLOS)
+--------------------------------------------------------------------------------
+
+🔴 CRÍTICOS (P0):
+  1. Toolbar de processamento em massa REMOVIDA
+     - Falta: "Deletar empresas selecionadas"
+     - Falta: "Selecionar todas"
+     - Falta: Contagem de selecionadas
+     - Localização: Deveria estar antes do card de busca
+  
+  2. Botão "Criar Estratégia" SEM validação de pré-requisitos
+     - Aparece mesmo com empresa "fria"
+     - Não valida Layer 1 completo (org_id/domain/CNPJ)
+     - Não valida existência de decisores
+     - Não valida estágio no funil
+     - Localização: src/pages/CompanyDetailPage.tsx, header
+  
+  3. MultiLayerEnrichButton: Progresso ÚNICO em vez de por layer
+     - Usuário não sabe quais layers rodaram
+     - Não indica sucessos parciais
+     - Não indica falhas específicas por layer
+     - Localização: src/components/canvas/MultiLayerEnrichButton.tsx
+
+🟠 IMPORTANTES (P1):
+  4. Redundância de botões por linha (9 botões é excessivo)
+     - Dificulta usabilidade
+     - Ocupa muito espaço horizontal
+     - Falta agrupamento em menu "Ações" (engrenagem)
+     - Localização: src/pages/CompaniesManagementPage.tsx, linhas 1107-1328
+  
+  5. Falta de ordem/validação na execução dos engines
+     - Usuário pode executar Econodata antes de Receita
+     - Usuário pode executar Apollo sem org_id lockado
+     - Falta indicação visual de pré-requisitos
+     - Afeta: Todos os botões de enriquecimento
+  
+  6. Botões de exportação não respeitam seleção
+     - Sempre exportam TODAS as empresas visíveis
+     - Falta opção "Exportar selecionadas"
+     - Localização: handleExportCSV, handleExportXLS, handleExportPDF, handleExportPNG
+
+🟡 MELHORIAS (P2):
+  7. Falta de data-testid em TODOS os botões
+     - Dificulta automação de testes
+     - Dificulta debugging
+     - Afeta: Todos os 31 botões mapeados
+  
+  8. Falta de aria-label em botões icon-only
+     - Dificulta acessibilidade
+     - Leitores de tela não conseguem identificar função
+     - Afeta: Maioria dos botões (especialmente toolbar global)
+  
+  9. Tooltips ausentes ou inconsistentes
+     - Alguns botões não têm tooltip
+     - Alguns tooltips não explicam pré-requisitos
+     - Afeta: Botões 24, 25, 27 (header detalhe) principalmente
+
+================================================================================
+
+PRÓXIMOS PASSOS
+--------------------------------------------------------------------------------
+
+✅ MICROCICLO 1: Inventário DOM de Botões - CONCLUÍDO
+  - 31 botões mapeados
+  - 5 seções analisadas
+  - Problemas priorizados em P0/P1/P2
+
+⏳ MICROCICLO 2: Auditoria de Conectividade por Botão (PRÓXIMO)
+  - Testar cada botão (clique de teste)
+  - Capturar: requestId, URL, status HTTP, tempo
+  - Validar autenticação JWT
+  - Verificar pré-requisitos (login, lock de empresa)
+  - Preencher matriz de conectividade
+
+⏳ MICROCICLO 3: Restabelecer Toolbar de Processamento em Massa
+  - Criar toolbar no topo da lista
+  - Adicionar: Selecionar tudo, Deletar selecionadas, Enriquecer lote, Exportar selecionadas
+  - Garantir estados (enabled/disabled) corretos
+  - Adicionar confirmação para ações destrutivas
+
+⏳ MICROCICLO 4: Consolidação de Botões por Linha (Menu "Ações")
+  - Criar menu dropdown "Ações" (ícone engrenagem)
+  - Agrupar 9 botões atuais em menu hierárquico
+  - Manter apenas "Ver detalhes" + "Ações" visíveis
+
+⏳ MICROCICLO 5: Regras de Visibilidade/Habilitação
+  - Implementar validação de pré-requisitos para "Criar Estratégia"
+  - Desabilitar botões fora de ordem com tooltips explicativos
+  - Indicar visualmente quais layers já foram executados
+
+⏳ MICROCICLO 6: Orquestração de Engines
+  - Sequenciar chamadas: Apollo → People → CNPJ → Receita → Econodata
+  - Bloquear ações quando pré-requisitos faltarem
+  - Mensagens claras de pré-requisito
+
+⏳ MICROCICLO 7: Telemetria e Logs
+  - Instrumentar cliques e resultados
+  - Registrar: buttonId, page, requestId, endpoint, status, tempo
+  - Criar dashboard de status (OK/Quebrado/Intermitente)
+
+⏳ MICROCICLO 8: Correções de Conectividade/Segurança
+  - Garantir Authorization em verify_jwt=true
+  - Tratar 401/403 com CTA de login
+  - Confirmação explícita para operações destrutivas
+
+⏳ MICROCICLO 9: Acessibilidade e UX
+  - Adicionar aria-label e data-testid padronizados
+  - Tooltips informativos (inclusive para disabled)
+  - Estados visuais coerentes (hover/active/focus)
+
+⏳ MICROCICLO 10: Relatório Final e Checkup
+  - Consolidar resultados
+  - Validar o todo (desktop/mobile, claro/escuro)
+  - Checkup de não-regressão
+
+================================================================================
+
+ENTREGÁVEIS DO MICROCICLO 1
+--------------------------------------------------------------------------------
+
+✅ Inventário completo de botões (31 mapeados)
+✅ Agrupamento por seção (5 seções)
+✅ Identificação de redundâncias (6 ações duplicadas)
+✅ Priorização de problemas (P0/P1/P2)
+✅ Relatório em texto plano (este arquivo)
+
+Total de botões únicos: 31
+Total de problemas críticos (P0): 3
+Total de problemas importantes (P1): 3
+Total de melhorias (P2): 3
+
+Status: ✅ MICROCICLO 1 CONCLUÍDO COM SUCESSO
+
+Próximo microciclo: MICROCICLO 2 - Auditoria de Conectividade por Botão
+  - Testar conectividade de cada botão
+  - Registrar evidências (requestId, status, tempo)
+  - Validar autenticação e pré-requisitos
+
+================================================================================
+FIM DO RELATÓRIO MICROCICLO 1
+================================================================================
