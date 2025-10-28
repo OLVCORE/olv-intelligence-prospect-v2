@@ -2036,94 +2036,133 @@ export type Database = {
       }
       decision_makers: {
         Row: {
+          apollo_last_enriched_at: string | null
           apollo_person_id: string | null
           apollo_person_metadata: Json | null
+          city: string | null
           company_id: string | null
           contact_accuracy_score: number | null
+          country: string | null
           created_at: string
           department: string | null
           departments: string[] | null
           direct_phone: string | null
+          education: Json | null
           email: string | null
           email_status: string | null
           email_verification_date: string | null
           extrapolated_email_confidence: number | null
+          facebook_url: string | null
+          functions: string[] | null
+          github_url: string | null
+          headline: string | null
           id: string
           intent_strength: string | null
           linkedin_url: string | null
           mobile_phone: string | null
           name: string
+          organization_data: Json | null
           persona_tags: string[] | null
           phone: string | null
           photo_url: string | null
           raw_data: Json | null
+          revealed_for_current_team: boolean | null
           seniority: string | null
           seniority_level: string | null
           show_intent: boolean | null
           source: string | null
+          state: string | null
+          subdepartments: string[] | null
           title: string | null
+          twitter_url: string | null
           updated_at: string
           verified_email: boolean | null
           work_direct_phone: string | null
         }
         Insert: {
+          apollo_last_enriched_at?: string | null
           apollo_person_id?: string | null
           apollo_person_metadata?: Json | null
+          city?: string | null
           company_id?: string | null
           contact_accuracy_score?: number | null
+          country?: string | null
           created_at?: string
           department?: string | null
           departments?: string[] | null
           direct_phone?: string | null
+          education?: Json | null
           email?: string | null
           email_status?: string | null
           email_verification_date?: string | null
           extrapolated_email_confidence?: number | null
+          facebook_url?: string | null
+          functions?: string[] | null
+          github_url?: string | null
+          headline?: string | null
           id?: string
           intent_strength?: string | null
           linkedin_url?: string | null
           mobile_phone?: string | null
           name: string
+          organization_data?: Json | null
           persona_tags?: string[] | null
           phone?: string | null
           photo_url?: string | null
           raw_data?: Json | null
+          revealed_for_current_team?: boolean | null
           seniority?: string | null
           seniority_level?: string | null
           show_intent?: boolean | null
           source?: string | null
+          state?: string | null
+          subdepartments?: string[] | null
           title?: string | null
+          twitter_url?: string | null
           updated_at?: string
           verified_email?: boolean | null
           work_direct_phone?: string | null
         }
         Update: {
+          apollo_last_enriched_at?: string | null
           apollo_person_id?: string | null
           apollo_person_metadata?: Json | null
+          city?: string | null
           company_id?: string | null
           contact_accuracy_score?: number | null
+          country?: string | null
           created_at?: string
           department?: string | null
           departments?: string[] | null
           direct_phone?: string | null
+          education?: Json | null
           email?: string | null
           email_status?: string | null
           email_verification_date?: string | null
           extrapolated_email_confidence?: number | null
+          facebook_url?: string | null
+          functions?: string[] | null
+          github_url?: string | null
+          headline?: string | null
           id?: string
           intent_strength?: string | null
           linkedin_url?: string | null
           mobile_phone?: string | null
           name?: string
+          organization_data?: Json | null
           persona_tags?: string[] | null
           phone?: string | null
           photo_url?: string | null
           raw_data?: Json | null
+          revealed_for_current_team?: boolean | null
           seniority?: string | null
           seniority_level?: string | null
           show_intent?: boolean | null
           source?: string | null
+          state?: string | null
+          subdepartments?: string[] | null
           title?: string | null
+          twitter_url?: string | null
           updated_at?: string
           verified_email?: boolean | null
           work_direct_phone?: string | null
