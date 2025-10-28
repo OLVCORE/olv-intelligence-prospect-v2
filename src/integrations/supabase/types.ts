@@ -111,13 +111,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "account_strategies_decision_maker_id_fkey"
-            columns: ["decision_maker_id"]
-            isOneToOne: false
-            referencedRelation: "decision_makers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "account_strategies_persona_id_fkey"
             columns: ["persona_id"]
             isOneToOne: false
@@ -356,13 +349,6 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_decision_maker_id_fkey"
-            columns: ["decision_maker_id"]
-            isOneToOne: false
-            referencedRelation: "decision_makers"
             referencedColumns: ["id"]
           },
         ]
@@ -1219,17 +1205,22 @@ export type Database = {
           apollo_id: string | null
           apollo_last_enriched_at: string | null
           apollo_metadata: Json | null
+          apollo_organization_id: string | null
+          apollo_score: Json | null
           apollo_signals: Json | null
           buying_intent_score: number | null
           buying_intent_signals: Json | null
           cnpj: string | null
           cnpj_status: string | null
+          company_insights: Json | null
           created_at: string
           digital_maturity_score: number | null
           disqualification_reason: string | null
           domain: string | null
           employee_count_from_apollo: number | null
+          employee_trends: Json | null
           employees: number | null
+          founding_year: number | null
           funding_rounds: Json | null
           funding_total: number | null
           id: string
@@ -1247,18 +1238,23 @@ export type Database = {
           market_segments: string[] | null
           naics_codes: string[] | null
           name: string
+          news: Json | null
           phone_numbers: string[] | null
           raw_data: Json | null
           revenue: string | null
           revenue_range_from_apollo: string | null
           sic_codes: string[] | null
+          similar_companies: Json | null
           social_urls: Json | null
+          suggested_leads: Json | null
           technologies: string[] | null
+          technologies_full: Json | null
           totvs_detection_score: number | null
           totvs_detection_sources: Json | null
           totvs_last_checked_at: string | null
           updated_at: string
           website: string | null
+          website_visitors: Json | null
           website_visitors_count: number | null
           website_visitors_data: Json | null
         }
@@ -1267,17 +1263,22 @@ export type Database = {
           apollo_id?: string | null
           apollo_last_enriched_at?: string | null
           apollo_metadata?: Json | null
+          apollo_organization_id?: string | null
+          apollo_score?: Json | null
           apollo_signals?: Json | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
           cnpj?: string | null
           cnpj_status?: string | null
+          company_insights?: Json | null
           created_at?: string
           digital_maturity_score?: number | null
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
+          employee_trends?: Json | null
           employees?: number | null
+          founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
           id?: string
@@ -1295,18 +1296,23 @@ export type Database = {
           market_segments?: string[] | null
           naics_codes?: string[] | null
           name: string
+          news?: Json | null
           phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
           revenue_range_from_apollo?: string | null
           sic_codes?: string[] | null
+          similar_companies?: Json | null
           social_urls?: Json | null
+          suggested_leads?: Json | null
           technologies?: string[] | null
+          technologies_full?: Json | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
+          website_visitors?: Json | null
           website_visitors_count?: number | null
           website_visitors_data?: Json | null
         }
@@ -1315,17 +1321,22 @@ export type Database = {
           apollo_id?: string | null
           apollo_last_enriched_at?: string | null
           apollo_metadata?: Json | null
+          apollo_organization_id?: string | null
+          apollo_score?: Json | null
           apollo_signals?: Json | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
           cnpj?: string | null
           cnpj_status?: string | null
+          company_insights?: Json | null
           created_at?: string
           digital_maturity_score?: number | null
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
+          employee_trends?: Json | null
           employees?: number | null
+          founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
           id?: string
@@ -1343,18 +1354,23 @@ export type Database = {
           market_segments?: string[] | null
           naics_codes?: string[] | null
           name?: string
+          news?: Json | null
           phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
           revenue_range_from_apollo?: string | null
           sic_codes?: string[] | null
+          similar_companies?: Json | null
           social_urls?: Json | null
+          suggested_leads?: Json | null
           technologies?: string[] | null
+          technologies_full?: Json | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
           updated_at?: string
           website?: string | null
+          website_visitors?: Json | null
           website_visitors_count?: number | null
           website_visitors_data?: Json | null
         }
@@ -2036,136 +2052,130 @@ export type Database = {
       }
       decision_makers: {
         Row: {
-          apollo_last_enriched_at: string | null
+          apollo_organization_id: string | null
           apollo_person_id: string | null
-          apollo_person_metadata: Json | null
+          apollo_person_url: string | null
           city: string | null
-          company_id: string | null
-          contact_accuracy_score: number | null
+          company_employees: number | null
+          company_id: string
+          company_industries: Json | null
+          company_keywords: Json | null
+          company_name: string | null
           country: string | null
           created_at: string
-          department: string | null
-          departments: string[] | null
-          direct_phone: string | null
+          data_sources: Json | null
+          departments: Json | null
           education: Json | null
           email: string | null
           email_status: string | null
-          email_verification_date: string | null
-          extrapolated_email_confidence: number | null
-          facebook_url: string | null
-          functions: string[] | null
-          github_url: string | null
-          headline: string | null
+          employment_history: Json | null
+          first_name: string | null
           id: string
-          intent_strength: string | null
+          is_current_at_company: boolean | null
+          is_decision_maker: boolean | null
+          last_enriched_at: string | null
+          last_name: string | null
           linkedin_url: string | null
           mobile_phone: string | null
           name: string
-          organization_data: Json | null
-          persona_tags: string[] | null
+          people_auto_score_label: string | null
+          people_auto_score_value: number | null
           phone: string | null
-          photo_url: string | null
-          raw_data: Json | null
-          revealed_for_current_team: boolean | null
+          raw_apollo_data: Json | null
+          raw_linkedin_data: Json | null
+          recommendations_score: number | null
+          rejection_reason: string | null
           seniority: string | null
-          seniority_level: string | null
-          show_intent: boolean | null
-          source: string | null
           state: string | null
-          subdepartments: string[] | null
+          tenure_months: number | null
+          tenure_start_date: string | null
           title: string | null
-          twitter_url: string | null
           updated_at: string
-          verified_email: boolean | null
-          work_direct_phone: string | null
+          validation_status: string | null
         }
         Insert: {
-          apollo_last_enriched_at?: string | null
+          apollo_organization_id?: string | null
           apollo_person_id?: string | null
-          apollo_person_metadata?: Json | null
+          apollo_person_url?: string | null
           city?: string | null
-          company_id?: string | null
-          contact_accuracy_score?: number | null
+          company_employees?: number | null
+          company_id: string
+          company_industries?: Json | null
+          company_keywords?: Json | null
+          company_name?: string | null
           country?: string | null
           created_at?: string
-          department?: string | null
-          departments?: string[] | null
-          direct_phone?: string | null
+          data_sources?: Json | null
+          departments?: Json | null
           education?: Json | null
           email?: string | null
           email_status?: string | null
-          email_verification_date?: string | null
-          extrapolated_email_confidence?: number | null
-          facebook_url?: string | null
-          functions?: string[] | null
-          github_url?: string | null
-          headline?: string | null
+          employment_history?: Json | null
+          first_name?: string | null
           id?: string
-          intent_strength?: string | null
+          is_current_at_company?: boolean | null
+          is_decision_maker?: boolean | null
+          last_enriched_at?: string | null
+          last_name?: string | null
           linkedin_url?: string | null
           mobile_phone?: string | null
           name: string
-          organization_data?: Json | null
-          persona_tags?: string[] | null
+          people_auto_score_label?: string | null
+          people_auto_score_value?: number | null
           phone?: string | null
-          photo_url?: string | null
-          raw_data?: Json | null
-          revealed_for_current_team?: boolean | null
+          raw_apollo_data?: Json | null
+          raw_linkedin_data?: Json | null
+          recommendations_score?: number | null
+          rejection_reason?: string | null
           seniority?: string | null
-          seniority_level?: string | null
-          show_intent?: boolean | null
-          source?: string | null
           state?: string | null
-          subdepartments?: string[] | null
+          tenure_months?: number | null
+          tenure_start_date?: string | null
           title?: string | null
-          twitter_url?: string | null
           updated_at?: string
-          verified_email?: boolean | null
-          work_direct_phone?: string | null
+          validation_status?: string | null
         }
         Update: {
-          apollo_last_enriched_at?: string | null
+          apollo_organization_id?: string | null
           apollo_person_id?: string | null
-          apollo_person_metadata?: Json | null
+          apollo_person_url?: string | null
           city?: string | null
-          company_id?: string | null
-          contact_accuracy_score?: number | null
+          company_employees?: number | null
+          company_id?: string
+          company_industries?: Json | null
+          company_keywords?: Json | null
+          company_name?: string | null
           country?: string | null
           created_at?: string
-          department?: string | null
-          departments?: string[] | null
-          direct_phone?: string | null
+          data_sources?: Json | null
+          departments?: Json | null
           education?: Json | null
           email?: string | null
           email_status?: string | null
-          email_verification_date?: string | null
-          extrapolated_email_confidence?: number | null
-          facebook_url?: string | null
-          functions?: string[] | null
-          github_url?: string | null
-          headline?: string | null
+          employment_history?: Json | null
+          first_name?: string | null
           id?: string
-          intent_strength?: string | null
+          is_current_at_company?: boolean | null
+          is_decision_maker?: boolean | null
+          last_enriched_at?: string | null
+          last_name?: string | null
           linkedin_url?: string | null
           mobile_phone?: string | null
           name?: string
-          organization_data?: Json | null
-          persona_tags?: string[] | null
+          people_auto_score_label?: string | null
+          people_auto_score_value?: number | null
           phone?: string | null
-          photo_url?: string | null
-          raw_data?: Json | null
-          revealed_for_current_team?: boolean | null
+          raw_apollo_data?: Json | null
+          raw_linkedin_data?: Json | null
+          recommendations_score?: number | null
+          rejection_reason?: string | null
           seniority?: string | null
-          seniority_level?: string | null
-          show_intent?: boolean | null
-          source?: string | null
           state?: string | null
-          subdepartments?: string[] | null
+          tenure_months?: number | null
+          tenure_start_date?: string | null
           title?: string | null
-          twitter_url?: string | null
           updated_at?: string
-          verified_email?: boolean | null
-          work_direct_phone?: string | null
+          validation_status?: string | null
         }
         Relationships: [
           {

@@ -93,7 +93,7 @@ export const decisorsRepository = {
       .from('decision_makers')
       .select('*')
       .eq('company_id', companyId)
-      .eq('verified_email', true);
+      .eq('email_status', 'verified');
 
     if (error) {
       dbLogger.error('findVerifiedEmails', 'decision_makers', error);
