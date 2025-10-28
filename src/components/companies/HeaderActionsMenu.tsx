@@ -179,18 +179,6 @@ export function HeaderActionsMenu({
             360° Completo + IA
           </DropdownMenuItem>
         </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-        
-        <div className="px-2 py-1.5 text-xs text-muted-foreground">
-          <p className="font-medium mb-1">Ordem de execução:</p>
-          <ol className="list-decimal list-inside space-y-0.5 text-[10px]">
-            <li>Lock (org_id/domain/CNPJ)</li>
-            <li>Apollo Company</li>
-            <li>Apollo People</li>
-            <li>Receita/Econodata</li>
-          </ol>
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
