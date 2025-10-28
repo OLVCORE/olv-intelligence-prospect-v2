@@ -88,10 +88,10 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            OLV Intelligence Prospect
+            STRATEVO Intelligence
           </CardTitle>
           <CardDescription className="text-center">
-            Sistema de Prospecção Inteligente B2B
+            A Plataforma Definitiva de Inteligência de Vendas
           </CardDescription>
         </CardHeader>
         <CardContent>

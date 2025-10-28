@@ -23,7 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <header className="fixed top-0 left-0 right-0 h-16 border-b flex items-center justify-between px-3 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
           <div className="flex items-center gap-2 md:gap-4">
             <SidebarTrigger />
-            <h2 className="font-semibold text-sm md:text-lg hidden sm:block">OLV Intelligence Prospect</h2>
+            <h2 className="font-semibold text-sm md:text-lg hidden sm:block">STRATEVO Intelligence</h2>
           </div>
           <div className="flex items-center gap-2 md:gap-3 flex-1 max-w-2xl mx-2 md:mx-4">
             <GlobalSearch />

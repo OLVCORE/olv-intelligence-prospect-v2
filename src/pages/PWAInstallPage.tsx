@@ -53,7 +53,7 @@ export default function PWAInstallPage() {
           <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
             <Smartphone className="w-10 h-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl md:text-3xl">Instale o OLV Intelligence</CardTitle>
+          <CardTitle className="text-2xl md:text-3xl">Instale o STRATEVO Intelligence</CardTitle>
           <CardDescription className="text-base">
             Acesse a plataforma diretamente da tela inicial do seu dispositivo
           </CardDescription>

@@ -22,7 +22,7 @@ export default function Index() {
           <Building2 className="h-20 w-20 text-primary mb-6 animate-pulse" />
           
           <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 bg-gradient-to-r from-white via-primary/90 to-white bg-clip-text text-transparent">
-            OLV Intelligence 360°
+            STRATEVO Intelligence 360°
           </h1>
           
           <p className="text-xl md:text-2xl text-white/70 mb-4 max-w-3xl">
@@ -347,7 +347,7 @@ export default function Index() {
       {/* Footer */}
       <div className="border-t border-white/10 py-8">
         <div className="container mx-auto px-4 text-center text-white/40 text-sm">
-          <p>© 2025 OLV Intelligence. Powered by AI and Real-Time Data.</p>
+          <p>© 2025 STRATEVO Intelligence. Powered by AI and Real-Time Data.</p>
         </div>
       </div>
     </div>

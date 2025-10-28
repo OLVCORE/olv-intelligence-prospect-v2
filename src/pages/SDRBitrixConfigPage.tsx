@@ -24,7 +24,7 @@ export default function SDRBitrixConfigPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Configuração Bitrix24</h1>
           <p className="text-muted-foreground">
-            Configure a sincronização bidirecional de deals entre OLV Intelligence e Bitrix24
+            Configure a sincronização bidirecional de deals entre STRATEVO Intelligence e Bitrix24
           </p>
         </div>
 

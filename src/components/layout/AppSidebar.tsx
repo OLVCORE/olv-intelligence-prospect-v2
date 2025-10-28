@@ -284,8 +284,8 @@ export function AppSidebar() {
           <Building2 className="h-8 w-8 text-sidebar-primary flex-shrink-0" />
           {(open || isMobile) && (
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-sidebar-foreground truncate">OLV Intelligence</h1>
-              <p className="text-sm text-sidebar-foreground/70 truncate">Sistema de Prospecção</p>
+              <h1 className="text-lg font-bold text-sidebar-foreground truncate">STRATEVO Intelligence</h1>
+              <p className="text-sm text-sidebar-foreground/70 truncate">A Plataforma Definitiva de Inteligência de Vendas</p>
             </div>
           )}
         </Link>

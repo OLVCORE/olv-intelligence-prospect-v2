@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 
 /**
  * 🎯 TESTE E2E - JORNADA COMPLETA DO USUÁRIO
- * Validação de 100% da experiência na plataforma OLV Intelligence
+ * Validação de 100% da experiência na plataforma STRATEVO Intelligence
  */
 
-test.describe('Jornada Completa do Usuário - OLV Intelligence', () => {
+test.describe('Jornada Completa do Usuário - STRATEVO Intelligence', () => {
   
   test.beforeEach(async ({ page }) => {
     // Setup: Login antes de cada teste

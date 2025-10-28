@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'OLV Intelligence - Sistema de Prospecção',
-        short_name: 'OLV Intelligence',
+        name: 'STRATEVO Intelligence - A Plataforma Definitiva de Inteligência de Vendas',
+        short_name: 'STRATEVO',
         description: 'Plataforma completa de inteligência comercial e prospecção B2B',
         theme_color: '#2563eb',
         background_color: '#ffffff',

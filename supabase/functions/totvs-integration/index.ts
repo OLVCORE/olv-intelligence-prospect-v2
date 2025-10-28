@@ -154,7 +154,7 @@ async function createOpportunityInTOTVS(supabase: any, data: any) {
     contactEmail: contact?.email || '',
     contactPhone: contact?.phone || '',
     expectedCloseDate: opportunity_data.expected_close_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    source: 'OLV Intelligence',
+    source: 'STRATEVO Intelligence',
   };
 
   console.log('Creating opportunity in TOTVS:', totvsOpportunity);

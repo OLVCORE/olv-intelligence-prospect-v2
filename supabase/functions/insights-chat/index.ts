@@ -32,9 +32,9 @@ serve(async (req) => {
     const context = await buildRAGContext(supabase);
 
     // System prompt with comprehensive knowledge
-    const systemPrompt = `Você é o OLV Insight Assistant, um assistente de IA especializado em análise empresarial e estratégia comercial B2B.
+    const systemPrompt = `Você é o STRATEVO Insight Assistant, um assistente de IA especializado em análise empresarial e estratégia comercial B2B.
 
-CONTEXTO DA PLATAFORMA OLV INTELLIGENCE:
+CONTEXTO DA PLATAFORMA STRATEVO INTELLIGENCE:
 ${context}
 
 CONHECIMENTO SOBRE PARCERIA TOTVS:
