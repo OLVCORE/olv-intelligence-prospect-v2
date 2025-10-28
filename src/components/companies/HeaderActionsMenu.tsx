@@ -88,7 +88,7 @@ export function HeaderActionsMenu({
             onClick={onUploadClick}
             disabled={isEnriching}
             data-testid="action-upload-bulk"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload em Massa
@@ -98,7 +98,7 @@ export function HeaderActionsMenu({
             onClick={onApolloImport}
             disabled={isEnriching}
             data-testid="action-apollo-import"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             <img src={apolloIcon} alt="Apollo" className="h-4 w-4 mr-2" />
             Importar do Apollo
@@ -108,7 +108,7 @@ export function HeaderActionsMenu({
             onClick={onSearchCompanies}
             disabled={isEnriching}
             data-testid="action-search-companies"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             <Search className="h-4 w-4 mr-2" />
             Buscar Empresas
@@ -123,7 +123,7 @@ export function HeaderActionsMenu({
             onClick={() => handleEnrich('Receita Federal', onBatchEnrichReceita)}
             disabled={isEnriching}
             data-testid="action-batch-receita"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             {enrichingAction === 'Receita Federal' ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -138,7 +138,7 @@ export function HeaderActionsMenu({
             onClick={() => handleEnrich('Apollo', onBatchEnrichApollo)}
             disabled={isEnriching}
             data-testid="action-batch-apollo"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             {enrichingAction === 'Apollo' ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -152,7 +152,7 @@ export function HeaderActionsMenu({
             onClick={() => handleEnrich('Eco-Booster', onBatchEnrichEconodata)}
             disabled={isEnriching}
             data-testid="action-batch-econodata"
-            className="transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             {enrichingAction === 'Eco-Booster' ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -169,7 +169,7 @@ export function HeaderActionsMenu({
             onClick={() => handleEnrich('360° Completo', onBatchEnrich360)}
             disabled={isEnriching}
             data-testid="action-batch-360"
-            className="font-medium transition-all duration-200 hover:scale-[1.02] hover:bg-accent/80"
+            className="font-medium transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
           >
             {enrichingAction === '360° Completo' ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
