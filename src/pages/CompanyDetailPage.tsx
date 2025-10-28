@@ -696,15 +696,13 @@ export default function CompanyDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-60 rounded-lg overflow-hidden border">
-                    <LocationMap
-                      address={receitaData?.logradouro}
-                      numero={receitaData?.numero}
-                      municipio={receitaData?.municipio}
-                      estado={receitaData?.uf}
-                      cep={receitaData?.cep}
-                    />
-                  </div>
+                  <LocationMap
+                    address={receitaData?.logradouro}
+                    numero={receitaData?.numero}
+                    municipio={receitaData?.municipio}
+                    estado={receitaData?.uf}
+                    cep={receitaData?.cep}
+                  />
                 </CardContent>
               </Card>
             )}
