@@ -525,477 +525,343 @@ export default function CompanyDetailPage() {
         </ScrollArea>
 
         {/* TAB 1: Visão Geral */}
-        <TabsContent value="overview" className="space-y-4">
-          {/* Resumo rápido */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">CNPJ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-mono font-semibold">{company.cnpj || 'N/A'}</p>
+        <TabsContent value="overview" className="space-y-6 animate-fade-in">
+          {/* Header - Informações Principais em Grid Compacto */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">CNPJ</p>
+                </div>
+                <p className="font-mono font-semibold text-sm">{company.cnpj || 'N/A'}</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Razão Social</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{receitaData?.razao_social || company.name}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Nome Fantasia</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{receitaData?.fantasia || rawData.nome_fantasia || 'N/A'}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Situação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                  {receitaData?.situacao || rawData.situacao_cadastral || 'Desconhecido'}
+
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">Situação</p>
+                </div>
+                <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'} className="text-xs">
+                  {receitaData?.situacao || 'N/A'}
                 </Badge>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Porte</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{receitaData?.porte || rawData.porte_estimado || company.size || 'N/A'}</p>
+
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">Porte</p>
+                </div>
+                <p className="font-semibold text-sm">{receitaData?.porte || rawData.porte_estimado || 'N/A'}</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Data Abertura</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{receitaData?.abertura || rawData.data_abertura ? new Date(receitaData?.abertura || rawData.data_abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
+
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">Abertura</p>
+                </div>
+                <p className="font-semibold text-sm">
+                  {receitaData?.abertura || rawData.data_abertura 
+                    ? new Date(receitaData?.abertura || rawData.data_abertura).toLocaleDateString('pt-BR') 
+                    : 'N/A'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">Funcionários</p>
+                </div>
+                <p className="font-semibold text-sm">{rawData.funcionarios_presumido_matriz_cnpj || company.employees || 'N/A'}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card hover-scale">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">Website</p>
+                </div>
+                {company.website || digitalPresence?.website ? (
+                  <a 
+                    href={company.website || digitalPresence?.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs text-primary hover:underline truncate block"
+                  >
+                    Acessar
+                  </a>
+                ) : (
+                  <p className="text-xs text-muted-foreground">N/A</p>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Identificação */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IdCard className="h-5 w-5" />
-                Dados Cadastrais
+          {/* Identificação Cadastral - Grid 2 Colunas */}
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="h-5 w-5 text-primary" />
+                Identificação Cadastral
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
-                <p className="font-mono font-semibold text-lg">{company.cnpj || rawData.cnpj || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
-                <p className="font-semibold">{receitaData?.razao_social || rawData.razao_social || company.name}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nome Fantasia</p>
-                <p>{receitaData?.fantasia || rawData.nome_fantasia || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nome da Empresa</p>
-                <p>{rawData.nome_empresa || company.name}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Tipo Unidade</p>
-                <p>{rawData.tipo_unidade || receitaData?.tipo || 'Matriz'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Natureza Jurídica</p>
-                <p>{receitaData?.natureza_juridica || rawData.natureza_juridica || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Data de Abertura</p>
-                <p>{receitaData?.abertura || rawData.data_abertura ? new Date(receitaData?.abertura || rawData.data_abertura).toLocaleDateString('pt-BR') : 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Situação Cadastral</p>
-                <Badge variant={receitaData?.situacao === 'ATIVA' ? 'default' : 'destructive'}>
-                  {receitaData?.situacao || rawData.situacao_cadastral || 'N/A'}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Website</p>
-                {company.website || digitalPresence?.website ? (
-                  <a href={company.website || digitalPresence?.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    {company.website || digitalPresence?.website}
-                  </a>
-                ) : (
-                  <p className="text-muted-foreground">N/A</p>
-                )}
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Razão Social</span>
+                  <span className="text-sm font-semibold text-right">{receitaData?.razao_social || company.name}</span>
+                </div>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Nome Fantasia</span>
+                  <span className="text-sm font-semibold text-right">{receitaData?.fantasia || rawData.nome_fantasia || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Tipo Unidade</span>
+                  <span className="text-sm font-semibold text-right">{rawData.tipo_unidade || receitaData?.tipo || 'Matriz'}</span>
+                </div>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Natureza Jurídica</span>
+                  <span className="text-sm font-semibold text-right">{receitaData?.natureza_juridica || rawData.natureza_juridica || 'N/A'}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Localização & Contato */}
-          <RichContactsCard rawData={rawData} />
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPinned className="h-5 w-5" />
-                  Endereço
+          {/* Localização + Mapa - Grid 2 Colunas */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="glass-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Localização
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Logradouro</p>
-                  <p>{receitaData?.logradouro || rawData.logradouro || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Número</p>
-                  <p>{receitaData?.numero || rawData.numero || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Complemento</p>
-                  <p>{receitaData?.complemento || rawData.complemento || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Bairro</p>
-                  <p>{receitaData?.bairro || rawData.bairro || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">CEP</p>
-                  <p className="font-mono">{receitaData?.cep || rawData.cep || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cidade</p>
-                  <p>{receitaData?.municipio || rawData.cidade || (company.location as any)?.city || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Microrregião</p>
-                  <p>{rawData.microrregiao || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Mesorregião</p>
-                  <p>{rawData.mesorregiao || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">UF</p>
-                  <p>{receitaData?.uf || rawData.uf || (company.location as any)?.state || 'N/A'}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Logradouro</p>
+                    <p className="text-sm font-medium">{receitaData?.logradouro || rawData.logradouro || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Número</p>
+                    <p className="text-sm font-medium">{receitaData?.numero || rawData.numero || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Bairro</p>
+                    <p className="text-sm font-medium">{receitaData?.bairro || rawData.bairro || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">CEP</p>
+                    <p className="text-sm font-mono font-medium">{receitaData?.cep || rawData.cep || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cidade</p>
+                    <p className="text-sm font-medium">{receitaData?.municipio || rawData.cidade || (company.location as any)?.city || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Estado</p>
+                    <p className="text-sm font-medium">{receitaData?.uf || rawData.uf || (company.location as any)?.state || 'N/A'}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Contatos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Assertividade</p>
-                  <p>{rawData.assertividade || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Melhor Telefone</p>
-                  <p className="font-mono">{rawData.melhor_telefone || receitaData?.telefone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Segundo Melhor Telefone</p>
-                  <p className="font-mono">{rawData.segundo_melhor_telefone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Telefones Alta Assertividade</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.telefones_alta_assertividade || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Telefones Média Assertividade</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.telefones_media_assertividade || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Telefones Baixa Assertividade</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.telefones_baixa_assertividade || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Telefones - Matriz</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.telefones_matriz || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Telefones - Filiais</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.telefones_filiais || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Celulares</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.celulares || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Melhor Celular</p>
-                  <p className="font-mono">{rawData.melhor_celular || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Fixos</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.fixos || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">PAT - Telefone</p>
-                  <p className="font-mono">{rawData.pat_telefone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">WhatsApp</p>
-                  <p className="font-mono">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</p>
-                </div>
-                <Separator />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Departamentos</p>
-                  <ScrollArea className="h-24 border rounded p-2">
-                    <p className="text-xs">{rawData.emails_validados_departamentos || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Sócios</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.emails_validados_socios || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Decisores</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.emails_validados_decisores || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">E-mails Colaboradores</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.emails_validados_colaboradores || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email PAT</p>
-                  <p className="text-sm">{rawData.email_pat || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email Receita Federal</p>
-                  <p className="text-sm">{rawData.email_receita_federal || receitaData?.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Emails Públicos</p>
-                  <ScrollArea className="h-20 border rounded p-2">
-                    <p className="text-xs">{rawData.emails_publicos || 'N/A'}</p>
-                  </ScrollArea>
-                </div>
-              </CardContent>
-            </Card>
+            {receitaData?.cep && (
+              <Card className="glass-card">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MapPinned className="h-5 w-5 text-primary" />
+                    Mapa
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-60 rounded-lg overflow-hidden border">
+                    <LocationMap
+                      address={receitaData?.logradouro}
+                      numero={receitaData?.numero}
+                      municipio={receitaData?.municipio}
+                      estado={receitaData?.uf}
+                      cep={receitaData?.cep}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Mapa */}
-          {receitaData?.cep && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Localização no Mapa</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 rounded-lg overflow-hidden border">
-                  <LocationMap
-                    address={receitaData?.logradouro}
-                    numero={receitaData?.numero}
-                    municipio={receitaData?.municipio}
-                    estado={receitaData?.uf}
-                    cep={receitaData?.cep}
-                  />
+          {/* Contatos - Otimizado */}
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Phone className="h-5 w-5 text-primary" />
+                Informações de Contato
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Telefone Principal</p>
+                  <p className="text-sm font-mono font-medium">{rawData.melhor_telefone || receitaData?.telefone || 'N/A'}</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Telefone Secundário</p>
+                  <p className="text-sm font-mono font-medium">{rawData.segundo_melhor_telefone || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Celular</p>
+                  <p className="text-sm font-mono font-medium">{rawData.melhor_celular || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">WhatsApp</p>
+                  <p className="text-sm font-mono font-medium">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Email Principal</p>
+                  <p className="text-sm font-medium truncate">{rawData.email_receita_federal || receitaData?.email || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Email PAT</p>
+                  <p className="text-sm font-medium truncate">{rawData.email_pat || 'N/A'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Atividade Econômica */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ActivityIcon className="h-5 w-5" />
+          {/* Atividade Econômica - Compacto */}
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Briefcase className="h-5 w-5 text-primary" />
                 Atividade Econômica
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Setor Amigável</p>
-                  <p>{rawData.setor_amigavel || company.industry || 'N/A'}</p>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Setor</span>
+                  <span className="text-sm font-semibold text-right">{rawData.setor_amigavel || company.industry || 'N/A'}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Atividade Principal</p>
-                  <p>{receitaData?.atividade_principal?.text || rawData.atividade_economica || 'N/A'}</p>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">CNAE Principal</span>
+                  <span className="text-sm font-mono font-semibold text-right">{receitaData?.atividade_principal?.code || rawData.cod_atividade_economica || 'N/A'}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Código CNAE</p>
-                  <p className="font-mono">{receitaData?.atividade_principal?.code || rawData.cod_atividade_economica || 'N/A'}</p>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Regime Tributário</span>
+                  <span className="text-sm font-semibold text-right">{rawData.regime_tributario || 'N/A'}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Regime Tributário</p>
-                  <p>{rawData.regime_tributario || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Importação</p>
-                  <Badge variant={rawData.importacao ? 'default' : 'secondary'}>
-                    {rawData.importacao ? 'Sim' : 'Não'}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Exportação</p>
-                  <Badge variant={rawData.exportacao ? 'default' : 'secondary'}>
-                    {rawData.exportacao ? 'Sim' : 'Não'}
-                  </Badge>
+                <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                  <span className="text-sm text-muted-foreground">Importa/Exporta</span>
+                  <div className="flex gap-2">
+                    <Badge variant={rawData.importacao ? 'default' : 'secondary'} className="text-xs">
+                      Import: {rawData.importacao ? 'Sim' : 'Não'}
+                    </Badge>
+                    <Badge variant={rawData.exportacao ? 'default' : 'secondary'} className="text-xs">
+                      Export: {rawData.exportacao ? 'Sim' : 'Não'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-
-              <Separator />
-
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Atividades Secundárias</p>
-                <ScrollArea className="h-32 border rounded p-3">
-                  {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 ? (
-                    receitaData.atividades_secundarias.map((ativ: any, i: number) => (
-                      <div key={i} className="mb-2">
-                        <p className="text-sm font-mono">{ativ.code}</p>
-                        <p className="text-xs text-muted-foreground">{ativ.text}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">{rawData.atividades_secundarias || 'N/A'}</p>
-                  )}
-                </ScrollArea>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Códigos NCM</p>
-                <ScrollArea className="h-40 border rounded p-3">
-                  <p className="text-xs whitespace-pre-wrap font-mono">{rawData.cod_ncms_primarios || 'N/A'}</p>
-                </ScrollArea>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Descrição NCMs</p>
-                <ScrollArea className="h-64 border rounded p-3">
-                  <p className="text-xs whitespace-pre-wrap">{rawData.ncms_primarios || 'N/A'}</p>
-                </ScrollArea>
-              </div>
+              {receitaData?.atividade_principal?.text && (
+                <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Descrição da Atividade</p>
+                  <p className="text-sm">{receitaData.atividade_principal.text}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Estrutura Organizacional */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Funcionários
+          {/* Estrutura Organizacional - Grid 2 Colunas */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="glass-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                  Quadro de Pessoal
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Funcionários (Matriz + CNPJ)</p>
-                  <p className="text-2xl font-bold">{rawData.funcionarios_presumido_matriz_cnpj || company.employees || 'N/A'}</p>
+                <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Funcionários (Matriz + CNPJ)</span>
+                  <span className="text-2xl font-bold text-primary">{rawData.funcionarios_presumido_matriz_cnpj || company.employees || 'N/A'}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Funcionários (Este CNPJ)</p>
-                  <p className="text-xl font-semibold">{rawData.funcionarios_presumido_este_cnpj || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">PAT - Funcionários</p>
-                  <p>{rawData.pat_funcionarios || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Qtd. Filiais</p>
-                  <p>{rawData.qtd_filiais || '0'}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Este CNPJ</p>
+                    <p className="text-lg font-semibold">{rawData.funcionarios_presumido_este_cnpj || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Qtd. Filiais</p>
+                    <p className="text-lg font-semibold">{rawData.qtd_filiais || '0'}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
+            <Card className="glass-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <UserPlus className="h-5 w-5 text-primary" />
                   Sócios e Administradores
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-64 border rounded p-3">
+                <ScrollArea className="h-48">
                   {receitaData?.qsa && receitaData.qsa.length > 0 ? (
-                    receitaData.qsa.map((socio: any, i: number) => (
-                      <div key={i} className="mb-3 pb-3 border-b last:border-0">
-                        <p className="font-semibold">{socio.nome}</p>
-                        <p className="text-sm text-muted-foreground">{socio.qual}</p>
-                      </div>
-                    ))
+                    <div className="space-y-2">
+                      {receitaData.qsa.map((socio: any, i: number) => (
+                        <div key={i} className="p-2 bg-muted/30 rounded-lg">
+                          <p className="text-sm font-semibold">{socio.nome}</p>
+                          <p className="text-xs text-muted-foreground">{socio.qual}</p>
+                        </div>
+                      ))}
+                    </div>
                   ) : rawData.socios_administradores ? (
                     <p className="text-sm whitespace-pre-wrap">{rawData.socios_administradores}</p>
                   ) : (
-                    <p className="text-muted-foreground">Nenhum sócio cadastrado</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">Nenhum sócio cadastrado</p>
                   )}
                 </ScrollArea>
               </CardContent>
             </Card>
           </div>
 
+          {/* Decisores Cadastrados */}
           <DecisorsCollaboratorsCard
             decisors={parseCollaborators(rawData.decisores_cargos, rawData.decisores_linkedin)}
             collaborators={parseCollaborators(rawData.colaboradores_cargos, rawData.colaboradores_linkedin)}
           />
 
           {decisors.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Decisores Cadastrados ({decisors.length})</CardTitle>
+            <Card className="glass-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Target className="h-5 w-5 text-primary" />
+                  Decisores Cadastrados ({decisors.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {decisors.map((dec: any) => (
-                    <div key={dec.id} className="border rounded p-3">
-                      <p className="font-semibold">{dec.name}</p>
-                      <p className="text-sm text-muted-foreground">{dec.title}</p>
-                      {dec.email && <p className="text-xs">{dec.email}</p>}
-                      {dec.phone && <p className="text-xs">{dec.phone}</p>}
+                    <div key={dec.id} className="p-3 bg-muted/30 rounded-lg hover-scale">
+                      <p className="font-semibold text-sm mb-1">{dec.name}</p>
+                      <p className="text-xs text-muted-foreground mb-2">{dec.title}</p>
+                      {dec.email && <p className="text-xs flex items-center gap-1"><Mail className="h-3 w-3" />{dec.email}</p>}
+                      {dec.phone && <p className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" />{dec.phone}</p>}
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           )}
-
-          {/* Receita Federal */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5" />
-                Dados da Receita Federal
-              </CardTitle>
-              <CardDescription>Informações oficiais da RFB</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {receitaData ? (
-                <ScrollArea className="h-96 border rounded p-4">
-                  <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(receitaData, null, 2)}</pre>
-                </ScrollArea>
-              ) : (
-                <p className="text-muted-foreground">Nenhum dado da Receita Federal disponível</p>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* TAB 3: Financeiro */}
