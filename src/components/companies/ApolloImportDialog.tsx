@@ -55,6 +55,17 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
       const apolloParams: any = {};
       
       if (activeTab === 'companies') {
+        // Validação mínima: exigir nome OU domínio
+        const name = companyParams.q_organization_name?.trim();
+        const domain = companyParams.q_organization_domains?.trim();
+        if (!name && !domain) {
+          toast.error('Informe Nome da Organização ou Domínio', {
+            description: 'Preencha pelo menos um dos campos para buscar no Apollo.io'
+          });
+          setLoading(false);
+          return;
+        }
+
         Object.entries(companyParams).forEach(([key, value]) => {
           if (value && value.trim()) {
             apolloParams[key] = value.trim();
@@ -75,7 +86,7 @@ export function ApolloImportDialog({ open, onOpenChange, onImportComplete }: Apo
         
         if (orgs.length === 0) {
           toast.info('Nenhuma empresa encontrada', {
-            description: 'Tente ajustar os filtros de busca'
+            description: 'Tente ajustar os filtros de busca (nome, domínio, localização)'
           });
           setLoading(false);
           return;

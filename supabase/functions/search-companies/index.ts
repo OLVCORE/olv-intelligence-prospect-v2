@@ -35,13 +35,33 @@ async function fetchApolloData(companyName: string, domain?: string) {
   if (!apiKey) return null;
 
   try {
-    const params = new URLSearchParams({
-      api_key: apiKey,
+    const cleanDomain = (d?: string) => {
+      if (!d) return undefined;
+      try {
+        const first = String(d).split(/\n|,|\s/)[0] || '';
+        return first
+          .replace(/^https?:\/\//i, '')
+          .replace(/^www\./i, '')
+          .replace(/http$/i, '')
+          .replace(/\/.*$/, '')
+          .trim();
+      } catch { return undefined; }
+    };
+
+    const payload: Record<string, unknown> = {
+      page: 1,
+      per_page: 1,
       q_organization_name: companyName,
-      ...(domain && { q_organization_domains: domain })
+    };
+    const dom = cleanDomain(domain);
+    if (dom) payload.q_organization_domains = dom;
+
+    const response = await fetch('https://api.apollo.io/v1/organizations/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+      body: JSON.stringify(payload)
     });
 
-    const response = await fetch(`https://api.apollo.io/v1/organizations/search?${params}`);
     if (!response.ok) return null;
 
     const data = await response.json();
@@ -58,14 +78,18 @@ async function fetchDecisionMakers(companyName: string) {
   if (!apiKey) return [];
 
   try {
-    const params = new URLSearchParams({
-      api_key: apiKey,
+    const payload: Record<string, unknown> = {
+      per_page: 10,
+      person_titles: 'CEO,CTO,CFO,Director,VP,Head',
       q_organization_name: companyName,
-      per_page: '10',
-      person_titles: 'CEO,CTO,CFO,Director,VP,Head'
+    };
+
+    const response = await fetch('https://api.apollo.io/v1/people/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+      body: JSON.stringify(payload)
     });
 
-    const response = await fetch(`https://api.apollo.io/v1/people/search?${params}`);
     if (!response.ok) return [];
 
     const data = await response.json();
