@@ -193,6 +193,45 @@ serve(async (req) => {
         }
       }
 
+      // ✅ Validação e fallbacks quando nenhum critério foi passado
+      const hasCriteria = (
+        (basePayload as any)['q_organization_name'] ||
+        (basePayload as any)['q_organization_domains'] ||
+        (basePayload as any)['q_organization_locations'] ||
+        (basePayload as any)['q_organization_industry_tag_ids'] ||
+        (basePayload as any)['q_keywords'] ||
+        (basePayload as any)['q_organization_num_employees_ranges']
+      );
+
+      if (!hasCriteria) {
+        const fallbackName = (organizationName || name)?.toString().trim();
+        const fallbackDomain = cleanDomainStr(domain as string | undefined);
+        if (fallbackName) (basePayload as any)['q_organization_name'] = fallbackName;
+        if (fallbackDomain) (basePayload as any)['q_organization_domains'] = fallbackDomain;
+      }
+
+      const hasFinalCriteria = (
+        (basePayload as any)['q_organization_name'] ||
+        (basePayload as any)['q_organization_domains'] ||
+        (basePayload as any)['q_keywords'] ||
+        (basePayload as any)['q_organization_locations'] ||
+        (basePayload as any)['q_organization_industry_tag_ids'] ||
+        (basePayload as any)['q_organization_num_employees_ranges']
+      );
+
+      if (!hasFinalCriteria) {
+        console.warn('[Apollo] ⚠️ search_organizations sem critérios. Body recebido:', { type, name, domain, organizationName, searchParams });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Parâmetros insuficientes para busca no Apollo', 
+            details: 'Informe pelo menos q_organization_name ou q_organization_domains.' 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('[Apollo] ▶️ Payload search_organizations:', basePayload);
+
       const response = await fetch('https://api.apollo.io/v1/organizations/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY },
