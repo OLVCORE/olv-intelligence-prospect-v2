@@ -142,7 +142,48 @@ serve(async (req) => {
             
             if (foundCNPJs.size === 0) {
               console.log('[CNPJ Discovery] ⚠️ ReceitaWS: Nenhum CNPJ encontrado no Google');
-              return [];
+
+              // Tentativa extra: buscar CNPJ no domínio oficial quando informado
+              if (domain) {
+                try {
+                  const cleanDom = String(domain)
+                    .toLowerCase()
+                    .replace(/^https?:\/\/(www\.)?/, '')
+                    .replace(/\/.*$/, '');
+
+                  const domainQuery = `site:${cleanDom} (CNPJ OR "cadastro nacional da pessoa juridica" OR "cnpj:")`;
+                  const resp2 = await fetch('https://google.serper.dev/search', {
+                    method: 'POST',
+                    headers: {
+                      'X-API-KEY': SERPER_API_KEY,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ q: domainQuery, num: 5, gl: 'br', hl: 'pt-br' })
+                  });
+
+                  if (resp2.ok) {
+                    const data2 = await resp2.json();
+                    const results2 = data2.organic || [];
+                    for (const r2 of results2) {
+                      const text2 = `${r2.title} ${r2.snippet}`;
+                      const m2 = text2.match(cnpjPattern);
+                      if (m2) {
+                        for (const raw of m2) {
+                          foundCNPJs.add(raw.replace(/\D/g, ''));
+                          if (foundCNPJs.size >= 3) break;
+                        }
+                      }
+                      if (foundCNPJs.size >= 3) break;
+                    }
+                  }
+                } catch (e) {
+                  console.error('[CNPJ Discovery] ⚠️ Erro busca por domínio:', e);
+                }
+              }
+
+              if (foundCNPJs.size === 0) {
+                return [];
+              }
             }
             
             console.log(`[CNPJ Discovery] 🔎 Validando ${foundCNPJs.size} CNPJs em paralelo...`);
@@ -244,8 +285,12 @@ serve(async (req) => {
       // Pegar o melhor match
       const bestMatch = uniqueCandidates[0];
 
-      // Se confiança >= 80% E tem companyId, aplicar automaticamente
-      if (bestMatch.confidence >= 80 && companyId) {
+      // Critérios mais rígidos de autoaplicação: exigir sinal forte (domínio/local) ou nome muito alto
+      const v = (bestMatch as any).validation || { name_match: 0, domain_match: 0, location_match: 0 };
+      const hasStrongSignal = (v.domain_match > 0) || (v.location_match > 0) || (v.name_match >= 92);
+
+      // Se confiança >= 90% + forte sinal E tem companyId, aplicar automaticamente
+      if (bestMatch.confidence >= 90 && hasStrongSignal && companyId) {
         const { error } = await supabase
           .from('companies')
           .update({ 
@@ -271,8 +316,8 @@ serve(async (req) => {
         };
       }
 
-      // Se confiança < 80%, retornar candidatos para revisão manual
-      console.log('[CNPJ Discovery] 🤔 Match médio. Requer revisão:', bestMatch.cnpj, `(${bestMatch.confidence}%)`);
+      // Caso contrário, retornar candidatos para revisão manual (evita falsos positivos como "Participações")
+      console.log('[CNPJ Discovery] 🤔 Match requer revisão:', bestMatch.cnpj, `(${bestMatch.confidence}%)`, v);
       
       return {
         success: true,
@@ -574,7 +619,7 @@ function calculateMatch(
   const startsR = primary && rz.startsWith(primary);
   const startsF = primary && nf.startsWith(primary);
   let bonus = 0;
-  if (startsR || startsF) bonus += 40; // peso dominante para começar com o primeiro nome
+  if (startsR || startsF) bonus += 12; // reduzido para evitar favorecer "Participações" indevidamente
 
   // Bônus por ordem dos tokens relevantes (ex.: "fiorde" antes de "logistica")
   const seqIn = (text: string, seq: string[]) => {
@@ -618,6 +663,13 @@ function calculateMatch(
       locationMatchPct = 100;
       bonus += 10;
     }
+  }
+
+  // Penalização para holdings/participações quando a intenção é logística/internacional
+  const intentLogistica = q.includes('logistica') || q.includes('logística') || q.includes('internacional');
+  const isHolding = rz.includes('participacoes') || nf.includes('participacoes') || rz.includes('holding') || nf.includes('holding');
+  if (intentLogistica && isHolding) {
+    bonus -= 20;
   }
 
   const confidence = Math.max(0, Math.min(100, Math.round((base / baseMax) * 100) + bonus));
