@@ -1,228 +1,217 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Building2, Sparkles, Database, Loader2, Users } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import apolloIcon from '@/assets/logos/apollo-icon.ico';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ApolloEnrichButton } from "./ApolloEnrichButton";
+import { EconodataEnrichButton } from "./EconodataEnrichButton";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Sparkles, Globe, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface EnrichmentActionsCardProps {
-  onReceita?: () => void;
-  on360?: () => void;
-  onEconodata?: () => void;
-  onApollo?: () => void;
-  isLoadingReceita?: boolean;
-  isLoading360?: boolean;
-  isLoadingEconodata?: boolean;
-  isLoadingApollo?: boolean;
-  compact?: boolean;
+  company: any;
+  onEnrichmentComplete?: () => void;
 }
 
-export function EnrichmentActionsCard({
-  onReceita,
-  on360,
-  onEconodata,
-  onApollo,
-  isLoadingReceita,
-  isLoading360,
-  isLoadingEconodata,
-  isLoadingApollo,
-  compact = false
-}: EnrichmentActionsCardProps) {
-  if (compact) {
-    // Versão compacta para header de detalhes
-    return (
-      <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onReceita}
-                disabled={isLoadingReceita}
-                className="h-9 w-9 hover:bg-accent transition-colors"
-              >
-                {isLoadingReceita ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Building2 className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Enriquecer com Receita Federal</p>
-            </TooltipContent>
-          </Tooltip>
+export function EnrichmentActionsCard({ company, onEnrichmentComplete }: EnrichmentActionsCardProps) {
+  const [isEnrichingReceita, setIsEnrichingReceita] = useState(false);
+  const hasApolloData = !!company.apollo_organization_id;
+  const hasCNPJ = !!company.cnpj;
+  const hasEconodataData = !!company.econodata_enriched_at;
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={on360}
-                disabled={isLoading360}
-                className="h-9 w-9 hover:bg-accent transition-colors"
-              >
-                {isLoading360 ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Enriquecimento 360° Completo</p>
-            </TooltipContent>
-          </Tooltip>
+  const handleEnrichReceita = async () => {
+    if (!hasCNPJ) {
+      toast.error("CNPJ não disponível");
+      return;
+    }
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onEconodata}
-                disabled={isLoadingEconodata}
-                className="h-9 w-9 hover:bg-accent transition-colors"
-              >
-                {isLoadingEconodata ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Database className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Enriquecer com Econodata</p>
-            </TooltipContent>
-          </Tooltip>
+    setIsEnrichingReceita(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-receitaws', {
+        body: {
+          cnpj: company.cnpj,
+          companyId: company.id
+        }
+      });
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onApollo}
-                disabled={isLoadingApollo}
-                className="h-9 w-9 hover:bg-purple-500/10 hover:border-purple-500/20 transition-colors"
-              >
-                {isLoadingApollo ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <div className="h-4 w-4 flex items-center justify-center">
-                    <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
-                  </div>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Enriquecer com Apollo (Decisores e Contatos)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    );
-  }
+      if (error) throw error;
 
-  // Versão completa para página de listagem
+      toast.success("Dados da Receita Federal atualizados!");
+      onEnrichmentComplete?.();
+    } catch (error: any) {
+      console.error('Erro ao enriquecer ReceitaWS:', error);
+      toast.error("Erro ao atualizar dados da Receita Federal");
+    } finally {
+      setIsEnrichingReceita(false);
+    }
+  };
+
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Enriquecimento:</CardTitle>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          Ações de Enriquecimento
+        </CardTitle>
+        <CardDescription>
+          Enriqueça os dados da empresa com múltiplas fontes de dados
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap items-center gap-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={onReceita}
-                  disabled={isLoadingReceita}
-                  className="flex items-center gap-2"
-                >
-                  {isLoadingReceita ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Building2 className="h-4 w-4" />
-                  )}
-                  Receita Federal
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Enriquece dados básicos da empresa via Receita Federal</p>
-              </TooltipContent>
-            </Tooltip>
+      <CardContent className="space-y-4">
+        {/* Apollo Enrichment */}
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold">Apollo.io</h4>
+              {hasApolloData && (
+                <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                  ✓ Enriquecido
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              42 campos organizacionais + Decisores + PhantomBuster fallback
+            </p>
+          </div>
+          <ApolloEnrichButton
+            companyId={company.id}
+            companyName={company.name}
+            companyDomain={company.domain}
+            cnpj={company.cnpj}
+            razaoSocial={company.razao_social}
+            hasApolloId={hasApolloData}
+            onSuccess={onEnrichmentComplete}
+          />
+        </div>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  onClick={on360}
-                  disabled={isLoading360}
-                  className="flex items-center gap-2"
-                >
-                  {isLoading360 ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  360° Completo
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Análise completa com IA: insights, sinais, recomendações</p>
-              </TooltipContent>
-            </Tooltip>
+        {/* CNPJ / ReceitaWS Enrichment */}
+        {hasCNPJ && (
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">ReceitaWS</h4>
+                {company.cnpj_enriched_at && (
+                  <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                    ✓ Enriquecido
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Dados cadastrais e jurídicos da Receita Federal
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleEnrichReceita}
+              disabled={isEnrichingReceita}
+            >
+              {isEnrichingReceita ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Atualizar
+            </Button>
+          </div>
+        )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  onClick={onEconodata}
-                  disabled={isLoadingEconodata}
-                  className="flex items-center gap-2"
-                >
-                  {isLoadingEconodata ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Database className="h-4 w-4 text-primary-foreground" />
-                  )}
-                  Econodata
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="max-w-xs space-y-1">
-                  <p className="font-semibold">Fonte Primária - Econodata</p>
-                  <p className="text-xs">87 campos oficiais, dados mais completos</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+        {/* Econodata Enrichment */}
+        {hasCNPJ && (
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">Econodata</h4>
+                {hasEconodataData && (
+                  <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                    ✓ Enriquecido
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Score de crédito e saúde financeira
+              </p>
+            </div>
+            <EconodataEnrichButton
+              companyId={company.id}
+              cnpj={company.cnpj}
+              variant="outline"
+              size="sm"
+            />
+          </div>
+        )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  onClick={onApollo}
-                  disabled={isLoadingApollo}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  {isLoadingApollo ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <div className="h-4 w-4 flex items-center justify-center">
-                      <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
-                    </div>
-                  )}
-                  Apollo (Decisores)
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="max-w-xs space-y-1">
-                  <p className="font-semibold">Enriquecimento Apollo.io</p>
-                  <p className="text-xs">Busca decisores e contatos da empresa</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        {/* External Validation Links */}
+        <div className="pt-4 border-t">
+          <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Links Externos de Validação
+          </h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Valide os dados da empresa em fontes externas em 2-3 cliques
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {company.linkedin_url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(company.linkedin_url, '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                LinkedIn
+              </Button>
+            )}
+            {company.domain && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://${company.domain}`, '_blank')}
+              >
+                <Globe className="h-3 w-3 mr-1" />
+                Website
+              </Button>
+            )}
+            {hasCNPJ && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://www.receitaws.com.br/cnpj/${company.cnpj.replace(/\D/g, '')}`, '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Receita Federal
+              </Button>
+            )}
+            {hasApolloData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://app.apollo.io/#/organizations/${company.apollo_organization_id}`, '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Apollo
+              </Button>
+            )}
+            {!hasApolloData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://app.apollo.io/#/organizations?q=${encodeURIComponent(company.name)}`, '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Buscar no Apollo
+              </Button>
+            )}
+            {company.linkedin_url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://www.linkedin.com/search/results/people/?company=${encodeURIComponent(company.name)}`, '_blank')}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Pessoas no LinkedIn
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

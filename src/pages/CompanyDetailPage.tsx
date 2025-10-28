@@ -1336,6 +1336,12 @@ export default function CompanyDetailPage() {
 
         {/* TAB 8: Inteligência e Análise */}
         <TabsContent value="inteligencia" className="space-y-4">
+          {/* Ações de Enriquecimento */}
+          <EnrichmentActionsCard 
+            company={company}
+            onEnrichmentComplete={() => queryClient.invalidateQueries({ queryKey: ['company-detail', id] })}
+          />
+          
           <div className="grid md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">

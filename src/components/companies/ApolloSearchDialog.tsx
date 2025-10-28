@@ -69,7 +69,14 @@ export function ApolloSearchDialog({
       } else {
         setResults([]);
         setShowUrlInput(true);
-        toast.info("Nenhuma empresa encontrada. Cole a URL do Apollo manualmente.");
+        
+        // ABRIR APOLLO AUTOMATICAMENTE para busca manual
+        toast.info("Nenhuma empresa encontrada. Abrindo Apollo para busca manual...");
+        
+        setTimeout(() => {
+          const apolloSearchUrl = `https://app.apollo.io/#/organizations?q=${encodeURIComponent(searchName.trim())}`;
+          window.open(apolloSearchUrl, '_blank');
+        }, 500);
       }
     } catch (error: any) {
       console.error('Erro ao buscar no Apollo:', error);
@@ -272,42 +279,73 @@ export function ApolloSearchDialog({
             <div className="space-y-4">
               <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                 <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-semibold text-sm">Empresa não encontrada no Apollo</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Busque manualmente no Apollo e cole a URL da empresa aqui.
-                  </p>
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open('https://app.apollo.io/#/organizations', '_blank')}
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Abrir Apollo
-                    </Button>
-                    {companyDomain && (
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-sm">🔍 Empresa não encontrada no Apollo</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      O Apollo foi aberto automaticamente. Busque manualmente e valide pelos links abaixo.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Links de Validação Externa</p>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(`https://${companyDomain}`, '_blank')}
+                        onClick={() => {
+                          const apolloSearchUrl = `https://app.apollo.io/#/organizations?q=${encodeURIComponent(searchName)}`;
+                          window.open(apolloSearchUrl, '_blank');
+                        }}
                       >
-                        <Globe className="h-3 w-3 mr-1" />
-                        Website
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Buscar no Apollo
                       </Button>
-                    )}
+                      
+                      {companyDomain && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`https://${companyDomain}`, '_blank')}
+                          >
+                            <Globe className="h-3 w-3 mr-1" />
+                            Website
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(searchName)}`, '_blank')}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            LinkedIn
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <strong>Dica:</strong> Empresas pequenas ou novas podem não estar no Apollo. 
+                      Use os links acima para validar a existência da empresa nas redes sociais e buscadores.
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="apollo-url">URL da Empresa no Apollo</Label>
+                <Label htmlFor="apollo-url">
+                  Cole a URL da Empresa no Apollo
+                  <span className="text-xs text-muted-foreground ml-2">(Se encontrou)</span>
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="apollo-url"
                     value={apolloUrl}
                     onChange={(e) => setApolloUrl(e.target.value)}
-                    placeholder="https://app.apollo.io/#/organizations/..."
+                    placeholder="https://app.apollo.io/#/organizations/5f9e8d7c..."
                   />
                   <Button onClick={handleSearchByUrl} disabled={searching}>
                     {searching ? (
@@ -317,6 +355,9 @@ export function ApolloSearchDialog({
                     )}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Exemplo: https://app.apollo.io/#/organizations/5f9e8d7c6b5a4f3e2d1c0b9a
+                </p>
               </div>
             </div>
           )}
