@@ -80,7 +80,7 @@ serve(async (req) => {
           for (const empresa of empresas) {
             const match = calculateMatch(companyName, domain, location, empresa);
             
-            if (match.confidence >= 60) {
+            if (match.confidence >= 30) {
               candidates.push({
                 cnpj: empresa.cnpj,
                 confidence: match.confidence,
@@ -213,7 +213,7 @@ serve(async (req) => {
             
             // Validar
             const validated = await validateCNPJ(cnpj, companyName, domain, location);
-            if (validated && validated.confidence >= 70) {
+            if (validated && validated.confidence >= 30) {
               candidates.push(validated);
               console.log('[CNPJ Discovery] ✅ Website revelou:', cnpj, `(${validated.confidence}%) via ${validated.source}`);
             }
@@ -374,7 +374,7 @@ async function validateCNPJ(
 
     // Pega o que responder primeiro com bom match
     const results = await Promise.any([receitaPromise, brasilPromise]);
-    if (results.match.confidence >= 50) {
+    if (results.match.confidence >= 30) {
       return {
         cnpj,
         confidence: results.match.confidence,
@@ -399,10 +399,18 @@ function calculateMatch(
   candidate: any
 ): { confidence: number; scores: any } {
   // Pesos base: Nome (40), Domínio (30)
-  const nameScore = calculateNameSimilarity(
-    companyName.toLowerCase(),
-    (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase()
-  );
+  const sourceName = (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase();
+  const queryName = companyName.toLowerCase();
+
+  // Tokenização para detectar marca única
+  const tokens = queryName.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
+  const stop = new Set([
+    'logistica','logística','internacional','transportes','servicos','serviços','ltda','sa','s.a','holding','grupo','comercio','comércio','industria','indústria','tecnologia','solucoes','soluções','distribuidora','companhia','brasil','do','da','de','the','of','and'
+  ]);
+  const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
+  const containsBrand = brandTokens.some(t => sourceName.includes(t));
+
+  const nameScore = calculateNameSimilarity(queryName, sourceName);
 
   let totalBase = nameScore * 40;
   let baseMax = 40;
@@ -410,9 +418,9 @@ function calculateMatch(
   // Domínio contribui apenas se houver informações em ambas as pontas
   let domainMatchPct = 0;
   if (domain && candidate.website) {
-    const domainMatch =
-      domain.toLowerCase().includes(candidate.website.toLowerCase()) ||
-      candidate.website.toLowerCase().includes(domain.toLowerCase());
+    const d1 = domain.toLowerCase();
+    const d2 = String(candidate.website).toLowerCase();
+    const domainMatch = d1.includes(d2) || d2.includes(d1);
     baseMax += 30;
     if (domainMatch) {
       totalBase += 30;
@@ -420,19 +428,24 @@ function calculateMatch(
     }
   }
 
-  // BÔNUS de localização: NÃO penaliza se não bater (até +10 pts)
+  // Bônus de localização (não penaliza se não bater)
   let locationMatchPct = 0;
   let bonus = 0;
   if (location?.city && candidate.municipio) {
-    const cityMatch = location.city.toLowerCase() === candidate.municipio.toLowerCase();
+    const cityMatch = location.city.toLowerCase() === String(candidate.municipio).toLowerCase();
     if (cityMatch) {
       locationMatchPct = 100;
-      bonus = 10;
+      bonus += 10;
     }
   }
 
+  // Bônus/Penalidade de marca
+  if (brandTokens.length > 0) {
+    if (containsBrand) bonus += 20; else bonus -= 10;
+  }
+
   const baseConfidence = baseMax > 0 ? Math.round((totalBase / baseMax) * 100) : 0;
-  const confidence = Math.min(100, baseConfidence + bonus);
+  const confidence = Math.max(0, Math.min(100, baseConfidence + bonus));
 
   return {
     confidence,

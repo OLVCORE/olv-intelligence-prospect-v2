@@ -174,7 +174,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
   };
 
   // Importar empresa atual
-  const handleImportCurrent = async () => {
+  const handleImportCurrent = async (cnpjOverride?: string) => {
     if (!currentItem || currentItem.status === 'imported') return;
 
     setImporting(true);
@@ -182,7 +182,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
 
     try {
       const org = currentItem.apolloOrg;
-      const selectedCandidate = currentItem.cnpjCandidates?.find(c => c.cnpj === currentItem.selectedCNPJ);
+      const selectedCandidate = currentItem.cnpjCandidates?.find(c => c.cnpj === (cnpjOverride || currentItem.selectedCNPJ));
 
       console.log('[Apollo Review] 💾 Importando:', org.name);
 
@@ -401,7 +401,10 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">📋 Receita Federal do Brasil</h3>
-                  <Badge variant="outline">{currentItem.cnpjCandidates.length} candidato(s)</Badge>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground hidden md:inline">Clique para selecionar; duplo clique para importar</span>
+                    <Badge variant="outline">{currentItem.cnpjCandidates.length} candidato(s)</Badge>
+                  </div>
                 </div>
 
                 {currentItem.cnpjCandidates.map((candidate, idx) => {
@@ -418,6 +421,8 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
                           : 'border hover:border-primary/50'
                       }`}
                       onClick={() => handleSelectCNPJ(candidate.cnpj)}
+                      onDoubleClick={() => handleImportCurrent(candidate.cnpj)}
+                      title={isSelected ? 'Duplo clique para importar' : 'Clique para selecionar; duplo clique para importar'}
                     >
                       <CardContent className="pt-4 space-y-3">
                         <div className="flex items-start justify-between">
@@ -683,7 +688,7 @@ export function ApolloReviewDialog({ open, onOpenChange, organizations, onImport
             
             {(currentItem.status === 'reviewed' || currentItem.status === 'pending') && (
               <Button
-                onClick={handleImportCurrent}
+                onClick={() => handleImportCurrent()}
                 disabled={importing}
               >
                 {importing ? (
