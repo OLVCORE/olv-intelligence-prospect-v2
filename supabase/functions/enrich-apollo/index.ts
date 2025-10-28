@@ -862,18 +862,28 @@ serve(async (req) => {
           seniority: p.seniority
         })));
 
-        // 🧹 Filtrar apenas pessoas da organização/domínio correto
-        const beforeFilter = people.length;
-        if (org?.id) {
-          people = people.filter((p: any) => p.organization_id === org.id || p.organization?.id === org.id);
+        // 🧹 Filtrar por organização/domínio correto (flexível)
+        const origPeople = people;
+        const norm = (s?: string) => (s || '')
+          .toLowerCase()
+          .replace(/^https?:\/\//, '')
+          .replace(/^www\./, '')
+          .split('/')[0]
+          .trim();
+        const companyDomain = norm(domain || company.website || company.domain);
+        let afterFilter = people.filter((p: any) => {
+          const pOrgId = p.organization_id || p.organization?.id;
+          const pDom = norm(p.organization?.primary_domain || (p.organization as any)?.domain);
+          return (org?.id && pOrgId === org.id) || (!!companyDomain && pDom === companyDomain);
+        });
+        console.log('[Apollo] 🧹 Filtro por organização/domínio:', { antes: people.length, depois: afterFilter.length, companyDomain, orgId: org?.id });
+
+        if (afterFilter.length === 0) {
+          console.warn('[Apollo] ⚠️ Filtro removeu todos. Mantendo lista original para não perder contatos.');
+          people = origPeople;
         } else {
-          const dom = (peoplePayload as any).q_organization_domains;
-          if (dom) {
-            const norm = (s: string) => String(s || '').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0];
-            people = people.filter((p: any) => norm(p.organization?.primary_domain || (p.organization as any)?.domain) === norm(dom));
-          }
+          people = afterFilter;
         }
-        console.log('[Apollo] 🧹 Filtro por organização/domínio:', { antes: beforeFilter, depois: people.length });
         // Salvar decisores com TODOS os campos
         // 🧹 Cleanup: remover mocks com email placeholder desta empresa
         try {
