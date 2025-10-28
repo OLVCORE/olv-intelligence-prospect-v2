@@ -459,7 +459,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="overview" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Eye className="h-4 w-4" />
                     Visão Geral
@@ -476,7 +476,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="identificacao" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <IdCard className="h-4 w-4" />
                     Identificação
@@ -493,7 +493,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="localizacao" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <MapPinned className="h-4 w-4" />
                     Localização
@@ -510,7 +510,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="atividade" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <ActivityIcon className="h-4 w-4" />
                     Atividade
@@ -527,7 +527,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="estrutura" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <UsersIcon className="h-4 w-4" />
                     Estrutura
@@ -544,7 +544,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="financeiro" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Wallet className="h-4 w-4" />
                     Financeiro
@@ -561,7 +561,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="digital" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Monitor className="h-4 w-4" />
                     Digital
@@ -578,7 +578,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="inteligencia" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Brain className="h-4 w-4" />
                     Inteligência
@@ -595,7 +595,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="receita" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <FileSpreadsheet className="h-4 w-4" />
                     Receita
@@ -612,7 +612,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="actions" 
-                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Zap className="h-4 w-4" />
                     Ações
