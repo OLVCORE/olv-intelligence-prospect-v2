@@ -48,116 +48,109 @@ serve(async (req) => {
     const searchPromise = (async () => {
       const candidates: CNPJMatch[] = [];
 
-    // ============================================
-    // MÉTODO 1: Busca via EmpresaQui (melhor match)
-    // ============================================
-    try {
-      const EMPRESAQUI_API_KEY = Deno.env.get('EMPRESAQUI_API_KEY');
-      
-      if (EMPRESAQUI_API_KEY) {
-        console.log('[CNPJ Discovery] 📊 Tentando EmpresaQui...');
-        
-        const empresas = await searchEmpresaQui(EMPRESAQUI_API_KEY, companyName, location);
-        
-        for (const empresa of empresas) {
-          const match = calculateMatch(companyName, domain, location, empresa);
-          
-          if (match.confidence >= 40) { // Threshold aumentado para 40%
-            candidates.push({
-              cnpj: empresa.cnpj,
-              confidence: match.confidence,
-              source: 'empresaqui',
-              validation: match.scores,
-              data: empresa
-            });
-            console.log('[CNPJ Discovery] ✅ EmpresaQui encontrou:', empresa.cnpj, `(${match.confidence}%)`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[CNPJ Discovery] ⚠️ Erro EmpresaQui:', error);
-    }
+      // ============================================
+      // BUSCA PARALELA EM TODAS AS FONTES
+      // ============================================
+      console.log('[CNPJ Discovery] 🚀 Iniciando busca paralela em todas as fontes...');
 
-    // Saída antecipada se já houver candidato forte (>=85)
-    {
-      const uniqueCandidatesEarly = Array.from(new Map(candidates.map(c => [c.cnpj, c])).values()).sort((a, b) => b.confidence - a.confidence);
-      const bestEarly = uniqueCandidatesEarly[0];
-      if (bestEarly && bestEarly.confidence >= 85) {
-        if (companyId && bestEarly.confidence >= 80) {
-          const { error } = await supabase
-            .from('companies')
-            .update({ cnpj: bestEarly.cnpj, cnpj_status: 'validado', updated_at: new Date().toISOString() })
-            .eq('id', companyId);
-          if (error) console.error('[CNPJ Discovery] ❌ Erro ao salvar CNPJ (early):', error);
-        }
-        return {
-          success: true,
-          auto_applied: !!companyId && bestEarly.confidence >= 80,
-          cnpj: bestEarly.cnpj,
-          confidence: bestEarly.confidence,
-          source: bestEarly.source,
-          candidates: uniqueCandidatesEarly,
-          company_id: companyId
-        };
-      }
-    }
-    try {
-      console.log('[CNPJ Discovery] 📋 Tentando ReceitaWS...');
-      
-      const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
-      
-      if (SERPER_API_KEY) {
-        const searchQuery = `${companyName} CNPJ site:gov.br OR site:receita.fazenda.gov.br`;
-        
-        const searchResponse = await fetch('https://google.serper.dev/search', {
-          method: 'POST',
-          headers: {
-            'X-API-KEY': SERPER_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            q: searchQuery,
-            num: 3,
-            gl: 'br',
-            hl: 'pt-br'
-          })
-        });
-
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json();
-          const results = searchData.organic || [];
-          
-          const cnpjPattern = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
-          const foundCNPJs = new Set<string>();
-          
-          // Extrair CNPJs únicos dos resultados (máximo 3)
-          for (const result of results) {
-            const text = `${result.title} ${result.snippet}`;
-            const matches = text.match(cnpjPattern);
+      const [empresaQuiResults, receitaResults, websiteResults] = await Promise.allSettled([
+        // FONTE 1: EmpresaQui (com retry)
+        (async () => {
+          try {
+            const EMPRESAQUI_API_KEY = Deno.env.get('EMPRESAQUI_API_KEY');
+            if (!EMPRESAQUI_API_KEY) {
+              console.log('[CNPJ Discovery] ⚠️ EmpresaQui: API key não configurada');
+              return [];
+            }
             
-            if (matches) {
-              for (const cnpjRaw of matches) {
-                const cnpj = cnpjRaw.replace(/\D/g, '');
-                foundCNPJs.add(cnpj);
-                if (foundCNPJs.size >= 3) break;
+            console.log('[CNPJ Discovery] 📊 Tentando EmpresaQui...');
+            const empresas = await searchEmpresaQui(EMPRESAQUI_API_KEY, companyName, location);
+            
+            const results: CNPJMatch[] = [];
+            for (const empresa of empresas) {
+              const match = calculateMatch(companyName, domain, location, empresa, 'empresaqui');
+              
+              if (match.confidence >= 40) {
+                results.push({
+                  cnpj: empresa.cnpj,
+                  confidence: match.confidence,
+                  source: 'empresaqui',
+                  validation: match.scores,
+                  data: empresa
+                });
+                console.log('[CNPJ Discovery] ✅ EmpresaQui encontrou:', empresa.cnpj, `(${match.confidence}%)`);
               }
             }
-            if (foundCNPJs.size >= 3) break;
+            return results;
+          } catch (error) {
+            console.error('[CNPJ Discovery] ⚠️ Erro EmpresaQui:', error);
+            return [];
           }
-          
-          // Validar todos os CNPJs em paralelo
-          if (foundCNPJs.size > 0) {
+        })(),
+        
+        // FONTE 2: ReceitaWS/Google (sempre em paralelo)
+        (async () => {
+          try {
+            const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
+            if (!SERPER_API_KEY) {
+              console.log('[CNPJ Discovery] ⚠️ ReceitaWS: Serper API key não configurada');
+              return [];
+            }
+            
+            console.log('[CNPJ Discovery] 📋 Tentando ReceitaWS...');
+            const searchQuery = `${companyName} CNPJ site:gov.br OR site:receita.fazenda.gov.br`;
+            
+            const searchResponse = await fetch('https://google.serper.dev/search', {
+              method: 'POST',
+              headers: {
+                'X-API-KEY': SERPER_API_KEY,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                q: searchQuery,
+                num: 3,
+                gl: 'br',
+                hl: 'pt-br'
+              })
+            });
+
+            if (!searchResponse.ok) {
+              console.error('[CNPJ Discovery] ⚠️ ReceitaWS: Erro na busca Google');
+              return [];
+            }
+            
+            const searchData = await searchResponse.json();
+            const results = searchData.organic || [];
+            
+            const cnpjPattern = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+            const foundCNPJs = new Set<string>();
+            
+            // Extrair CNPJs únicos dos resultados (máximo 3)
+            for (const result of results) {
+              const text = `${result.title} ${result.snippet}`;
+              const matches = text.match(cnpjPattern);
+              
+              if (matches) {
+                for (const cnpjRaw of matches) {
+                  const cnpj = cnpjRaw.replace(/\D/g, '');
+                  foundCNPJs.add(cnpj);
+                  if (foundCNPJs.size >= 3) break;
+                }
+              }
+              if (foundCNPJs.size >= 3) break;
+            }
+            
+            if (foundCNPJs.size === 0) {
+              console.log('[CNPJ Discovery] ⚠️ ReceitaWS: Nenhum CNPJ encontrado no Google');
+              return [];
+            }
+            
             console.log(`[CNPJ Discovery] 🔎 Validando ${foundCNPJs.size} CNPJs em paralelo...`);
             
             const validationPromises = Array.from(foundCNPJs).map(async (cnpj, index) => {
               try {
-                // Delay escalonado para evitar rate limit (0ms, 250ms, 500ms...)
                 await new Promise(resolve => setTimeout(resolve, index * 250));
-                const validated = await validateCNPJ(cnpj, companyName, domain, location);
-                if (validated) {
-                  console.log('[CNPJ Discovery] ✅ Validado:', cnpj, `(${validated.confidence}%) via ${validated.source}`);
-                }
-                return validated;
+                return await validateCNPJ(cnpj, companyName, domain, location);
               } catch (error) {
                 console.error('[CNPJ Discovery] ⚠️ Erro ao validar CNPJ:', error);
                 return null;
@@ -165,45 +158,66 @@ serve(async (req) => {
             });
             
             const validationResults = await Promise.all(validationPromises);
-            candidates.push(...validationResults.filter((r): r is CNPJMatch => r !== null));
+            return validationResults.filter((r): r is CNPJMatch => r !== null);
+          } catch (error) {
+            console.error('[CNPJ Discovery] ⚠️ Erro ReceitaWS:', error);
+            return [];
           }
-        }
-      }
-    } catch (error) {
-      console.error('[CNPJ Discovery] ⚠️ Erro ReceitaWS:', error);
-    }
-
-    // ============================================
-    // MÉTODO 3: Busca no website da empresa
-    // ============================================
-    if (domain) {
-      try {
-        console.log('[CNPJ Discovery] 🌐 Tentando extrair CNPJ do website...');
+        })(),
         
-        const websiteResponse = await fetch(`https://${domain}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-
-        if (websiteResponse.ok) {
-          const html = await websiteResponse.text();
-          const cnpjPattern = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
-          const matches = html.match(cnpjPattern);
-          
-          if (matches && matches.length > 0) {
-            const cnpj = matches[0].replace(/\D/g, '');
-            
-            // Validar
-            const validated = await validateCNPJ(cnpj, companyName, domain, location);
-            if (validated && validated.confidence >= 40) { // Threshold aumentado para 40%
-              candidates.push(validated);
-              console.log('[CNPJ Discovery] ✅ Website revelou:', cnpj, `(${validated.confidence}%) via ${validated.source}`);
-            }
+        // FONTE 3: Website scraping
+        (async () => {
+          if (!domain) {
+            console.log('[CNPJ Discovery] ⚠️ Website: Domínio não fornecido');
+            return [];
           }
-        }
-      } catch (error) {
-        console.error('[CNPJ Discovery] ⚠️ Erro ao buscar no website:', error);
-      }
-    }
+          
+          try {
+            console.log('[CNPJ Discovery] 🌐 Tentando extrair CNPJ do website...');
+            
+            const websiteResponse = await fetch(`https://${domain}`, {
+              headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+
+            if (!websiteResponse.ok) {
+              console.error('[CNPJ Discovery] ⚠️ Website não acessível');
+              return [];
+            }
+            
+            const html = await websiteResponse.text();
+            const cnpjPattern = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+            const matches = html.match(cnpjPattern);
+            
+            if (!matches || matches.length === 0) {
+              console.log('[CNPJ Discovery] ⚠️ Website: Nenhum CNPJ encontrado no HTML');
+              return [];
+            }
+            
+            const cnpj = matches[0].replace(/\D/g, '');
+            const validated = await validateCNPJ(cnpj, companyName, domain, location);
+            
+            if (validated && validated.confidence >= 40) {
+              console.log('[CNPJ Discovery] ✅ Website revelou:', cnpj, `(${validated.confidence}%) via ${validated.source}`);
+              return [validated];
+            }
+            
+            return [];
+          } catch (error) {
+            console.error('[CNPJ Discovery] ⚠️ Erro ao buscar no website:', error);
+            return [];
+          }
+        })()
+      ]);
+
+      // Consolidar resultados de TODAS as fontes
+      const allResults = [
+        ...(empresaQuiResults.status === 'fulfilled' ? empresaQuiResults.value : []),
+        ...(receitaResults.status === 'fulfilled' ? receitaResults.value : []),
+        ...(websiteResults.status === 'fulfilled' ? websiteResults.value : [])
+      ];
+
+      candidates.push(...allResults);
+      console.log(`[CNPJ Discovery] 📊 Total de candidatos encontrados: ${candidates.length}`);
 
       // ============================================
       // PROCESSAR RESULTADOS
@@ -450,7 +464,7 @@ async function validateCNPJ(
         nome_fantasia: receitaData.fantasia,
         municipio: receitaData.municipio,
         uf: receitaData.uf
-      });
+      }, 'receitaws');
       return { source: 'receitaws', data: receitaData, match } as const;
     })();
 
@@ -468,7 +482,7 @@ async function validateCNPJ(
         nome_fantasia: b.nome_fantasia,
         municipio,
         uf
-      });
+      }, 'brasilapi');
       return { source: 'brasilapi', data: b, match } as const;
     })();
 
@@ -496,7 +510,8 @@ function calculateMatch(
   companyName: string,
   domain: string | undefined,
   location: any,
-  candidate: any
+  candidate: any,
+  source?: string
 ): { confidence: number; scores: any } {
   // Pesos base: Nome (40), Domínio (30)
   const sourceName = (candidate.razao_social || candidate.nome_fantasia || '').toLowerCase();
@@ -567,7 +582,7 @@ function calculateMatch(
     bonus
   };
 
-  console.log(`[Match Debug] ${candidate.razao_social}: ${confidence}% | name:${debug.nameScore}% domain:${domainMatchPct}% loc:${locationMatchPct}% | brand:[${brandTokens.join(',')}] found:${containsBrand}`);
+  console.log(`[Match Debug] ${candidate.razao_social || candidate.nome}: ${confidence}% | source:${source || 'unknown'} | name:${debug.nameScore}% domain:${domainMatchPct}% loc:${locationMatchPct}% | brand:[${brandTokens.join(',')}] found:${containsBrand}`);
 
   return {
     confidence,
