@@ -50,7 +50,7 @@ export function UpdateNowButton({
           description: `${decisorsCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
         });
       } else {
-        // Se não tem apollo_organization_id, fazer busca inicial
+        // Se não tem apollo_organization_id, fazer busca/resolução inicial
         console.log('[UpdateNow] 🔍 Buscando empresa no Apollo:', companyName);
         
         const cleanDomain = companyDomain
@@ -61,21 +61,23 @@ export function UpdateNowButton({
 
         const { data, error } = await supabase.functions.invoke('enrich-apollo', {
           body: {
-            type: 'enrich_company',
-            companyId,
-            organizationName: companyName,
-            ...(cleanDomain ? { domain: cleanDomain } : {})
+            type: 'ciclo3_resolve_organization',
+            searchName: companyName,
+            domain: cleanDomain
           }
         });
 
         if (error) throw error;
 
-        const count = data?.people_count ?? 0;
-        toast.success(`✅ Enriquecimento inicial concluído!`, {
-          description: count > 0 
-            ? `${count} decisor(es) encontrado(s)` 
-            : 'Empresa registrada. Execute novamente para atualizar dados.'
-        });
+        if (data?.organization) {
+          toast.success(`✅ Empresa encontrada no Apollo!`, {
+            description: `${data.organization.name} - Score: ${(data.matchScore * 100).toFixed(0)}%`
+          });
+        } else {
+          toast.warning('Empresa não encontrada no Apollo', {
+            description: 'Tente ajustar o nome ou domínio da empresa'
+          });
+        }
       }
 
       onSuccess?.();
