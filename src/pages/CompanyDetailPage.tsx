@@ -44,6 +44,7 @@ import { ApolloOrgIdDialog } from '@/components/companies/ApolloOrgIdDialog';
 import { ApolloDebugDialog } from '@/components/companies/ApolloDebugDialog';
 import { DiagnosticAIPanel } from '@/components/companies/DiagnosticAIPanel';
 import { CompanyIntelligenceChat } from '@/components/companies/CompanyIntelligenceChat';
+import { MultiLayerEnrichButton } from '@/components/canvas/MultiLayerEnrichButton';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -1361,6 +1362,14 @@ export default function CompanyDetailPage() {
                 <CardDescription>Buscar decisores e enriquecer informações</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <MultiLayerEnrichButton
+                  companyId={id!}
+                  cnpj={company.cnpj}
+                  onComplete={() => queryClient.invalidateQueries({ queryKey: ['company-detail', id] })}
+                />
+
+                <Separator />
+
                 <EconodataEnrichButton 
                   companyId={id!}
                   cnpj={company.cnpj}
