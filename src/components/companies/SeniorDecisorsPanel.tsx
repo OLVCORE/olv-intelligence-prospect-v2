@@ -499,6 +499,19 @@ export function SeniorDecisorsPanel({ decisors, companyName }: SeniorDecisorsPan
                                   Targeted Seniority
                                 </Badge>
                               )}
+                              {decisor.source && decisor.source !== 'manual' && (
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "ml-1 text-xs",
+                                    decisor.source === 'phantom' 
+                                      ? 'border-purple-500 text-purple-700 dark:text-purple-400' 
+                                      : 'border-blue-500 text-blue-700 dark:text-blue-400'
+                                  )}
+                                >
+                                  {decisor.source === 'phantom' ? '🔮 Phantom' : '🚀 Apollo'}
+                                </Badge>
+                              )}
                             </div>
                           </td>
                           <td className="p-3">

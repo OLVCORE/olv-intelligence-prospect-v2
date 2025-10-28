@@ -11,6 +11,7 @@ interface Person {
   linkedin?: string;
   email?: string;
   phone?: string;
+  source?: 'apollo' | 'phantom' | 'manual';
 }
 
 interface DecisorsCollaboratorsCardProps {
@@ -35,6 +36,18 @@ export function DecisorsCollaboratorsCard({
             <Badge variant={type === 'decisor' ? 'default' : 'secondary'} className="text-xs">
               {type === 'decisor' ? 'Decisor' : 'Colaborador'}
             </Badge>
+            {person.source && person.source !== 'manual' && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  person.source === 'phantom' 
+                    ? 'border-purple-500 text-purple-700 dark:text-purple-400' 
+                    : 'border-blue-500 text-blue-700 dark:text-blue-400'
+                }`}
+              >
+                {person.source === 'phantom' ? '🔮 Phantom' : '🚀 Apollo'}
+              </Badge>
+            )}
           </div>
           
           <p className="text-sm text-muted-foreground font-medium">{person.role}</p>

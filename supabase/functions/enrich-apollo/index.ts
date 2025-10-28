@@ -884,6 +884,85 @@ serve(async (req) => {
         } else {
           people = afterFilter;
         }
+
+        // 🔄 FALLBACK: Se Apollo não trouxe decisores, tentar PhantomBuster
+        let dataSource = 'apollo';
+        if (people.length === 0) {
+          console.log('[Apollo] ⚠️ Nenhum decisor no Apollo. Acionando fallback PhantomBuster...');
+          try {
+            const phantomKey = Deno.env.get('PHANTOMBUSTER_API_KEY');
+            const phantomAgent = Deno.env.get('PHANTOMBUSTER_AGENT_ID');
+            const phantomSession = Deno.env.get('PHANTOMBUSTER_SESSION_COOKIE');
+            
+            if (phantomKey && phantomAgent && phantomSession) {
+              const linkedinUrls: string[] = [];
+              if (company.linkedin) linkedinUrls.push(company.linkedin);
+              
+              if (linkedinUrls.length > 0) {
+                console.log('[Phantom] 🚀 Lançando scraping LinkedIn:', linkedinUrls);
+                
+                const phantomLaunch = await fetch('https://api.phantombuster.com/api/v2/agents/launch', {
+                  method: 'POST',
+                  headers: {
+                    'X-Phantombuster-Key': phantomKey,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    id: phantomAgent,
+                    argument: {
+                      sessionCookie: phantomSession,
+                      spreadsheetUrl: linkedinUrls.join('\n')
+                    }
+                  })
+                });
+                
+                if (phantomLaunch.ok) {
+                  const phantomResult = await phantomLaunch.json();
+                  console.log('[Phantom] ✅ Scraping iniciado:', phantomResult.containerId);
+                  
+                  await new Promise(resolve => setTimeout(resolve, 10000));
+                  
+                  const phantomFetch = await fetch(`https://api.phantombuster.com/api/v2/containers/fetch-result-object?id=${phantomResult.containerId}`, {
+                    headers: { 'X-Phantombuster-Key': phantomKey }
+                  });
+                  
+                  if (phantomFetch.ok) {
+                    const phantomData = await phantomFetch.json();
+                    console.log('[Phantom] 📦 Dados recebidos:', phantomData.resultObject?.length || 0);
+                    
+                    if (phantomData.resultObject && Array.isArray(phantomData.resultObject)) {
+                      people = phantomData.resultObject.map((p: any) => ({
+                        id: null,
+                        name: p.fullName || p.name,
+                        title: p.headline || p.title,
+                        linkedin_url: p.profileUrl || p.linkedInUrl,
+                        email: p.email || null,
+                        phone: p.phone || null,
+                        photo_url: p.photo || p.imgUrl,
+                        city: p.location?.city,
+                        state: p.location?.state,
+                        country: p.location?.country,
+                        organization: company,
+                        seniority: p.seniority || null
+                      }));
+                      dataSource = 'phantom';
+                      console.log('[Phantom] ✅ Preparados:', people.length, 'decisores do PhantomBuster');
+                    }
+                  }
+                } else {
+                  console.warn('[Phantom] ⚠️ Erro ao lançar:', await phantomLaunch.text());
+                }
+              } else {
+                console.log('[Phantom] ⚠️ Sem URL LinkedIn para scraping');
+              }
+            } else {
+              console.log('[Phantom] ⚠️ Credenciais não configuradas');
+            }
+          } catch (phantomError) {
+            console.error('[Phantom] ❌ Erro fallback:', phantomError);
+          }
+        }
+
         // Salvar decisores com TODOS os campos
         // 🧹 Cleanup: remover mocks com email placeholder desta empresa
         try {
@@ -948,7 +1027,7 @@ serve(async (req) => {
 
           const decisorData = {
             company_id: companyId,
-            source: 'apollo',
+            source: dataSource,
             name: person.name,
             title: person.title,
             email: maskedEmail ? null : person.email, // ✅ Ignorar e-mail mascarado
@@ -1066,7 +1145,12 @@ serve(async (req) => {
           .eq('company_id', companyId)
           .eq('email', 'email_not_unlocked@domain.com');
         
-        console.log('[Apollo] 📊 RESUMO FINAL:', { recebidos: people.length, salvos: savedCount, placeholders: placeholders || 0 });
+        console.log('[Apollo] 📊 RESUMO FINAL:', { 
+          fonte: dataSource.toUpperCase(),
+          recebidos: people.length, 
+          salvos: savedCount, 
+          placeholders: placeholders || 0 
+        });
 
       }
 
