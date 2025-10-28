@@ -228,43 +228,8 @@ serve(async (req) => {
         new Map(candidates.map(c => [c.cnpj, c])).values()
       ).sort((a, b) => b.confidence - a.confidence);
 
-      // Tiebreaker: se os dois melhores candidatos estão empatados (diff <= 3) 
-      // e apenas um tem brand match, priorizar o com brand
-      if (uniqueCandidates.length >= 2) {
-        const [first, second] = uniqueCandidates;
-        const diff = first.confidence - second.confidence;
-        if (diff <= 3) {
-          // Recalcular containsBrand para ambos
-          const q = normalize(companyName);
-          const tokens = q.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
-          const stop = new Set([
-            'ltda','sa','s.a','holding','grupo','comercio','comércio',
-            'industria','indústria','distribuidora','companhia','brasil',
-            'do','da','de','e','the','of','and',
-            'logistica','logística','internacional','transportes','transportadora',
-            'assessoria','despachos','agenciamento','carga','cargas','frete',
-            'aduaneiro','despacho','warehouse','armazenagem','supply','chain',
-            'serviços','service','solutions','soluções'
-          ]);
-          const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
-          
-          const firstBrand = brandTokens.some(t => 
-            normalize(`${first.data?.razao_social || ''} ${first.data?.nome_fantasia || ''}`).includes(t)
-          );
-          const secondBrand = brandTokens.some(t => 
-            normalize(`${second.data?.razao_social || ''} ${second.data?.nome_fantasia || ''}`).includes(t)
-          );
-          
-          if (firstBrand !== secondBrand) {
-            if (secondBrand) {
-              console.log(`[Tiebreaker] Priorizando #2 por brand match: ${second.cnpj}`);
-              [uniqueCandidates[0], uniqueCandidates[1]] = [second, first];
-            } else {
-              console.log(`[Tiebreaker] Mantendo #1 por brand match: ${first.cnpj}`);
-            }
-          }
-        }
-      }
+      // Removido tiebreaker por "brand" para evitar inversões indevidas
+      // A ordenação passa a ser exclusivamente por confidence (desc)
 
       if (uniqueCandidates.length === 0) {
         console.log('[CNPJ Discovery] ❌ Nenhum CNPJ encontrado');
@@ -583,85 +548,87 @@ function calculateMatch(
   candidate: any,
   source?: string
 ): { confidence: number; scores: any } {
-  // Normalizar strings para comparação justa
+  // Normalização
   const q = normalize(companyName);
   const rz = normalize(candidate.razao_social || '');
   const nf = normalize(candidate.nome_fantasia || '');
 
-  // Comparar query contra AMBOS razão social E nome fantasia
+  // Similaridade básica (razão x fantasia)
   const nameR = calculateNameSimilarity(q, rz);
   const nameF = calculateNameSimilarity(q, nf);
   const nameScore = Math.max(nameR, nameF);
-  const winner = nameF > nameR ? 'fantasia' : 'razao';
 
-  // Tokenização para detectar marca única - stopwords expandidas
-  const tokens = q.split(/[^a-zà-ú0-9]+/i).filter(Boolean);
-  const stop = new Set([
-    // Termos legais/comuns
-    'ltda','sa','s.a','holding','grupo','comercio','comércio',
-    'industria','indústria','distribuidora','companhia','brasil',
-    'do','da','de','e','the','of','and',
-    // Termos genéricos de setor (evita falsos positivos)
-    'logistica','logística','internacional','transportes','transportadora',
-    'assessoria','despachos','agenciamento','carga','cargas','frete',
-    'aduaneiro','despacho','warehouse','armazenagem','supply','chain',
-    'serviços','service','solutions','soluções'
+  // Tokens e marca primária (prioriza primeiro token não genérico)
+  const tokens = q.split(/[^a-z0-9]+/i).filter(Boolean);
+  const STOP = new Set([
+    'ltda','sa','s.a','holding','grupo','comercio','comércio','companhia','participacoes','participações',
+    'industria','industries','indústria','distribuidora','brasil','do','da','de','e','the','of','and',
+    'logistica','logística','internacional','transportes','transportadora','assessoria','despachos','agenciamento',
+    'carga','cargas','frete','aduaneiro','despacho','warehouse','armazenagem','supply','chain','servicos','serviços',
+    'service','solutions','solucoes','soluções'
   ]);
-  const brandTokens = tokens.filter(t => t.length >= 3 && !stop.has(t));
-  
-  const allNames = `${rz} ${nf}`.trim();
-  const containsBrand = brandTokens.some(t => allNames.includes(t));
+  const brandSeq = tokens.filter(t => t.length >= 2 && !STOP.has(t));
+  const primary = brandSeq[0] || tokens[0] || '';
 
-  // Pesos base: Nome (40), Domínio (30)
-  let totalBase = nameScore * 40;
-  let baseMax = 40;
+  // Bônus por prefixo do nome (critério principal solicitado)
+  const startsR = primary && rz.startsWith(primary);
+  const startsF = primary && nf.startsWith(primary);
+  let bonus = 0;
+  if (startsR || startsF) bonus += 25; // peso alto para começar com o primeiro nome
 
-  // Domínio contribui apenas se houver informações em ambas as pontas
+  // Bônus por ordem dos tokens relevantes (ex.: "fiorde" antes de "logistica")
+  const seqIn = (text: string, seq: string[]) => {
+    let idx = 0;
+    for (const t of seq) {
+      const pos = text.indexOf(t, idx);
+      if (pos === -1) return false;
+      idx = pos + t.length;
+    }
+    return true;
+  };
+  if (brandSeq.length >= 2 && (seqIn(rz, brandSeq) || seqIn(nf, brandSeq))) {
+    bonus += 10;
+  }
+
+  // Rebalancear pesos: Nome 70%, Domínio 20%, Local 10% (bônus)
+  let base = nameScore * 70;
+  let baseMax = 70;
+
+  // Domínio: só conta se houver informação de ambos os lados
   let domainMatchPct = 0;
-  if (domain && candidate.website) {
-    const d1 = domain.toLowerCase();
-    const d2 = String(candidate.website).toLowerCase();
-    const domainMatch = d1.includes(d2) || d2.includes(d1);
-    baseMax += 30;
-    if (domainMatch) {
-      totalBase += 30;
+  if (domain && (candidate.website || candidate.email || candidate.emails)) {
+    const d = String(domain).toLowerCase();
+    const domains: string[] = [];
+    if (candidate.website) domains.push(String(candidate.website).toLowerCase());
+    if (candidate.email) domains.push(String(candidate.email).toLowerCase());
+    if (Array.isArray(candidate.emails)) domains.push(...candidate.emails.map((e: any) => String(e).toLowerCase()));
+    const domOk = domains.some(cd => cd && (cd.includes(d) || d.includes(cd)));
+    baseMax += 20;
+    if (domOk) {
+      base += 20;
       domainMatchPct = 100;
     }
   }
 
-  // Bônus de localização (não penaliza se não bater)
+  // Localidade: bônus (não penaliza)
   let locationMatchPct = 0;
-  let bonus = 0;
-  if (location?.city && candidate.municipio) {
-    const cityMatch = normalize(location.city) === normalize(candidate.municipio);
-    if (cityMatch) {
+  if (location?.city && (candidate.municipio || candidate.cidade)) {
+    const candCity = normalize(candidate.municipio || candidate.cidade || '');
+    if (normalize(location.city) === candCity) {
       locationMatchPct = 100;
       bonus += 10;
     }
   }
 
-  // Bônus de fantasia: se fantasia venceu com >= 60%, adicionar +10
-  if (winner === 'fantasia' && nameF >= 0.6) {
-    bonus += 10;
-  }
+  const confidence = Math.max(0, Math.min(100, Math.round((base / baseMax) * 100) + bonus));
 
-  // Bônus de marca: apenas se brandTokens existir e for encontrado
-  if (brandTokens.length > 0 && containsBrand) {
-    bonus += 15;
-  }
-
-  // REMOVER penalidade por ausência de brand - deixa ordenação mais justa
-
-  const baseConfidence = baseMax > 0 ? Math.round((totalBase / baseMax) * 100) : 0;
-  const confidence = Math.max(0, Math.min(100, baseConfidence + bonus));
-
-  // Log detalhado para debug
+  // Log para auditoria
   console.log(
     `[Match Debug] ${candidate.razao_social || candidate.nome_fantasia}: ${confidence}% | ` +
-    `source:${source || 'unknown'} | winner:${winner} | ` +
+    `source:${source || 'unknown'} | prefix:${startsR || startsF} | ` +
     `nameR:${Math.round(nameR * 100)}% nameF:${Math.round(nameF * 100)}% | ` +
     `domain:${domainMatchPct}% loc:${locationMatchPct}% | ` +
-    `brand:[${brandTokens.join(',')}] found:${containsBrand}`
+    `brand_primary:${primary} seq:[${brandSeq.join(',')}]`
   );
 
   return {
