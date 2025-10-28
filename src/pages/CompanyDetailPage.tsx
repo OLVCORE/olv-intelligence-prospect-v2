@@ -515,12 +515,12 @@ export default function CompanyDetailPage() {
                     value="apollo360" 
                     className="gap-2 data-[state=active]:glass-card data-[state=active]:text-primary"
                   >
-                    <img src={apolloLogo} className="h-4 w-4" alt="Apollo" />
-                    Apollo 360°
+                    <div className="radar-icon" aria-label="RADAR"></div>
+                    <span className="font-semibold">RADAR</span>
                   </TabsTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  CICLO 3: People, Similares, Technologies, Insights, Trends, Visitors, News, Vagas
+                  🎯 RADAR Inteligente: People, Similares, Technologies, Insights, Trends, Visitors, News, Vagas
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1499,18 +1499,22 @@ export default function CompanyDetailPage() {
           <Card className="glass-card">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <img src={apolloLogo} className="h-6 w-6" alt="Apollo" />
-                    Enriquecimento Apollo 360° (CICLO 3)
-                  </CardTitle>
-                  <CardDescription className="mt-2">
-                    100% dos campos + Decisores com paginação completa + Empresas similares + Technologies full
-                  </CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="radar-icon" aria-label="RADAR"></div>
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      RADAR Inteligente
+                    </CardTitle>
+                    <CardDescription className="mt-2">
+                      Enriquecimento Apollo: 100% dos campos + Decisores + Similares + Tech Stack + Insights
+                    </CardDescription>
+                  </div>
                 </div>
                 
                 <UpdateNowButton
                   companyId={id!}
+                  companyName={company.name}
+                  companyDomain={company.domain || company.website}
                   apolloOrganizationId={company.apollo_organization_id}
                   onSuccess={() => {
                     queryClient.invalidateQueries({ queryKey: ['company-detail', id] });

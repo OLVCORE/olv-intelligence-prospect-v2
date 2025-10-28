@@ -215,6 +215,72 @@ All colors MUST be HSL.
     50% { transform: translateY(-10px); }
   }
 
+  /* ========================================
+     RADAR ICON - Ícone pulsante animado (CICLO 3)
+     ======================================== */
+  .radar-icon {
+    position: relative;
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, hsl(var(--primary)) 40%, hsl(var(--primary) / 0.15) 41%, transparent 60%);
+    flex-shrink: 0;
+  }
+
+  .radar-icon::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border: 2px solid hsl(var(--primary) / 0.4);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.6);
+    animation: radarPulse 2.4s ease-out infinite;
+  }
+
+  @keyframes radarPulse {
+    0% { 
+      opacity: 0.4; 
+      transform: scale(0.6); 
+    }
+    60% { 
+      opacity: 0.08; 
+      transform: scale(1.2); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: scale(1.4); 
+    }
+  }
+
+  /* Respeitar preferências de movimento reduzido */
+  @media (prefers-reduced-motion: reduce) {
+    .radar-icon::after { 
+      animation: none; 
+      opacity: 0.3; 
+    }
+  }
+
+  /* ========================================
+     TABS - Hover e Active States (CICLO 3)
+     ======================================== */
+  [role="tablist"] [role="tab"] {
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  [role="tablist"] [role="tab"]:hover:not([data-state="active"]) {
+    background: hsl(var(--primary) / 0.08);
+    border-bottom: 2px solid hsl(var(--primary) / 0.3);
+  }
+
+  [role="tablist"] [role="tab"][data-state="active"] {
+    background: hsl(var(--primary) / 0.12);
+    border-bottom: 3px solid hsl(var(--primary));
+    font-weight: 600;
+  }
+
   .gradient-mesh {
     background: 
       radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.1) 0px, transparent 50%),
