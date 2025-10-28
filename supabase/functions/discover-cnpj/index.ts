@@ -574,7 +574,7 @@ function calculateMatch(
   const startsR = primary && rz.startsWith(primary);
   const startsF = primary && nf.startsWith(primary);
   let bonus = 0;
-  if (startsR || startsF) bonus += 25; // peso alto para começar com o primeiro nome
+  if (startsR || startsF) bonus += 40; // peso dominante para começar com o primeiro nome
 
   // Bônus por ordem dos tokens relevantes (ex.: "fiorde" antes de "logistica")
   const seqIn = (text: string, seq: string[]) => {
