@@ -896,7 +896,8 @@ serve(async (req) => {
             
             if (phantomKey && phantomAgent && phantomSession) {
               const linkedinUrls: string[] = [];
-              if (company.linkedin) linkedinUrls.push(company.linkedin);
+              const linkedinCompanyUrl = (company as any).linkedin_url || (company as any).social_urls?.linkedin || (company as any).linkedin || (org && (org as any).linkedin_url);
+              if (linkedinCompanyUrl) linkedinUrls.push(linkedinCompanyUrl);
               
               if (linkedinUrls.length > 0) {
                 console.log('[Phantom] 🚀 Lançando scraping LinkedIn:', linkedinUrls);
