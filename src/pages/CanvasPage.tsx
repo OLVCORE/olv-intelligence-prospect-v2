@@ -11,6 +11,7 @@ import { useCanvasBlocks } from '@/hooks/useCanvasBlocks';
 import { CompanyDataPanel } from '@/components/canvas/CompanyDataPanel';
 import { InsightsPanel } from '@/components/canvas/InsightsPanel';
 import { TimelinePanel } from '@/components/canvas/TimelinePanel';
+import { MultiLayerEnrichButton } from '@/components/canvas/MultiLayerEnrichButton';
 import { DecisionBlock } from '@/components/canvas/blocks/DecisionBlock';
 import { InsightBlock } from '@/components/canvas/blocks/InsightBlock';
 import { TaskBlock } from '@/components/canvas/blocks/TaskBlock';
@@ -302,14 +303,27 @@ export default function CanvasPage() {
           </div>
         </div>
 
-        {/* Company Data Panel */}
+        {/* Company Data Panel with Multi-Layer Enrichment */}
         {companyData && (
-          <CompanyDataPanel
-            company={companyData}
-            digitalMaturity={digitalMaturity}
-            techStack={companyData.technologies}
-            buyingSignals={governanceSignals}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Dados da Empresa</h2>
+              <MultiLayerEnrichButton
+                companyId={companyData.id}
+                cnpj={companyData.cnpj}
+                onComplete={() => {
+                  // Recarregar dados da empresa após enriquecimento
+                  window.location.reload();
+                }}
+              />
+            </div>
+            <CompanyDataPanel
+              company={companyData}
+              digitalMaturity={digitalMaturity}
+              techStack={companyData.technologies}
+              buyingSignals={governanceSignals}
+            />
+          </div>
         )}
 
         {/* AI Command Bar */}
