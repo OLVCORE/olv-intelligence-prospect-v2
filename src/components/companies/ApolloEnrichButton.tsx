@@ -45,30 +45,11 @@ export function ApolloEnrichButton({
     }
   };
 
-  const handleCNPJConfirm = async (cnpjData: any) => {
+  const handleCNPJApplied = async () => {
     if (!selectedApolloOrg) return;
     
-    // Salvar CNPJ primeiro
-    try {
-      const { error: cnpjError } = await supabase
-        .from('companies')
-        .update({
-          cnpj: cnpjData.cnpj,
-          razao_social: cnpjData.razao_social,
-          nome_fantasia: cnpjData.nome_fantasia,
-          city: cnpjData.cidade,
-          state: cnpjData.uf
-        })
-        .eq('id', companyId);
-
-      if (cnpjError) throw cnpjError;
-
-      // Agora enriquecer com Apollo
-      await enrichWithApollo(selectedApolloOrg);
-    } catch (error: any) {
-      console.error('Erro ao salvar CNPJ:', error);
-      toast.error("Erro ao salvar CNPJ");
-    }
+    // Após CNPJ aplicado, enriquecer com Apollo
+    await enrichWithApollo(selectedApolloOrg);
   };
 
   const enrichWithApollo = async (org: any) => {
@@ -127,11 +108,12 @@ export function ApolloEnrichButton({
         <CNPJDiscoveryDialog
           open={showCNPJDialog}
           onOpenChange={setShowCNPJDialog}
-          companyName={companyName}
-          apolloOrgId={selectedApolloOrg.id}
-          apolloCity={selectedApolloOrg.city}
-          apolloState={selectedApolloOrg.state}
-          onConfirm={handleCNPJConfirm}
+          company={{
+            id: companyId,
+            name: companyName,
+            domain: companyDomain
+          }}
+          onCNPJApplied={handleCNPJApplied}
         />
       )}
     </>

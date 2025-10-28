@@ -13,7 +13,21 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { type, name, domain, organizationName, titles, companyId, company_ids, searchParams, apolloOrgId } = body;
+    const { 
+      type, 
+      name, 
+      domain, 
+      organizationName, 
+      titles, 
+      companyId, 
+      company_ids, 
+      searchParams, 
+      apolloOrgId,
+      searchName,
+      apolloOrganizationId,
+      organizationId,
+      cnpj
+    } = body;
     
     const APOLLO_API_KEY = Deno.env.get('APOLLO_API_KEY');
     if (!APOLLO_API_KEY) {
@@ -25,17 +39,56 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('[Apollo] 🚀 Requisição:', { 
-      type, 
-      name, 
-      domain, 
-      organizationName, 
-      companyId,
-      hasCompanyId: !!companyId 
-    });
+    console.log('[Apollo] 🚀 Requisição:', { type, companyId });
+
+    // Importar handlers
+    const handlersModule = await import('./new-handlers.ts');
+
+    // NOVO FLUXO: BUSCA INCREMENTAL DE ORGANIZAÇÕES
+    if (type === 'search_organizations') {
+      const result = await handlersModule.handleSearchOrganizations(
+        APOLLO_API_KEY,
+        searchName || name || '',
+        domain
+      );
+      
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // NOVO FLUXO: BUSCAR POR ID (URL MANUAL)
+    if (type === 'get_organization_by_id') {
+      const result = await handlersModule.handleGetOrganizationById(
+        APOLLO_API_KEY,
+        organizationId || apolloOrgId || ''
+      );
+      
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // NOVO FLUXO: ENRIQUECER EMPRESA (42 CAMPOS + DECISORES)
+    if (type === 'enrich_company') {
+      const result = await handlersModule.handleEnrichCompany(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        APOLLO_API_KEY,
+        companyId || '',
+        apolloOrganizationId || apolloOrgId || ''
+      );
+      
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // ============================================
-    // BUSCAR ORGANIZAÇÃO COM TODOS OS CAMPOS
+    // BUSCAR ORGANIZAÇÃO COM TODOS OS CAMPOS (OLD)
     // ============================================
     if (type === 'organization') {
       const payload: Record<string, unknown> = {
