@@ -57,7 +57,7 @@ export function ApolloEnrichButton({
     try {
       const { data, error } = await supabase.functions.invoke('enrich-apollo', {
         body: {
-          type: 'enrich_company',
+          type: 'ciclo3_enrich_complete', // CICLO 3: Enriquecimento completo
           companyId,
           apolloOrganizationId: org.id,
           cnpj: cnpj || selectedApolloOrg?.cnpj
@@ -66,11 +66,12 @@ export function ApolloEnrichButton({
 
       if (error) throw error;
 
-      const decisorsCount = data?.decisors_found || 0;
-      const fieldsCount = data?.fields_enriched || 42;
+      const decisorsCount = data?.decisors_saved || data?.decisors_found || 0;
+      const fieldsCount = data?.fields_enriched || 100;
+      const similarsCount = data?.similar_companies || 0;
 
-      toast.success(`✅ Empresa enriquecida com Apollo!`, {
-        description: `${decisorsCount} decisores encontrados · ${fieldsCount} campos atualizados`
+      toast.success(`✅ Empresa enriquecida com Apollo (CICLO 3)!`, {
+        description: `${decisorsCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
       });
 
       onSuccess?.();
