@@ -459,7 +459,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="overview" 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Eye className="h-4 w-4" />
                     Visão Geral
@@ -476,7 +476,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="inteligencia" 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Brain className="h-4 w-4" />
                     Inteligência
@@ -493,7 +493,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="financeiro" 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Wallet className="h-4 w-4" />
                     Financeiro
@@ -510,7 +510,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="actions" 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:border-b-2 data-[state=active]:border-primary hover:bg-accent/50 hover:text-accent-foreground transition-all"
                   >
                     <Zap className="h-4 w-4" />
                     Ações
