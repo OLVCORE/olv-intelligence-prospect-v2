@@ -7,6 +7,7 @@ import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
 import { ApolloImportDialog } from '@/components/companies/ApolloImportDialog';
 import { BulkActionsToolbar } from '@/components/companies/BulkActionsToolbar';
 import { CompanyRowActions } from '@/components/companies/CompanyRowActions';
+import { HeaderActionsMenu } from '@/components/companies/HeaderActionsMenu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -721,158 +722,58 @@ export default function CompaniesManagementPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <BulkUploadDialog>
-                    <Button
-                      variant="default"
-                      size="icon"
-                    >
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  </BulkUploadDialog>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Upload em Massa</p>
-                </TooltipContent>
-              </Tooltip>
+            <HeaderActionsMenu
+              onUploadClick={() => {
+                const uploadBtn = document.getElementById('hidden-bulk-upload-trigger');
+                uploadBtn?.click();
+              }}
+              onBatchEnrichReceita={handleBatchEnrichReceitaWS}
+              onBatchEnrich360={handleBatchEnrich360}
+              onBatchEnrichApollo={handleBatchEnrichApollo}
+              onBatchEnrichEconodata={async () => {
+                try {
+                  setIsBatchEnrichingEconodata(true);
+                  toast.info('Iniciando enriquecimento em lote com Eco-Booster...', {
+                    description: 'Apenas empresas com CNPJ serão processadas'
+                  });
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={handleBatchEnrichReceitaWS}
-                    disabled={isBatchEnriching}
-                  >
-                    {isBatchEnriching ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Building2 className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Receita Federal (Lote)</p>
-                </TooltipContent>
-              </Tooltip>
+                  const companiesWithCNPJ = companies.filter(c => c.cnpj);
+                  let enriched = 0;
+                  let errors = 0;
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={handleBatchEnrich360}
-                    disabled={isBatchEnriching360}
-                  >
-                    {isBatchEnriching360 ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Enriquecimento 360° Completo</p>
-                </TooltipContent>
-              </Tooltip>
+                  for (const company of companiesWithCNPJ) {
+                    try {
+                      const { error } = await supabase.functions.invoke('enrich-econodata', {
+                        body: { companyId: company.id, cnpj: company.cnpj }
+                      });
+                      if (error) throw error;
+                      enriched++;
+                    } catch (e) {
+                      console.error(`Error enriching ${company.name}:`, e);
+                      errors++;
+                    }
+                  }
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={handleBatchEnrichApollo}
-                    disabled={isBatchEnrichingApollo}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  >
-                    {isBatchEnrichingApollo ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <div className="h-4 w-4 flex items-center justify-center">
-                        <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
-                      </div>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Apollo (Decisores & Contatos)</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={async () => {
-                      try {
-                        setIsBatchEnrichingEconodata(true);
-                        toast.info('Iniciando enriquecimento em lote com Eco-Booster...', {
-                          description: 'Apenas empresas com CNPJ serão processadas'
-                        });
-
-                        const companiesWithCNPJ = companies.filter(c => c.cnpj);
-                        let enriched = 0;
-                        let errors = 0;
-
-                        for (const company of companiesWithCNPJ) {
-                          try {
-                            const { error } = await supabase.functions.invoke('enrich-econodata', {
-                              body: { companyId: company.id, cnpj: company.cnpj }
-                            });
-                            if (error) throw error;
-                            enriched++;
-                          } catch (e) {
-                            console.error(`Error enriching ${company.name}:`, e);
-                            errors++;
-                          }
-                        }
-
-                        toast.success(
-                          `Eco-Booster concluído! ${enriched} empresas atualizadas, ${errors} erros.`
-                        );
-                        refetch();
-                      } catch (error) {
-                        console.error('Error batch enriching Econodata:', error);
-                        toast.error('Erro ao executar Eco-Booster em lote');
-                      } finally {
-                        setIsBatchEnrichingEconodata(false);
-                      }
-                    }}
-                    disabled={isBatchEnrichingEconodata}
-                  >
-                    {isBatchEnrichingEconodata ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Zap className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Eco-Booster (Lote)</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={() => navigate('/search')}
-                  >
-                    <span className="relative inline-flex">
-                      <Building2 className="h-4 w-4" />
-                      <Plus className="h-3 w-3 absolute -right-1 -top-1" />
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Adicionar Empresa</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                  toast.success(
+                    `Eco-Booster concluído! ${enriched} empresas atualizadas, ${errors} erros.`
+                  );
+                  refetch();
+                } catch (error) {
+                  console.error('Error batch enriching Econodata:', error);
+                  toast.error('Erro ao executar Eco-Booster em lote');
+                } finally {
+                  setIsBatchEnrichingEconodata(false);
+                }
+              }}
+              onApolloImport={() => setIsApolloImportOpen(true)}
+              onSearchCompanies={() => navigate('/search')}
+              isProcessing={isBatchEnriching || isBatchEnriching360 || isBatchEnrichingApollo || isBatchEnrichingEconodata}
+            />
+            
+            {/* Hidden trigger for BulkUploadDialog */}
+            <BulkUploadDialog>
+              <button id="hidden-bulk-upload-trigger" className="hidden" aria-hidden="true" />
+            </BulkUploadDialog>
           </div>
         </div>
 
