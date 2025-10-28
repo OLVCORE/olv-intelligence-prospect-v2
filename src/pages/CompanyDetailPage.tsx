@@ -42,6 +42,8 @@ import { ApolloDecisorsCard } from '@/components/companies/ApolloDecisorsCard';
 import { SeniorDecisorsPanel } from '@/components/companies/SeniorDecisorsPanel';
 import { ApolloOrgIdDialog } from '@/components/companies/ApolloOrgIdDialog';
 import { ApolloDebugDialog } from '@/components/companies/ApolloDebugDialog';
+import { DiagnosticAIPanel } from '@/components/companies/DiagnosticAIPanel';
+import { CompanyIntelligenceChat } from '@/components/companies/CompanyIntelligenceChat';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 
@@ -451,11 +453,14 @@ export default function CompanyDetailPage() {
       {/* Tabs Navigation */}
       <Tabs defaultValue="overview" className="w-full">
         <ScrollArea className="w-full whitespace-nowrap">
-          <TabsList className="inline-flex w-auto">
+          <TabsList className="inline-flex w-auto border-b">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <Eye className="h-4 w-4" />
                     Visão Geral
                   </TabsTrigger>
@@ -469,7 +474,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="identificacao" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="identificacao" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <IdCard className="h-4 w-4" />
                     Identificação
                   </TabsTrigger>
@@ -483,7 +491,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="localizacao" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="localizacao" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <MapPinned className="h-4 w-4" />
                     Localização
                   </TabsTrigger>
@@ -497,7 +508,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="atividade" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="atividade" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <ActivityIcon className="h-4 w-4" />
                     Atividade
                   </TabsTrigger>
@@ -511,7 +525,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="estrutura" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="estrutura" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <UsersIcon className="h-4 w-4" />
                     Estrutura
                   </TabsTrigger>
@@ -525,7 +542,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="financeiro" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="financeiro" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <Wallet className="h-4 w-4" />
                     Financeiro
                   </TabsTrigger>
@@ -539,7 +559,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="digital" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="digital" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <Monitor className="h-4 w-4" />
                     Digital
                   </TabsTrigger>
@@ -553,7 +576,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="inteligencia" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="inteligencia" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <Brain className="h-4 w-4" />
                     Inteligência
                   </TabsTrigger>
@@ -567,7 +593,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="receita" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="receita" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <FileSpreadsheet className="h-4 w-4" />
                     Receita
                   </TabsTrigger>
@@ -581,7 +610,10 @@ export default function CompanyDetailPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger value="actions" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger 
+                    value="actions" 
+                    className="flex items-center gap-2 relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  >
                     <Zap className="h-4 w-4" />
                     Ações
                   </TabsTrigger>
@@ -1336,6 +1368,9 @@ export default function CompanyDetailPage() {
 
         {/* TAB 8: Inteligência e Análise */}
         <TabsContent value="inteligencia" className="space-y-4">
+          {/* Diagnóstico 360° por IA */}
+          <DiagnosticAIPanel company={company} />
+          
           {/* Ações de Enriquecimento */}
           <EnrichmentActionsCard 
             company={company}
@@ -1593,9 +1628,12 @@ export default function CompanyDetailPage() {
             >
               Excluir
             </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+       </AlertDialog>
+
+      {/* Intelligence Copilot - Floating Chat */}
+      <CompanyIntelligenceChat company={company} />
     </div>
   );
 }

@@ -200,3 +200,9 @@ verify_jwt = false
 
   [functions.ai-qualification-analysis]
   verify_jwt = false
+
+  [functions.company-intelligence-chat]
+  verify_jwt = true
+
+  [functions.generate-company-diagnostic]
+  verify_jwt = true

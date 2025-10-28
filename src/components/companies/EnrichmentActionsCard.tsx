@@ -175,37 +175,25 @@ export function EnrichmentActionsCard({ company, onEnrichmentComplete }: Enrichm
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(`https://www.receitaws.com.br/cnpj/${company.cnpj.replace(/\D/g, '')}`, '_blank')}
+                onClick={() => window.open(`https://solucoes.receita.fazenda.gov.br/servicos/cnpjreva/cnpjreva_solicitacao.asp`, '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Receita Federal
               </Button>
             )}
-            {hasApolloData && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`https://app.apollo.io/#/organizations/${company.apollo_organization_id}`, '_blank')}
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Apollo
-              </Button>
-            )}
-            {!hasApolloData && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`https://app.apollo.io/#/organizations?q=${encodeURIComponent(company.name)}`, '_blank')}
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Buscar no Apollo
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`https://app.apollo.io/#/home?sortByField=latest_reply_received_at`, '_blank')}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Buscar no Apollo
+            </Button>
             {company.linkedin_url && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(`https://www.linkedin.com/search/results/people/?company=${encodeURIComponent(company.name)}`, '_blank')}
+                onClick={() => window.open(`https://www.linkedin.com/company/${company.linkedin_url.split('/company/')[1]?.split('/')[0]}/people/`, '_blank')}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Pessoas no LinkedIn
