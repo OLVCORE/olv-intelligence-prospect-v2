@@ -115,14 +115,18 @@ export function ApolloDebugDialog({ companyId, companyName, apolloOrgId, domain 
           {debugInfo && (
             <div className="space-y-2 text-sm">
               <div className="font-semibold">Resumo:</div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="border rounded p-2">
-                  <div className="text-muted-foreground">Decisores no Banco</div>
-                  <div className="text-2xl font-bold">{debugInfo.currentDecisors?.length || 0}</div>
+                  <div className="text-muted-foreground text-xs">Antes no Banco</div>
+                  <div className="text-xl font-bold">{debugInfo.currentDecisors?.length || 0}</div>
+                </div>
+                <div className="border rounded p-2 bg-primary/5">
+                  <div className="text-muted-foreground text-xs">Apollo Retornou</div>
+                  <div className="text-xl font-bold text-primary">{debugInfo.apolloResponse?.people_count || 0}</div>
                 </div>
                 <div className="border rounded p-2">
-                  <div className="text-muted-foreground">Retornados pelo Apollo</div>
-                  <div className="text-2xl font-bold">{debugInfo.apolloResponse?.people_count || 0}</div>
+                  <div className="text-muted-foreground text-xs">Apollo ID</div>
+                  <div className="text-xs font-mono">{debugInfo.companyApolloData?.apollo_id || 'N/A'}</div>
                 </div>
               </div>
               

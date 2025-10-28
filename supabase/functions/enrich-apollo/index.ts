@@ -967,21 +967,43 @@ serve(async (req) => {
               .eq('id', existingDecisor.id);
             
             if (error) {
-              console.error('[Apollo] ❌ Erro ao atualizar decisor:', person.name, error);
+              console.error('[Apollo] ❌ ERRO ao atualizar decisor:', person.name);
+              console.error('[Apollo] 📋 Dados que tentou salvar:', JSON.stringify(decisorData, null, 2));
+              console.error('[Apollo] 🔴 Erro completo:', JSON.stringify(error, null, 2));
+            } else {
+              console.log('[Apollo] ✅ Decisor atualizado:', person.name);
             }
           } else {
             // Criar novo decisor
-            const { error } = await supabase
+            const { data: newDecisor, error } = await supabase
               .from('decision_makers')
-              .insert(decisorData);
+              .insert(decisorData)
+              .select()
+              .single();
             
             if (error) {
-              console.error('[Apollo] ❌ Erro ao criar decisor:', person.name, error);
+              console.error('[Apollo] ❌ ERRO ao criar decisor:', person.name);
+              console.error('[Apollo] 📋 Dados que tentou salvar:', JSON.stringify(decisorData, null, 2));
+              console.error('[Apollo] 🔴 Erro completo:', JSON.stringify(error, null, 2));
+            } else {
+              console.log('[Apollo] ✅ Decisor criado:', person.name, '| ID:', newDecisor?.id);
             }
           }
         }
 
         console.log('[Apollo] ✅ Decisores processados:', people.length);
+        
+        // 🔍 Verificar quantos foram realmente salvos
+        const { count: savedCount } = await supabase
+          .from('decision_makers')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .not('email', 'eq', 'email_not_unlocked@domain.com');
+        
+        console.log('[Apollo] 📊 RESUMO FINAL:');
+        console.log('[Apollo] 📥 Recebidos do Apollo:', people.length);
+        console.log('[Apollo] 💾 Salvos no banco:', savedCount);
+        console.log('[Apollo] ⚠️ Diferença:', people.length - (savedCount || 0));
       }
 
       return new Response(
