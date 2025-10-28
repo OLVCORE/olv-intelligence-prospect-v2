@@ -642,7 +642,7 @@ export default function CompanyDetailPage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MapPin className="h-5 w-5 text-primary" />
-                  Localização
+                  Localização Completa
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -654,6 +654,10 @@ export default function CompanyDetailPage() {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Número</p>
                     <p className="text-sm font-medium">{receitaData?.numero || rawData.numero || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Complemento</p>
+                    <p className="text-sm font-medium">{receitaData?.complemento || rawData.complemento || 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Bairro</p>
@@ -671,6 +675,14 @@ export default function CompanyDetailPage() {
                     <p className="text-xs text-muted-foreground">Estado</p>
                     <p className="text-sm font-medium">{receitaData?.uf || rawData.uf || (company.location as any)?.state || 'N/A'}</p>
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Microrregião</p>
+                    <p className="text-sm font-medium">{rawData.microrregiao || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Mesorregião</p>
+                    <p className="text-sm font-medium">{rawData.mesorregiao || 'N/A'}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -680,7 +692,7 @@ export default function CompanyDetailPage() {
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <MapPinned className="h-5 w-5 text-primary" />
-                    Mapa
+                    Visualização no Mapa
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -698,7 +710,7 @@ export default function CompanyDetailPage() {
             )}
           </div>
 
-          {/* Contatos - Otimizado */}
+          {/* Contatos Completos */}
           <Card className="glass-card">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -706,37 +718,143 @@ export default function CompanyDetailPage() {
                 Informações de Contato
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Telefones Principais */}
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">Telefones Principais</p>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Melhor Telefone</p>
+                    <p className="text-sm font-mono font-medium">{rawData.melhor_telefone || receitaData?.telefone || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Segundo Melhor</p>
+                    <p className="text-sm font-mono font-medium">{rawData.segundo_melhor_telefone || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Assertividade</p>
+                    <p className="text-sm font-medium">{rawData.assertividade || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Telefones Detalhados */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Telefones Alta Assertividade</p>
+                  <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.telefones_alta_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Telefones Média Assertividade</p>
+                  <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.telefones_media_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Telefones Baixa Assertividade</p>
+                  <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.telefones_baixa_assertividade || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Telefones Matriz</p>
+                  <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.telefones_matriz || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Telefones Filiais</p>
+                  <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.telefones_filiais || 'N/A'}</p>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">PAT Telefone</p>
+                  <div className="border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.pat_telefone || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Celulares e Fixos */}
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Telefone Principal</p>
-                  <p className="text-sm font-mono font-medium">{rawData.melhor_telefone || receitaData?.telefone || 'N/A'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Telefone Secundário</p>
-                  <p className="text-sm font-mono font-medium">{rawData.segundo_melhor_telefone || 'N/A'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Celular</p>
+                  <p className="text-xs text-muted-foreground">Melhor Celular</p>
                   <p className="text-sm font-mono font-medium">{rawData.melhor_celular || 'N/A'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">WhatsApp</p>
                   <p className="text-sm font-mono font-medium">{rawData.whatsapp || digitalPresence?.whatsapp || 'N/A'}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Email Principal</p>
-                  <p className="text-sm font-medium truncate">{rawData.email_receita_federal || receitaData?.email || 'N/A'}</p>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Celulares</p>
+                  <ScrollArea className="h-16 border rounded-lg p-2 bg-muted/20">
+                    <p className="text-xs font-mono">{rawData.celulares || 'N/A'}</p>
+                  </ScrollArea>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Email PAT</p>
-                  <p className="text-sm font-medium truncate">{rawData.email_pat || 'N/A'}</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">Fixos</p>
+                <ScrollArea className="h-16 border rounded-lg p-2 bg-muted/20">
+                  <p className="text-xs font-mono">{rawData.fixos || 'N/A'}</p>
+                </ScrollArea>
+              </div>
+
+              <Separator />
+
+              {/* Emails */}
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">E-mails</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">E-mails Departamentos</p>
+                    <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                      <p className="text-xs">{rawData.emails_validados_departamentos || 'N/A'}</p>
+                    </ScrollArea>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">E-mails Sócios</p>
+                    <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                      <p className="text-xs">{rawData.emails_validados_socios || 'N/A'}</p>
+                    </ScrollArea>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">E-mails Decisores</p>
+                    <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                      <p className="text-xs">{rawData.emails_validados_decisores || 'N/A'}</p>
+                    </ScrollArea>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">E-mails Colaboradores</p>
+                    <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                      <p className="text-xs">{rawData.emails_validados_colaboradores || 'N/A'}</p>
+                    </ScrollArea>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">E-mails Públicos</p>
+                    <ScrollArea className="h-20 border rounded-lg p-2 bg-muted/20">
+                      <p className="text-xs">{rawData.emails_publicos || 'N/A'}</p>
+                    </ScrollArea>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Email PAT</p>
+                    <p className="text-sm font-medium truncate">{rawData.email_pat || 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground mt-2">Email Receita Federal</p>
+                    <p className="text-sm font-medium truncate">{rawData.email_receita_federal || receitaData?.email || 'N/A'}</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Atividade Econômica - Compacto */}
+          {/* Atividade Econômica Completa */}
           <Card className="glass-card">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -744,10 +862,10 @@ export default function CompanyDetailPage() {
                 Atividade Econômica
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-x-8 gap-y-4">
                 <div className="flex justify-between items-start border-b border-border/50 pb-2">
-                  <span className="text-sm text-muted-foreground">Setor</span>
+                  <span className="text-sm text-muted-foreground">Setor Amigável</span>
                   <span className="text-sm font-semibold text-right">{rawData.setor_amigavel || company.industry || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-start border-b border-border/50 pb-2">
@@ -770,12 +888,54 @@ export default function CompanyDetailPage() {
                   </div>
                 </div>
               </div>
+
               {receitaData?.atividade_principal?.text && (
-                <div className="mt-3 p-3 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Descrição da Atividade</p>
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Atividade Principal - Descrição</p>
                   <p className="text-sm">{receitaData.atividade_principal.text}</p>
                 </div>
               )}
+
+              <Separator />
+
+              {/* Atividades Secundárias */}
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">Atividades Secundárias</p>
+                <ScrollArea className="h-40 border rounded-lg p-3 bg-muted/20">
+                  {receitaData?.atividades_secundarias && receitaData.atividades_secundarias.length > 0 ? (
+                    <div className="space-y-2">
+                      {receitaData.atividades_secundarias.map((ativ: any, i: number) => (
+                        <div key={i} className="pb-2 border-b border-border/30 last:border-0">
+                          <p className="text-xs font-mono font-semibold text-primary">{ativ.code}</p>
+                          <p className="text-xs text-muted-foreground">{ativ.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{rawData.atividades_secundarias || 'Nenhuma atividade secundária'}</p>
+                  )}
+                </ScrollArea>
+              </div>
+
+              <Separator />
+
+              {/* Códigos NCM */}
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">Códigos NCM (Nomenclatura Comum do Mercosul)</p>
+                <ScrollArea className="h-48 border rounded-lg p-3 bg-muted/20">
+                  <p className="text-xs font-mono whitespace-pre-wrap">{rawData.cod_ncms_primarios || 'Nenhum código NCM cadastrado'}</p>
+                </ScrollArea>
+              </div>
+
+              <Separator />
+
+              {/* Descrição NCMs */}
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">Descrição dos Produtos NCM</p>
+                <ScrollArea className="h-64 border rounded-lg p-3 bg-muted/20">
+                  <p className="text-xs whitespace-pre-wrap">{rawData.ncms_primarios || 'Nenhuma descrição de produto disponível'}</p>
+                </ScrollArea>
+              </div>
             </CardContent>
           </Card>
 
@@ -799,8 +959,16 @@ export default function CompanyDetailPage() {
                     <p className="text-lg font-semibold">{rawData.funcionarios_presumido_este_cnpj || 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">PAT Funcionários</p>
+                    <p className="text-lg font-semibold">{rawData.pat_funcionarios || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Qtd. Filiais</p>
                     <p className="text-lg font-semibold">{rawData.qtd_filiais || '0'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Crescimento</p>
+                    <Badge className="text-xs">{rawData.crescimento_empresa || 'Estável'}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -833,6 +1001,111 @@ export default function CompanyDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Informações Financeiras */}
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Informações Financeiras
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Capital Social</p>
+                  <p className="text-xl font-bold text-primary">
+                    {receitaData?.capital_social || rawData.capital_social
+                      ? `R$ ${parseFloat(receitaData?.capital_social || rawData.capital_social).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                      : 'N/A'}
+                  </p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Porte</p>
+                  <p className="text-lg font-semibold">{rawData.enquadramento_porte || receitaData?.porte || rawData.porte_estimado || 'N/A'}</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Recebimentos Governo</p>
+                  <p className="text-lg font-semibold">
+                    {rawData.recebimentos_governo_federal
+                      ? `R$ ${parseFloat(rawData.recebimentos_governo_federal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary">Faturamento Estimado</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                    <span className="text-sm text-muted-foreground">Faturamento (Matriz + CNPJ)</span>
+                    <span className="text-sm font-semibold text-right">{rawData.faturamento_presumido_matriz_cnpj || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                    <span className="text-sm text-muted-foreground">Faturamento (Este CNPJ)</span>
+                    <span className="text-sm font-semibold text-right">{rawData.faturamento_presumido_este_cnpj || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm font-semibold mb-3 text-primary flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  Dívidas e Débitos
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="p-2 bg-destructive/10 rounded-lg">
+                      <p className="text-xs text-muted-foreground">% Dívidas CNPJ / Faturamento</p>
+                      <p className="text-sm font-semibold">{rawData.perc_dividas_cnpj_sobre_faturamento || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-destructive/10 rounded-lg">
+                      <p className="text-xs text-muted-foreground">% Dívidas CNPJ + Sócios / Faturamento</p>
+                      <p className="text-sm font-semibold">{rawData.perc_dividas_cnpj_socios_sobre_faturamento || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-destructive/10 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Total Dívidas CNPJ com União</p>
+                      <p className="text-sm font-semibold text-destructive">{rawData.total_dividas_cnpj_uniao || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-destructive/10 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Total Dívidas CNPJ + Sócios com União</p>
+                      <p className="text-sm font-semibold text-destructive">{rawData.total_dividas_cnpj_socios_uniao || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas Gerais CNPJ</p>
+                      <p className="text-sm">{rawData.dividas_gerais_cnpj_uniao || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas Gerais CNPJ + Sócios</p>
+                      <p className="text-sm">{rawData.dividas_gerais_cnpj_socios_uniao || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas FGTS (CNPJ)</p>
+                      <p className="text-sm">{rawData.dividas_cnpj_fgts || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas FGTS (CNPJ + Sócios)</p>
+                      <p className="text-sm">{rawData.dividas_cnpj_socios_fgts || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas Previdência (CNPJ)</p>
+                      <p className="text-sm">{rawData.dividas_cnpj_previdencia || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-muted/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Dívidas Previdência (CNPJ + Sócios)</p>
+                      <p className="text-sm">{rawData.dividas_cnpj_socios_previdencia || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Decisores Cadastrados */}
           <DecisorsCollaboratorsCard
