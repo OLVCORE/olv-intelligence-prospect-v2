@@ -459,7 +459,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="overview" 
-                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card data-[state=active]:text-primary"
                   >
                     <Eye className="h-4 w-4" />
                     Visão Geral
@@ -476,7 +476,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="inteligencia" 
-                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card data-[state=active]:text-primary"
                   >
                     <Brain className="h-4 w-4" />
                     Inteligência
@@ -493,7 +493,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="financeiro" 
-                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card data-[state=active]:text-primary"
                   >
                     <Wallet className="h-4 w-4" />
                     Financeiro
@@ -510,7 +510,7 @@ export default function CompanyDetailPage() {
                 <TooltipTrigger asChild>
                   <TabsTrigger 
                     value="actions" 
-                    className="gap-2 hover:glass-card data-[state=active]:glass-card"
+                    className="gap-2 hover:glass-card data-[state=active]:glass-card data-[state=active]:text-primary"
                   >
                     <Zap className="h-4 w-4" />
                     Ações
