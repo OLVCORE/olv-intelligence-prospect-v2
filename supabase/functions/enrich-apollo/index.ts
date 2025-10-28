@@ -862,21 +862,71 @@ serve(async (req) => {
           seniority: p.seniority
         })));
 
+        // 🧹 Filtrar apenas pessoas da organização/domínio correto
+        const beforeFilter = people.length;
+        if (org?.id) {
+          people = people.filter((p: any) => p.organization_id === org.id || p.organization?.id === org.id);
+        } else {
+          const dom = (peoplePayload as any).q_organization_domains;
+          if (dom) {
+            const norm = (s: string) => String(s || '').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0];
+            people = people.filter((p: any) => norm(p.organization?.primary_domain || (p.organization as any)?.domain) === norm(dom));
+          }
+        }
+        console.log('[Apollo] 🧹 Filtro por organização/domínio:', { antes: beforeFilter, depois: people.length });
         // Salvar decisores com TODOS os campos
+        // 🧹 Cleanup: remover mocks com email placeholder desta empresa
+        try {
+          const { error: cleanupError } = await supabase
+            .from('decision_makers')
+            .delete()
+            .eq('company_id', companyId)
+            .eq('email', 'email_not_unlocked@domain.com')
+            .eq('source', 'manual');
+          if (cleanupError) console.warn('[Apollo] ⚠️ Cleanup falhou:', JSON.stringify(cleanupError, null, 2));
+        } catch (e) {
+          console.warn('[Apollo] ⚠️ Cleanup exception:', e);
+        }
+        
         for (const person of people) {
-          // Verificar se decisor já existe (usar nome + company_id se não houver email)
-          let existingDecisor = null;
-          
-          if (person.email) {
+          let existingDecisor: any = null;
+          // Preferir chave estável do Apollo e ignorar e-mails mascarados
+          const maskedEmail = !person.email || /email_not_unlocked@domain\.com/i.test(person.email);
+          const emailForMatch = maskedEmail ? null : person.email;
+
+          // 1) apollo_person_id
+          let { data: existingByApolloId } = await supabase
+            .from('decision_makers')
+            .select('id')
+            .eq('apollo_person_id', person.id)
+            .eq('company_id', companyId)
+            .maybeSingle();
+          existingDecisor = existingByApolloId;
+
+          // 2) LinkedIn URL
+          if (!existingDecisor && person.linkedin_url) {
             const { data } = await supabase
               .from('decision_makers')
               .select('id')
-              .eq('email', person.email)
+              .eq('linkedin_url', person.linkedin_url)
               .eq('company_id', companyId)
               .maybeSingle();
             existingDecisor = data;
-          } else {
-            // Se não tem email, verificar por nome
+          }
+
+          // 3) E-mail real
+          if (!existingDecisor && emailForMatch) {
+            const { data } = await supabase
+              .from('decision_makers')
+              .select('id')
+              .eq('email', emailForMatch)
+              .eq('company_id', companyId)
+              .maybeSingle();
+            existingDecisor = data;
+          }
+
+          // 4) Nome + empresa (fallback)
+          if (!existingDecisor) {
             const { data } = await supabase
               .from('decision_makers')
               .select('id')
@@ -888,9 +938,10 @@ serve(async (req) => {
 
           const decisorData = {
             company_id: companyId,
+            source: 'apollo',
             name: person.name,
             title: person.title,
-            email: person.email || null, // ✅ Permitir nulo
+            email: maskedEmail ? null : person.email, // ✅ Ignorar e-mail mascarado
             phone: person.phone || person.sanitized_phone,
             direct_phone: person.direct_phone,
             mobile_phone: person.mobile_phone,
@@ -993,17 +1044,20 @@ serve(async (req) => {
 
         console.log('[Apollo] ✅ Decisores processados:', people.length);
         
-        // 🔍 Verificar quantos foram realmente salvos
+        // 🔍 Verificar quantos foram realmente salvos (ignorando placeholders)
         const { count: savedCount } = await supabase
           .from('decision_makers')
           .select('*', { count: 'exact', head: true })
-          .eq('company_id', companyId)
-          .not('email', 'eq', 'email_not_unlocked@domain.com');
+          .eq('company_id', companyId);
         
-        console.log('[Apollo] 📊 RESUMO FINAL:');
-        console.log('[Apollo] 📥 Recebidos do Apollo:', people.length);
-        console.log('[Apollo] 💾 Salvos no banco:', savedCount);
-        console.log('[Apollo] ⚠️ Diferença:', people.length - (savedCount || 0));
+        const { count: placeholders } = await supabase
+          .from('decision_makers')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('email', 'email_not_unlocked@domain.com');
+        
+        console.log('[Apollo] 📊 RESUMO FINAL:', { recebidos: people.length, salvos: savedCount, placeholders: placeholders || 0 });
+
       }
 
       return new Response(

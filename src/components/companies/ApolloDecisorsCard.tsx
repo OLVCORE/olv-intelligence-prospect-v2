@@ -177,7 +177,7 @@ export function ApolloDecisorsCard({ decisors }: ApolloDecisorsCardProps) {
 
                   {/* Contatos */}
                   <div className="space-y-2">
-                    {decisor.email && (
+                    {decisor.email && decisor.email !== 'email_not_unlocked@domain.com' ? (
                       <div className="flex items-center gap-2 text-sm">
                         {getEmailStatusIcon(decisor.email_status)}
                         <a 
@@ -191,6 +191,11 @@ export function ApolloDecisorsCard({ decisors }: ApolloDecisorsCardProps) {
                             {decisor.email_status}
                           </Badge>
                         )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {getEmailStatusIcon(decisor.email_status)}
+                        <span>E-mail protegido (Apollo)</span>
                       </div>
                     )}
 
