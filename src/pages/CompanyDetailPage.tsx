@@ -47,6 +47,8 @@ import { CompanyIntelligenceChat } from '@/components/companies/CompanyIntellige
 import { MultiLayerEnrichButton } from '@/components/canvas/MultiLayerEnrichButton';
 import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
+import { CompanyEnrichmentTabs } from '@/components/companies/CompanyEnrichmentTabs';
+import { UpdateNowButton } from '@/components/companies/UpdateNowButton';
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -502,6 +504,23 @@ export default function CompanyDetailPage() {
                 </TooltipTrigger>
                 <TooltipContent>
                   Capital social, faturamento, dívidas e integração com Serasa
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger 
+                    value="apollo360" 
+                    className="gap-2 data-[state=active]:glass-card data-[state=active]:text-primary"
+                  >
+                    <img src={apolloLogo} className="h-4 w-4" alt="Apollo" />
+                    Apollo 360°
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  CICLO 3: People, Similares, Technologies, Insights, Trends, Visitors, News, Vagas
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1473,6 +1492,46 @@ export default function CompanyDetailPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* TAB: Apollo 360° - CICLO 3 */}
+        <TabsContent value="apollo360" className="space-y-6 animate-fade-in">
+          <Card className="glass-card">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <img src={apolloLogo} className="h-6 w-6" alt="Apollo" />
+                    Enriquecimento Apollo 360° (CICLO 3)
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    100% dos campos + Decisores com paginação completa + Empresas similares + Technologies full
+                  </CardDescription>
+                </div>
+                
+                <UpdateNowButton
+                  companyId={id!}
+                  apolloOrganizationId={company.apollo_organization_id}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+                    queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
+                  }}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CompanyEnrichmentTabs
+                companyId={id!}
+                similarCompanies={company.similar_companies || []}
+                technologiesFull={company.technologies_full || []}
+                employeeTrends={company.employee_trends}
+                websiteVisitors={company.website_visitors}
+                companyInsights={company.company_insights}
+                news={company.news || []}
+                jobPostings={company.job_postings || []}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

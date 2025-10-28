@@ -36,6 +36,12 @@ All colors MUST be HSL.
     --ring: 217 91% 60%;
     --radius: 0.75rem;
     
+    /* CICLO 3: Tab hover/active colors */
+    --tab-hover-bg: 217 100% 97%;
+    --tab-hover-border: 217 91% 80%;
+    --tab-active-bg: 217 100% 95%;
+    --tab-active-border: 217 91% 60%;
+    
     /* Professional accent colors */
     --accent-cyan: 188 85% 40%;
     --accent-blue: 217 91% 60%;
@@ -273,4 +279,56 @@ All colors MUST be HSL.
   .animate-pulse-subtle {
     animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  
+  /* CICLO 3: Tab hover and active styles */
+  .nav-tabs [role="tab"],
+  [role="tablist"] [role="tab"] {
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .nav-tabs [role="tab"]:hover,
+  [role="tablist"] [role="tab"]:hover {
+    color: hsl(var(--primary));
+    background: hsl(var(--tab-hover-bg));
+    border-bottom: 2px solid hsl(var(--tab-hover-border));
+    cursor: pointer;
+  }
+  
+  .nav-tabs [role="tab"][data-state="active"],
+  [role="tablist"] [role="tab"][data-state="active"] {
+    color: hsl(var(--primary));
+    background: hsl(var(--tab-active-bg));
+    border-bottom: 3px solid hsl(var(--tab-active-border));
+    font-weight: 600;
+  }
+  
+  /* Fade in animation for tab content */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+  
+  /* Hover scale effect */
+  .hover-scale {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 }
+
