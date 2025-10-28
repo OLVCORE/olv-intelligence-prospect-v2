@@ -75,6 +75,19 @@ export function MultiLayerEnrichButton({ companyId, cnpj, onComplete }: MultiLay
     ? (progress.filter(p => p.status === 'success').length / progress.length) * 100 
     : 0;
 
+  // Agrupar por layer para mostrar progresso individual
+  const layerProgress = {
+    layer_1: progress.filter(p => p.layer === 'layer_1'),
+    layer_2: progress.filter(p => p.layer === 'layer_2'),
+    layer_3: progress.filter(p => p.layer === 'layer_3')
+  };
+
+  const getLayerProgress = (layer: 'layer_1' | 'layer_2' | 'layer_3') => {
+    const items = layerProgress[layer];
+    if (items.length === 0) return 0;
+    return (items.filter(p => p.status === 'success').length / items.length) * 100;
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -97,7 +110,7 @@ export function MultiLayerEnrichButton({ companyId, cnpj, onComplete }: MultiLay
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Status Geral */}
+          {/* Progresso Geral */}
           {progress.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
@@ -108,7 +121,29 @@ export function MultiLayerEnrichButton({ companyId, cnpj, onComplete }: MultiLay
             </div>
           )}
 
-          {/* Camadas de Enriquecimento */}
+          {/* Progresso por Layer */}
+          {progress.length > 0 && (
+            <div className="space-y-3">
+              {['layer_1', 'layer_2', 'layer_3'].map((layer) => {
+                const items = layerProgress[layer as keyof typeof layerProgress];
+                if (items.length === 0) return null;
+                
+                const layerProg = getLayerProgress(layer as 'layer_1' | 'layer_2' | 'layer_3');
+                
+                return (
+                  <div key={layer} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{getLayerName(layer)}</span>
+                      <span className="text-muted-foreground">{Math.round(layerProg)}%</span>
+                    </div>
+                    <Progress value={layerProg} className="h-1.5" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Detalhamento por Fonte */}
           <div className="space-y-3">
             {progress.map((item, index) => (
               <Collapsible key={index}>

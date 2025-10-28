@@ -5,6 +5,8 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { logger } from '@/lib/utils/logger';
 import { BulkUploadDialog } from '@/components/companies/BulkUploadDialog';
 import { ApolloImportDialog } from '@/components/companies/ApolloImportDialog';
+import { BulkActionsToolbar } from '@/components/companies/BulkActionsToolbar';
+import { CompanyRowActions } from '@/components/companies/CompanyRowActions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -339,6 +341,11 @@ export default function CompaniesManagementPage() {
       setIsExporting(true);
       const BOM = '\uFEFF';
       
+      // Exportar apenas selecionadas, ou todas se nenhuma seleção
+      const companiesToExport = selectedCompanies.length > 0
+        ? companies.filter(c => selectedCompanies.includes(c.id))
+        : companies;
+      
       // 87 colunas completas
       const headers = [
         'CNPJ', 'Nome da Empresa', 'Nome Fantasia', 'Razão Social', 'Website', 'Domínio',
@@ -369,7 +376,7 @@ export default function CompaniesManagementPage() {
         'Valor Oportunidade', 'Probabilidade Fechamento', 'Data Fechamento Esperada'
       ];
       
-      const rows = companies.map(company => {
+      const rows = companiesToExport.map(company => {
         const receitaData = (company as any)?.raw_data?.receita;
         const digitalPresence = (company as any)?.digital_presence;
         const decisors = (company as any)?.decision_makers || [];
@@ -475,7 +482,11 @@ export default function CompaniesManagementPage() {
       link.download = `empresas_completo_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       
-      toast.success('CSV completo exportado com 87 colunas!');
+      const count = companiesToExport.length;
+      toast.success(selectedCompanies.length > 0 
+        ? `CSV exportado: ${count} empresa(s) selecionada(s)!`
+        : `CSV completo exportado: ${count} empresa(s)!`
+      );
     } catch (error) {
       console.error('Error exporting CSV:', error);
       toast.error('Erro ao exportar CSV');
@@ -943,6 +954,56 @@ export default function CompaniesManagementPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
+            {/* Bulk Actions Toolbar */}
+            {companies.length > 0 && (
+              <BulkActionsToolbar
+                selectedCount={selectedCompanies.length}
+                totalCount={companies.length}
+                onSelectAll={toggleSelectAll}
+                onClearSelection={() => setSelectedCompanies([])}
+                onBulkDelete={handleBulkDelete}
+                onBulkEnrichReceita={handleBatchEnrichReceitaWS}
+                onBulkEnrich360={handleBatchEnrich360}
+                onBulkEnrichApollo={handleBatchEnrichApollo}
+                onBulkEnrichEconodata={async () => {
+                  try {
+                    setIsBatchEnrichingEconodata(true);
+                    toast.info('Iniciando enriquecimento em lote com Eco-Booster...');
+
+                    const selectedComps = selectedCompanies.length > 0
+                      ? companies.filter(c => selectedCompanies.includes(c.id) && c.cnpj)
+                      : companies.filter(c => c.cnpj);
+                      
+                    let enriched = 0;
+                    let errors = 0;
+
+                    for (const company of selectedComps) {
+                      try {
+                        const { error } = await supabase.functions.invoke('enrich-econodata', {
+                          body: { companyId: company.id, cnpj: company.cnpj }
+                        });
+                        if (error) throw error;
+                        enriched++;
+                      } catch (e) {
+                        console.error(`Error enriching ${company.name}:`, e);
+                        errors++;
+                      }
+                    }
+
+                    toast.success(`Eco-Booster concluído! ${enriched} empresas atualizadas, ${errors} erros.`);
+                    refetch();
+                  } catch (error) {
+                    console.error('Error batch enriching Econodata:', error);
+                    toast.error('Erro ao executar Eco-Booster em lote');
+                  } finally {
+                    setIsBatchEnrichingEconodata(false);
+                  }
+                }}
+                onExportSelected={handleExportCSV}
+                isProcessing={isBatchEnriching || isBatchEnriching360 || isBatchEnrichingApollo || isBatchEnrichingEconodata}
+              />
+            )}
+
             {companies.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Building2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
@@ -1105,227 +1166,55 @@ export default function CompaniesManagementPage() {
                         )}
                       </TableCell>
                        <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => navigate(`/company/${company.id}`)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Ver detalhes</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => navigate(`/search?companyId=${company.id}`)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Editar/Salvar Dados</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => {
-                                    const params = new URLSearchParams(location.search);
-                                    const returnTab = params.get('tab') || 'roi';
-                                    navigate(`/account-strategy?company=${company.id}&tab=${returnTab}`);
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Target className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Account Strategy Hub</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-
-                          {/* Descobrir CNPJ (só quando não há CNPJ) */}
-                          {!company.cnpj && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    onClick={() => { setCnpjCompany(company); setCnpjDialogOpen(true); }}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Search className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Descobrir CNPJ</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleEnrichReceita(company.id)}
-                                  disabled={enrichingReceitaId === company.id || !company.cnpj}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  {enrichingReceitaId === company.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Building2 className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Receita Federal</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleEnrich(company.id)}
-                                  disabled={enrichingId === company.id}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  {enrichingId === company.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Sparkles className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Enriquecimento 360°</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={async () => {
-                                    if (!company.cnpj) {
-                                      toast.error('CNPJ não disponível');
-                                      return;
-                                    }
-                                    try {
-                                      toast.info('Iniciando enriquecimento Eco-Booster...');
-                                      const { data, error } = await supabase.functions.invoke('enrich-econodata', {
-                                        body: { companyId: company.id, cnpj: company.cnpj }
-                                      });
-                                      if (error) throw error;
-                                      toast.success('Eco-Booster concluído!');
-                                      refetch();
-                                    } catch (error) {
-                                      console.error('Error enriching Econodata:', error);
-                                      toast.error('Erro no Eco-Booster');
-                                    }
-                                  }}
-                                  disabled={!company.cnpj}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Zap className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Eco-Booster</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      toast.info('Buscando decisores com Apollo...');
-                                      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
-                                        body: { 
-                                          type: 'enrich_company',
-                                          companyId: company.id,
-                                          domain: company.website || company.domain
-                                        }
-                                      });
-                                      if (error) throw error;
-                                      toast.success('Dados Apollo atualizados!');
-                                      refetch();
-                                    } catch (error) {
-                                      console.error('Error enriching Apollo:', error);
-                                      toast.error('Erro ao buscar dados Apollo');
-                                    }
-                                  }}
-                                  className="h-8 w-8 p-0 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                                >
-                                  <div className="h-4 w-4 flex items-center justify-center">
-                                    <img src={apolloIcon} alt="Apollo" className="h-4 w-4 object-contain" />
-                                  </div>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Apollo (Decisores)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    setCompanyToDelete(company);
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Excluir</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
+                        <CompanyRowActions
+                          company={company}
+                          onDelete={() => {
+                            setCompanyToDelete(company);
+                            setDeleteDialogOpen(true);
+                          }}
+                          onEnrichReceita={() => handleEnrichReceita(company.id)}
+                          onEnrich360={() => handleEnrich(company.id)}
+                          onEnrichApollo={async () => {
+                            try {
+                              toast.info('Buscando decisores com Apollo...');
+                              const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+                                body: { 
+                                  type: 'enrich_company',
+                                  companyId: company.id,
+                                  domain: company.website || company.domain
+                                }
+                              });
+                              if (error) throw error;
+                              toast.success('Dados Apollo atualizados!');
+                              refetch();
+                            } catch (error) {
+                              console.error('Error enriching Apollo:', error);
+                              toast.error('Erro ao buscar dados Apollo');
+                            }
+                          }}
+                          onEnrichEconodata={async () => {
+                            if (!company.cnpj) {
+                              toast.error('CNPJ não disponível');
+                              return;
+                            }
+                            try {
+                              toast.info('Iniciando enriquecimento Eco-Booster...');
+                              const { data, error } = await supabase.functions.invoke('enrich-econodata', {
+                                body: { companyId: company.id, cnpj: company.cnpj }
+                              });
+                              if (error) throw error;
+                              toast.success('Eco-Booster concluído!');
+                              refetch();
+                            } catch (error) {
+                              console.error('Error enriching Econodata:', error);
+                              toast.error('Erro no Eco-Booster');
+                            }
+                          }}
+                          onDiscoverCNPJ={!company.cnpj ? () => { 
+                            setCnpjCompany(company); 
+                            setCnpjDialogOpen(true); 
+                          } : undefined}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
