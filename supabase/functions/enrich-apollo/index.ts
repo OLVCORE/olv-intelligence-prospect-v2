@@ -881,27 +881,65 @@ serve(async (req) => {
             work_direct_phone: person.work_direct_phone,
             linkedin_url: person.linkedin_url,
             apollo_person_id: person.id,
+            
+            // ✅ Campos de email (já estavam)
             email_status: person.email_status,
             email_verification_date: person.email_last_verified_date,
             contact_accuracy_score: person.contact_accuracy_score || 0,
+            extrapolated_email_confidence: person.extrapolated_email_confidence,
+            
+            // ✅ Campos de senioridade (já estavam)
             seniority_level: person.seniority,
             departments: person.departments || [],
-            persona_tags: person.functions || [],
+            
+            // 🆕 NOVO: Separar functions de persona_tags
+            functions: person.functions || [],
+            subdepartments: person.subdepartments || [],
+            persona_tags: person.functions || [], // Manter por compatibilidade
+            
+            // ✅ Campos visuais (já estavam)
             photo_url: person.photo_url,
+            
+            // ✅ Sinais de intenção (já estavam)
             intent_strength: person.intent_strength,
             show_intent: person.show_intent || false,
-            extrapolated_email_confidence: person.extrapolated_email_confidence,
+            revealed_for_current_team: person.revealed_for_current_team || false,
+            
+            // 🆕 NOVO: Localização em colunas dedicadas
+            headline: person.headline,
+            city: person.city,
+            state: person.state,
+            country: person.country,
+            
+            // 🆕 NOVO: Redes sociais em colunas dedicadas
+            twitter_url: person.twitter_url,
+            facebook_url: person.facebook_url,
+            github_url: person.github_url,
+            
+            // 🆕 NOVO: Histórico educacional
+            education: person.education || null,
+            
+            // 🆕 NOVO: Dados da organização estruturados
+            organization_data: {
+              name: person.organization_name,
+              id: person.organization_id,
+              linkedin_url: person.organization?.linkedin_url,
+              website_url: person.organization?.website_url,
+              industry: person.organization?.industry,
+              employees: person.organization?.estimated_num_employees
+            },
+            
+            // 🆕 NOVO: Timestamp de enriquecimento
+            apollo_last_enriched_at: new Date().toISOString(),
+            
+            // ✅ Manter metadata com dados legados/extras (reduzido)
             apollo_person_metadata: {
-              state: person.state,
-              city: person.city,
-              country: person.country,
               employment_history: person.employment_history || [],
-              headline: person.headline,
-              facebook_url: person.facebook_url,
-              twitter_url: person.twitter_url,
-              github_url: person.github_url,
-              organization_name: person.organization_name,
-              organization_id: person.organization_id
+              raw_response: {
+                email_confidence: person.email_confidence,
+                account_email_status: person.account_email_status,
+                typed_custom_fields: person.typed_custom_fields
+              }
             }
           };
 
