@@ -57,6 +57,9 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
 const GeographicAnalysisPage = lazy(() => import("./pages/GeographicAnalysisPage"));
 const GoalsPage = lazy(() => import("./pages/GoalsPage"));
+const RegionalExpansionPage = lazy(() => import("./pages/insights/RegionalExpansionPage"));
+const ChurnAlertPage = lazy(() => import("./pages/insights/ChurnAlertPage"));
+const CloudMigrationPage = lazy(() => import("./pages/insights/CloudMigrationPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
 const OfflinePage = lazy(() => import("./pages/OfflinePage"));
@@ -438,6 +441,36 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ConsultoriaOLVPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/insights/regional-expansion"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <RegionalExpansionPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/insights/churn-alert"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ChurnAlertPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/insights/cloud-migration"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CloudMigrationPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

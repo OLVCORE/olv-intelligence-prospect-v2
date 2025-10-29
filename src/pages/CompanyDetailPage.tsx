@@ -54,6 +54,7 @@ import { CreditsDashboard } from '@/components/companies/CreditsDashboard';
 import { CreditUsageHistory } from '@/components/companies/CreditUsageHistory';
 import CompanyGlobalSearch from '@/components/companies/CompanyGlobalSearch';
 import { useRealtimeCompanyChanges } from '@/hooks/useRealtimeCompanyChanges';
+import { CompanyActionsMenu } from '@/components/companies/CompanyActionsMenu';
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -350,7 +351,16 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-      <BackButton to="/companies" />
+      <div className="flex items-center justify-between">
+        <BackButton to="/companies" />
+        <CompanyActionsMenu 
+          companyId={id!}
+          companyName={company.name}
+          isLoading={isSmartRefreshing || isEnriching}
+          onRefresh={handleSmartRefresh}
+          onEnrich={handleFullEnrichment}
+        />
+      </div>
       
       {/* Header */}
       <Card className="border-l-4 border-l-primary">

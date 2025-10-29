@@ -40,7 +40,7 @@ export function AIPredictionBanner({ insights }: { insights?: PredictionInsight[
         impact: "high",
         actionLabel: "Ver Empresas",
         tooltip: "Análise baseada em sinais de crescimento acelerado como aumento de receita, contratação de funcionários e expansão digital. Empresas nesta categoria têm 3x mais probabilidade de fechar contratos.",
-        onAction: () => navigate('/companies')
+        onAction: () => navigate('/insights/regional-expansion')
       });
     }
 
@@ -54,7 +54,7 @@ export function AIPredictionBanner({ insights }: { insights?: PredictionInsight[
         impact: "medium",
         actionLabel: "Revisar",
         tooltip: "Empresas identificadas com redução significativa em atividade digital, engajamento em plataformas e sinais de risco. Requer ação imediata para retenção.",
-        onAction: () => navigate('/companies')
+        onAction: () => navigate('/insights/churn-alert')
       });
     }
 
@@ -73,7 +73,7 @@ export function AIPredictionBanner({ insights }: { insights?: PredictionInsight[
         impact: "high",
         actionLabel: "Analisar",
         tooltip: "Tendência identificada através de análise de tech stack, maturidade digital e sinais de transformação digital. Empresas em migração para cloud têm budget 2x maior para novos sistemas.",
-        onAction: () => navigate('/companies')
+        onAction: () => navigate('/insights/cloud-migration')
       });
     } else if (dashboardData.emergingOpportunities.length > 0) {
       // Se não encontrar cloud, usar a primeira oportunidade disponível
@@ -87,7 +87,7 @@ export function AIPredictionBanner({ insights }: { insights?: PredictionInsight[
         impact: "high",
         actionLabel: "Analisar",
         tooltip: "Tendência identificada através de análise de mercado, comportamento das empresas e sinais de transformação digital no setor.",
-        onAction: () => navigate('/companies')
+        onAction: () => navigate('/insights/cloud-migration')
       });
     }
 
@@ -190,14 +190,15 @@ export function AIPredictionBanner({ insights }: { insights?: PredictionInsight[
                   <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{insight.description}</p>
                   {insight.actionLabel && (
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="sm" 
-                      className="w-full text-xs group-hover:bg-primary/20 transition-colors"
+                      className="w-full text-xs group-hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         insight.onAction?.();
                       }}
                     >
+                      <Sparkles className="h-3 w-3" />
                       {insight.actionLabel}
                     </Button>
                   )}
