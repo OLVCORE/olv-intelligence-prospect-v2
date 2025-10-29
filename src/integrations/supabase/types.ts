@@ -1222,6 +1222,7 @@ export type Database = {
           employee_count_range: string | null
           employee_trends: Json | null
           employees: number | null
+          field_meta: Json | null
           founding_year: number | null
           funding_rounds: Json | null
           funding_total: number | null
@@ -1289,6 +1290,7 @@ export type Database = {
           employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
+          field_meta?: Json | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
@@ -1356,6 +1358,7 @@ export type Database = {
           employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
+          field_meta?: Json | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
@@ -1457,6 +1460,47 @@ export type Database = {
             foreignKeyName: "company_battle_cards_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_change_log: {
+        Row: {
+          changed_at: string
+          company_id: string
+          field: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string
+          source: string
+        }
+        Insert: {
+          changed_at?: string
+          company_id: string
+          field: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason: string
+          source: string
+        }
+        Update: {
+          changed_at?: string
+          company_id?: string
+          field?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_change_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
