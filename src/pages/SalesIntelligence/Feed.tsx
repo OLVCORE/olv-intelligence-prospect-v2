@@ -20,7 +20,11 @@ import {
   Clock,
   ExternalLink,
   Filter,
-  Settings
+  Settings,
+  Plus,
+  Building2,
+  MapPin,
+  Crosshair
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
@@ -93,29 +97,62 @@ export default function SalesIntelligenceFeed() {
                 Filtros & Configuração
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64 z-[100] bg-popover">
               <DropdownMenuLabel>Filtros de Prioridade</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setSelectedPriority(undefined)}>
+              <DropdownMenuItem 
+                onClick={() => setSelectedPriority(undefined)}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
                 <Target className="h-4 w-4 mr-2" />
                 Todos os Sinais
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPriority('urgent')}>
-                <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
+              <DropdownMenuItem 
+                onClick={() => setSelectedPriority('urgent')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-destructive"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
                 Urgente
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPriority('high')}>
+              <DropdownMenuItem 
+                onClick={() => setSelectedPriority('high')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-orange-500"
+              >
                 <TrendingUp className="h-4 w-4 mr-2 text-orange-500" />
                 Alta
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPriority('medium')}>
+              <DropdownMenuItem 
+                onClick={() => setSelectedPriority('medium')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-yellow-500"
+              >
                 <Clock className="h-4 w-4 mr-2 text-yellow-500" />
                 Média
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
               
+              <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
+              <DropdownMenuItem 
+                onClick={() => navigate('/companies')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Empresa Individual
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/config')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Crosshair className="h-4 w-4 mr-2" />
+                Novo Monitoramento
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
               <DropdownMenuLabel>Monitoramento 24/7</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigate('/sales-intelligence/config')}>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/config')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 Configurar Monitoramento
               </DropdownMenuItem>
@@ -124,7 +161,7 @@ export default function SalesIntelligenceFeed() {
         </div>
       </div>
 
-      {/* 🚦 SEMÁFORO DE STATUS EM TEMPO REAL 24/7 */}
+      {/* Indicador de Status em Tempo Real */}
       <MonitoringStatusIndicator variant="full" />
 
       {/* Stats Cards */}

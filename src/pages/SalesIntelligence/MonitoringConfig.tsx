@@ -8,13 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle, CheckCircle2, Circle, Info, DollarSign, Users, TrendingUp, Cpu, Handshake, Globe, RefreshCw, Crosshair, Save, Building2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMonitoringConfig, useSaveMonitoringConfig, useToggleMonitoring, useRunMonitoringNow } from '@/hooks/useIntelligenceMonitoring';
 import { useBrazilStates, useBrazilRegions } from '@/hooks/useBrazilGeography';
 import { useSectors } from '@/hooks/useSectors';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useMonitoredCompanies } from '@/hooks/useMonitoredCompanies';
 
 export default function MonitoringConfigPage() {
   const { data: user } = useQuery({
@@ -29,6 +30,7 @@ export default function MonitoringConfigPage() {
   const { data: brazilStates } = useBrazilStates();
   const { data: regions } = useBrazilRegions();
   const { data: sectors } = useSectors();
+  const { data: monitoredCompanies = [], isLoading: loadingCompanies } = useMonitoredCompanies(user?.id);
   
   const saveConfigMutation = useSaveMonitoringConfig();
   const toggleMonitoringMutation = useToggleMonitoring();
@@ -185,8 +187,9 @@ export default function MonitoringConfigPage() {
           </div>
           
           <div className="flex items-center gap-3">
-            <Badge variant={config?.is_active ? "default" : "secondary"}>
-              {config?.is_active ? '🟢 Ativo' : '⏸️ Pausado'}
+            <Badge variant={config?.is_active ? "default" : "secondary"} className="gap-1">
+              <Circle className={`h-3 w-3 ${config?.is_active ? 'fill-green-500' : 'fill-gray-400'}`} />
+              {config?.is_active ? 'Ativo' : 'Pausado'}
             </Badge>
             <Button
               variant={config?.is_active ? "outline" : "default"}
@@ -321,8 +324,9 @@ export default function MonitoringConfigPage() {
                   <p className="text-xs text-muted-foreground">
                     {selectedStates.length > 0 ? `${selectedStates.length} estado(s) selecionado(s)` : 'Nenhum estado selecionado (todos serão monitorados)'}
                   </p>
-                  <p className="text-xs text-blue-600">
-                    💡 Ao selecionar uma região, todos os estados dela são marcados automaticamente. Desmarque os que não deseja monitorar.
+                  <p className="text-xs text-blue-600 flex items-start gap-2">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>Ao selecionar uma região, todos os estados dela são marcados automaticamente. Desmarque os que não deseja monitorar.</span>
                   </p>
                 </div>
               </CardContent>
@@ -545,29 +549,31 @@ export default function MonitoringConfigPage() {
                 <div className="pt-4 border-t">
                   <p className="text-sm text-muted-foreground mb-2">Tipos de sinais monitorados:</p>
                   <div className="flex flex-wrap gap-2">
-                    {monitorFunding && <Badge variant="outline">💰 Investimento</Badge>}
-                    {monitorLeadership && <Badge variant="outline">👔 Liderança</Badge>}
-                    {monitorExpansion && <Badge variant="outline">📈 Expansão</Badge>}
-                    {monitorTech && <Badge variant="outline">💻 Tecnologia</Badge>}
-                    {monitorPartnerships && <Badge variant="outline">🤝 Parcerias</Badge>}
-                    {monitorMarket && <Badge variant="outline">🌎 Mercado</Badge>}
-                    {monitorDigital && <Badge variant="outline">🔄 Digital</Badge>}
-                    {monitorCompetitors && <Badge variant="outline">🎯 Displacement</Badge>}
+                    {monitorFunding && <Badge variant="outline" className="gap-1"><DollarSign className="h-3 w-3" />Investimento</Badge>}
+                    {monitorLeadership && <Badge variant="outline" className="gap-1"><Users className="h-3 w-3" />Liderança</Badge>}
+                    {monitorExpansion && <Badge variant="outline" className="gap-1"><TrendingUp className="h-3 w-3" />Expansão</Badge>}
+                    {monitorTech && <Badge variant="outline" className="gap-1"><Cpu className="h-3 w-3" />Tecnologia</Badge>}
+                    {monitorPartnerships && <Badge variant="outline" className="gap-1"><Handshake className="h-3 w-3" />Parcerias</Badge>}
+                    {monitorMarket && <Badge variant="outline" className="gap-1"><Globe className="h-3 w-3" />Mercado</Badge>}
+                    {monitorDigital && <Badge variant="outline" className="gap-1"><RefreshCw className="h-3 w-3" />Digital</Badge>}
+                    {monitorCompetitors && <Badge variant="outline" className="gap-1"><Crosshair className="h-3 w-3" />Displacement</Badge>}
                   </div>
                 </div>
 
                 {!config?.is_active && (
-                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4">
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      ⚠️ <strong>Monitoramento pausado.</strong> Clique em "Ativar" no topo da página para começar a monitorar empresas.
+                      <strong>Monitoramento pausado.</strong> Clique em "Ativar" no topo da página para começar a monitorar empresas.
                     </p>
                   </div>
                 )}
 
                 {config?.is_active && (
-                  <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-4">
+                  <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-green-800 dark:text-green-200">
-                      ✅ <strong>Monitoramento ativo!</strong> O sistema está executando automaticamente a cada {config.check_frequency_hours}h.
+                      <strong>Monitoramento ativo!</strong> O sistema está executando automaticamente a cada {config.check_frequency_hours}h.
                     </p>
                   </div>
                 )}
@@ -578,17 +584,45 @@ export default function MonitoringConfigPage() {
               <CardHeader>
                 <CardTitle>Empresas Potenciais</CardTitle>
                 <CardDescription>
-                  Estimativa de empresas que serão monitoradas com os filtros atuais
+                  Empresas que atendem aos critérios e serão monitoradas
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <p className="text-4xl font-bold text-primary">~{Math.floor(Math.random() * 500) + 100}</p>
-                  <p className="text-sm text-muted-foreground mt-2">empresas atendem aos critérios</p>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    O monitoramento verificará até 50 empresas por execução, priorizando as mais relevantes.
-                  </p>
-                </div>
+                {loadingCompanies ? (
+                  <div className="text-center py-8">
+                    <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mt-2">Carregando empresas...</p>
+                  </div>
+                ) : monitoredCompanies.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="text-center pb-4 border-b">
+                      <p className="text-4xl font-bold text-primary">{monitoredCompanies.length}</p>
+                      <p className="text-sm text-muted-foreground mt-1">empresas atendem aos critérios</p>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto space-y-2">
+                      {monitoredCompanies.map((company: any) => (
+                        <div key={company.id} className="flex items-center gap-2 p-2 rounded-md border hover:bg-accent transition-colors">
+                          <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{company.name}</p>
+                            <p className="text-xs text-muted-foreground">{company.headquarters_state} • {company.employees || '?'} func.</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center pt-2 border-t">
+                      O monitoramento verificará até 50 empresas por execução, priorizando as mais relevantes
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Target className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm font-medium">Nenhuma empresa encontrada</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ajuste os filtros para incluir mais empresas
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -612,8 +646,15 @@ export default function MonitoringConfigPage() {
             onClick={handleSave}
             disabled={saveConfigMutation.isPending || !hasUnsavedChanges}
             size="lg"
+            className="gap-2"
           >
-            {saveConfigMutation.isPending ? 'Salvando...' : hasUnsavedChanges ? '💾 Salvar Alterações' : '✓ Salvo'}
+            {saveConfigMutation.isPending ? (
+              <>Salvando...</>
+            ) : hasUnsavedChanges ? (
+              <><Save className="h-4 w-4" />Salvar Alterações</>
+            ) : (
+              <><CheckCircle2 className="h-4 w-4" />Salvo</>
+            )}
           </Button>
         </div>
       </div>

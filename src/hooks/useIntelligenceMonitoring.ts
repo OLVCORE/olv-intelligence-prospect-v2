@@ -121,11 +121,13 @@ export function useSaveMonitoringConfig() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['intelligence-monitoring-config', variables.user_id] });
-      toast.success('✅ Configuração de monitoramento salva com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['monitoring-health-status'] });
+      queryClient.invalidateQueries({ queryKey: ['monitored-companies', variables.user_id] });
+      toast.success('Configuração salva com sucesso!');
     },
     onError: (error) => {
       console.error('Erro ao salvar configuração:', error);
-      toast.error('❌ Erro ao salvar configuração de monitoramento');
+      toast.error('Erro ao salvar configuração de monitoramento');
     },
   });
 }
@@ -148,11 +150,12 @@ export function useToggleMonitoring() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['intelligence-monitoring-config', variables.userId] });
-      toast.success(variables.isActive ? '✅ Monitoramento ativado!' : '⏸️ Monitoramento pausado');
+      queryClient.invalidateQueries({ queryKey: ['monitoring-health-status'] });
+      toast.success(variables.isActive ? 'Monitoramento ativado!' : 'Monitoramento pausado');
     },
     onError: (error) => {
       console.error('Erro ao alternar monitoramento:', error);
-      toast.error('❌ Erro ao alternar monitoramento');
+      toast.error('Erro ao alternar monitoramento');
     },
   });
 }
@@ -170,11 +173,11 @@ export function useRunMonitoringNow() {
     },
     onSuccess: (data) => {
       console.log('[Monitoring] Execução manual concluída:', data);
-      toast.success('🚀 Monitoramento executado com sucesso!');
+      toast.success('Monitoramento executado com sucesso!');
     },
     onError: (error) => {
       console.error('[Monitoring] Erro na execução manual:', error);
-      toast.error('❌ Erro ao executar monitoramento');
+      toast.error('Erro ao executar monitoramento');
     },
   });
 }

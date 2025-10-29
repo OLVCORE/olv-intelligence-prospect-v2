@@ -89,15 +89,15 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
     const hoursSinceLastCheck = (now.getTime() - lastCheckDate.getTime()) / (1000 * 60 * 60);
     const expectedFrequency = monitoringStatus.check_frequency_hours || 24;
 
-    // 🟢 Verde: última verificação foi recente (dentro do esperado)
+    // Verde: última verificação foi recente (dentro do esperado)
     if (hoursSinceLastCheck <= expectedFrequency * 1.2) {
       setStatus('online');
     }
-    // 🟡 Amarelo: atrasado mas não muito (até 2x o tempo esperado)
+    // Amarelo: atrasado mas não muito (até 2x o tempo esperado)
     else if (hoursSinceLastCheck <= expectedFrequency * 2) {
       setStatus('warning');
     }
-    // 🔴 Vermelho: muito atrasado (mais de 2x o tempo esperado)
+    // Vermelho: muito atrasado (mais de 2x o tempo esperado)
     else {
       setStatus('offline');
     }
@@ -236,7 +236,8 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-lg">{config.label}</h3>
-              <Badge variant={config.badgeVariant}>
+              <Badge variant={config.badgeVariant} className="gap-1">
+                <Activity className="h-3 w-3" />
                 24/7 Monitoring
               </Badge>
             </div>
