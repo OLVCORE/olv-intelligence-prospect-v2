@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Settings2, ExternalLink, Eye, Copy, Check } from "lucide-react";
+import { Settings2, ExternalLink, Eye, Copy, Check, Key, BookOpen, Shield } from "lucide-react";
 import React, { useState } from "react";
 import { 
   AlertDialog, 
@@ -15,6 +15,14 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -38,12 +46,123 @@ const statusStyles: Record<APIStatus, string> = {
   error: "bg-destructive/10 text-destructive border border-destructive/20",
 };
 
+// Guia de configuração para cada API
+const API_GUIDES: Record<string, {
+  title: string;
+  description: string;
+  steps: string[];
+  docsUrl?: string;
+  secretsNeeded: string[];
+}> = {
+  'ReceitaWS': {
+    title: 'Configurar ReceitaWS',
+    description: 'API para consulta de dados de empresas brasileiras via CNPJ',
+    steps: [
+      '1. Acesse https://receitaws.com.br e crie sua conta',
+      '2. Escolha um plano (Pro ou Enterprise)',
+      '3. No painel, copie seu Token de API',
+      '4. Clique em "Gerenciar Secrets" abaixo para adicionar',
+      '5. Adicione uma nova secret com nome: RECEITAWS_API_TOKEN',
+      '6. Cole o token copiado e salve'
+    ],
+    docsUrl: 'https://receitaws.com.br/api',
+    secretsNeeded: ['RECEITAWS_API_TOKEN']
+  },
+  'Apollo.io': {
+    title: 'Configurar Apollo.io',
+    description: 'API para enriquecimento B2B e busca de decisores',
+    steps: [
+      '1. Acesse https://apollo.io e faça login',
+      '2. Vá em Settings > Integrations > API',
+      '3. Clique em "Create New Key"',
+      '4. Copie a API Key gerada',
+      '5. Clique em "Gerenciar Secrets" abaixo',
+      '6. Adicione secret: APOLLO_API_KEY com o valor copiado'
+    ],
+    docsUrl: 'https://apolloio.github.io/apollo-api-docs/',
+    secretsNeeded: ['APOLLO_API_KEY']
+  },
+  'OpenAI': {
+    title: 'Configurar OpenAI',
+    description: 'API para modelos de linguagem GPT-4, GPT-3.5 e outros',
+    steps: [
+      '1. Acesse https://platform.openai.com',
+      '2. Faça login ou crie uma conta',
+      '3. Vá em API Keys no menu lateral',
+      '4. Clique em "Create new secret key"',
+      '5. Copie a chave (não será mostrada novamente!)',
+      '6. Adicione nos Secrets como: OPENAI_API_KEY'
+    ],
+    docsUrl: 'https://platform.openai.com/docs',
+    secretsNeeded: ['OPENAI_API_KEY']
+  },
+  'Google Places': {
+    title: 'Configurar Google Places',
+    description: 'API para busca de locais e informações geográficas',
+    steps: [
+      '1. Acesse https://console.cloud.google.com',
+      '2. Crie um novo projeto ou selecione existente',
+      '3. Ative a API "Places API"',
+      '4. Vá em Credenciais > Criar Credenciais > Chave de API',
+      '5. Copie a chave gerada',
+      '6. Adicione nos Secrets como: GOOGLE_PLACES_API_KEY'
+    ],
+    docsUrl: 'https://developers.google.com/maps/documentation/places/web-service',
+    secretsNeeded: ['GOOGLE_PLACES_API_KEY', 'GOOGLE_API_KEY']
+  },
+  'Serper': {
+    title: 'Configurar Serper',
+    description: 'API para buscas Google em tempo real',
+    steps: [
+      '1. Acesse https://serper.dev',
+      '2. Faça cadastro e login',
+      '3. No dashboard, copie sua API Key',
+      '4. Clique em "Gerenciar Secrets"',
+      '5. Adicione secret: SERPER_API_KEY',
+      '6. Teste fazendo uma busca no playground'
+    ],
+    docsUrl: 'https://serper.dev/docs',
+    secretsNeeded: ['SERPER_API_KEY']
+  },
+  'Twilio Voice': {
+    title: 'Configurar Twilio Voice',
+    description: 'API para chamadas de voz e comunicação',
+    steps: [
+      '1. Acesse https://www.twilio.com e faça login',
+      '2. No Console, encontre Account SID e Auth Token',
+      '3. Copie ambos os valores',
+      '4. Adicione nos Secrets:',
+      '   - TWILIO_ACCOUNT_SID',
+      '   - TWILIO_AUTH_TOKEN',
+      '5. Configure um número de telefone Twilio'
+    ],
+    docsUrl: 'https://www.twilio.com/docs/voice',
+    secretsNeeded: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER']
+  },
+  'Twilio WhatsApp': {
+    title: 'Configurar Twilio WhatsApp',
+    description: 'API para mensagens WhatsApp Business',
+    steps: [
+      '1. Use as mesmas credenciais do Twilio Voice',
+      '2. No Console Twilio, vá em Messaging > WhatsApp',
+      '3. Configure um WhatsApp Sender',
+      '4. As mesmas secrets do Voice servem para WhatsApp',
+      '5. Teste enviando uma mensagem de teste'
+    ],
+    docsUrl: 'https://www.twilio.com/docs/whatsapp',
+    secretsNeeded: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN']
+  }
+};
+
 export function APICard({ name, status, cost, uptime, logo, onConfigure, signupUrl, apiKey, envVarName }: APICardProps) {
   const [revealDialogOpen, setRevealDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [revealedKey, setRevealedKey] = useState('');
   const [isRevealing, setIsRevealing] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
+  
+  const guide = API_GUIDES[name];
 
   const handleRevealKey = async () => {
     if (!password || !envVarName) return;
@@ -175,7 +294,7 @@ export function APICard({ name, status, cost, uptime, logo, onConfigure, signupU
             variant="outline" 
             size="sm" 
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 border-primary/50" 
-            onClick={onConfigure} 
+            onClick={() => setConfigDialogOpen(true)}
             aria-label={`Configurar ${name}`}
           >
             <Settings2 className="h-4 w-4 mr-2" />
@@ -183,6 +302,129 @@ export function APICard({ name, status, cost, uptime, logo, onConfigure, signupU
           </Button>
         </CardContent>
       </Card>
+
+      {/* Dialog de configuração */}
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Settings2 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">{guide?.title || `Configurar ${name}`}</DialogTitle>
+                <DialogDescription className="text-sm mt-1">
+                  {guide?.description || `Instruções para configurar a API ${name}`}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Link de acesso */}
+            {signupUrl && (
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Acessar plataforma</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(signupUrl, '_blank')}
+                  >
+                    Abrir {name}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Passo a passo */}
+            {guide && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold">Passo a Passo</h4>
+                </div>
+                <div className="space-y-2">
+                  {guide.steps.map((step, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <span className="text-sm">{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Secrets necessárias */}
+            {guide && guide.secretsNeeded.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Key className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold">Secrets Necessárias</h4>
+                </div>
+                <div className="space-y-2">
+                  {guide.secretsNeeded.map((secret, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                      <code className="text-sm font-mono">{secret}</code>
+                      <Badge variant="secondary" className="text-xs">
+                        {envVarName === secret ? 'Configurada' : 'Pendente'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Ações rápidas */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Shield className="h-5 w-5 text-primary" />
+                <h4 className="font-semibold">Ações Rápidas</h4>
+              </div>
+              <div className="grid gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    // Abrir área de secrets - será implementado
+                    toast.info('Abrindo gerenciador de Secrets...');
+                    window.open('https://lovable.dev', '_blank');
+                  }}
+                >
+                  <Key className="h-4 w-4 mr-2" />
+                  Gerenciar Secrets
+                </Button>
+                {guide?.docsUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => window.open(guide.docsUrl, '_blank')}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Ver Documentação Oficial
+                  </Button>
+                )}
+                {signupUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => window.open(signupUrl, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Criar Conta / Login
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para revelar chave de API */}
       <AlertDialog open={revealDialogOpen} onOpenChange={handleCloseRevealDialog}>
