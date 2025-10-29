@@ -30,21 +30,23 @@ serve(async (req: Request) => {
   const c = cors(req.headers.get('origin') || '');
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: c });
 
+  const correlationId = crypto.randomUUID();
+
   try {
     const auth = req.headers.get('authorization') || '';
     if (!auth.startsWith('Bearer ')) {
-      return J({ error: 'missing_or_invalid_authorization', hint: 'Envie Authorization: Bearer <token>' }, 401, c);
+      return J({ error: 'missing_or_invalid_authorization', hint: 'Envie Authorization: Bearer <token>', correlationId }, 401, c);
     }
     if (!req.headers.get('content-type')?.includes('application/json')) {
-      return J({ error: 'invalid_content_type', hint: 'Use Content-Type: application/json' }, 400, c);
+      return J({ error: 'invalid_content_type', hint: 'Use Content-Type: application/json', correlationId }, 400, c);
     }
 
     const body: any = await req.json().catch(() => null);
     if (!body) {
-      return J({ error: 'invalid_payload', hint: 'Body vazio ou JSON inválido' }, 400, c);
+      return J({ error: 'invalid_payload', hint: 'Body vazio ou JSON inválido', correlationId }, 400, c);
     }
     
-    console.log('[enrich-apollo] Request body:', JSON.stringify(body));
+    console.log('[enrich-apollo] Request body:', JSON.stringify(body), 'correlationId:', correlationId);
     
     // Suporte para busca de organizações (usado quando empresa não tem apollo_organization_id)
     if (body.type === 'search_organizations') {
@@ -94,16 +96,69 @@ serve(async (req: Request) => {
     const apolloKey = Deno.env.get('APOLLO_API_KEY');
 
     if (!apolloKey) {
-      return J({ error: 'integration_not_configured', hint: 'APOLLO_API_KEY não configurada' }, 501, c);
+      return J({ error: 'integration_not_configured', hint: 'APOLLO_API_KEY não configurada', correlationId }, 501, c);
     }
 
     const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
 
+    // ESTIMATIVA DE CRÉDITOS
+    const estimate = await estimateCredits(sb, input.organization_id, input.modes);
+
+    // VERIFICAÇÃO DE CRÉDITOS DISPONÍVEIS
+    const creditCheck = await checkCreditsAvailable(sb, estimate.total);
+
+    if (!creditCheck.ok) {
+      await sb.from('apollo_credit_usage').insert({
+        company_id: input.company_id,
+        organization_id: input.organization_id,
+        modes: input.modes,
+        estimated_credits: estimate.total,
+        status: 'insufficient_credits',
+        error_code: 'insufficient_credits',
+        error_message: creditCheck.message
+      });
+
+      return J({
+        error: 'insufficient_credits',
+        hint: creditCheck.message,
+        estimate,
+        available: creditCheck.available,
+        correlationId
+      }, 402, c);
+    }
+
+    // DRY RUN (apenas estimativa)
+    const isDryRun = body.dry_run === true;
+    if (isDryRun) {
+      return J({
+        ok: true,
+        dry_run: true,
+        estimate,
+        creditsAvailable: creditCheck.available,
+        creditWarning: creditCheck.message,
+        correlationId
+      }, 200, c);
+    }
+
     const requestId = crypto.randomUUID();
     const activityId = input.activity_id || crypto.randomUUID();
-    const out: Record<string, unknown> = { ok: true, requestId, activityId, modes: input.modes };
+    const out: Record<string, unknown> = { 
+      ok: true, 
+      requestId, 
+      activityId, 
+      modes: input.modes,
+      correlationId,
+      estimate,
+      creditsAvailable: creditCheck.available
+    };
 
-    console.log('[enrich-apollo] Iniciando:', { companyId: input.company_id, orgId: input.organization_id, modes: input.modes });
+    if (creditCheck.message) {
+      out.creditWarning = creditCheck.message;
+    }
+
+    let actualCreditsConsumed = 0;
+
+    console.log('[enrich-apollo] Iniciando:', { companyId: input.company_id, orgId: input.organization_id, modes: input.modes, correlationId });
 
     // COMPANY
     if (input.modes.includes('company')) {
@@ -117,6 +172,8 @@ serve(async (req: Request) => {
       const patch = mapApolloCompany(companyData);
       console.log('[enrich-apollo] Campos a atualizar:', Object.keys(patch).length);
       console.log('[enrich-apollo] Campos:', Object.keys(patch).join(', '));
+      
+      actualCreditsConsumed += 1;
       
       const { data: updatedData, error: uerr } = await sb
         .from('companies')
@@ -168,6 +225,8 @@ serve(async (req: Request) => {
         out.peopleLinked = 0;
       } else {
         console.log('[enrich-apollo] People encontrados:', peopleAll.length);
+        
+        actualCreditsConsumed += peopleAll.length;
         
         const mapped = peopleAll.map(mapApolloPerson);
         
@@ -498,7 +557,36 @@ serve(async (req: Request) => {
       updated_count: Number(out.companyUpdated || 0)
     });
 
-    console.log('[enrich-apollo] Concluído com sucesso');
+    // ATUALIZAR CRÉDITOS CONSUMIDOS
+    out.actualCreditsConsumed = actualCreditsConsumed;
+
+    if (actualCreditsConsumed > 0) {
+      await sb.rpc('increment_apollo_credits', { credits_consumed: actualCreditsConsumed });
+    }
+
+    // REGISTRAR USO NO HISTÓRICO
+    try {
+      const { data: companyData } = await sb
+        .from('companies')
+        .select('name')
+        .eq('id', input.company_id)
+        .single();
+
+      await sb.from('apollo_credit_usage').insert({
+        company_id: input.company_id,
+        company_name: companyData?.name || null,
+        organization_id: input.organization_id,
+        modes: input.modes,
+        estimated_credits: estimate.total,
+        actual_credits: actualCreditsConsumed,
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      });
+    } catch (auditErr: any) {
+      console.warn('[enrich-apollo] Erro ao registrar uso:', auditErr.message);
+    }
+
+    console.log('[enrich-apollo] Concluído com sucesso. Créditos consumidos:', actualCreditsConsumed);
     return J(out, 202, c);
 
   } catch (e: any) {
@@ -879,4 +967,60 @@ async function apolloSearchOrganizations(name: string, domain: string, apiKey: s
     console.error('[Apollo] Exceção ao buscar organizações:', error);
     return { organizations: [], pagination: { total_entries: 0 } };
   }
+}
+
+async function estimateCredits(sb: any, orgId: string, modes: Array<'company'|'people'|'similar'>): Promise<{ company: number; people: number; similar: number; total: number }> {
+  let company = 0;
+  let people = 0;
+  let similar = 0;
+
+  if (modes.includes('company')) {
+    company = 1;
+  }
+
+  if (modes.includes('people')) {
+    const { count } = await sb
+      .from('company_people')
+      .select('*', { count: 'exact', head: true })
+      .eq('apollo_organization_id', orgId);
+    
+    people = count || 20;
+  }
+
+  if (modes.includes('similar')) {
+    similar = 0;
+  }
+
+  return { company, people, similar, total: company + people + similar };
+}
+
+async function checkCreditsAvailable(sb: any, estimatedCredits: number): Promise<{ ok: boolean; available: number; message?: string }> {
+  const { data: config, error } = await sb
+    .from('apollo_credit_config')
+    .select('total_credits, used_credits, reset_date, alert_threshold, block_threshold')
+    .single();
+
+  if (error || !config) {
+    return { ok: false, available: 0, message: 'Configuração de créditos não encontrada' };
+  }
+
+  const available = config.total_credits - config.used_credits;
+
+  if (available < estimatedCredits) {
+    return {
+      ok: false,
+      available,
+      message: `❌ Créditos insuficientes. Disponível: ${available}, Necessário: ${estimatedCredits}. Renovação: ${new Date(config.reset_date).toLocaleDateString('pt-BR')}`
+    };
+  }
+
+  if (available < config.alert_threshold) {
+    return {
+      ok: true,
+      available,
+      message: `⚠️ Atenção: restam apenas ${available} créditos. Renovação: ${new Date(config.reset_date).toLocaleDateString('pt-BR')}`
+    };
+  }
+
+  return { ok: true, available };
 }

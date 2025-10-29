@@ -4,7 +4,24 @@ import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type OrgResult = {
   id: string;
@@ -24,6 +41,7 @@ type OrgResult = {
   founded_year?: number | null;
   description?: string | null;
 };
+
 interface UpdateNowButtonProps {
   companyId: string;
   companyName: string;
@@ -32,10 +50,6 @@ interface UpdateNowButtonProps {
   onSuccess?: () => void;
 }
 
-/**
- * CICLO 3: Botão "Atualizar agora" para re-enriquecimento on-demand
- * Coleta 100% dos campos + Decisores com paginação completa
- */
 export function UpdateNowButton({
   companyId,
   companyName,
@@ -45,8 +59,12 @@ export function UpdateNowButton({
 }: UpdateNowButtonProps) {
   const [updating, setUpdating] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [orgResults, setOrgResults] = useState<OrgResult[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(null);
+  const [estimate, setEstimate] = useState<any>(null);
+  const [creditsAvailable, setCreditsAvailable] = useState<number>(0);
+
   const invokeEnrichApollo = async (payload: any) => {
     const { data, error } = await supabase.functions.invoke('enrich-apollo', {
       body: payload,
@@ -58,24 +76,24 @@ export function UpdateNowButton({
   const handleUpdate = async () => {
     setUpdating(true);
     try {
-      // Se já tem apollo_organization_id, fazer enriquecimento completo
+      // Se já tem apollo_organization_id, fazer estimativa primeiro
       if (apolloOrganizationId) {
-        console.log('[UpdateNow] 🔄 Atualizando com Apollo Org ID:', apolloOrganizationId);
+        console.log('[UpdateNow] 🔄 Estimando créditos para:', apolloOrganizationId);
         
-        const data = await invokeEnrichApollo({
+        const dryRunData = await invokeEnrichApollo({
           organization_id: apolloOrganizationId,
           company_id: companyId,
           modes: ['company', 'people', 'similar'],
-          force: true
+          dry_run: true
         });
 
-        const peopleCount = data?.peopleLinked || 0;
-        const fieldsCount = data?.companyFieldsCount || data?.companyFields?.length || 0;
-        const similarsCount = data?.similarLinked || 0;
+        setEstimate(dryRunData.estimate);
+        setCreditsAvailable(dryRunData.creditsAvailable || 0);
+        setConfirmOpen(true);
 
-        toast.success(`✅ Dados atualizados com sucesso!`, {
-          description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares`
-        });
+        if (dryRunData.creditWarning) {
+          toast.warning(dryRunData.creditWarning);
+        }
       } else {
         // Se não tem apollo_organization_id, fazer busca/resolução inicial
         console.log('[UpdateNow] 🔍 Buscando empresa no Apollo:', companyName);
@@ -106,6 +124,63 @@ export function UpdateNowButton({
           });
         }
       }
+    } catch (error: any) {
+      console.error('[UpdateNow] ❌ Erro:', error);
+      if (error instanceof FunctionsHttpError) {
+        try {
+          // @ts-ignore
+          const detail = await (error as any)?.context?.response?.json();
+          
+          if (detail?.error === 'insufficient_credits') {
+            toast.error('❌ Créditos insuficientes', { 
+              description: detail.hint || 'Faça upgrade do plano Apollo para continuar.' 
+            });
+          } else {
+            toast.error('Erro ao atualizar dados da empresa', { 
+              description: detail?.error || detail?.message || 'Falha na função' 
+            });
+          }
+        } catch {
+          toast.error('Erro ao atualizar dados da empresa', { description: 'Falha na função' });
+        }
+      } else {
+        toast.error('Erro ao atualizar dados da empresa', {
+          description: error.message || 'Tente novamente mais tarde'
+        });
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!apolloOrganizationId) return;
+    
+    setConfirmOpen(false);
+    setUpdating(true);
+    
+    try {
+      console.log('[UpdateNow] ✅ Executando enriquecimento:', apolloOrganizationId);
+      
+      const data = await invokeEnrichApollo({
+        organization_id: apolloOrganizationId,
+        company_id: companyId,
+        modes: ['company', 'people', 'similar'],
+        force: true
+      });
+
+      const peopleCount = data?.peopleLinked || 0;
+      const fieldsCount = data?.companyFieldsCount || data?.companyFields?.length || 0;
+      const similarsCount = data?.similarLinked || 0;
+      const creditsUsed = data?.actualCreditsConsumed || 0;
+
+      toast.success(`✅ Dados atualizados com sucesso!`, {
+        description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares · ${creditsUsed} créditos`
+      });
+
+      if (data?.creditWarning) {
+        toast.warning(data.creditWarning);
+      }
 
       onSuccess?.();
     } catch (error: any) {
@@ -114,7 +189,16 @@ export function UpdateNowButton({
         try {
           // @ts-ignore
           const detail = await (error as any)?.context?.response?.json();
-          toast.error('Erro ao atualizar dados da empresa', { description: detail?.error || detail?.message || 'Falha na função' });
+          
+          if (detail?.error === 'insufficient_credits') {
+            toast.error('❌ Créditos insuficientes', { 
+              description: detail.hint || 'Faça upgrade do plano Apollo para continuar.' 
+            });
+          } else {
+            toast.error('Erro ao atualizar dados da empresa', { 
+              description: detail?.error || detail?.message || 'Falha na função' 
+            });
+          }
         } catch {
           toast.error('Erro ao atualizar dados da empresa', { description: 'Falha na função' });
         }
@@ -155,10 +239,15 @@ export function UpdateNowButton({
       const peopleCount = enriched?.peopleLinked || 0;
       const fieldsCount = enriched?.companyFieldsCount || enriched?.companyFields?.length || 0;
       const similarsCount = enriched?.similarLinked || 0;
+      const creditsUsed = enriched?.actualCreditsConsumed || 0;
 
       toast.success('✅ Dados atualizados com sucesso!', {
-        description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares`
+        description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares · ${creditsUsed} créditos`
       });
+
+      if (enriched?.creditWarning) {
+        toast.warning(enriched.creditWarning);
+      }
 
       setAssignOpen(false);
       setSelectedOrg(null);
@@ -196,13 +285,57 @@ export function UpdateNowButton({
       >
         <RefreshCw className={`h-4 w-4 ${updating ? 'animate-spin' : ''}`} />
         {updating 
-          ? 'Atualizando...' 
+          ? 'Processando...' 
           : apolloOrganizationId 
             ? 'Atualizar agora' 
             : 'Enriquecer Apollo'
         }
       </Button>
 
+      {/* Modal de Confirmação com Estimativa */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Atualização</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta operação consumirá aproximadamente:
+              <div className="mt-4 space-y-2 p-4 bg-muted rounded-md">
+                <div className="flex justify-between">
+                  <span>🏢 Company:</span>
+                  <strong>{estimate?.company || 0} crédito(s)</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>👥 People:</span>
+                  <strong>{estimate?.people || 0} crédito(s)</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>🔗 Similar:</span>
+                  <strong>{estimate?.similar || 0} crédito(s)</strong>
+                </div>
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="font-semibold">Total:</span>
+                  <strong className="text-lg">{estimate?.total || 0} crédito(s)</strong>
+                </div>
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Créditos disponíveis:</span>
+                  <span className="text-sm font-medium">{creditsAvailable}</span>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Deseja continuar?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUpdate}>
+              Confirmar e Atualizar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de Seleção de Organização */}
       <Dialog open={assignOpen} onOpenChange={(open) => { setAssignOpen(open); if (!open) setSelectedOrg(null); }}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
