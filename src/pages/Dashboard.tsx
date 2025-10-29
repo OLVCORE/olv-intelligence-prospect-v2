@@ -50,6 +50,11 @@ import {
   Layers,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import FinancialOverview from "@/components/dashboard/FinancialOverview";
+import ApolloCreditPanel from "@/components/dashboard/ApolloCreditPanel";
+import APIManagementGrid from "@/components/dashboard/APIManagementGrid";
+import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
+
 
 const CHART_COLORS = {
   primary: 'hsl(var(--chart-1))',
@@ -178,12 +183,24 @@ export default function Dashboard() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Financial Overview - New */}
+            <FinancialOverview />
+
+            {/* Apollo Credits + Alerts */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <ApolloCreditPanel />
+              <RealTimeAlerts />
+            </div>
+
+            {/* APIs Grid */}
+            <APIManagementGrid />
+
             {/* Monitoring Row */}
             <div className="grid gap-6 md:grid-cols-2">
               <EnrichmentMonitor />
               <SystemHealthPanel />
             </div>
-            
+
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Chart grande - 2 colunas */}
               <div className="lg:col-span-2">
