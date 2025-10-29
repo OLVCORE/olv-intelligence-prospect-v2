@@ -32,13 +32,15 @@ import {
   MapPin,
   Crosshair,
   Search,
-  Users
+  Users,
+  History
 } from 'lucide-react';
 import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
 import { useDisplacementOpportunities } from '@/hooks/useDisplacementOpportunities';
 import { MonitoringStatusIndicator } from '@/components/MonitoringStatusIndicator';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useBrazilRegions, useBrazilStates } from '@/hooks/useBrazilGeography';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -73,7 +75,7 @@ export default function SalesIntelligenceFeed() {
   const companyIdFromUrl = searchParams.get('company');
   
   const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(companyIdFromUrl || undefined, {
-    status: 'new',
+    status: selectedStatus === 'all' ? undefined : (selectedStatus as SignalStatus),
     priority: selectedPriority,
     limit: 50,
   });
@@ -95,7 +97,7 @@ export default function SalesIntelligenceFeed() {
       
       const { data } = await supabase
         .from('companies')
-        .select('id, name, domain, headquarters_state, employees')
+        .select('id, name, domain, headquarters_state, industry, employees')
         .in('id', companyIds);
       
       return (data || []).reduce((acc, company) => {
@@ -106,16 +108,43 @@ export default function SalesIntelligenceFeed() {
     enabled: companyIds.length > 0,
   });
 
-  // Filtrar sinais por busca de empresa
+  // Opções de indústria derivadas dos sinais carregados
+  const industryOptions = useMemo(() => {
+    const all = Object.values(companiesMap) as any[];
+    const set = new Set<string>();
+    all.forEach((c) => c?.industry && set.add(c.industry));
+    return Array.from(set).sort();
+  }, [companiesMap]);
+
+  // Filtrar sinais por busca + filtros de status (na query), geografia e setor
   const filteredSignals = useMemo(() => {
-    if (!searchTerm) return signals;
     return signals.filter(signal => {
       const company = companiesMap[signal.company_id];
       if (!company) return false;
-      return company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             company.domain?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Busca por empresa/domínio
+      if (searchTerm) {
+        const match = company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      company.domain?.toLowerCase().includes(searchTerm.toLowerCase());
+        if (!match) return false;
+      }
+
+      // Filtro por estado/região
+      if (selectedState) {
+        if (company.headquarters_state !== selectedState) return false;
+      } else if (selectedRegion) {
+        const statesInRegion = regionStateMap[selectedRegion] || [];
+        if (!statesInRegion.includes(company.headquarters_state)) return false;
+      }
+
+      // Filtro por setor/indústria
+      if (selectedIndustry) {
+        if (company.industry !== selectedIndustry) return false;
+      }
+
+      return true;
     });
-  }, [signals, searchTerm, companiesMap]);
+  }, [signals, companiesMap, searchTerm, selectedRegion, selectedState, selectedIndustry]);
 
   const updateStatus = useUpdateSignalStatus();
 
@@ -134,6 +163,32 @@ export default function SalesIntelligenceFeed() {
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Empresa
             </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filtros & Histórico
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 z-50 bg-popover">
+                <DropdownMenuLabel>Navegação Rápida</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setSelectedStatus('all')}>
+                  <History className="h-4 w-4 mr-2" /> Ver Todos (Histórico)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSelectedStatus('new')}>
+                  <Zap className="h-4 w-4 mr-2" /> Apenas Novos
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/sales-intelligence/config')}>
+                  <Settings className="h-4 w-4 mr-2" /> Configuração
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/sales-intelligence/companies')}>
+                  <Building2 className="h-4 w-4 mr-2" /> Empresas Monitoradas
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button onClick={() => setShowNewMonitoring(true)}>
               <Plus className="w-4 w-4 mr-2" />
               Novo Monitoramento
@@ -216,26 +271,107 @@ export default function SalesIntelligenceFeed() {
           {/* Filtros de busca */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por empresa..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por empresa..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  {companyIdFromUrl && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchParams({});
+                        setSearchTerm('');
+                      }}
+                    >
+                      Limpar Filtro
+                    </Button>
+                  )}
                 </div>
-                {companyIdFromUrl && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchParams({});
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Status</label>
+                    <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as any)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="new">Novos</SelectItem>
+                        <SelectItem value="in_progress">Em Progresso</SelectItem>
+                        <SelectItem value="contacted">Contatados</SelectItem>
+                        <SelectItem value="ignored">Ignorados</SelectItem>
+                        <SelectItem value="closed">Fechados</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-muted-foreground">Região</label>
+                    <Select value={selectedRegion} onValueChange={(v) => { setSelectedRegion(v); setSelectedState(''); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todas</SelectItem>
+                        {regions.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-muted-foreground">Estado</label>
+                    <Select value={selectedState} onValueChange={(v) => setSelectedState(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        {(selectedRegion ? brazilStates.filter(s => (regionStateMap[selectedRegion]||[]).includes(s.state_code)) : brazilStates)
+                          .map((s) => (
+                            <SelectItem key={s.state_code} value={s.state_code}>{s.state_code}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-muted-foreground">Setor</label>
+                    <Select value={selectedIndustry} onValueChange={(v) => setSelectedIndustry(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        {industryOptions.map((i) => (
+                          <SelectItem key={i} value={i}>{i}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {(selectedRegion || selectedState || selectedIndustry || selectedStatus !== 'new' || searchTerm) && (
+                  <div className="flex justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setSelectedStatus('new');
+                      setSelectedRegion('');
+                      setSelectedState('');
+                      setSelectedIndustry('');
                       setSearchTerm('');
-                    }}
-                  >
-                    Limpar Filtro
-                  </Button>
+                    }}>
+                      Limpar filtros
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
