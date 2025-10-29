@@ -48,6 +48,7 @@ const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
 const PlaybooksPage = lazy(() => import("./pages/PlaybooksPage"));
 const CompanyDetailPage = lazy(() => import("./pages/CompanyDetailPage"));
+const DocumentationPage = lazy(() => import("./pages/DocumentationPage"));
 const CanvasPage = lazy(() => import("./pages/CanvasPage"));
 const ConsultoriaOLVPage = lazy(() => import("./pages/ConsultoriaOLVPage"));
 const CanvasListPage = lazy(() => import("./pages/CanvasListPage"));
@@ -647,6 +648,14 @@ const App = () => (
                   <AppLayout>
                     <Analytics />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/documentation"
+              element={
+                <ProtectedRoute>
+                  <DocumentationPage />
                 </ProtectedRoute>
               }
             />

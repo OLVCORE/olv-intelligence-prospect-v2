@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { ExplainabilityButton } from "@/components/common/ExplainabilityButton";
+import { AdminDataCleanupDialog } from "@/components/admin/AdminDataCleanupDialog";
 
 export default function GovernancePage() {
   const { toast } = useToast();
@@ -129,6 +130,7 @@ export default function GovernancePage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <AdminDataCleanupDialog />
           <Button
             onClick={() => {
               setSelectMode('single');

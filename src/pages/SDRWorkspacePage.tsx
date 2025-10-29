@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Activity, Inbox, CheckSquare, Zap, BarChart3,
-  Phone, Mail, MessageSquare, Users, TrendingUp, AlertCircle, Clock, Bell
+  Phone, Mail, MessageSquare, Users, TrendingUp, AlertCircle, Clock, Bell, BookOpen
 } from 'lucide-react';
 import { EnhancedKanbanBoard } from '@/components/sdr/EnhancedKanbanBoard';
 import { WorkspaceInboxMini } from '@/components/sdr/WorkspaceInboxMini';
@@ -52,6 +52,15 @@ export default function SDRWorkspacePage() {
             <p className="text-muted-foreground">Centro de comando de vendas unificado</p>
           </div>
           <div className="flex gap-2 items-center">
+            <Link to="/documentation">
+              <Button 
+                variant="outline" 
+                className="gap-2 animate-pulse border-primary/50 hover:border-primary"
+              >
+                <BookOpen className="h-4 w-4" />
+                Manual do SDR
+              </Button>
+            </Link>
             {urgentAutomations.length > 0 && (
               <Badge variant="destructive" className="gap-1">
                 <Bell className="h-3 w-3" />

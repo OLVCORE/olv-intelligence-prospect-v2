@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, Users, MessageSquare, CheckCircle2, 
-  Clock, Target, Zap, AlertCircle, Calendar, BarChart3, Building2, ExternalLink
+  Clock, Target, Zap, AlertCircle, Calendar, BarChart3, Building2, ExternalLink, BookOpen
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useSDRMetrics } from '@/hooks/useSDRMetrics';
 import { useSDRActivities } from '@/hooks/useSDRActivities';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function SDRDashboardPage() {
   const navigate = useNavigate();
@@ -68,6 +68,15 @@ export default function SDRDashboardPage() {
             <p className="text-muted-foreground">Visão completa da operação comercial</p>
           </div>
           <div className="flex gap-2">
+            <Link to="/documentation">
+              <Button 
+                variant="outline" 
+                className="gap-2 animate-pulse border-primary/50 hover:border-primary"
+              >
+                <BookOpen className="h-4 w-4" />
+                Manual do SDR
+              </Button>
+            </Link>
             <Badge variant="outline" className="text-sm">
               <Clock className="h-3 w-3 mr-1" />
               Atualizado agora
