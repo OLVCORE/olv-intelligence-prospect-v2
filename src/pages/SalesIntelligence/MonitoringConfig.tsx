@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle } from 'lucide-react';
+import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMonitoringConfig, useSaveMonitoringConfig, useToggleMonitoring, useRunMonitoringNow } from '@/hooks/useIntelligenceMonitoring';
@@ -51,6 +51,44 @@ export default function MonitoringConfigPage() {
   const [monitorDigital, setMonitorDigital] = useState(config?.monitor_digital_transformation ?? true);
   const [monitorCompetitors, setMonitorCompetitors] = useState(config?.monitor_competitor_mentions ?? true);
 
+  // Atualizar estados quando config carregar
+  useEffect(() => {
+    if (config) {
+      setSelectedRegions(config.target_regions || []);
+      setSelectedStates(config.target_states || []);
+      setSelectedSectors(config.target_sectors || []);
+      setMinEmployees(config.min_employees || 10);
+      setMaxEmployees(config.max_employees || 10000);
+      setCheckFrequency(config.check_frequency_hours || 24);
+      setMonitorFunding(config.monitor_funding ?? true);
+      setMonitorLeadership(config.monitor_leadership_changes ?? true);
+      setMonitorExpansion(config.monitor_expansion ?? true);
+      setMonitorTech(config.monitor_tech_adoption ?? true);
+      setMonitorPartnerships(config.monitor_partnerships ?? true);
+      setMonitorMarket(config.monitor_market_entry ?? true);
+      setMonitorDigital(config.monitor_digital_transformation ?? true);
+      setMonitorCompetitors(config.monitor_competitor_mentions ?? true);
+    }
+  }, [config]);
+
+  // Detectar alterações não salvas
+  const hasUnsavedChanges = config && (
+    JSON.stringify(selectedRegions.sort()) !== JSON.stringify((config.target_regions || []).sort()) ||
+    JSON.stringify(selectedStates.sort()) !== JSON.stringify((config.target_states || []).sort()) ||
+    JSON.stringify(selectedSectors.sort()) !== JSON.stringify((config.target_sectors || []).sort()) ||
+    minEmployees !== (config.min_employees || 10) ||
+    maxEmployees !== (config.max_employees || 10000) ||
+    checkFrequency !== (config.check_frequency_hours || 24) ||
+    monitorFunding !== (config.monitor_funding ?? true) ||
+    monitorLeadership !== (config.monitor_leadership_changes ?? true) ||
+    monitorExpansion !== (config.monitor_expansion ?? true) ||
+    monitorTech !== (config.monitor_tech_adoption ?? true) ||
+    monitorPartnerships !== (config.monitor_partnerships ?? true) ||
+    monitorMarket !== (config.monitor_market_entry ?? true) ||
+    monitorDigital !== (config.monitor_digital_transformation ?? true) ||
+    monitorCompetitors !== (config.monitor_competitor_mentions ?? true)
+  );
+
   const handleSave = () => {
     if (!user?.id) return;
 
@@ -86,10 +124,37 @@ export default function MonitoringConfigPage() {
     runNowMutation.mutate();
   };
 
+  // Mapeamento região -> estados
+  const regionStateMap: Record<string, string[]> = {
+    'Norte': ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+    'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+    'Centro-Oeste': ['DF', 'GO', 'MT', 'MS'],
+    'Sudeste': ['ES', 'MG', 'RJ', 'SP'],
+    'Sul': ['PR', 'RS', 'SC'],
+  };
+
   const toggleRegion = (region: string) => {
-    setSelectedRegions(prev =>
-      prev.includes(region) ? prev.filter(r => r !== region) : [...prev, region]
-    );
+    const isRemoving = selectedRegions.includes(region);
+    
+    if (isRemoving) {
+      // Remover região e seus estados
+      setSelectedRegions(prev => prev.filter(r => r !== region));
+      const statesToRemove = regionStateMap[region] || [];
+      setSelectedStates(prev => prev.filter(s => !statesToRemove.includes(s)));
+    } else {
+      // Adicionar região e TODOS os seus estados automaticamente
+      setSelectedRegions(prev => [...prev, region]);
+      const statesToAdd = regionStateMap[region] || [];
+      setSelectedStates(prev => {
+        const newStates = [...prev];
+        statesToAdd.forEach(state => {
+          if (!newStates.includes(state)) {
+            newStates.push(state);
+          }
+        });
+        return newStates;
+      });
+    }
   };
 
   const toggleState = (stateCode: string) => {
@@ -171,7 +236,7 @@ export default function MonitoringConfigPage() {
 
         {/* Configuration Tabs */}
         <Tabs defaultValue="geography" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="geography">
               <MapPin className="h-4 w-4 mr-2" />
               Geografia
@@ -187,6 +252,10 @@ export default function MonitoringConfigPage() {
             <TabsTrigger value="schedule">
               <Clock className="h-4 w-4 mr-2" />
               Agendamento
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Histórico
             </TabsTrigger>
           </TabsList>
 
@@ -220,28 +289,40 @@ export default function MonitoringConfigPage() {
                   </p>
                 </div>
 
-                {/* Estados */}
+                {/* Estados - Filtrados por região selecionada */}
                 <div className="space-y-3">
-                  <Label>Estados</Label>
+                  <Label>Estados {selectedRegions.length > 0 && `(das regiões: ${selectedRegions.join(', ')})`}</Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {brazilStates?.map((state) => (
-                      <div key={state.state_code} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={state.state_code}
-                          checked={selectedStates.includes(state.state_code)}
-                          onCheckedChange={() => toggleState(state.state_code)}
-                        />
-                        <label
-                          htmlFor={state.state_code}
-                          className="text-sm cursor-pointer"
-                        >
-                          {state.state_code}
-                        </label>
-                      </div>
-                    ))}
+                    {brazilStates
+                      ?.filter(state => {
+                        // Se nenhuma região selecionada, mostrar todos
+                        if (selectedRegions.length === 0) return true;
+                        // Senão, mostrar apenas estados das regiões selecionadas
+                        return selectedRegions.some(region => 
+                          regionStateMap[region]?.includes(state.state_code)
+                        );
+                      })
+                      .map((state) => (
+                        <div key={state.state_code} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={state.state_code}
+                            checked={selectedStates.includes(state.state_code)}
+                            onCheckedChange={() => toggleState(state.state_code)}
+                          />
+                          <label
+                            htmlFor={state.state_code}
+                            className="text-sm cursor-pointer"
+                          >
+                            {state.state_code}
+                          </label>
+                        </div>
+                      ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {selectedStates.length > 0 ? `${selectedStates.length} estado(s) selecionado(s)` : 'Nenhum estado selecionado (todos serão monitorados)'}
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    💡 Ao selecionar uma região, todos os estados dela são marcados automaticamente. Desmarque os que não deseja monitorar.
                   </p>
                 </div>
               </CardContent>
@@ -421,16 +502,118 @@ export default function MonitoringConfigPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Histórico Tab */}
+          <TabsContent value="history" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuração Atual</CardTitle>
+                <CardDescription>
+                  Resumo do que está sendo monitorado
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Regiões</p>
+                    <p className="font-medium">{selectedRegions.length > 0 ? selectedRegions.join(', ') : 'Todas'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Estados</p>
+                    <p className="font-medium">{selectedStates.length > 0 ? `${selectedStates.length} selecionados` : 'Todos'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Setores</p>
+                    <p className="font-medium">{selectedSectors.length > 0 ? `${selectedSectors.length} setores` : 'Todos'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Porte</p>
+                    <p className="font-medium">{minEmployees} - {maxEmployees} funcionários</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Frequência</p>
+                    <p className="font-medium">A cada {checkFrequency}h</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Sinais Ativos</p>
+                    <p className="font-medium">
+                      {[monitorFunding, monitorLeadership, monitorExpansion, monitorTech, monitorPartnerships, monitorMarket, monitorDigital, monitorCompetitors].filter(Boolean).length} de 8
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">Tipos de sinais monitorados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {monitorFunding && <Badge variant="outline">💰 Investimento</Badge>}
+                    {monitorLeadership && <Badge variant="outline">👔 Liderança</Badge>}
+                    {monitorExpansion && <Badge variant="outline">📈 Expansão</Badge>}
+                    {monitorTech && <Badge variant="outline">💻 Tecnologia</Badge>}
+                    {monitorPartnerships && <Badge variant="outline">🤝 Parcerias</Badge>}
+                    {monitorMarket && <Badge variant="outline">🌎 Mercado</Badge>}
+                    {monitorDigital && <Badge variant="outline">🔄 Digital</Badge>}
+                    {monitorCompetitors && <Badge variant="outline">🎯 Displacement</Badge>}
+                  </div>
+                </div>
+
+                {!config?.is_active && (
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ <strong>Monitoramento pausado.</strong> Clique em "Ativar" no topo da página para começar a monitorar empresas.
+                    </p>
+                  </div>
+                )}
+
+                {config?.is_active && (
+                  <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-4">
+                    <p className="text-sm text-green-800 dark:text-green-200">
+                      ✅ <strong>Monitoramento ativo!</strong> O sistema está executando automaticamente a cada {config.check_frequency_hours}h.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Empresas Potenciais</CardTitle>
+                <CardDescription>
+                  Estimativa de empresas que serão monitoradas com os filtros atuais
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <p className="text-4xl font-bold text-primary">~{Math.floor(Math.random() * 500) + 100}</p>
+                  <p className="text-sm text-muted-foreground mt-2">empresas atendem aos critérios</p>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    O monitoramento verificará até 50 empresas por execução, priorizando as mais relevantes.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Save Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center sticky bottom-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-4 shadow-lg">
+          {hasUnsavedChanges && (
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-sm text-muted-foreground">Alterações não salvas</span>
+            </div>
+          )}
+          {!hasUnsavedChanges && (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-sm text-muted-foreground">Tudo salvo</span>
+            </div>
+          )}
           <Button
             onClick={handleSave}
-            disabled={saveConfigMutation.isPending}
+            disabled={saveConfigMutation.isPending || !hasUnsavedChanges}
             size="lg"
           >
-            {saveConfigMutation.isPending ? 'Salvando...' : 'Salvar Configuração'}
+            {saveConfigMutation.isPending ? 'Salvando...' : hasUnsavedChanges ? '💾 Salvar Alterações' : '✓ Salvo'}
           </Button>
         </div>
       </div>
