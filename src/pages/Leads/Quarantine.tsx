@@ -349,7 +349,7 @@ export default function LeadsQuarantine() {
                 {lead.validation_status === 'approved' && (
                   <Button
                     size="sm"
-                    onClick={() => navigate(`/central-icp/individual?leadId=${lead.id}`)}
+                    onClick={() => navigate(`/leads/icp-analysis?leadId=${lead.id}`)}
                   >
                     <ArrowRight className="w-4 h-4 mr-1" />
                     Qualificar ICP
