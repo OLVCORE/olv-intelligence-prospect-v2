@@ -12,6 +12,8 @@ import {
   Newspaper,
   Briefcase 
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useDecisionMakers } from "@/hooks/useDecisionMakers";
 
 interface CompanyEnrichmentTabsProps {
   companyId: string;
@@ -34,47 +36,65 @@ export function CompanyEnrichmentTabs({
   news = [],
   jobPostings = [],
 }: CompanyEnrichmentTabsProps) {
+  const { data: decisionMakers } = useDecisionMakers(companyId);
+  const peopleCount = decisionMakers?.length ?? 0;
+  const similarCount = similarCompanies?.length ?? 0;
+  const techCount = technologiesFull?.length ?? 0;
+  const insightsCount = companyInsights ? (Array.isArray(companyInsights) ? companyInsights.length : Object.keys(companyInsights).length) : 0;
+  const trendsCount = employeeTrends ? (Array.isArray(employeeTrends) ? employeeTrends.length : Object.keys(employeeTrends).length) : 0;
+  const visitorsCount = websiteVisitors ? (Array.isArray(websiteVisitors) ? websiteVisitors.length : Object.keys(websiteVisitors).length) : 0;
+  const newsCount = news?.length ?? 0;
+  const jobsCount = jobPostings?.length ?? 0;
+
   return (
     <Tabs defaultValue="people" className="w-full">
       <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
         <TabsTrigger value="people" className="gap-2">
           <Users className="h-4 w-4" />
           <span className="hidden sm:inline">People</span>
+          <Badge variant="secondary" className="ml-1">{peopleCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="similar" className="gap-2">
           <Building2 className="h-4 w-4" />
           <span className="hidden sm:inline">Similares</span>
+          <Badge variant="secondary" className="ml-1">{similarCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="technologies" className="gap-2">
           <Cpu className="h-4 w-4" />
           <span className="hidden sm:inline">Tech Stack</span>
+          <Badge variant="secondary" className="ml-1">{techCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="insights" className="gap-2">
           <Lightbulb className="h-4 w-4" />
           <span className="hidden sm:inline">Insights</span>
+          <Badge variant="secondary" className="ml-1">{insightsCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="trends" className="gap-2">
           <TrendingUp className="h-4 w-4" />
           <span className="hidden sm:inline">Tendências</span>
+          <Badge variant="secondary" className="ml-1">{trendsCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="visitors" className="gap-2">
           <Globe className="h-4 w-4" />
           <span className="hidden sm:inline">Visitantes</span>
+          <Badge variant="secondary" className="ml-1">{visitorsCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="news" className="gap-2">
           <Newspaper className="h-4 w-4" />
           <span className="hidden sm:inline">News</span>
+          <Badge variant="secondary" className="ml-1">{newsCount}</Badge>
         </TabsTrigger>
         
         <TabsTrigger value="jobs" className="gap-2">
           <Briefcase className="h-4 w-4" />
           <span className="hidden sm:inline">Vagas</span>
+          <Badge variant="secondary" className="ml-1">{jobsCount}</Badge>
         </TabsTrigger>
       </TabsList>
 
