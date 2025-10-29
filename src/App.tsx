@@ -394,6 +394,24 @@ const App = () => (
               }
             />
             <Route
+              path="/sdr/pipeline"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Pipeline />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contacts"
+              element={
+                <ProtectedRoute>
+                  <SDRInboxPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/settings"
               element={
                 <ProtectedRoute>
