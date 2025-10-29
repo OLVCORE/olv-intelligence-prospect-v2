@@ -5,7 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { X, Plus, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,13 +25,14 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
     sector: '',
     niche: '',
     custom_niche: '',
-    state: '',
+    states: [] as string[],
     city: '',
     keywords: [] as string[],
     min_employees: '',
     max_employees: ''
   });
   const [keywordInput, setKeywordInput] = useState('');
+  const [statesPopoverOpen, setStatesPopoverOpen] = useState(false);
 
   const sectors = [
     { value: 'agro', label: 'Agro' },
@@ -60,6 +65,53 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
     'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
   ];
 
+  const regionsByState: Record<string, string[]> = {
+    'Norte': ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'],
+    'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+    'Centro-Oeste': ['DF', 'GO', 'MS', 'MT'],
+    'Sudeste': ['ES', 'MG', 'RJ', 'SP'],
+    'Sul': ['PR', 'RS', 'SC']
+  };
+
+  const handleToggleState = (state: string) => {
+    setFormData(prev => ({
+      ...prev,
+      states: prev.states.includes(state)
+        ? prev.states.filter(s => s !== state)
+        : [...prev.states, state]
+    }));
+  };
+
+  const handleToggleRegion = (region: string) => {
+    const regionStates = regionsByState[region];
+    const allSelected = regionStates.every(state => formData.states.includes(state));
+    
+    setFormData(prev => ({
+      ...prev,
+      states: allSelected
+        ? prev.states.filter(s => !regionStates.includes(s))
+        : [...new Set([...prev.states, ...regionStates])]
+    }));
+  };
+
+  const handleToggleAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      states: prev.states.length === brazilStates.length ? [] : [...brazilStates]
+    }));
+  };
+
+  const isRegionSelected = (region: string) => {
+    const regionStates = regionsByState[region];
+    return regionStates.every(state => formData.states.includes(state));
+  };
+
+  const isRegionPartiallySelected = (region: string) => {
+    const regionStates = regionsByState[region];
+    const selectedCount = regionStates.filter(state => formData.states.includes(state)).length;
+    return selectedCount > 0 && selectedCount < regionStates.length;
+  };
+
   const handleAddKeyword = () => {
     const keyword = keywordInput.trim();
     if (keyword && !formData.keywords.includes(keyword)) {
@@ -88,7 +140,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
         .insert({
           user_id: user.id,
           schedule_name: formData.name,
-          target_states: [formData.state],
+          target_states: formData.states,
           target_cities: formData.city ? [formData.city] : null,
           target_sectors: [formData.sector],
           target_niches: [formData.niche],
@@ -114,7 +166,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
         sector: '',
         niche: '',
         custom_niche: '',
-        state: '',
+        states: [],
         city: '',
         keywords: [],
         min_employees: '',
@@ -204,20 +256,96 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Estado *</Label>
-              <Select
-                value={formData.state}
-                onValueChange={(value) => setFormData({ ...formData, state: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brazilStates.map(state => (
-                    <SelectItem key={state} value={state}>{state}</SelectItem>
+              <Label>Estado(s) *</Label>
+              <Popover open={statesPopoverOpen} onOpenChange={setStatesPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                  >
+                    {formData.states.length === 0
+                      ? "Selecione estado(s)"
+                      : formData.states.length === brazilStates.length
+                      ? "Todos os estados"
+                      : `${formData.states.length} estado(s) selecionado(s)`}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <ScrollArea className="h-[400px]">
+                    <div className="p-4 space-y-4">
+                      {/* Todos */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="all-states"
+                          checked={formData.states.length === brazilStates.length}
+                          onCheckedChange={handleToggleAll}
+                        />
+                        <label
+                          htmlFor="all-states"
+                          className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Todos os Estados
+                        </label>
+                      </div>
+
+                      <Separator />
+
+                      {/* Regiões */}
+                      {Object.entries(regionsByState).map(([region, states]) => (
+                        <div key={region} className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`region-${region}`}
+                              checked={isRegionSelected(region)}
+                              onCheckedChange={() => handleToggleRegion(region)}
+                            />
+                            <label
+                              htmlFor={`region-${region}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {region} {isRegionPartiallySelected(region) && '(parcial)'}
+                            </label>
+                          </div>
+                          <div className="ml-6 space-y-2">
+                            {states.map(state => (
+                              <div key={state} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`state-${state}`}
+                                  checked={formData.states.includes(state)}
+                                  onCheckedChange={() => handleToggleState(state)}
+                                />
+                                <label
+                                  htmlFor={`state-${state}`}
+                                  className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {state}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+              {formData.states.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {formData.states.map(state => (
+                    <Badge
+                      key={state}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => handleToggleState(state)}
+                    >
+                      {state}
+                      <X className="w-3 h-3 ml-1" />
+                    </Badge>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
             </div>
 
             <div>
@@ -299,7 +427,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!formData.name || !formData.sector || !formData.niche || !formData.state}
+            disabled={!formData.name || !formData.sector || !formData.niche || formData.states.length === 0}
           >
             Criar Monitoramento
           </Button>
