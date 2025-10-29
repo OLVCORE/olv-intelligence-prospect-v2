@@ -1526,8 +1526,22 @@ export default function CompanyDetailPage() {
             <CardContent>
               <CompanyEnrichmentTabs
                 companyId={id!}
-                similarCompanies={company.similar_companies || []}
-                technologiesFull={company.technologies_full || []}
+                similarCompanies={(company.similar_companies && company.similar_companies.length > 0)
+                  ? company.similar_companies
+                  : ((company.raw_data?.apollo?.similar_companies || []).map((s: any) => ({
+                      name: s.name,
+                      apollo_url: `https://app.apollo.io/#/organizations/${s.id}`,
+                      apollo_id: s.id,
+                      location: (s.city && s.country) ? `${s.city}, ${s.country}` : s.country,
+                      employees: s.estimated_num_employees
+                    })))}
+                technologiesFull={(company.technologies_full && company.technologies_full.length > 0)
+                  ? company.technologies_full
+                  : (company.raw_data?.apollo?.current_technologies || []).map((t: any) => ({
+                      name: t.name,
+                      category: t.category,
+                      source: 'Apollo'
+                    }))}
                 employeeTrends={company.employee_trends}
                 websiteVisitors={company.website_visitors}
                 companyInsights={company.company_insights}
