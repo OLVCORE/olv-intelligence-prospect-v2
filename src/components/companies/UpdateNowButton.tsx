@@ -132,16 +132,24 @@ export function UpdateNowButton({
     setUpdating(true);
     try {
       console.log('[UpdateNow] ✅ Atribuindo Apollo Org e enriquecendo:', selectedOrg.id);
-      const data = await invokeEnrichApollo({
+      // 1) Atribuir organização ao registro da empresa
+      const assign = await invokeEnrichApollo({
         type: 'assign_apollo_org',
         companyId,
         apolloOrganizationId: selectedOrg.id,
         selectedOrganization: selectedOrg,
       });
 
-      const decisorsCount = data?.decisors_saved || data?.decisors_collected || 0;
-      const fieldsCount = data?.fields_enriched || 0;
-      const similarsCount = data?.similar_companies || 0;
+      // 2) Disparar enriquecimento completo (decisores, tecnologias etc.)
+      const enriched = await invokeEnrichApollo({
+        type: 'enrich_company',
+        companyId,
+        apolloOrgId: selectedOrg.id,
+      });
+
+      const decisorsCount = enriched?.people_count ?? assign?.decisors_saved ?? 0;
+      const fieldsCount = assign?.fields_enriched ?? 0;
+      const similarsCount = enriched?.similar_companies ?? 0;
 
       toast.success('✅ Dados atualizados com sucesso!', {
         description: `${decisorsCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
