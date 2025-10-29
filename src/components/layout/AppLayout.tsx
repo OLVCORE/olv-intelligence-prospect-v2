@@ -5,6 +5,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { InsightsDock } from "@/components/insights/InsightsDock";
+import { Breadcrumb } from "@/components/common/Breadcrumb";
 
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
@@ -49,6 +50,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Main Content */}
         <div className={`flex-1 flex flex-col transition-all duration-300 ${insightsOpen ? 'mr-[600px] md:mr-[700px] lg:mr-[800px]' : ''}`}>
           <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 mt-16">
+            <Breadcrumb />
             {children}
           </main>
         </div>

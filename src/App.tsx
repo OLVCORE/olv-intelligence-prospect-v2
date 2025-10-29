@@ -34,6 +34,12 @@ const AccountStrategyPage = lazy(() => import("./pages/AccountStrategyPage"));
 const StrategyHistoryPage = lazy(() => import("./pages/StrategyHistoryPage"));
 const CompetitiveIntelligencePage = lazy(() => import("./pages/CompetitiveIntelligencePage"));
 const CompanyDiscoveryPage = lazy(() => import("./pages/CompanyDiscoveryPage"));
+// Central ICP Pages
+const CentralICPHome = lazy(() => import("./pages/CentralICP/Home"));
+const IndividualAnalysis = lazy(() => import("./pages/CentralICP/IndividualAnalysis"));
+const BatchAnalysis = lazy(() => import("./pages/CentralICP/BatchAnalysis"));
+const ResultsDashboard = lazy(() => import("./pages/CentralICP/ResultsDashboard"));
+const AuditCompliance = lazy(() => import("./pages/CentralICP/AuditCompliance"));
 const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
@@ -406,6 +412,58 @@ const App = () => (
               }
             />
             {/* Rota /activities removida - atividades agora são contextuais */}
+            {/* Central ICP Routes */}
+            <Route
+              path="/central-icp"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CentralICPHome />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/central-icp/individual"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <IndividualAnalysis />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/central-icp/batch"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <BatchAnalysis />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/central-icp/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ResultsDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/central-icp/audit"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <AuditCompliance />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            {/* Keep existing Competitive Intelligence routes */}
             <Route
               path="/competitive-intelligence"
               element={

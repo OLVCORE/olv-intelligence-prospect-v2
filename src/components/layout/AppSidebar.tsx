@@ -140,22 +140,51 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Análise Competitiva",
-    icon: Shield,
+    label: "Central ICP",
+    icon: Target,
     items: [
       {
-        title: "Qualificação ICP",
-        icon: Shield,
-        url: "/competitive-intelligence",
-        competitive: true,
-        description: "Análise de empresas existentes - Detecção TOTVS e Sinais de Intenção"
+        title: "Central ICP Home",
+        icon: Target,
+        url: "/central-icp",
+        description: "Painel central de qualificação de leads ICP"
       },
       {
         title: "Descoberta de Empresas",
         icon: Search,
         url: "/company-discovery",
+        description: "Buscar e descobrir novas empresas no seu ICP ideal"
+      },
+      {
+        title: "Análise Individual",
+        icon: FileText,
+        url: "/central-icp/individual",
+        description: "Qualifique empresas uma por vez com análise detalhada"
+      },
+      {
+        title: "Análise em Massa",
+        icon: Zap,
+        url: "/central-icp/batch",
+        description: "Processe centenas de empresas automaticamente"
+      },
+      {
+        title: "Dashboard de Resultados",
+        icon: BarChart3,
+        url: "/central-icp/dashboard",
+        description: "Visualize empresas qualificadas e desqualificadas"
+      },
+      {
+        title: "Auditoria e Compliance",
+        icon: Shield,
+        url: "/central-icp/audit",
+        description: "Logs de validação e checkpoints de qualidade"
+      },
+      {
+        title: "Inteligência Competitiva",
+        icon: TrendingUp,
+        url: "/competitive-intelligence",
         competitive: true,
-        description: "Buscar e descobrir novas empresas similares"
+        description: "Battle Cards, Win-Loss Analysis e Monitoramento"
       },
     ]
   },
