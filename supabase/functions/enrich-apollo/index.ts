@@ -188,38 +188,67 @@ serve(async (req: Request) => {
 
             if (perr) {
               console.error('[enrich-apollo] Erro ao upsert people (apollo_id):', perr);
-              // Buscar pessoas existentes para fazer link
+              // Buscar pessoas existentes - pode estar duplicado por email_hash
               const apolloIds = byApollo.map(p => p.apollo_person_id).filter(Boolean);
+              const emailHashes = byApollo.map(p => p.email_hash).filter(Boolean);
+              
+              let existing: any[] = [];
+              
+              // Tentar buscar por apollo_person_id primeiro
               if (apolloIds.length > 0) {
-                const { data: existing } = await sb
+                const { data: byApolloData } = await sb
                   .from('people')
-                  .select('id, apollo_person_id')
+                  .select('id, apollo_person_id, email_hash')
                   .in('apollo_person_id', apolloIds);
+                if (byApolloData) existing = byApolloData;
+              }
+              
+              // Se não encontrou ou encontrou menos que esperado, tentar por email_hash
+              if (existing.length < byApollo.length && emailHashes.length > 0) {
+                const { data: byEmailData } = await sb
+                  .from('people')
+                  .select('id, apollo_person_id, email_hash')
+                  .in('email_hash', emailHashes);
                 
-                if (existing && existing.length > 0) {
-                  const links = existing.map(p => {
-                    const src = byApollo.find(ci => ci.apollo_person_id === p.apollo_person_id);
-                    return {
-                      company_id: input.company_id,
-                      person_id: p.id,
-                      apollo_organization_id: input.organization_id,
-                      department: src?.department || null,
-                      seniority: src?.seniority || null,
-                      location_city: src?.city || null,
-                      location_state: src?.state || null,
-                      location_country: src?.country || null,
-                      title_at_company: src?.job_title || null,
-                      is_current: true,
-                      source: 'apollo'
-                    };
-                  });
-                  
-                  const { data: lkd } = await sb
-                    .from('company_people')
-                    .upsert(links, { onConflict: 'company_id,person_id' })
-                    .select('company_id');
-                  linked += lkd?.length || 0;
+                if (byEmailData) {
+                  // Adicionar pessoas encontradas por email que ainda não estão na lista
+                  const existingIds = new Set(existing.map(p => p.id));
+                  for (const p of byEmailData) {
+                    if (!existingIds.has(p.id)) {
+                      existing.push(p);
+                    }
+                  }
                 }
+              }
+              
+              if (existing.length > 0) {
+                const links = existing.map(p => {
+                  // Buscar pessoa original por apollo_person_id ou email_hash
+                  const src = byApollo.find(ci => 
+                    ci.apollo_person_id === p.apollo_person_id || 
+                    ci.email_hash === p.email_hash
+                  );
+                  return {
+                    company_id: input.company_id,
+                    person_id: p.id,
+                    apollo_organization_id: input.organization_id,
+                    department: src?.department || null,
+                    seniority: src?.seniority || null,
+                    location_city: src?.city || null,
+                    location_state: src?.state || null,
+                    location_country: src?.country || null,
+                    title_at_company: src?.job_title || null,
+                    is_current: true,
+                    source: 'apollo'
+                  };
+                });
+                
+                const { data: lkd } = await sb
+                  .from('company_people')
+                  .upsert(links, { onConflict: 'company_id,person_id' })
+                  .select('company_id');
+                linked += lkd?.length || 0;
+                console.log('[enrich-apollo] People linkadas após erro:', lkd?.length || 0);
               }
             } else {
               upserted += pdata?.length || 0;
