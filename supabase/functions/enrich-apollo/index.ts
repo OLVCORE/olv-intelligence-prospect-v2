@@ -115,7 +115,8 @@ serve(async (req: Request) => {
       }
 
       const patch = mapApolloCompany(companyData);
-      console.log('[enrich-apollo] Atualizando empresa com', Object.keys(patch).length, 'campos');
+      console.log('[enrich-apollo] Campos a atualizar:', Object.keys(patch).length);
+      console.log('[enrich-apollo] Campos:', Object.keys(patch).join(', '));
       
       const { data: updatedData, error: uerr } = await sb
         .from('companies')
@@ -135,8 +136,9 @@ serve(async (req: Request) => {
       }
       
       out.companyUpdated = count;
+      out.companyFieldsCount = Object.keys(patch).length;
       out.companyFields = Object.keys(patch);
-      console.log('[enrich-apollo] Empresa atualizada:', count, 'linhas');
+      console.log('[enrich-apollo] Empresa atualizada:', count, 'linhas, ', Object.keys(patch).length, 'campos');
 
       // Atualizar technologies
       if (companyData.current_technologies && Array.isArray(companyData.current_technologies)) {
@@ -612,31 +614,174 @@ async function apolloFetchSimilarCompanies(orgId: string, apiKey: string): Promi
 
 // Mapeamentos
 function mapApolloCompany(a: any): Record<string, unknown> {
-  return {
+  // Mapeamento completo de +80 campos do Apollo
+  const mapped: Record<string, unknown> = {
+    // IDs e URLs
     apollo_organization_id: a?.id || null,
     linkedin_company_id: a?.linkedin_uid || null,
+    apollo_url: a?.id ? `https://app.apollo.io/#/organizations/${a.id}` : null,
+    linkedin_url: a?.linkedin_url || null,
+    
+    // Básico
+    name: a?.name || null,
     domain: a?.primary_domain || a?.domain || null,
     website: a?.website_url || null,
+    
+    // Indústria e segmento
     industry: a?.industry || null,
     sub_industry: a?.sub_industry || null,
-    employees: a?.estimated_num_employees || null,
-    employee_count_range: a?.employee_range || null,
-    founding_year: a?.founded_year || null,
+    naics_codes: a?.industry_tag_ids || [],
+    sic_codes: a?.sic_codes || [],
+    
+    // Localização
     headquarters_city: a?.city || null,
     headquarters_state: a?.state || null,
     headquarters_country: a?.country || null,
-    revenue_range: a?.revenue_range || null,
-    linkedin_url: a?.linkedin_url || null,
-    apollo_url: `https://app.apollo.io/#/organizations/${a?.id}` || null,
     location: {
       city: a?.city || null,
       state: a?.state || null,
       country: a?.country || null,
       street: a?.street_address || null,
-      postal_code: a?.postal_code || null
+      postal_code: a?.postal_code || null,
+      full_address: a?.raw_address || null
     },
-    phone_numbers: a?.phone ? [a.phone] : []
+    
+    // Tamanho
+    employees: a?.estimated_num_employees || null,
+    employee_count_from_apollo: a?.estimated_num_employees || null,
+    employee_count_range: a?.employee_range || null,
+    
+    // Receita
+    revenue: a?.annual_revenue || null,
+    revenue_range: a?.revenue_range || null,
+    revenue_range_from_apollo: a?.revenue_range || null,
+    
+    // Fundação
+    founding_year: a?.founded_year || null,
+    
+    // Contato
+    phone_numbers: a?.phone ? [a.phone] : (a?.phone_number ? [a.phone_number] : []),
+    
+    // Score e qualificação
+    account_score: a?.account_score || a?.recommendations_score || null,
+    buying_intent_score: a?.buying_intent_score || null,
+    lead_score: a?.recommendations_score || a?.account_score || 0,
+    
+    // Employee trends
+    employee_trends: a?.current_employee_estimate ? {
+      current: a.current_employee_estimate,
+      six_months_ago: a.six_month_employee_growth_rate ? 
+        Math.round(a.current_employee_estimate / (1 + a.six_month_employee_growth_rate / 100)) : null,
+      one_year_ago: a.one_year_employee_growth_rate ?
+        Math.round(a.current_employee_estimate / (1 + a.one_year_employee_growth_rate / 100)) : null,
+      two_years_ago: a.two_year_employee_growth_rate ?
+        Math.round(a.current_employee_estimate / (1 + a.two_year_employee_growth_rate / 100)) : null,
+      growth_rate_6m: a.six_month_employee_growth_rate || null,
+      growth_rate_1y: a.one_year_employee_growth_rate || null,
+      growth_rate_2y: a.two_year_employee_growth_rate || null
+    } : null,
+    
+    // Funding
+    funding_total: a?.total_funding || a?.total_funding_raised || null,
+    last_funding_round_amount: a?.latest_funding_round_amount || null,
+    last_funding_round_date: a?.latest_funding_round_date || null,
+    funding_rounds: a?.funding_events ? JSON.parse(JSON.stringify(a.funding_events)) : [],
+    investors: a?.investors || [],
+    
+    // Tecnologias
+    technologies: a?.current_technologies || a?.technologies || [],
+    technologies_full: a?.technology_names || a?.current_technologies || [],
+    
+    // Job postings
+    job_postings_count: a?.num_current_jobs || a?.total_job_postings || 0,
+    job_postings: a?.job_postings || [],
+    
+    // Social
+    social_urls: {
+      linkedin: a?.linkedin_url || null,
+      facebook: a?.facebook_url || null,
+      twitter: a?.twitter_url || null,
+      blog: a?.blog_url || null,
+      crunchbase: a?.crunchbase_url || null
+    },
+    
+    // Apollo signals
+    apollo_signals: a?.signals || [],
+    buying_intent_signals: a?.buying_intent_signals || [],
+    
+    // Company insights
+    company_insights: {
+      description: a?.organization_summary || a?.short_description || null,
+      keywords: a?.keywords || [],
+      is_public: a?.publicly_traded_symbol ? true : false,
+      stock_symbol: a?.publicly_traded_symbol || null,
+      stock_exchange: a?.publicly_traded_exchange || null,
+      alexa_ranking: a?.alexa_ranking || null,
+      total_funding: a?.total_funding || null,
+      latest_funding_stage: a?.latest_funding_stage || null
+    },
+    
+    // Metadata Apollo
+    apollo_metadata: {
+      sanitized_phone: a?.sanitized_phone || null,
+      organization_id: a?.id || null,
+      account_id: a?.account_id || null,
+      parent_account_id: a?.parent_account_id || null,
+      ultimate_parent_account_id: a?.ultimate_parent_account_id || null,
+      logo_url: a?.logo_url || null,
+      retail_location_count: a?.retail_location_count || null,
+      seo_description: a?.seo_description || null,
+      short_description: a?.short_description || null,
+      logo_url_src: a?.logo_url_src || null,
+      modality: a?.modality || null,
+      languages: a?.languages || [],
+      created_at: a?.created_at || null,
+      sanitized_website: a?.sanitized_website || null,
+      owned_by_organization_id: a?.owned_by_organization_id || null,
+      suborganizations: a?.suborganizations || [],
+      num_suborganizations: a?.num_suborganizations || 0,
+      organization_raw_address: a?.organization_raw_address || null,
+      organization_city: a?.organization_city || null,
+      organization_street_address: a?.organization_street_address || null,
+      organization_state: a?.organization_state || null,
+      organization_country: a?.organization_country || null,
+      organization_postal_code: a?.organization_postal_code || null,
+      suggest_location_enrichment: a?.suggest_location_enrichment || false,
+      departments: a?.departments || [],
+      organization_revenue: a?.organization_revenue || null,
+      organization_revenue_range: a?.organization_revenue_range || null,
+      organization_industry: a?.organization_industry || null,
+      organization_industry_tag_ids: a?.organization_industry_tag_ids || [],
+      organization_secondary_industry_tag_ids: a?.organization_secondary_industry_tag_ids || [],
+      organization_subindustry: a?.organization_subindustry || null,
+      prospected_by_current_team: a?.prospected_by_current_team || []
+    },
+    
+    // Apollo score breakdown
+    apollo_score: a?.recommendations_score || a?.account_score ? {
+      total: a.recommendations_score || a.account_score || 0,
+      signals_count: Array.isArray(a?.signals) ? a.signals.length : 0,
+      intent_score: a?.buying_intent_score || 0
+    } : null,
+    
+    // Similar companies (se vier no response)
+    similar_companies: a?.similar_companies || [],
+    
+    // Suggested leads (decision makers sugeridos)
+    suggested_leads: a?.suggested_leads || a?.top_recommended_people || [],
+    
+    // News
+    news: a?.news || a?.recent_news || [],
+    
+    // Última sincronização
+    last_apollo_sync_at: new Date().toISOString(),
+    apollo_last_enriched_at: new Date().toISOString()
   };
+  
+  // Remover campos null/undefined para não sobrescrever dados existentes
+  return Object.fromEntries(
+    Object.entries(mapped).filter(([_, v]) => v !== null && v !== undefined)
+  );
 }
 
 function mapApolloPerson(p: any) {

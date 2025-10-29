@@ -70,11 +70,11 @@ export function UpdateNowButton({
         });
 
         const peopleCount = data?.peopleLinked || 0;
-        const fieldsCount = data?.companyFields?.length || 0;
+        const fieldsCount = data?.companyFieldsCount || data?.companyFields?.length || 0;
         const similarsCount = data?.similarLinked || 0;
 
         toast.success(`✅ Dados atualizados com sucesso!`, {
-          description: `${peopleCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
+          description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares`
         });
       } else {
         // Se não tem apollo_organization_id, fazer busca/resolução inicial
@@ -153,11 +153,11 @@ export function UpdateNowButton({
       });
 
       const peopleCount = enriched?.peopleLinked || 0;
-      const fieldsCount = enriched?.companyFields?.length || 0;
+      const fieldsCount = enriched?.companyFieldsCount || enriched?.companyFields?.length || 0;
       const similarsCount = enriched?.similarLinked || 0;
 
       toast.success('✅ Dados atualizados com sucesso!', {
-        description: `${peopleCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
+        description: `${fieldsCount} campos · ${peopleCount} decisores · ${similarsCount} similares`
       });
 
       setAssignOpen(false);

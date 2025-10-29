@@ -49,6 +49,7 @@ import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 import { CompanyEnrichmentTabs } from '@/components/companies/CompanyEnrichmentTabs';
 import { UpdateNowButton } from '@/components/companies/UpdateNowButton';
+import CompanyGlobalSearch from '@/components/companies/CompanyGlobalSearch';
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -460,6 +461,32 @@ export default function CompanyDetailPage() {
             </div>
           </div>
         </CardHeader>
+      </Card>
+
+      {/* Busca Dual Engine (Apollo + LinkedIn + Google) */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Busca Inteligente Dual Engine
+          </CardTitle>
+          <CardDescription>
+            Busca paralela em Apollo, LinkedIn e Google para encontrar empresas similares e atualizar dados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompanyGlobalSearch 
+            segment={company?.industry} 
+            onSelect={async (newCompanyId) => {
+              // Refresh da página atual
+              await queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+              await queryClient.invalidateQueries({ queryKey: ['company-people', id] });
+              await queryClient.invalidateQueries({ queryKey: ['company-similar', id] });
+              await queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
+              toast.success('Empresa atualizada com sucesso!');
+            }} 
+          />
+        </CardContent>
       </Card>
 
       {/* Tabs Navigation */}
