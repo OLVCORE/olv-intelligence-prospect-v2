@@ -70,6 +70,8 @@ const GoalsPage = lazy(() => import("./pages/GoalsPage"));
 const RegionalExpansionPage = lazy(() => import("./pages/insights/RegionalExpansionPage"));
 const ChurnAlertPage = lazy(() => import("./pages/insights/ChurnAlertPage"));
 const CloudMigrationPage = lazy(() => import("./pages/insights/CloudMigrationPage"));
+const LeadsCapture = lazy(() => import("./pages/Leads/Capture"));
+const LeadsQuarantine = lazy(() => import("./pages/Leads/Quarantine"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
 const OfflinePage = lazy(() => import("./pages/OfflinePage"));
@@ -573,6 +575,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CloudMigrationPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/capture"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LeadsCapture />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/quarantine"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LeadsQuarantine />
                   </AppLayout>
                 </ProtectedRoute>
               }
