@@ -105,6 +105,9 @@ export function useMonitoredCompanies() {
             id,
             name,
             domain,
+            headquarters_state,
+            industry,
+            employees,
             totvs_detection_score
           )
         `)

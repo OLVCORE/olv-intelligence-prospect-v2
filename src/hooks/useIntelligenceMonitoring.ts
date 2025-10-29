@@ -31,6 +31,7 @@ export interface IntelligenceMonitoringConfig {
   competitor_names: string[] | null;
   last_check_at: string | null;
   next_check_at: string | null;
+  schedule_name: string | null;
   created_at: string;
   updated_at: string;
 }

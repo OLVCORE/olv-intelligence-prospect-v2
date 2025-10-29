@@ -3729,6 +3729,7 @@ export type Database = {
           monitor_partnerships: boolean | null
           monitor_tech_adoption: boolean | null
           next_check_at: string | null
+          schedule_name: string | null
           target_mesoregions: string[] | null
           target_microregions: string[] | null
           target_municipalities: string[] | null
@@ -3761,6 +3762,7 @@ export type Database = {
           monitor_partnerships?: boolean | null
           monitor_tech_adoption?: boolean | null
           next_check_at?: string | null
+          schedule_name?: string | null
           target_mesoregions?: string[] | null
           target_microregions?: string[] | null
           target_municipalities?: string[] | null
@@ -3793,6 +3795,7 @@ export type Database = {
           monitor_partnerships?: boolean | null
           monitor_tech_adoption?: boolean | null
           next_check_at?: string | null
+          schedule_name?: string | null
           target_mesoregions?: string[] | null
           target_microregions?: string[] | null
           target_municipalities?: string[] | null

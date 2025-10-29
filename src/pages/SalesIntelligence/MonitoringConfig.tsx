@@ -62,6 +62,10 @@ export default function MonitoringConfigPage() {
   const [monitorMarket, setMonitorMarket] = useState(config?.monitor_market_entry ?? true);
   const [monitorDigital, setMonitorDigital] = useState(config?.monitor_digital_transformation ?? true);
   const [monitorCompetitors, setMonitorCompetitors] = useState(config?.monitor_competitor_mentions ?? true);
+  // Nome do agendamento e Palavras‑chave
+  const [scheduleName, setScheduleName] = useState<string>(config?.schedule_name || '');
+  const [keywordsWhitelistInput, setKeywordsWhitelistInput] = useState<string>((config?.keywords_whitelist || []).join(', '));
+  const [keywordsBlacklistInput, setKeywordsBlacklistInput] = useState<string>((config?.keywords_blacklist || []).join(', '));
 
   // Atualizar estados quando config carregar
   useEffect(() => {
@@ -80,6 +84,9 @@ export default function MonitoringConfigPage() {
       setMonitorMarket(config.monitor_market_entry ?? true);
       setMonitorDigital(config.monitor_digital_transformation ?? true);
       setMonitorCompetitors(config.monitor_competitor_mentions ?? true);
+      setScheduleName(config.schedule_name || '');
+      setKeywordsWhitelistInput((config.keywords_whitelist || []).join(', '));
+      setKeywordsBlacklistInput((config.keywords_blacklist || []).join(', '));
     }
   }, [config]);
 
@@ -98,11 +105,23 @@ export default function MonitoringConfigPage() {
     monitorPartnerships !== (config.monitor_partnerships ?? true) ||
     monitorMarket !== (config.monitor_market_entry ?? true) ||
     monitorDigital !== (config.monitor_digital_transformation ?? true) ||
-    monitorCompetitors !== (config.monitor_competitor_mentions ?? true)
+    monitorCompetitors !== (config.monitor_competitor_mentions ?? true) ||
+    scheduleName !== (config.schedule_name || '') ||
+    keywordsWhitelistInput !== ((config.keywords_whitelist || []).join(', ')) ||
+    keywordsBlacklistInput !== ((config.keywords_blacklist || []).join(', '))
   );
 
   const handleSave = () => {
     if (!user?.id) return;
+
+    const whitelist = keywordsWhitelistInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const blacklist = keywordsBlacklistInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     saveConfigMutation.mutate({
       user_id: user.id,
@@ -121,6 +140,9 @@ export default function MonitoringConfigPage() {
       monitor_digital_transformation: monitorDigital,
       monitor_competitor_mentions: monitorCompetitors,
       competitor_names: ['SAP', 'Oracle', 'Microsoft Dynamics', 'Salesforce', 'Senior', 'Linx', 'Omie', 'Bling'],
+      schedule_name: scheduleName || null,
+      keywords_whitelist: whitelist.length ? whitelist : null,
+      keywords_blacklist: blacklist.length ? blacklist : null,
     });
   };
 
@@ -513,6 +535,26 @@ export default function MonitoringConfigPage() {
                   </div>
                   <Switch checked={monitorCompetitors} onCheckedChange={setMonitorCompetitors} />
                 </div>
+
+                <div className="pt-4 border-t space-y-3">
+                  <div className="space-y-2">
+                    <Label>Palavras‑chave desejadas</Label>
+                    <Input
+                      placeholder="ex: aquisição de software, expansão, frota"
+                      value={keywordsWhitelistInput}
+                      onChange={(e) => setKeywordsWhitelistInput(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Separe por vírgulas. Usado para refinar a busca.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Palavras‑chave a excluir</Label>
+                    <Input
+                      placeholder="ex: estagiário, vaga, curso"
+                      value={keywordsBlacklistInput}
+                      onChange={(e) => setKeywordsBlacklistInput(e.target.value)}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -542,6 +584,16 @@ export default function MonitoringConfigPage() {
                       <SelectItem value="48">48 horas</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nome do agendamento</Label>
+                  <Input
+                    placeholder="Ex.: Monitoramento Sudeste - Agro"
+                    value={scheduleName}
+                    onChange={(e) => setScheduleName(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Esse nome aparecerá nos alertas.</p>
                 </div>
 
                 <div className="rounded-lg bg-muted p-4 space-y-2">
