@@ -20,7 +20,7 @@ import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSDRAutomations } from '@/hooks/useSDRAutomations';
 import { Link } from 'react-router-dom';
-import { AICopilotPanel } from '@/components/copilot/AICopilotPanel';
+
 
 export default function SDRWorkspacePage() {
   const [activeTab, setActiveTab] = useState('pipeline');
@@ -205,9 +205,6 @@ export default function SDRWorkspacePage() {
             <WorkspaceSequencesMini />
           </TabsContent>
         </Tabs>
-
-        {/* AI Copilot Sidebar */}
-        <AICopilotPanel />
       </div>
     </AppLayout>
   );

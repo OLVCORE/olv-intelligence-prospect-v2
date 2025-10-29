@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { Sparkles, X, Minimize2, Maximize2, Trash2, Send, Loader2 } from 'lucide-react';
+import { Bot, X, Minimize2, Maximize2, Trash2, Send, Loader2, Sparkles } from 'lucide-react';
 import { useTrevoAssistant, TrevoContext } from '@/hooks/useTrevoAssistant';
 import ReactMarkdown from 'react-markdown';
 
@@ -47,73 +47,102 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50 group">
+        {/* Botão principal com design sofisticado */}
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
-          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 relative group"
+          className="h-16 w-16 rounded-2xl shadow-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 relative overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-purple-500/50"
         >
-          <Sparkles className="h-6 w-6" />
-          <span className="absolute -top-1 -right-1 h-5 w-5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+          {/* Background glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           
-          {/* Tooltip */}
-          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border">
-            <p className="text-sm font-medium">TREVO - Assistente Inteligente</p>
-            <p className="text-xs text-muted-foreground">Clique para começar</p>
+          {/* Icon container */}
+          <div className="relative z-10">
+            <Bot className="h-7 w-7 text-white" />
+          </div>
+          
+          {/* Animated sparkles */}
+          <Sparkles className="absolute top-2 right-2 h-3 w-3 text-yellow-300 animate-pulse" />
+          
+          {/* Status indicator */}
+          <span className="absolute -top-1 -right-1 h-5 w-5 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center">
+            <span className="h-2 w-2 bg-white rounded-full animate-pulse" />
+          </span>
+          
+          {/* Tooltip elevado */}
+          <div className="absolute bottom-full right-0 mb-3 px-4 py-3 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap border border-purple-500/20 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Bot className="h-4 w-4 text-purple-400" />
+              <p className="text-sm font-semibold text-white">TREVO AI Assistant</p>
+            </div>
+            <p className="text-xs text-gray-300">Seu guia inteligente de vendas</p>
+            <div className="absolute bottom-0 right-4 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-r border-b border-purple-500/20" />
           </div>
         </Button>
+        
+        {/* Pulse ring effect */}
+        <div className="absolute inset-0 rounded-2xl bg-purple-500/30 animate-ping opacity-20" />
       </div>
     );
   }
 
   return (
     <div 
-      className={`fixed bottom-6 right-6 z-50 w-[420px] transition-all duration-300 ${isMinimized ? 'h-[60px]' : 'h-[600px]'}`}
+      className={`fixed bottom-6 right-6 z-50 w-[440px] transition-all duration-300 ${isMinimized ? 'h-[70px]' : 'h-[650px]'}`}
     >
-        <Card className="flex flex-col h-full shadow-2xl border-2">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-purple-600 to-blue-600">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  TREVO
-                  <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse" />
-                </h3>
-                <p className="text-xs text-white/80">Assistente Inteligente de Vendas</p>
-              </div>
+      <Card className="flex flex-col h-full shadow-2xl border-2 border-purple-500/20 overflow-hidden backdrop-blur-sm bg-background/95">
+        {/* Header sofisticado */}
+        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 relative overflow-hidden">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+              backgroundSize: '20px 20px'
+            }} />
+          </div>
+          
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="h-11 w-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-lg">
+              <Bot className="h-6 w-6 text-white" />
             </div>
-            
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={clearMessages}
-                className="h-8 w-8 text-white hover:bg-white/20"
-                title="Limpar conversa"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="h-8 w-8 text-white hover:bg-white/20"
-              >
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 text-white hover:bg-white/20"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+            <div>
+              <h3 className="font-bold text-white flex items-center gap-2 text-lg">
+                TREVO
+                <span className="h-2.5 w-2.5 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50" />
+              </h3>
+              <p className="text-xs text-white/90 font-medium">Assistente Inteligente de Vendas</p>
             </div>
           </div>
+          
+          <div className="flex items-center gap-1 relative z-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearMessages}
+              className="h-9 w-9 text-white hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110"
+              title="Limpar conversa"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="h-9 w-9 text-white hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110"
+            >
+              {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="h-9 w-9 text-white hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
           {!isMinimized && (
             <>
@@ -156,8 +185,8 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
                 </div>
               </ScrollArea>
 
-              {/* Input Area */}
-              <div className="p-4 border-t bg-background/50 backdrop-blur-sm">
+              {/* Input Area sofisticado */}
+              <div className="p-4 border-t bg-gradient-to-b from-background/80 to-background/50 backdrop-blur-sm">
                 <div className="flex gap-2">
                   <Textarea
                     ref={inputRef}
@@ -165,36 +194,36 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Digite sua mensagem... (Enter para enviar)"
-                    className="min-h-[60px] max-h-[120px] resize-none"
+                    className="min-h-[70px] max-h-[140px] resize-none border-purple-500/20 focus:border-purple-500 focus:ring-purple-500/20 rounded-xl"
                     disabled={isLoading}
                   />
                   <Button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="h-[60px] w-[60px] bg-gradient-to-br from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    className="h-[70px] w-[70px] bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 rounded-xl shadow-lg shadow-purple-500/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-6 w-6 animate-spin" />
                     ) : (
-                      <Send className="h-5 w-5" />
+                      <Send className="h-6 w-6" />
                     )}
                   </Button>
                 </div>
                 
-                {/* Sugestões rápidas */}
+                {/* Sugestões rápidas sofisticadas */}
                 {messages.length === 1 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {[
-                      'Como qualificar um lead?',
-                      'Mostrar meus deals prioritários',
-                      'Dicas para negociação'
+                      '💡 Como qualificar um lead?',
+                      '🎯 Mostrar meus deals prioritários',
+                      '🤝 Dicas para negociação'
                     ].map((suggestion) => (
                       <Button
                         key={suggestion}
                         variant="outline"
                         size="sm"
-                        onClick={() => setInput(suggestion)}
-                        className="text-xs"
+                        onClick={() => setInput(suggestion.replace(/^[^\s]+\s/, ''))}
+                        className="text-xs hover:bg-purple-500/10 hover:border-purple-500/50 transition-all duration-200 hover:scale-105"
                       >
                         {suggestion}
                       </Button>
