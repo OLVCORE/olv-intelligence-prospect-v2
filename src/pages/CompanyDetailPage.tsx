@@ -49,6 +49,7 @@ import apolloLogo from "@/assets/logos/apollo.ico";
 import phantomLogo from "@/assets/logos/phantombuster.png";
 import { CompanyEnrichmentTabs } from '@/components/companies/CompanyEnrichmentTabs';
 import { UpdateNowButton } from '@/components/companies/UpdateNowButton';
+import { AutoEnrichButton } from '@/components/companies/AutoEnrichButton';
 import CompanyGlobalSearch from '@/components/companies/CompanyGlobalSearch';
 import { useRealtimeCompanyChanges } from '@/hooks/useRealtimeCompanyChanges';
 
@@ -1551,16 +1552,19 @@ export default function CompanyDetailPage() {
                   </div>
                 </div>
                 
-                <UpdateNowButton
-                  companyId={id!}
-                  companyName={company.name}
-                  companyDomain={company.domain || company.website}
-                  apolloOrganizationId={company.apollo_organization_id}
-                  onSuccess={() => {
-                    queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
-                    queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
-                  }}
-                />
+                <div className="flex gap-2">
+                  <UpdateNowButton
+                    companyId={id!}
+                    companyName={company.name}
+                    companyDomain={company.domain || company.website}
+                    apolloOrganizationId={company.apollo_organization_id}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
+                      queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
+                    }}
+                  />
+                  <AutoEnrichButton />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
