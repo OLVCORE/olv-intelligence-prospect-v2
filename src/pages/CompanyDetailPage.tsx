@@ -220,14 +220,23 @@ export default function CompanyDetailPage() {
       }
 
       console.log('[CompanyDetail] ✅ Enriquecimento concluído:', apolloData);
-      const count = (apolloData as any)?.people_count ?? 0;
+      const peopleLinked = (apolloData as any)?.peopleLinked ?? 0;
+      const similarLinked = (apolloData as any)?.similarLinked ?? 0;
+      const techCount = (apolloData as any)?.technologiesCount ?? 0;
+      
       queryClient.invalidateQueries({ queryKey: ['company-detail', id] });
       queryClient.invalidateQueries({ queryKey: ['decision_makers', id] });
-      if (count > 0) {
-        toast.success(`Dados Apollo atualizados: ${count} contato(s) encontrado(s)`);
+      queryClient.invalidateQueries({ queryKey: ['company-people', id] });
+      queryClient.invalidateQueries({ queryKey: ['company-similar', id] });
+      queryClient.invalidateQueries({ queryKey: ['company-technologies', id] });
+      
+      if (peopleLinked > 0 || similarLinked > 0 || techCount > 0) {
+        toast.success(`Enriquecimento concluído!`, {
+          description: `${peopleLinked} decisores · ${similarLinked} similares · ${techCount} tecnologias`
+        });
       } else {
-        toast.warning('Nenhum decisor retornado pelo Apollo', {
-          description: 'Tente informar o ID da organização no Apollo ou ajuste filtros/região.'
+        toast.warning('Nenhum dado novo encontrado', {
+          description: 'Tente informar o ID correto da organização no Apollo.'
         });
       }
     } catch (e: any) {

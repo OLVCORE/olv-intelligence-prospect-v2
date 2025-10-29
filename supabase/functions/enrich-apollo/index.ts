@@ -188,7 +188,39 @@ serve(async (req: Request) => {
 
             if (perr) {
               console.error('[enrich-apollo] Erro ao upsert people (apollo_id):', perr);
-              // Continuar com outros grupos em vez de falhar completamente
+              // Buscar pessoas existentes para fazer link
+              const apolloIds = byApollo.map(p => p.apollo_person_id).filter(Boolean);
+              if (apolloIds.length > 0) {
+                const { data: existing } = await sb
+                  .from('people')
+                  .select('id, apollo_person_id')
+                  .in('apollo_person_id', apolloIds);
+                
+                if (existing && existing.length > 0) {
+                  const links = existing.map(p => {
+                    const src = byApollo.find(ci => ci.apollo_person_id === p.apollo_person_id);
+                    return {
+                      company_id: input.company_id,
+                      person_id: p.id,
+                      apollo_organization_id: input.organization_id,
+                      department: src?.department || null,
+                      seniority: src?.seniority || null,
+                      location_city: src?.city || null,
+                      location_state: src?.state || null,
+                      location_country: src?.country || null,
+                      title_at_company: src?.job_title || null,
+                      is_current: true,
+                      source: 'apollo'
+                    };
+                  });
+                  
+                  const { data: lkd } = await sb
+                    .from('company_people')
+                    .upsert(links, { onConflict: 'company_id,person_id' })
+                    .select('company_id');
+                  linked += lkd?.length || 0;
+                }
+              }
             } else {
               upserted += pdata?.length || 0;
               
@@ -228,6 +260,39 @@ serve(async (req: Request) => {
 
             if (perr) {
               console.error('[enrich-apollo] Erro ao upsert people (linkedin_id):', perr);
+              // Buscar pessoas existentes para fazer link
+              const linkedinIds = byLinkedin.map(p => p.linkedin_profile_id).filter(Boolean);
+              if (linkedinIds.length > 0) {
+                const { data: existing } = await sb
+                  .from('people')
+                  .select('id, linkedin_profile_id')
+                  .in('linkedin_profile_id', linkedinIds);
+                
+                if (existing && existing.length > 0) {
+                  const links = existing.map(p => {
+                    const src = byLinkedin.find(ci => ci.linkedin_profile_id === p.linkedin_profile_id);
+                    return {
+                      company_id: input.company_id,
+                      person_id: p.id,
+                      apollo_organization_id: input.organization_id,
+                      department: src?.department || null,
+                      seniority: src?.seniority || null,
+                      location_city: src?.city || null,
+                      location_state: src?.state || null,
+                      location_country: src?.country || null,
+                      title_at_company: src?.job_title || null,
+                      is_current: true,
+                      source: 'apollo'
+                    };
+                  });
+                  
+                  const { data: lkd } = await sb
+                    .from('company_people')
+                    .upsert(links, { onConflict: 'company_id,person_id' })
+                    .select('company_id');
+                  linked += lkd?.length || 0;
+                }
+              }
             } else {
               upserted += pdata?.length || 0;
               
@@ -267,6 +332,39 @@ serve(async (req: Request) => {
 
             if (perr) {
               console.error('[enrich-apollo] Erro ao upsert people (email_hash):', perr);
+              // Buscar pessoas existentes para fazer link
+              const emailHashes = byEmail.map(p => p.email_hash).filter(Boolean);
+              if (emailHashes.length > 0) {
+                const { data: existing } = await sb
+                  .from('people')
+                  .select('id, email_hash')
+                  .in('email_hash', emailHashes);
+                
+                if (existing && existing.length > 0) {
+                  const links = existing.map(p => {
+                    const src = byEmail.find(ci => ci.email_hash === p.email_hash);
+                    return {
+                      company_id: input.company_id,
+                      person_id: p.id,
+                      apollo_organization_id: input.organization_id,
+                      department: src?.department || null,
+                      seniority: src?.seniority || null,
+                      location_city: src?.city || null,
+                      location_state: src?.state || null,
+                      location_country: src?.country || null,
+                      title_at_company: src?.job_title || null,
+                      is_current: true,
+                      source: 'apollo'
+                    };
+                  });
+                  
+                  const { data: lkd } = await sb
+                    .from('company_people')
+                    .upsert(links, { onConflict: 'company_id,person_id' })
+                    .select('company_id');
+                  linked += lkd?.length || 0;
+                }
+              }
             } else {
               upserted += pdata?.length || 0;
               
