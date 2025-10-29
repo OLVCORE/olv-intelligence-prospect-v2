@@ -60,7 +60,7 @@ export default function CompanyDiscoveryPage() {
       sectorCode,
       nicheCode,
       state,
-      city: city || undefined,
+      city: city && city !== 'all' ? city : undefined,
       searchMode,
       sourceCompanyId: searchMode === 'similar' ? sourceCompanyId : undefined,
     });
@@ -208,10 +208,10 @@ export default function CompanyDiscoveryPage() {
                 <label className="text-sm font-medium">Cidade (opcional)</label>
                 <Select value={city} onValueChange={setCity}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
+                    <SelectValue placeholder="Todas as cidades" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas as cidades</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
