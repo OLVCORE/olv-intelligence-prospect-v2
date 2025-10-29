@@ -266,7 +266,18 @@ export default function CompetitiveIntelligencePage() {
               />
 
               <div className="grid gap-6 md:grid-cols-2">
-                <TOTVSDetectionCardV3 company={company} />
+                <TOTVSDetectionCardV3 
+                  company={company ? {
+                    id: company.id,
+                    name: company.name,
+                    cnpj: company.cnpj,
+                    domain: company.domain,
+                    state: company.state || filters.region !== 'all' ? filters.region : undefined,
+                    city: company.city,
+                    sector_code: company.sector_code || filters.sector !== 'all' ? filters.sector : undefined,
+                    niche_code: company.niche_code || filters.niche !== 'all' ? filters.niche : undefined,
+                  } : undefined} 
+                />
                 <IntentSignalsCardV3 company={company} />
               </div>
 

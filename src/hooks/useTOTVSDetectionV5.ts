@@ -81,23 +81,28 @@ export function useTOTVSDetectionV5() {
       // Salvar resultado na tabela totvs_usage_detection
       const { error: insertError } = await supabase
         .from('totvs_usage_detection')
-        .insert({
+        .insert([{
           company_id: params.companyId,
+          company_name: params.companyName,
+          cnpj: params.cnpj,
+          region: params.state,
+          sector: params.sectorCode,
           score: data.score,
           confidence: data.score >= 70 ? 'high' : data.score >= 40 ? 'medium' : 'low',
           status: data.status,
-          evidences: data.evidences,
+          evidences: data.evidences as any,
           platforms_scanned: ['LinkedIn Jobs'],
           methodology: {
             niche_applied: data.niche,
             audit_stats: data.audit,
             version: 'v5.0',
             query_type: 'surgical'
-          },
+          } as any,
           disqualification_reason: data.status === 'disqualified' 
             ? `Uso de TOTVS detectado em ${data.niche} (${data.evidences.length} evidências)` 
             : null,
-        });
+          sources_checked: 1,
+        }]);
 
       if (insertError) {
         console.error('Erro ao salvar detecção:', insertError);
