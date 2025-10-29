@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { X, Plus, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { handleSupabaseError } from '@/lib/errorHandler';
 
 interface NewMonitoringDialogProps {
   open: boolean;
@@ -135,6 +136,23 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      // Verificar se já existe configuração com mesmo nome
+      const { data: existing } = await supabase
+        .from('intelligence_monitoring_config')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('schedule_name', formData.name)
+        .maybeSingle();
+
+      if (existing) {
+        toast({
+          title: 'Monitoramento já existe',
+          description: `Já existe um monitoramento com o nome "${formData.name}". Escolha outro nome.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('intelligence_monitoring_config')
         .insert({
@@ -152,7 +170,18 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
           check_frequency_hours: 24
         });
 
-      if (error) throw error;
+      if (error) {
+        // Tratamento específico para erro de duplicação
+        if (error.code === '23505') {
+          toast({
+            title: 'Monitoramento duplicado',
+            description: 'Já existe um monitoramento com essas configurações. Altere os parâmetros.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: 'Monitoramento criado',
@@ -174,12 +203,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
       });
 
     } catch (error) {
-      console.error('Erro ao criar monitoramento:', error);
-      toast({
-        title: 'Erro',
-        description: 'Falha ao criar monitoramento',
-        variant: 'destructive'
-      });
+      handleSupabaseError(error, 'Criar Monitoramento');
     }
   };
 

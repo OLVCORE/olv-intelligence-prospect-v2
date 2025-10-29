@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useToggleCompanyMonitoring } from '@/hooks/useCompanyMonitoring';
+import { handleSupabaseError } from '@/lib/errorHandler';
 
 interface AddCompanyDialogProps {
   open: boolean;
@@ -64,12 +65,7 @@ export default function AddCompanyDialog({ open, onOpenChange }: AddCompanyDialo
       setSearchTerm('');
 
     } catch (error) {
-      console.error('Erro ao adicionar empresas:', error);
-      toast({
-        title: 'Erro',
-        description: 'Falha ao adicionar empresas ao monitoramento',
-        variant: 'destructive'
-      });
+      handleSupabaseError(error, 'Adicionar Empresas ao Monitoramento');
     }
   };
 
