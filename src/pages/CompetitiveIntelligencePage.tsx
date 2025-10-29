@@ -12,6 +12,7 @@ import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDia
 import { TOTVSDetectionCardV2 } from "@/components/competitive/TOTVSDetectionCardV2";
 import { IntentSignalsCardV2 } from "@/components/competitive/IntentSignalsCardV2";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
+import { ICPFilters } from "@/components/competitive/ICPFilters";
 import { MonitoringToggleButton } from "@/components/competitive/MonitoringToggleButton";
 import { MonitoringDashboard } from "@/components/competitive/MonitoringDashboard";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,12 @@ export default function CompetitiveIntelligencePage() {
   const navigate = useNavigate();
   const companyId = searchParams.get('company');
   const [showCompanySelector, setShowCompanySelector] = useState(false);
+  const [filters, setFilters] = useState({
+    region: 'all',
+    sector: 'all',
+    status: 'all',
+    temperature: 'all',
+  });
   
   const { data: winLossData } = useWinLossAnalysis();
   
@@ -72,6 +79,10 @@ export default function CompetitiveIntelligencePage() {
   const lostDeals = winLossData?.filter(d => d.outcome === 'lost').length || 0;
   const totalDeals = wonDeals + lostDeals;
   const winRate = totalDeals > 0 ? (wonDeals / totalDeals) * 100 : 0;
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <AppLayout>
@@ -245,6 +256,12 @@ export default function CompetitiveIntelligencePage() {
                   </ol>
                 </AlertDescription>
               </Alert>
+
+              {/* Filtros ICP */}
+              <ICPFilters 
+                filters={filters}
+                onFilterChange={handleFilterChange}
+              />
 
               <div className="grid gap-6 md:grid-cols-2">
                 <TOTVSDetectionCardV2 company={company} />

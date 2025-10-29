@@ -6,6 +6,9 @@ interface TOTVSDetectionParams {
   companyId: string;
   companyName: string;
   companyDomain?: string;
+  cnpj?: string;
+  region?: string;
+  sector?: string;
 }
 
 interface Evidence {
@@ -23,8 +26,11 @@ interface TOTVSDetectionResult {
   ok: boolean;
   score: number;
   status: 'qualified' | 'disqualified';
+  confidence: string;
+  disqualification_reason?: string;
   evidences: Evidence[];
   sources_checked: number;
+  platforms_scanned: string[];
   message: string;
 }
 
@@ -55,12 +61,15 @@ export function useTOTVSDetectionV2() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ companyId, companyName, companyDomain }: TOTVSDetectionParams): Promise<TOTVSDetectionResult> => {
-      const { data, error } = await supabase.functions.invoke('detect-totvs-usage', {
+    mutationFn: async ({ companyId, companyName, companyDomain, cnpj, region, sector }: TOTVSDetectionParams): Promise<TOTVSDetectionResult> => {
+      const { data, error } = await supabase.functions.invoke('detect-totvs-usage-v2', {
         body: {
           company_id: companyId,
           company_name: companyName,
           domain: companyDomain,
+          cnpj,
+          region,
+          sector,
         },
       });
 

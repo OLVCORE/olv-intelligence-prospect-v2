@@ -2931,6 +2931,50 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_docs_detected: {
+        Row: {
+          company_id: string
+          company_name: string
+          detected_at: string
+          doc_type: string
+          doc_url: string
+          excerpt: string | null
+          id: string
+          totvs_as_creditor: boolean
+          totvs_mentioned: boolean
+        }
+        Insert: {
+          company_id: string
+          company_name: string
+          detected_at?: string
+          doc_type: string
+          doc_url: string
+          excerpt?: string | null
+          id?: string
+          totvs_as_creditor?: boolean
+          totvs_mentioned?: boolean
+        }
+        Update: {
+          company_id?: string
+          company_name?: string
+          detected_at?: string
+          doc_type?: string
+          doc_url?: string
+          excerpt?: string | null
+          id?: string
+          totvs_as_creditor?: boolean
+          totvs_mentioned?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_docs_detected_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_sheets_sync_config: {
         Row: {
           created_at: string
@@ -3157,37 +3201,108 @@ export type Database = {
       intent_signals_detection: {
         Row: {
           checked_at: string
+          cnpj: string | null
           company_id: string
           company_name: string
+          confidence: string | null
           created_at: string
           id: string
+          platforms_scanned: string[] | null
+          region: string | null
           score: number
+          sector: string | null
           signals: Json
           sources_checked: number
+          temperature: string | null
         }
         Insert: {
           checked_at?: string
+          cnpj?: string | null
           company_id: string
           company_name: string
+          confidence?: string | null
           created_at?: string
           id?: string
+          platforms_scanned?: string[] | null
+          region?: string | null
           score: number
+          sector?: string | null
           signals?: Json
           sources_checked?: number
+          temperature?: string | null
         }
         Update: {
           checked_at?: string
+          cnpj?: string | null
           company_id?: string
           company_name?: string
+          confidence?: string | null
           created_at?: string
           id?: string
+          platforms_scanned?: string[] | null
+          region?: string | null
           score?: number
+          sector?: string | null
           signals?: Json
           sources_checked?: number
+          temperature?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "intent_signals_detection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_postings_detected: {
+        Row: {
+          company_id: string
+          company_name: string
+          detected_at: string
+          id: string
+          job_description: string | null
+          job_title: string
+          job_url: string
+          location: string | null
+          platform: string
+          posted_at: string | null
+          required_skills: string[] | null
+          totvs_products_mentioned: string[] | null
+        }
+        Insert: {
+          company_id: string
+          company_name: string
+          detected_at?: string
+          id?: string
+          job_description?: string | null
+          job_title: string
+          job_url: string
+          location?: string | null
+          platform: string
+          posted_at?: string | null
+          required_skills?: string[] | null
+          totvs_products_mentioned?: string[] | null
+        }
+        Update: {
+          company_id?: string
+          company_name?: string
+          detected_at?: string
+          id?: string
+          job_description?: string | null
+          job_title?: string
+          job_url?: string
+          location?: string | null
+          platform?: string
+          posted_at?: string | null
+          required_skills?: string[] | null
+          totvs_products_mentioned?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_detected_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -5118,34 +5233,52 @@ export type Database = {
       totvs_usage_detection: {
         Row: {
           checked_at: string
+          cnpj: string | null
           company_id: string
           company_name: string
+          confidence: string | null
           created_at: string
+          disqualification_reason: string | null
           evidences: Json
           id: string
+          platforms_scanned: string[] | null
+          region: string | null
           score: number
+          sector: string | null
           sources_checked: number
           status: string
         }
         Insert: {
           checked_at?: string
+          cnpj?: string | null
           company_id: string
           company_name: string
+          confidence?: string | null
           created_at?: string
+          disqualification_reason?: string | null
           evidences?: Json
           id?: string
+          platforms_scanned?: string[] | null
+          region?: string | null
           score: number
+          sector?: string | null
           sources_checked?: number
           status: string
         }
         Update: {
           checked_at?: string
+          cnpj?: string | null
           company_id?: string
           company_name?: string
+          confidence?: string | null
           created_at?: string
+          disqualification_reason?: string | null
           evidences?: Json
           id?: string
+          platforms_scanned?: string[] | null
+          region?: string | null
           score?: number
+          sector?: string | null
           sources_checked?: number
           status?: string
         }

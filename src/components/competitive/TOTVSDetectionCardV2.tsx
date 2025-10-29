@@ -73,6 +73,8 @@ export function TOTVSDetectionCardV2({ company }: TOTVSDetectionCardV2Props) {
 
   const score = latestDetection?.score ?? 0;
   const evidences = (latestDetection?.evidences as any[]) ?? [];
+  const platformsScanned = (latestDetection?.platforms_scanned as string[]) ?? [];
+  const disqualificationReason = latestDetection?.disqualification_reason as string;
 
   return (
     <Card>
@@ -240,8 +242,30 @@ export function TOTVSDetectionCardV2({ company }: TOTVSDetectionCardV2Props) {
                   <p className="text-xs mt-1">
                     Score ≥ 70 indica alta probabilidade de já usar TOTVS.
                   </p>
+                  {disqualificationReason && (
+                    <p className="text-xs mt-2 font-medium">
+                      Razão: {disqualificationReason}
+                    </p>
+                  )}
                 </AlertDescription>
               </Alert>
+            )}
+
+            {/* Platforms Scanned */}
+            {platformsScanned.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Plataformas Consultadas ({platformsScanned.length})
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {platformsScanned.map((platform: string, idx: number) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {platform}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Detection Evidences */}
@@ -262,7 +286,14 @@ export function TOTVSDetectionCardV2({ company }: TOTVSDetectionCardV2Props) {
                           <IconComponent className={`h-4 w-4 ${sourceConfig?.color || 'text-muted-foreground'} shrink-0 mt-0.5`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="text-sm font-medium">{sourceConfig?.label || evidence.source}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{sourceConfig?.label || evidence.source}</span>
+                                {evidence.platform && evidence.platform !== evidence.source && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {evidence.platform}
+                                  </Badge>
+                                )}
+                              </div>
                               <Badge variant="destructive" className="text-xs">
                                 +{evidence.score} pts
                               </Badge>
@@ -271,6 +302,15 @@ export function TOTVSDetectionCardV2({ company }: TOTVSDetectionCardV2Props) {
                             <p className="text-xs text-muted-foreground leading-relaxed bg-background/50 p-2 rounded mb-2">
                               {evidence.snippet}
                             </p>
+                            {evidence.totvs_products_mentioned && evidence.totvs_products_mentioned.length > 0 && (
+                              <div className="mb-2 flex flex-wrap gap-1">
+                                {evidence.totvs_products_mentioned.map((product: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {product}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                             <p className="text-xs text-muted-foreground italic mb-2">
                               {evidence.reason}
                             </p>
