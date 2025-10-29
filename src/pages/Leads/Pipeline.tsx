@@ -13,6 +13,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { AdminDataCleanupDialog } from '@/components/admin/AdminDataCleanupDialog';
 
 const STAGES = [
   { id: 'discovery', label: 'Descoberta', color: 'bg-blue-100 text-blue-800' },
@@ -136,6 +137,7 @@ export default function Pipeline() {
             <h1 className="text-3xl font-bold">Pipeline de Vendas</h1>
             <p className="text-muted-foreground mt-1">Gerencie seus deals visualmente</p>
           </div>
+          <AdminDataCleanupDialog />
         </div>
 
         <Card className="p-12 text-center">
@@ -169,10 +171,13 @@ export default function Pipeline() {
             Gerencie seus deals visualmente
           </p>
         </div>
-        <Button onClick={() => navigate('/leads/capture')}>
-          <ArrowRight className="w-4 h-4 mr-2" />
-          Capturar Leads
-        </Button>
+        <div className="flex gap-2">
+          <AdminDataCleanupDialog />
+          <Button onClick={() => navigate('/leads/capture')}>
+            <ArrowRight className="w-4 h-4 mr-2" />
+            Capturar Leads
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
