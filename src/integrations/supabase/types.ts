@@ -757,6 +757,145 @@ export type Database = {
           },
         ]
       }
+      br_mesoregions: {
+        Row: {
+          created_at: string
+          id: string
+          mesoregion_code: string
+          mesoregion_name: string
+          state_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mesoregion_code: string
+          mesoregion_name: string
+          state_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mesoregion_code?: string
+          mesoregion_name?: string
+          state_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "br_mesoregions_state_code_fkey"
+            columns: ["state_code"]
+            isOneToOne: false
+            referencedRelation: "br_states"
+            referencedColumns: ["state_code"]
+          },
+        ]
+      }
+      br_microregions: {
+        Row: {
+          created_at: string
+          id: string
+          mesoregion_code: string
+          microregion_code: string
+          microregion_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mesoregion_code: string
+          microregion_code: string
+          microregion_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mesoregion_code?: string
+          microregion_code?: string
+          microregion_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "br_microregions_mesoregion_code_fkey"
+            columns: ["mesoregion_code"]
+            isOneToOne: false
+            referencedRelation: "br_mesoregions"
+            referencedColumns: ["mesoregion_code"]
+          },
+        ]
+      }
+      br_municipalities: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          microregion_code: string | null
+          municipality_code: string
+          municipality_name: string
+          population: number | null
+          state_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          microregion_code?: string | null
+          municipality_code: string
+          municipality_name: string
+          population?: number | null
+          state_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          microregion_code?: string | null
+          municipality_code?: string
+          municipality_name?: string
+          population?: number | null
+          state_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "br_municipalities_microregion_code_fkey"
+            columns: ["microregion_code"]
+            isOneToOne: false
+            referencedRelation: "br_microregions"
+            referencedColumns: ["microregion_code"]
+          },
+          {
+            foreignKeyName: "br_municipalities_state_code_fkey"
+            columns: ["state_code"]
+            isOneToOne: false
+            referencedRelation: "br_states"
+            referencedColumns: ["state_code"]
+          },
+        ]
+      }
+      br_states: {
+        Row: {
+          created_at: string
+          id: string
+          region: string
+          state_code: string
+          state_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          region: string
+          state_code: string
+          state_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          region?: string
+          state_code?: string
+          state_name?: string
+        }
+        Relationships: []
+      }
       business_cases: {
         Row: {
           accepted_at: string | null
@@ -3563,6 +3702,105 @@ export type Database = {
           provider?: string
           status?: string
           updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      intelligence_monitoring_config: {
+        Row: {
+          check_frequency_hours: number | null
+          competitor_names: string[] | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          keywords_blacklist: string[] | null
+          keywords_whitelist: string[] | null
+          last_check_at: string | null
+          max_employees: number | null
+          max_revenue: number | null
+          min_employees: number | null
+          min_revenue: number | null
+          monitor_competitor_mentions: boolean | null
+          monitor_digital_transformation: boolean | null
+          monitor_expansion: boolean | null
+          monitor_funding: boolean | null
+          monitor_leadership_changes: boolean | null
+          monitor_market_entry: boolean | null
+          monitor_partnerships: boolean | null
+          monitor_tech_adoption: boolean | null
+          next_check_at: string | null
+          target_mesoregions: string[] | null
+          target_microregions: string[] | null
+          target_municipalities: string[] | null
+          target_niches: string[] | null
+          target_regions: string[] | null
+          target_sectors: string[] | null
+          target_states: string[] | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          check_frequency_hours?: number | null
+          competitor_names?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keywords_blacklist?: string[] | null
+          keywords_whitelist?: string[] | null
+          last_check_at?: string | null
+          max_employees?: number | null
+          max_revenue?: number | null
+          min_employees?: number | null
+          min_revenue?: number | null
+          monitor_competitor_mentions?: boolean | null
+          monitor_digital_transformation?: boolean | null
+          monitor_expansion?: boolean | null
+          monitor_funding?: boolean | null
+          monitor_leadership_changes?: boolean | null
+          monitor_market_entry?: boolean | null
+          monitor_partnerships?: boolean | null
+          monitor_tech_adoption?: boolean | null
+          next_check_at?: string | null
+          target_mesoregions?: string[] | null
+          target_microregions?: string[] | null
+          target_municipalities?: string[] | null
+          target_niches?: string[] | null
+          target_regions?: string[] | null
+          target_sectors?: string[] | null
+          target_states?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          check_frequency_hours?: number | null
+          competitor_names?: string[] | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keywords_blacklist?: string[] | null
+          keywords_whitelist?: string[] | null
+          last_check_at?: string | null
+          max_employees?: number | null
+          max_revenue?: number | null
+          min_employees?: number | null
+          min_revenue?: number | null
+          monitor_competitor_mentions?: boolean | null
+          monitor_digital_transformation?: boolean | null
+          monitor_expansion?: boolean | null
+          monitor_funding?: boolean | null
+          monitor_leadership_changes?: boolean | null
+          monitor_market_entry?: boolean | null
+          monitor_partnerships?: boolean | null
+          monitor_tech_adoption?: boolean | null
+          next_check_at?: string | null
+          target_mesoregions?: string[] | null
+          target_microregions?: string[] | null
+          target_municipalities?: string[] | null
+          target_niches?: string[] | null
+          target_regions?: string[] | null
+          target_sectors?: string[] | null
+          target_states?: string[] | null
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: []
