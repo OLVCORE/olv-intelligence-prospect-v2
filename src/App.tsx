@@ -3,12 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { TrevoAssistant } from "./components/trevo/TrevoAssistant";
 
 // Eager load only critical pages
 import Index from "./pages/Index";
@@ -98,6 +99,27 @@ const PageLoader = () => (
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
+
+// Wrapper component que tem acesso ao location
+function TrevoAssistantWrapper() {
+  const location = useLocation();
+  
+  // Não mostrar em páginas de auth
+  if (location.pathname === '/login' || 
+      location.pathname === '/forgot-password' || 
+      location.pathname === '/reset-password' ||
+      location.pathname === '/') {
+    return null;
+  }
+  
+  return (
+    <TrevoAssistant 
+      context={{
+        currentPage: location.pathname
+      }}
+    />
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -673,6 +695,9 @@ const App = () => (
             <Route path="/offline" element={<OfflinePage />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
+            
+            {/* TREVO Assistant - disponível em todas as páginas protegidas */}
+            <TrevoAssistantWrapper />
           </Suspense>
           </AuthProvider>
         </BrowserRouter>
