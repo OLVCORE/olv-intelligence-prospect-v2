@@ -13,6 +13,8 @@ import { useDiscoverCompanies, useSuggestedCompanies, useValidateEnrichCompany, 
 import { useBrazilStates, useMunicipalitiesByState } from "@/hooks/useBrazilGeography";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MunicipalityCombobox } from "@/components/discovery/MunicipalityCombobox";
+import { CompanyCombobox } from "@/components/discovery/CompanyCombobox";
 
 export default function CompanyDiscoveryPage() {
   const [searchMode, setSearchMode] = useState<'new' | 'similar'>('new');
@@ -226,37 +228,23 @@ export default function CompanyDiscoveryPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Município (opcional)</label>
-                <Select value={city} onValueChange={setCity} disabled={!state}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={state ? "Selecione o município" : "Primeiro selecione um estado"} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    <SelectItem value="all">Todos os municípios</SelectItem>
-                    {municipalities?.map((m) => (
-                      <SelectItem key={m.municipality_code} value={m.municipality_name}>
-                        {m.municipality_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MunicipalityCombobox
+                  municipalities={municipalities}
+                  value={city}
+                  onChange={setCity}
+                  disabled={!state}
+                />
               </div>
             </div>
 
             {searchMode === 'similar' && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Empresa Base *</label>
-                <Select value={sourceCompanyId} onValueChange={setSourceCompanyId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a empresa base" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies?.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
-                        {company.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CompanyCombobox
+                  companies={companies}
+                  value={sourceCompanyId}
+                  onChange={setSourceCompanyId}
+                />
               </div>
             )}
 

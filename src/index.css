@@ -600,5 +600,11 @@ All colors MUST be HSL.
       0 20px 40px hsl(var(--foreground) / 0.15),
       0 10px 20px hsl(var(--foreground) / 0.08);
   }
+  
+  /* Popover content matching trigger width */
+  .popover-content-width {
+    width: var(--radix-popover-trigger-width);
+    max-width: 90vw;
+  }
 }
 
