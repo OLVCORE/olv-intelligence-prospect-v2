@@ -136,6 +136,7 @@ export function UpdateNowButton({
         type: 'assign_apollo_org',
         companyId,
         apolloOrganizationId: selectedOrg.id,
+        selectedOrganization: selectedOrg,
       });
 
       const decisorsCount = data?.decisors_saved || data?.decisors_collected || 0;

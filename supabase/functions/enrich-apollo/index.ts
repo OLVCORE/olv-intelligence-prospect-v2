@@ -77,21 +77,30 @@ serve(async (req) => {
           );
         }
 
-        const resp = await fetch('https://api.apollo.io/v1/organizations', {
-          method: 'POST',
+        // Buscar organização por ID no Apollo - usar GET /v1/organizations/{id} e fallback para payload do cliente
+        let org: any = null;
+        const resp = await fetch(`https://api.apollo.io/v1/organizations/${orgId}`, {
+          method: 'GET',
           headers: { 'Content-Type': 'application/json', 'X-Api-Key': APOLLO_API_KEY },
-          body: JSON.stringify({ id: orgId })
         });
         if (!resp.ok) {
           const errText = await resp.text();
           console.error('[Apollo] ❌ Erro ao obter organização por ID:', resp.status, errText);
-          return new Response(
-            JSON.stringify({ error: `Apollo API error: ${resp.status}`, details: errText }),
-            { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          // Fallback: usar dados enviados pelo cliente quando disponíveis e compatíveis
+          const hint: any = (body as any)?.selectedOrganization || (body as any)?.organization || null;
+          if (hint && (hint.id === orgId)) {
+            console.log('[Apollo] ⚠️ Usando dados do cliente como fallback para organização:', orgId);
+            org = hint;
+          } else {
+            return new Response(
+              JSON.stringify({ error: `Apollo API error: ${resp.status}`, details: 'Falha ao obter organização por ID e sem fallback válido' }),
+              { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } else {
+          const orgData = await resp.json();
+          org = orgData.organization || orgData; // compatibilidade
         }
-        const orgData = await resp.json();
-        const org = orgData.organization || orgData; // compatibilidade
 
         const { data: existing } = await supabase
           .from('companies')
