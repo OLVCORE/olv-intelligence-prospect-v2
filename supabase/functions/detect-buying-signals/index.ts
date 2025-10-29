@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -24,6 +25,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const serperKey = Deno.env.get('SERPER_API_KEY');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -98,7 +100,73 @@ serve(async (req) => {
       }
     }
 
-    // 2. Salvar sinais no banco
+    // 2. Refinar sinais com OpenAI GPT-4o-mini (análise avançada)
+    if (signals.length > 0 && openaiKey) {
+      console.log(`[BuyingSignals] 🤖 Refinando ${signals.length} sinais com OpenAI GPT-4o-mini...`);
+      
+      const refinedSignals = [];
+      
+      for (const signal of signals) {
+        try {
+          const prompt = `Analise o seguinte sinal de compra e determine se é relevante e verdadeiro:
+
+Empresa: ${company_name}
+Tipo: ${signal.signal_type}
+Título: ${signal.signal_title}
+Descrição: ${signal.signal_description}
+
+Retorne JSON com:
+{
+  "is_relevant": true/false,
+  "confidence_adjustment": -0.3 a +0.3,
+  "refined_description": "descrição melhorada",
+  "key_insights": ["insight1", "insight2"]
+}`;
+
+          const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'Você é especialista em sales intelligence. Retorne APENAS JSON.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.3,
+              response_format: { type: 'json_object' },
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const refinement = JSON.parse(aiData.choices[0].message.content);
+            
+            if (refinement.is_relevant) {
+              refinedSignals.push({
+                ...signal,
+                confidence_score: Math.min(1.0, Math.max(0, signal.confidence_score + refinement.confidence_adjustment)),
+                signal_description: refinement.refined_description || signal.signal_description,
+                key_insights: refinement.key_insights,
+              });
+            }
+          } else {
+            refinedSignals.push(signal); // Fallback sem refinamento
+          }
+        } catch (error) {
+          console.error('[BuyingSignals] Erro ao refinar sinal:', error);
+          refinedSignals.push(signal);
+        }
+      }
+      
+      signals.length = 0;
+      signals.push(...refinedSignals);
+      console.log(`[BuyingSignals] ✅ ${refinedSignals.length} sinais refinados pela IA`);
+    }
+
+    // 3. Salvar sinais no banco
     if (signals.length > 0) {
       console.log(`[BuyingSignals] Salvando ${signals.length} sinais...`);
       

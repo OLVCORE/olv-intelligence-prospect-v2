@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -24,6 +25,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const serperKey = Deno.env.get('SERPER_API_KEY');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -104,7 +106,77 @@ serve(async (req) => {
       }
     }
 
-    // 2. Salvar oportunidades no banco
+    // 2. Enriquecer oportunidades com OpenAI GPT-4o-mini
+    if (opportunities.length > 0 && openaiKey) {
+      console.log(`[Displacement] 🤖 Analisando ${opportunities.length} oportunidades com OpenAI GPT-4o-mini...`);
+      
+      const enrichedOpps = [];
+      
+      for (const opp of opportunities) {
+        try {
+          const prompt = `Analise esta oportunidade de displacement e forneça insights estratégicos:
+
+Empresa: ${company_name}
+Concorrente: ${opp.competitor_name}
+Motivo: ${opp.displacement_reason}
+Evidência: ${opp.evidence}
+
+Retorne JSON com:
+{
+  "is_viable": true/false,
+  "score_adjustment": -0.2 a +0.2,
+  "strategic_next_action": "ação específica recomendada",
+  "estimated_revenue": valor numérico,
+  "urgency": "high"/"medium"/"low",
+  "talking_points": ["ponto1", "ponto2"]
+}`;
+
+          const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'Você é especialista em displacement e estratégia competitiva. Retorne APENAS JSON.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.3,
+              response_format: { type: 'json_object' },
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const enrichment = JSON.parse(aiData.choices[0].message.content);
+            
+            if (enrichment.is_viable) {
+              enrichedOpps.push({
+                ...opp,
+                opportunity_score: Math.min(1.0, Math.max(0, opp.opportunity_score + enrichment.score_adjustment)),
+                next_action: enrichment.strategic_next_action,
+                estimated_revenue: enrichment.estimated_revenue,
+                urgency: enrichment.urgency,
+                talking_points: enrichment.talking_points,
+              });
+            }
+          } else {
+            enrichedOpps.push(opp); // Fallback sem enriquecimento
+          }
+        } catch (error) {
+          console.error('[Displacement] Erro ao enriquecer oportunidade:', error);
+          enrichedOpps.push(opp);
+        }
+      }
+      
+      opportunities.length = 0;
+      opportunities.push(...enrichedOpps);
+      console.log(`[Displacement] ✅ ${enrichedOpps.length} oportunidades enriquecidas pela IA`);
+    }
+
+    // 3. Salvar oportunidades no banco
     if (opportunities.length > 0) {
       console.log(`[Displacement] Salvando ${opportunities.length} oportunidades...`);
 
