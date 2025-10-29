@@ -44,6 +44,8 @@ serve(async (req: Request) => {
       return J({ error: 'invalid_payload', hint: 'Body vazio ou JSON inválido' }, 400, c);
     }
     
+    console.log('[enrich-apollo] Request body:', JSON.stringify(body));
+    
     // Suporte para busca de organizações (usado quando empresa não tem apollo_organization_id)
     if (body.type === 'search_organizations') {
       const apolloKey = Deno.env.get('APOLLO_API_KEY');
@@ -65,8 +67,18 @@ serve(async (req: Request) => {
     }
     
     // Validação para enriquecimento
-    if (!schema.organization_id(body.organization_id) || !schema.company_id(body.company_id) || !schema.modes(body.modes)) {
-      return J({ error: 'invalid_payload', hint: 'Campos obrigatórios: organization_id (string), company_id (uuid), modes (array)' }, 400, c);
+    const validOrgId = schema.organization_id(body.organization_id);
+    const validCompanyId = schema.company_id(body.company_id);
+    const validModes = schema.modes(body.modes);
+    
+    console.log('[enrich-apollo] Validation:', { validOrgId, validCompanyId, validModes, orgId: body.organization_id, companyId: body.company_id, modes: body.modes });
+    
+    if (!validOrgId || !validCompanyId || !validModes) {
+      return J({ 
+        error: 'invalid_payload', 
+        hint: 'Campos obrigatórios: organization_id (string >=5), company_id (uuid), modes (array)',
+        details: { validOrgId, validCompanyId, validModes }
+      }, 400, c);
     }
 
     const input = {
