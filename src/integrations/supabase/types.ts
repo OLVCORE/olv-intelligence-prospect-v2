@@ -1575,6 +1575,11 @@ export type Database = {
           company_insights: Json | null
           competitor_won: string | null
           created_at: string
+          days_in_stage: number | null
+          deal_notes: string | null
+          deal_probability: number | null
+          deal_stage: string | null
+          deal_value: number | null
           demo_scheduled_at: string | null
           digital_maturity_score: number | null
           discount_percentage: number | null
@@ -1585,6 +1590,7 @@ export type Database = {
           employee_trends: Json | null
           employees: number | null
           estimated_deal_value: number | null
+          expected_close_date: string | null
           field_meta: Json | null
           first_contact_at: string | null
           founding_year: number | null
@@ -1602,6 +1608,7 @@ export type Database = {
           job_postings: Json | null
           job_postings_count: number | null
           journey_stage: string | null
+          last_activity_at: string | null
           last_apollo_sync_at: string | null
           last_contact_at: string | null
           last_funding_round_amount: number | null
@@ -1622,6 +1629,8 @@ export type Database = {
           next_action: string | null
           next_action_date: string | null
           next_action_owner: string | null
+          next_follow_up_action: string | null
+          next_follow_up_date: string | null
           payment_terms: string | null
           phone_numbers: string[] | null
           proposal_sent_at: string | null
@@ -1634,6 +1643,7 @@ export type Database = {
           sic_codes: string[] | null
           similar_companies: Json | null
           social_urls: Json | null
+          stage_changed_at: string | null
           sub_industry: string | null
           suggested_leads: Json | null
           technologies: string[] | null
@@ -1671,6 +1681,11 @@ export type Database = {
           company_insights?: Json | null
           competitor_won?: string | null
           created_at?: string
+          days_in_stage?: number | null
+          deal_notes?: string | null
+          deal_probability?: number | null
+          deal_stage?: string | null
+          deal_value?: number | null
           demo_scheduled_at?: string | null
           digital_maturity_score?: number | null
           discount_percentage?: number | null
@@ -1681,6 +1696,7 @@ export type Database = {
           employee_trends?: Json | null
           employees?: number | null
           estimated_deal_value?: number | null
+          expected_close_date?: string | null
           field_meta?: Json | null
           first_contact_at?: string | null
           founding_year?: number | null
@@ -1698,6 +1714,7 @@ export type Database = {
           job_postings?: Json | null
           job_postings_count?: number | null
           journey_stage?: string | null
+          last_activity_at?: string | null
           last_apollo_sync_at?: string | null
           last_contact_at?: string | null
           last_funding_round_amount?: number | null
@@ -1718,6 +1735,8 @@ export type Database = {
           next_action?: string | null
           next_action_date?: string | null
           next_action_owner?: string | null
+          next_follow_up_action?: string | null
+          next_follow_up_date?: string | null
           payment_terms?: string | null
           phone_numbers?: string[] | null
           proposal_sent_at?: string | null
@@ -1730,6 +1749,7 @@ export type Database = {
           sic_codes?: string[] | null
           similar_companies?: Json | null
           social_urls?: Json | null
+          stage_changed_at?: string | null
           sub_industry?: string | null
           suggested_leads?: Json | null
           technologies?: string[] | null
@@ -1767,6 +1787,11 @@ export type Database = {
           company_insights?: Json | null
           competitor_won?: string | null
           created_at?: string
+          days_in_stage?: number | null
+          deal_notes?: string | null
+          deal_probability?: number | null
+          deal_stage?: string | null
+          deal_value?: number | null
           demo_scheduled_at?: string | null
           digital_maturity_score?: number | null
           discount_percentage?: number | null
@@ -1777,6 +1802,7 @@ export type Database = {
           employee_trends?: Json | null
           employees?: number | null
           estimated_deal_value?: number | null
+          expected_close_date?: string | null
           field_meta?: Json | null
           first_contact_at?: string | null
           founding_year?: number | null
@@ -1794,6 +1820,7 @@ export type Database = {
           job_postings?: Json | null
           job_postings_count?: number | null
           journey_stage?: string | null
+          last_activity_at?: string | null
           last_apollo_sync_at?: string | null
           last_contact_at?: string | null
           last_funding_round_amount?: number | null
@@ -1814,6 +1841,8 @@ export type Database = {
           next_action?: string | null
           next_action_date?: string | null
           next_action_owner?: string | null
+          next_follow_up_action?: string | null
+          next_follow_up_date?: string | null
           payment_terms?: string | null
           phone_numbers?: string[] | null
           proposal_sent_at?: string | null
@@ -1826,6 +1855,7 @@ export type Database = {
           sic_codes?: string[] | null
           similar_companies?: Json | null
           social_urls?: Json | null
+          stage_changed_at?: string | null
           sub_industry?: string | null
           suggested_leads?: Json | null
           technologies?: string[] | null

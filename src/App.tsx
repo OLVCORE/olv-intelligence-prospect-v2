@@ -73,6 +73,8 @@ const CloudMigrationPage = lazy(() => import("./pages/insights/CloudMigrationPag
 const LeadsCapture = lazy(() => import("./pages/Leads/Capture"));
 const LeadsQuarantine = lazy(() => import("./pages/Leads/Quarantine"));
 const ICPAnalysis = lazy(() => import("./pages/Leads/ICPAnalysis"));
+const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
+const Analytics = lazy(() => import("./pages/Leads/Analytics"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
 const OfflinePage = lazy(() => import("./pages/OfflinePage"));
@@ -606,6 +608,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ICPAnalysis />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/pipeline"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Pipeline />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/analytics"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Analytics />
                   </AppLayout>
                 </ProtectedRoute>
               }
