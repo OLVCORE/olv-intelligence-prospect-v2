@@ -24,15 +24,20 @@ export default function SDRDashboardPage() {
     value, 
     icon: Icon, 
     trend, 
-    subtitle 
+    subtitle,
+    onClick 
   }: { 
     title: string; 
     value: string | number; 
     icon: any; 
     trend?: string; 
-    subtitle?: string 
+    subtitle?: string;
+    onClick?: () => void;
   }) => (
-    <Card>
+    <Card 
+      className={onClick ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -76,23 +81,27 @@ export default function SDRDashboardPage() {
             title="Contatos Ativos"
             value={metrics.totalContacts}
             icon={Users}
+            onClick={() => navigate('/contacts')}
           />
           <MetricCard
             title="Conversas Abertas"
             value={metrics.activeConversations}
             icon={MessageSquare}
             subtitle="Requerem atenção"
+            onClick={() => navigate('/sdr/inbox')}
           />
           <MetricCard
             title="Taxa de Resposta"
             value={`${metrics.responseRate}%`}
             icon={Target}
+            onClick={() => navigate('/sdr/analytics')}
           />
           <MetricCard
             title="Tempo Médio Resposta"
             value={`${metrics.avgResponseTime}min`}
             icon={Clock}
             subtitle="Último 7 dias"
+            onClick={() => navigate('/sdr/analytics')}
           />
         </div>
 
@@ -102,23 +111,27 @@ export default function SDRDashboardPage() {
             value={`${metrics.completedTasks}/${metrics.tasksToday}`}
             icon={CheckCircle2}
             subtitle={`${taskCompletionRate}% completo`}
+            onClick={() => navigate('/sdr/tasks')}
           />
           <MetricCard
             title="Sequências Ativas"
             value={metrics.sequencesRunning}
             icon={Zap}
             subtitle="Automações rodando"
+            onClick={() => navigate('/sdr/sequences')}
           />
           <MetricCard
             title="Taxa Conversão"
             value={`${metrics.conversionRate}%`}
             icon={TrendingUp}
+            onClick={() => navigate('/sdr/analytics')}
           />
           <MetricCard
             title="Oportunidades"
             value={metrics.totalOpportunities}
             icon={BarChart3}
             subtitle="Em pipeline"
+            onClick={() => navigate('/sdr/pipeline')}
           />
         </div>
 
