@@ -67,6 +67,9 @@ import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
 import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
 import PlatformCostsPanel from "@/components/dashboard/PlatformCostsPanel";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import APICostExecutiveDashboard from "@/components/dashboard/APICostExecutiveDashboard";
+import PlatformCostsCompact from "@/components/dashboard/PlatformCostsCompact";
+import APIManagementCompact from "@/components/dashboard/APIManagementCompact";
 import { DashboardActionsMenu } from "@/components/dashboard/DashboardActionsMenu";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -616,25 +619,20 @@ export default function Dashboard() {
               </Card>
             ) : (
               <>
-                {/* Financial Overview */}
-                <FinancialOverview />
+                {/* Executive KPIs Dashboard */}
+                <APICostExecutiveDashboard />
 
-                {/* Platform Costs */}
-                <PlatformCostsPanel />
-
-                {/* Apollo Credits + Alerts em 2 colunas (sempre lado a lado) */}
-                <div className="grid grid-cols-2 gap-6">
+                {/* Apollo Credits + Platform Costs */}
+                <div className="grid gap-6 lg:grid-cols-2">
                   <ApolloCreditPanel />
-                  <RealTimeAlerts />
+                  <PlatformCostsCompact />
                 </div>
 
-                {/* APIs Grid */}
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent-cyan/20 to-primary/20 rounded-3xl blur-xl opacity-30" />
-                  <div className="relative">
-                    <APIManagementGrid />
-                  </div>
-                </div>
+                {/* Real-Time Alerts */}
+                <RealTimeAlerts />
+
+                {/* APIs Management - Compact & Collapsible */}
+                <APIManagementCompact />
               </>
             )}
           </TabsContent>
