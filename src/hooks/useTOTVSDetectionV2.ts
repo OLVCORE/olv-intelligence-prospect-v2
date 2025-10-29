@@ -13,6 +13,7 @@ interface TOTVSDetectionParams {
 
 interface Evidence {
   source: string;
+  platform: string;
   score: number;
   title: string;
   snippet: string;
@@ -20,6 +21,7 @@ interface Evidence {
   timestamp: string;
   confidence: string;
   reason: string;
+  totvs_products_mentioned?: string[];
 }
 
 interface TOTVSDetectionResult {

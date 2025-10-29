@@ -60,6 +60,9 @@ export function TOTVSDetectionCardV2({ company }: TOTVSDetectionCardV2Props) {
       companyId: company.id,
       companyName: company.name,
       companyDomain: company.domain,
+      cnpj: (company as any).cnpj,
+      region: (company as any).location?.state || (company as any).region,
+      sector: (company as any).industry || (company as any).sector,
     });
   };
 

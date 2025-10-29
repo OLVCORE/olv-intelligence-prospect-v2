@@ -74,11 +74,15 @@ export function IntentSignalsCardV2({ company }: IntentSignalsCardV2Props) {
     detectSignals({
       companyId: company.id,
       companyName: company.name,
+      cnpj: (company as any).cnpj,
+      region: (company as any).location?.state || (company as any).region,
+      sector: (company as any).industry || (company as any).sector,
     });
   };
 
   const score = latestDetection?.score ?? 0;
   const signals = (latestDetection?.signals as any[]) ?? [];
+  const platformsScanned = (latestDetection?.platforms_scanned as string[]) ?? [];
 
   return (
     <Card>
@@ -228,6 +232,23 @@ export function IntentSignalsCardV2({ company }: IntentSignalsCardV2Props) {
                   <Search className="h-4 w-4" />
                   Sinais Detectados ({signals.length})
                 </h4>
+                
+                {/* Platforms Scanned */}
+                {platformsScanned.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
+                      Plataformas Consultadas ({platformsScanned.length})
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {platformsScanned.map((platform: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {platform}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   {signals.map((signal: any, idx: number) => (
                     <div key={idx} className="bg-muted/50 rounded-lg p-3 space-y-2 border border-border">

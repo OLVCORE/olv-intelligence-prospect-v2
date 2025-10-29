@@ -5,6 +5,9 @@ import { toast } from "sonner";
 interface IntentSignalsParams {
   companyId: string;
   companyName: string;
+  cnpj?: string;
+  region?: string;
+  sector?: string;
 }
 
 interface IntentSignal {
@@ -22,8 +25,10 @@ interface IntentSignalsResult {
   ok: boolean;
   score: number;
   temperature: 'hot' | 'warm' | 'cold';
+  confidence: string;
   signals: IntentSignal[];
   sources_checked: number;
+  platforms_scanned: string[];
   message: string;
 }
 
@@ -54,11 +59,14 @@ export function useDetectIntentSignalsV2() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ companyId, companyName }: IntentSignalsParams): Promise<IntentSignalsResult> => {
+    mutationFn: async ({ companyId, companyName, cnpj, region, sector }: IntentSignalsParams): Promise<IntentSignalsResult> => {
       const { data, error } = await supabase.functions.invoke('detect-intent-signals-v2', {
         body: {
           company_id: companyId,
           company_name: companyName,
+          cnpj,
+          region,
+          sector,
         },
       });
 

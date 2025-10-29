@@ -2,6 +2,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 type Evidence = {
   source: string;
   platform: string;
@@ -77,13 +83,6 @@ function detectTotvsProducts(text: string): string[] {
 }
 
 serve(async (req: Request) => {
-  const corsHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-  };
-
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -97,7 +96,7 @@ serve(async (req: Request) => {
         hint: 'Selecione uma empresa primeiro'
       }), { 
         status: 400, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -115,7 +114,7 @@ serve(async (req: Request) => {
         hint: 'Configure GOOGLE_API_KEY e GOOGLE_CSE_ID'
       }), { 
         status: 500, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -124,7 +123,6 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // BUSCAR VAGAS EM MÚLTIPLAS PLATAFORMAS
     console.log(`[detect-totvs-v2] Buscando vagas em ${JOB_PLATFORMS.length} plataformas...`);
     
     for (const platform of JOB_PLATFORMS) {
@@ -182,7 +180,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // BUSCAR DOCUMENTOS FINANCEIROS
     console.log(`[detect-totvs-v2] Buscando documentos financeiros...`);
     
     const financialQuery = `"${variants[0]}" AND (balanço OR DRE OR "demonstração financeira") AND TOTVS filetype:pdf`;
@@ -239,7 +236,6 @@ serve(async (req: Request) => {
       console.error('[detect-totvs-v2] Erro Financial Docs:', e);
     }
 
-    // BUSCAR NOTÍCIAS
     console.log(`[detect-totvs-v2] Buscando notícias...`);
     
     const newsQuery = `"${variants[0]}" AND ("usa TOTVS" OR "cliente TOTVS" OR "implementou Protheus")`;
@@ -279,76 +275,6 @@ serve(async (req: Request) => {
       }
     } catch (e) {
       console.error('[detect-totvs-v2] Erro Google News:', e);
-    }
-
-    // BUSCAR RECLAME AQUI
-    console.log(`[detect-totvs-v2] Buscando Reclame Aqui...`);
-    
-    const reclameQuery = `"${variants[0]}" AND TOTVS site:reclameaqui.com.br`;
-    const reclameUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(reclameQuery)}&num=3`;
-    
-    platformsScanned.push('Reclame Aqui');
-    
-    try {
-      const res = await fetch(reclameUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
-        
-        for (const item of items) {
-          const fullText = `${item.title} ${item.snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            evidences.push({
-              source: 'reclame_aqui',
-              platform: 'Reclame Aqui',
-              score: 15,
-              title: item.title,
-              snippet: item.snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'medium',
-              reason: `Reclamação menciona ${company_name} + TOTVS`
-            });
-          }
-        }
-      }
-    } catch (e) {
-      console.error('[detect-totvs-v2] Erro Reclame Aqui:', e);
-    }
-
-    // BUSCAR NO WEBSITE
-    if (domain) {
-      console.log(`[detect-totvs-v2] Buscando no website (${domain})...`);
-      
-      const websiteQuery = `site:${domain} AND (TOTVS OR Protheus OR Datasul)`;
-      const websiteUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(websiteQuery)}&num=3`;
-      
-      platformsScanned.push('Website');
-      
-      try {
-        const res = await fetch(websiteUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
-          
-          for (const item of items) {
-            evidences.push({
-              source: 'website',
-              platform: 'Website',
-              score: 10,
-              title: item.title,
-              snippet: item.snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'low',
-              reason: `Site menciona TOTVS`
-            });
-          }
-        }
-      } catch (e) {
-        console.error('[detect-totvs-v2] Erro Website:', e);
-      }
     }
 
     const totalScore = evidences.reduce((sum, e) => sum + e.score, 0);
@@ -396,7 +322,7 @@ serve(async (req: Request) => {
         ? `⚠️ DESQUALIFICAR: ${disqualificationReason}`
         : `✅ QUALIFICADO: Prospectar!`
     }), {
-      headers: corsHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (e: any) {
@@ -406,7 +332,7 @@ serve(async (req: Request) => {
       message: e.message 
     }), { 
       status: 500, 
-      headers: corsHeaders 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
