@@ -1,11 +1,121 @@
-import { BarChart3, ArrowLeft, Filter, Download } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, ArrowLeft, Filter, Download, Eye, ExternalLink, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+
+interface QualifiedCompany {
+  id: string;
+  name: string;
+  cnpj?: string;
+  state?: string;
+  city?: string;
+  totvs_detection_score?: number;
+  totvs_last_checked_at?: string;
+  intent_last_checked_at?: string;
+  qualification_status?: 'qualified' | 'disqualified' | 'pending';
+}
 
 export default function ResultsDashboard() {
   const navigate = useNavigate();
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Buscar empresas analisadas
+  const { data: companies, isLoading } = useQuery({
+    queryKey: ['qualified-companies', filterStatus],
+    queryFn: async () => {
+      let query = supabase
+        .from('companies')
+        .select('id, name, cnpj, totvs_detection_score, totvs_last_checked_at')
+        .not('totvs_last_checked_at', 'is', null)
+        .order('totvs_last_checked_at', { ascending: false });
+
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return (data || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        cnpj: c.cnpj || undefined,
+        totvs_detection_score: c.totvs_detection_score || undefined,
+        totvs_last_checked_at: c.totvs_last_checked_at || undefined,
+        qualification_status: 
+          (c.totvs_detection_score || 0) >= 70 ? 'disqualified' as const :
+          (c.totvs_detection_score || 0) < 40 ? 'qualified' as const : 
+          'pending' as const
+      })) as QualifiedCompany[];
+    },
+  });
+
+  // Calcular estatísticas
+  const stats = {
+    total: companies?.length || 0,
+    qualified: companies?.filter(c => c.qualification_status === 'qualified').length || 0,
+    disqualified: companies?.filter(c => c.qualification_status === 'disqualified').length || 0,
+    hot: companies?.filter(c => (c.totvs_detection_score || 0) < 70).length || 0,
+  };
+
+  // Filtrar empresas
+  const filteredCompanies = companies?.filter(company => {
+    if (filterStatus !== 'all' && company.qualification_status !== filterStatus) return false;
+    if (searchQuery && !company.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  }) || [];
+
+  const handleExportCSV = () => {
+    if (!filteredCompanies.length) return;
+
+    const csv = [
+      ['Nome', 'CNPJ', 'Score TOTVS', 'Status', 'Última Análise'].join(','),
+      ...filteredCompanies.map(c => [
+        c.name,
+        c.cnpj || '',
+        c.totvs_detection_score || 0,
+        c.qualification_status === 'qualified' ? 'Qualificada' :
+        c.qualification_status === 'disqualified' ? 'Desqualificada' : 'Pendente',
+        c.totvs_last_checked_at ? new Date(c.totvs_last_checked_at).toLocaleDateString('pt-BR') : ''
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `icp-results-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'qualified':
+        return <Badge className="bg-green-500">Qualificada</Badge>;
+      case 'disqualified':
+        return <Badge variant="destructive">Desqualificada</Badge>;
+      default:
+        return <Badge variant="secondary">Pendente</Badge>;
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return "text-red-600 font-bold";
+    if (score >= 40) return "text-yellow-600 font-semibold";
+    return "text-green-600";
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -20,33 +130,23 @@ export default function ResultsDashboard() {
             Dashboard de Resultados
           </h1>
           <p className="text-muted-foreground">
-            Visualize empresas qualificadas e desqualificadas
+            Visualize todas as empresas analisadas e seus resultados
           </p>
         </div>
         <div className="flex gap-2">
-          <Button disabled variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filtros
-          </Button>
-          <Button disabled variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={!filteredCompanies.length}
+          >
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
         </div>
       </div>
 
-      {/* Alert de Status */}
-      <Alert className="bg-yellow-500/10 border-yellow-500/20">
-        <BarChart3 className="h-4 w-4 text-yellow-600" />
-        <AlertDescription>
-          <p className="font-semibold">🚧 Módulo em Desenvolvimento</p>
-          <p className="text-sm mt-1">
-            Este dashboard consolidará todos os resultados de qualificação ICP.
-          </p>
-        </AlertDescription>
-      </Alert>
-
-      {/* Preview: Summary Stats */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
           <CardHeader className="pb-3">
@@ -55,7 +155,7 @@ export default function ResultsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">0</div>
+            <div className="text-3xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground mt-1">Todas as análises</p>
           </CardContent>
         </Card>
@@ -67,8 +167,10 @@ export default function ResultsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">0</div>
-            <p className="text-xs text-muted-foreground mt-1">0% do total</p>
+            <div className="text-3xl font-bold text-green-600">{stats.qualified}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.total ? ((stats.qualified / stats.total) * 100).toFixed(1) : 0}% do total
+            </p>
           </CardContent>
         </Card>
 
@@ -79,7 +181,7 @@ export default function ResultsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">0</div>
+            <div className="text-3xl font-bold text-red-600">{stats.disqualified}</div>
             <p className="text-xs text-muted-foreground mt-1">Já usam TOTVS</p>
           </CardContent>
         </Card>
@@ -91,87 +193,124 @@ export default function ResultsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">0</div>
+            <div className="text-3xl font-bold text-yellow-600">{stats.hot}</div>
             <p className="text-xs text-muted-foreground mt-1">Alto sinal de intenção</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Preview: Filters & Table */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Empresas Analisadas</CardTitle>
-          <CardDescription>Lista completa com filtros avançados</CardDescription>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-30" />
-            <p>Nenhuma empresa analisada ainda</p>
-            <p className="text-sm mt-2">
-              Execute análises individuais ou em massa para popular este dashboard
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Buscar</label>
+              <Input
+                placeholder="Nome da empresa..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="qualified">Qualificadas</SelectItem>
+                  <SelectItem value="disqualified">Desqualificadas</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Preview: Features */}
+      {/* Results Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Funcionalidades Planejadas</CardTitle>
-          <CardDescription>O que este módulo oferecerá</CardDescription>
+          <CardTitle>Empresas Analisadas ({filteredCompanies.length})</CardTitle>
+          <CardDescription>Resultados detalhados de qualificação ICP</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-600 mt-2" />
-              <div>
-                <p className="font-medium">Visualização Consolidada</p>
-                <p className="text-sm text-muted-foreground">
-                  Todas as empresas analisadas em uma única visão
-                </p>
-              </div>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Carregando empresas...
             </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-600 mt-2" />
-              <div>
-                <p className="font-medium">Filtros Inteligentes</p>
-                <p className="text-sm text-muted-foreground">
-                  Filtre por qualificação, nicho, região, score TOTVS, score de intenção
-                </p>
-              </div>
+          ) : filteredCompanies.length > 0 ? (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead className="text-center">Score TOTVS</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Última Análise</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompanies.map((company) => (
+                    <TableRow key={company.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <p>{company.name}</p>
+                          {company.cnpj && (
+                            <p className="text-xs text-muted-foreground">
+                              CNPJ: {company.cnpj}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={getScoreColor(company.totvs_detection_score || 0)}>
+                          {company.totvs_detection_score || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(company.qualification_status || 'pending')}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {company.totvs_last_checked_at
+                          ? new Date(company.totvs_last_checked_at).toLocaleDateString('pt-BR')
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/central-icp/individual?company=${company.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/competitive-intelligence?company=${company.id}`)}
+                          >
+                            <Target className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-600 mt-2" />
-              <div>
-                <p className="font-medium">Exportação Customizada</p>
-                <p className="text-sm text-muted-foreground">
-                  Exporte para CSV/Excel com campos personalizados
-                </p>
-              </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p>Nenhuma empresa encontrada com os filtros aplicados</p>
             </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-600 mt-2" />
-              <div>
-                <p className="font-medium">Análise de Tendências</p>
-                <p className="text-sm text-muted-foreground">
-                  Gráficos de evolução temporal de qualificações
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-orange-600 mt-2" />
-              <div>
-                <p className="font-medium">Ações em Massa</p>
-                <p className="text-sm text-muted-foreground">
-                  Atribua tags, altere status ou exporte grupos de empresas
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
