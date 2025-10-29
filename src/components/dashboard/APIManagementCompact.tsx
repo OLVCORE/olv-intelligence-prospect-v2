@@ -3,7 +3,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Lock, Settings2, ExternalLink, Shield } from "lucide-react";
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  Lock, 
+  Shield,
+  Building2,
+  Rocket,
+  Bot,
+  Sparkles,
+  MapPin,
+  Search,
+  BarChart3,
+  ShieldCheck,
+  Scale,
+  DollarSign,
+  Mail,
+  Map,
+  Phone,
+  MessageSquare,
+  Send,
+  Ghost,
+  TrendingUp,
+  Landmark,
+  CircleDollarSign,
+  AlertCircle,
+  LineChart,
+  ShieldAlert,
+  Flag
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   AlertDialog,
@@ -25,32 +53,144 @@ interface CompactAPI {
   status: APIStatus;
   cost: string;
   uptime: number;
-  logo: string;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   signupUrl?: string;
 }
 
 const API_GROUPS = {
   critical: [
-    { name: 'ReceitaWS', status: 'active' as APIStatus, cost: 'R$ 49-199/mês', uptime: 99.9, logo: '🏢', description: 'Dados empresariais via CNPJ', signupUrl: 'https://receitaws.com.br' },
-    { name: 'Apollo.io', status: 'active' as APIStatus, cost: 'US$ 49-149/mês', uptime: 99.5, logo: '🚀', description: 'Enriquecimento B2B', signupUrl: 'https://apollo.io' },
-    { name: 'OpenAI', status: 'active' as APIStatus, cost: 'US$ 20-200/mês', uptime: 99.8, logo: '🤖', description: 'Inteligência Artificial', signupUrl: 'https://platform.openai.com' },
-    { name: 'Lovable AI', status: 'active' as APIStatus, cost: 'Incluído', uptime: 100, logo: '💜', description: 'IA nativa integrada', signupUrl: 'https://lovable.dev' },
-    { name: 'Google Places', status: 'active' as APIStatus, cost: 'US$ 0-200/mês', uptime: 99.9, logo: '📍', description: 'Dados geográficos', signupUrl: 'https://console.cloud.google.com' },
-    { name: 'Serper', status: 'active' as APIStatus, cost: 'US$ 50/mês', uptime: 99.7, logo: '🔍', description: 'Busca avançada', signupUrl: 'https://serper.dev' },
-    { name: 'EmpresaQui', status: 'active' as APIStatus, cost: 'R$ 99-299/mês', uptime: 98.5, logo: '📊', description: 'Inteligência empresarial', signupUrl: 'https://empresaqui.com.br' },
+    { 
+      name: 'ReceitaWS', 
+      status: 'active' as APIStatus, 
+      cost: 'R$ 49-199/mês', 
+      uptime: 99.9, 
+      icon: Building2, 
+      description: 'API oficial de consulta CNPJ com dados cadastrais completos da Receita Federal. Retorna razão social, endereço, atividades CNAE, situação cadastral e sócios em tempo real.',
+      signupUrl: 'https://receitaws.com.br' 
+    },
+    { 
+      name: 'Apollo.io', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 49-149/mês', 
+      uptime: 99.5, 
+      icon: Rocket, 
+      description: 'Líder global em enriquecimento B2B com +275M de contatos verificados. Retorna e-mails, telefones diretos, cargos, hierarquia empresarial e sinais de compra (intent data).',
+      signupUrl: 'https://apollo.io' 
+    },
+    { 
+      name: 'OpenAI', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 20-200/mês', 
+      uptime: 99.8, 
+      icon: Bot, 
+      description: 'API dos modelos GPT-4, GPT-3.5 e DALL-E 3. Permite geração de texto, análise semântica, classificação, summarização e criação de imagens via prompt. Tokenização otimizada.',
+      signupUrl: 'https://platform.openai.com' 
+    },
+    { 
+      name: 'Lovable AI', 
+      status: 'active' as APIStatus, 
+      cost: 'Incluído', 
+      uptime: 100, 
+      icon: Sparkles, 
+      description: 'IA generativa nativa da plataforma Lovable. Acesso direto sem necessidade de API keys externas. Ideal para prototipagem rápida e geração de código React/TypeScript.',
+      signupUrl: 'https://lovable.dev' 
+    },
+    { 
+      name: 'Google Places', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 0-200/mês', 
+      uptime: 99.9, 
+      icon: MapPin, 
+      description: 'API do Google Maps para dados geográficos completos. Busca por proximidade, detalhes de estabelecimentos, avaliações, fotos, horários e geocoding reverso com precisão global.',
+      signupUrl: 'https://console.cloud.google.com' 
+    },
+    { 
+      name: 'Serper', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 50/mês', 
+      uptime: 99.7, 
+      icon: Search, 
+      description: 'API de busca do Google com resultados estruturados em tempo real. Extrai featured snippets, people also ask, related searches e knowledge graph. Latência <500ms.',
+      signupUrl: 'https://serper.dev' 
+    },
+    { 
+      name: 'EmpresaQui', 
+      status: 'active' as APIStatus, 
+      cost: 'R$ 99-299/mês', 
+      uptime: 98.5, 
+      icon: BarChart3, 
+      description: 'Inteligência competitiva com dados financeiros, processos judiciais, protestos, participação societária e scoring proprietário. Cobertura +50M de CNPJs brasileiros.',
+      signupUrl: 'https://empresaqui.com.br' 
+    },
   ],
   highPriority: [
-    { name: 'Serasa Experian', status: 'inactive' as APIStatus, cost: 'R$ 500-2000/mês', uptime: 0, logo: '🛡️', description: 'Score de crédito' },
-    { name: 'JusBrasil API', status: 'inactive' as APIStatus, cost: 'R$ 300-1500/mês', uptime: 0, logo: '⚖️', description: 'Dados jurídicos' },
-    { name: 'Hunter.io', status: 'active' as APIStatus, cost: 'US$ 49-399/mês', uptime: 99.6, logo: '📧', description: 'Validação de e-mails' },
-    { name: 'Twilio Voice', status: 'active' as APIStatus, cost: 'US$ 0.013/min', uptime: 99.95, logo: '📞', description: 'Telefonia cloud' },
-    { name: 'Twilio WhatsApp', status: 'active' as APIStatus, cost: 'US$ 0.005/msg', uptime: 99.95, logo: '💬', description: 'Mensagens WhatsApp' },
+    { 
+      name: 'Serasa Experian', 
+      status: 'inactive' as APIStatus, 
+      cost: 'R$ 500-2000/mês', 
+      uptime: 0, 
+      icon: ShieldCheck, 
+      description: 'Bureau de crédito líder no Brasil. Score Serasa, consultas a SPC/Serasa, dívidas ativas, cheques sem fundo, protestos e histórico de adimplência. Essencial para análise de risco.',
+    },
+    { 
+      name: 'JusBrasil API', 
+      status: 'inactive' as APIStatus, 
+      cost: 'R$ 300-1500/mês', 
+      uptime: 0, 
+      icon: Scale, 
+      description: 'Maior base de processos judiciais do Brasil (+200M). Consulta por CPF/CNPJ retorna processos em todas as instâncias, varas, tribunais e situação atualizada. Monitoring de novos processos.',
+    },
+    { 
+      name: 'Hunter.io', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 49-399/mês', 
+      uptime: 99.6, 
+      icon: Mail, 
+      description: 'Validação e descoberta de e-mails corporativos. Verifica deliverability em tempo real, busca padrões de e-mail por domínio e retorna confidence score. Integração nativa com CRMs.',
+    },
+    { 
+      name: 'Twilio Voice', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 0.013/min', 
+      uptime: 99.95, 
+      icon: Phone, 
+      description: 'Telefonia programável cloud com cobertura global. APIs de voz: chamadas out/inbound, gravação, transcrição automática, IVR dinâmico e voicemail. Números virtuais em +180 países.',
+    },
+    { 
+      name: 'Twilio WhatsApp', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 0.005/msg', 
+      uptime: 99.95, 
+      icon: MessageSquare, 
+      description: 'WhatsApp Business API oficial. Envio de mensagens template, conversações bidirecionais, mídia (imagens/docs/vídeos), botões interativos e webhooks de status. Compliance LGPD.',
+    },
   ],
   complementary: [
-    { name: 'PhantomBuster', status: 'active' as APIStatus, cost: 'US$ 69-439/mês', uptime: 99.0, logo: '👻', description: 'Automação LinkedIn' },
-    { name: 'Reclame Aqui', status: 'inactive' as APIStatus, cost: 'R$ 200-800/mês', uptime: 0, logo: '📢', description: 'Reputação online' },
-    { name: 'Google Analytics', status: 'inactive' as APIStatus, cost: 'Gratuito', uptime: 0, logo: '📊', description: 'Análise de dados' },
+    { 
+      name: 'PhantomBuster', 
+      status: 'active' as APIStatus, 
+      cost: 'US$ 69-439/mês', 
+      uptime: 99.0, 
+      icon: Ghost, 
+      description: 'Automação de scraping em redes sociais (LinkedIn, Twitter, Instagram). Extrai leads, seguidores, engajamento e envia mensagens em massa. Evita rate limiting com rotação de IPs.',
+    },
+    { 
+      name: 'Reclame Aqui', 
+      status: 'inactive' as APIStatus, 
+      cost: 'R$ 200-800/mês', 
+      uptime: 0, 
+      icon: AlertCircle, 
+      description: 'Monitoring de reputação online com +20M de reclamações. API retorna reclamações por CNPJ, índice de solução, tempo médio de resposta e nota RA1000. Alertas automáticos.',
+    },
+    { 
+      name: 'Google Analytics', 
+      status: 'inactive' as APIStatus, 
+      cost: 'Gratuito', 
+      uptime: 0, 
+      icon: LineChart, 
+      description: 'Analytics web e mobile com reporting API. Extrai sessões, usuários, conversões, eventos personalizados e funis. Ideal para dashboards executivos com métricas unificadas.',
+    },
   ],
 };
 
@@ -113,49 +253,62 @@ function APIGroupCard({ title, apis, color, defaultOpen = false }: APIGroupCardP
 
           <CollapsibleContent>
             <CardContent className="pt-0 space-y-2">
-              {apis.map((api) => (
-                <TooltipProvider key={api.name}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all group">
-                        <div className="flex items-center gap-3 flex-1">
-                          <span className="text-xl">{api.logo}</span>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{api.name}</p>
-                            <p className="text-xs text-muted-foreground">{api.description}</p>
+              {apis.map((api) => {
+                const Icon = api.icon;
+                return (
+                  <TooltipProvider key={api.name}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all group">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`p-2 rounded-lg border ${
+                              api.status === 'active' 
+                                ? 'bg-green-500/10 border-green-500/20 group-hover:bg-green-500/20' 
+                                : 'bg-muted/50 border-border'
+                            } transition-all`}>
+                              <Icon className={`h-4 w-4 ${
+                                api.status === 'active' ? 'text-green-500' : 'text-muted-foreground'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{api.name}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-1">{api.description}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={api.status === 'active' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {api.status === 'active' ? 'Ativa' : 'Inativa'}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleConfigureClick(api.name)}
+                            >
+                              <Shield className="h-4 w-4 text-muted-foreground" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={api.status === 'active' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {api.status === 'active' ? 'Ativa' : 'Inativa'}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleConfigureClick(api.name)}
-                          >
-                            <Shield className="h-4 w-4 text-muted-foreground" />
-                          </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-md">
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold">{api.name}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{api.description}</p>
+                          <div className="pt-2 border-t border-border space-y-1">
+                            <p className="text-xs"><strong>Custo:</strong> {api.cost}</p>
+                            {api.status === 'active' && (
+                              <p className="text-xs"><strong>Uptime:</strong> {api.uptime}%</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold">{api.name}</p>
-                        <p className="text-xs text-muted-foreground">{api.description}</p>
-                        <p className="text-xs"><strong>Custo:</strong> {api.cost}</p>
-                        {api.status === 'active' && (
-                          <p className="text-xs"><strong>Uptime:</strong> {api.uptime}%</p>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
