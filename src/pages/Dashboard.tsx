@@ -66,6 +66,7 @@ import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
 import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
 import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
 import PlatformCostsPanel from "@/components/dashboard/PlatformCostsPanel";
+import ScrollToTop from "@/components/common/ScrollToTop";
 import { DashboardActionsMenu } from "@/components/dashboard/DashboardActionsMenu";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -960,6 +961,9 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Botão flutuante para voltar ao topo */}
+      <ScrollToTop />
     </div>
   );
 }
