@@ -81,7 +81,7 @@ export default function SDRDashboardPage() {
             title="Contatos Ativos"
             value={metrics.totalContacts}
             icon={Users}
-            onClick={() => navigate('/contacts')}
+            onClick={() => navigate('/sdr/inbox')}
           />
           <MetricCard
             title="Conversas Abertas"
