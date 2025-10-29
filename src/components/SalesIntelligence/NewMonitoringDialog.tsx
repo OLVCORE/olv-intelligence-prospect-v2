@@ -26,6 +26,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
     sector: '',
     niche: '',
     custom_niche: '',
+    regions: [] as string[],
     states: [] as string[],
     city: '',
     keywords: [] as string[],
@@ -34,7 +35,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
   });
   const [keywordInput, setKeywordInput] = useState('');
   const [statesPopoverOpen, setStatesPopoverOpen] = useState(false);
-
+  const [regionsPopoverOpen, setRegionsPopoverOpen] = useState(false);
   const sectors = [
     { value: 'agro', label: 'Agro' },
     { value: 'construcao', label: 'Construção' },
@@ -84,14 +85,11 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
   };
 
   const handleToggleRegion = (region: string) => {
-    const regionStates = regionsByState[region];
-    const allSelected = regionStates.every(state => formData.states.includes(state));
-    
     setFormData(prev => ({
       ...prev,
-      states: allSelected
-        ? prev.states.filter(s => !regionStates.includes(s))
-        : [...new Set([...prev.states, ...regionStates])]
+      regions: prev.regions.includes(region)
+        ? prev.regions.filter(r => r !== region)
+        : [...prev.regions, region]
     }));
   };
 
@@ -103,14 +101,11 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
   };
 
   const isRegionSelected = (region: string) => {
-    const regionStates = regionsByState[region];
-    return regionStates.every(state => formData.states.includes(state));
+    return formData.regions.includes(region);
   };
 
-  const isRegionPartiallySelected = (region: string) => {
-    const regionStates = regionsByState[region];
-    const selectedCount = regionStates.filter(state => formData.states.includes(state)).length;
-    return selectedCount > 0 && selectedCount < regionStates.length;
+  const isRegionPartiallySelected = (_region: string) => {
+    return false;
   };
 
   const handleAddKeyword = () => {
@@ -195,6 +190,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
         sector: '',
         niche: '',
         custom_niche: '',
+        regions: [],
         states: [],
         city: '',
         keywords: [],
@@ -280,6 +276,43 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <Label>Região(ões)</Label>
+              <Popover open={regionsPopoverOpen} onOpenChange={setRegionsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                  >
+                    {formData.regions.length === 0
+                      ? "Selecione regiões"
+                      : `${formData.regions.length} região(ões) selecionada(s)`}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[340px] p-0" align="start">
+                  <div className="p-4 space-y-2">
+                    {Object.keys(regionsByState).map((region) => (
+                      <div key={region} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`region-${region}`}
+                          checked={isRegionSelected(region)}
+                          onCheckedChange={() => handleToggleRegion(region)}
+                        />
+                        <label
+                          htmlFor={`region-${region}`}
+                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {region}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
               <Label>Estado(s) *</Label>
               <Popover open={statesPopoverOpen} onOpenChange={setStatesPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -288,69 +321,71 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
                     role="combobox"
                     className="w-full justify-between"
                   >
-                    {formData.states.length === 0
-                      ? "Selecione estado(s)"
-                      : formData.states.length === brazilStates.length
-                      ? "Todos os estados"
-                      : `${formData.states.length} estado(s) selecionado(s)`}
+                    {(() => {
+                      const statesToShow = formData.regions.length > 0
+                        ? Array.from(new Set(formData.regions.flatMap(r => regionsByState[r] || [])))
+                        : brazilStates;
+                      const selectedInFilter = formData.states.filter(s => statesToShow.includes(s));
+                      if (selectedInFilter.length === 0) return "Selecione estado(s)";
+                      if (selectedInFilter.length === statesToShow.length) return "Todos os estados (filtrados)";
+                      return `${selectedInFilter.length} estado(s) selecionado(s)`;
+                    })()}
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[400px] p-0" align="start">
                   <ScrollArea className="h-[400px]">
                     <div className="p-4 space-y-4">
-                      {/* Todos */}
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="all-states"
-                          checked={formData.states.length === brazilStates.length}
-                          onCheckedChange={handleToggleAll}
-                        />
-                        <label
-                          htmlFor="all-states"
-                          className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Todos os Estados
-                        </label>
-                      </div>
+                      {(() => {
+                        const statesToShow = formData.regions.length > 0
+                          ? Array.from(new Set(formData.regions.flatMap(r => regionsByState[r] || [])))
+                          : brazilStates;
+                        const allSelectedInFilter = statesToShow.every(s => formData.states.includes(s));
+                        return (
+                          <>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="all-filtered-states"
+                                checked={statesToShow.length > 0 && allSelectedInFilter}
+                                onCheckedChange={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    states: allSelectedInFilter
+                                      ? prev.states.filter(s => !statesToShow.includes(s))
+                                      : Array.from(new Set([...prev.states, ...statesToShow]))
+                                  }));
+                                }}
+                              />
+                              <label
+                                htmlFor="all-filtered-states"
+                                className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Todos os Estados {formData.regions.length > 0 ? '(filtrados)' : ''}
+                              </label>
+                            </div>
 
-                      <Separator />
+                            <Separator />
 
-                      {/* Regiões */}
-                      {Object.entries(regionsByState).map(([region, states]) => (
-                        <div key={region} className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`region-${region}`}
-                              checked={isRegionSelected(region)}
-                              onCheckedChange={() => handleToggleRegion(region)}
-                            />
-                            <label
-                              htmlFor={`region-${region}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              {region} {isRegionPartiallySelected(region) && '(parcial)'}
-                            </label>
-                          </div>
-                          <div className="ml-6 space-y-2">
-                            {states.map(state => (
-                              <div key={state} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`state-${state}`}
-                                  checked={formData.states.includes(state)}
-                                  onCheckedChange={() => handleToggleState(state)}
-                                />
-                                <label
-                                  htmlFor={`state-${state}`}
-                                  className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {state}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                            <div className="space-y-2">
+                              {statesToShow.map(state => (
+                                <div key={state} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`state-${state}`}
+                                    checked={formData.states.includes(state)}
+                                    onCheckedChange={() => handleToggleState(state)}
+                                  />
+                                  <label
+                                    htmlFor={`state-${state}`}
+                                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {state}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </ScrollArea>
                 </PopoverContent>
@@ -371,15 +406,15 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
                 </div>
               )}
             </div>
+          </div>
 
-            <div>
-              <Label>Cidade (opcional)</Label>
-              <Input
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Ex: Tremembé"
-              />
-            </div>
+          <div>
+            <Label>Cidade (opcional)</Label>
+            <Input
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              placeholder="Ex: Tremembé"
+            />
           </div>
 
           <div>
@@ -388,12 +423,12 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
               <Input
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddKeyword();
-                  }
-                }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                      e.preventDefault();
+                      handleAddKeyword();
+                    }
+                  }}
                 placeholder="Ex: acima de 500 cabeças, certificação orgânica"
               />
               <Button
