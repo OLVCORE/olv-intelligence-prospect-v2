@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, BarChart3, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useTOTVSDetectionV3, useLatestTOTVSDetectionV3 } from "@/hooks/useTOTVSDetectionV3";
+import { useTOTVSDetectionV5, useLatestTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -15,15 +15,16 @@ interface TOTVSDetectionCardV3Props {
     name: string;
     cnpj?: string;
     domain?: string;
-    region?: string;
-    sector?: string;
-    niche?: string;
+    state?: string;
+    city?: string;
+    sector_code?: string;
+    niche_code?: string;
   };
 }
 
 export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
-  const detectMutation = useTOTVSDetectionV3();
-  const { data: latestDetection } = useLatestTOTVSDetectionV3(company?.id);
+  const detectMutation = useTOTVSDetectionV5();
+  const { data: latestDetection } = useLatestTOTVSDetectionV5(company?.id);
   const [showMethodology, setShowMethodology] = useState(false);
   const [showEvidences, setShowEvidences] = useState(true);
 
@@ -33,14 +34,25 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
       return;
     }
 
+    if (!company.state) {
+      toast.error("Estado é obrigatório para análise v5.0");
+      return;
+    }
+
+    if (!company.niche_code) {
+      toast.error("Nicho é obrigatório para análise v5.0");
+      return;
+    }
+
     detectMutation.mutate({
       companyId: company.id,
       companyName: company.name,
       cnpj: company.cnpj,
       domain: company.domain,
-      region: company.region,
-      sector: company.sector,
-      niche: company.niche
+      state: company.state,
+      city: company.city,
+      sectorCode: company.sector_code,
+      nicheCode: company.niche_code,
     });
   };
 
@@ -71,10 +83,10 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Detecção de Uso de TOTVS v3.0
+              Detecção de Uso de TOTVS v5.0
             </CardTitle>
             <CardDescription>
-              Análise com metodologia transparente
+              Análise cirúrgica por nicho com governança completa
             </CardDescription>
           </div>
           <Button
