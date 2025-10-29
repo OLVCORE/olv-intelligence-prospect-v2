@@ -9,8 +9,9 @@ import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompet
 import { CompetitorInsightsIntegration } from "@/components/competitive/CompetitorInsightsIntegration";
 import { useState } from "react";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
-import { TOTVSDetectionCardV2 } from "@/components/competitive/TOTVSDetectionCardV2";
-import { IntentSignalsCardV2 } from "@/components/competitive/IntentSignalsCardV2";
+import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCardV3";
+import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
+import { SimilarCompaniesCard } from "@/components/competitive/SimilarCompaniesCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { ICPFilters } from "@/components/competitive/ICPFilters";
 import { MonitoringToggleButton } from "@/components/competitive/MonitoringToggleButton";
@@ -34,6 +35,7 @@ export default function CompetitiveIntelligencePage() {
   const [filters, setFilters] = useState({
     region: 'all',
     sector: 'all',
+    niche: 'all',
     status: 'all',
     temperature: 'all',
   });
@@ -264,9 +266,15 @@ export default function CompetitiveIntelligencePage() {
               />
 
               <div className="grid gap-6 md:grid-cols-2">
-                <TOTVSDetectionCardV2 company={company} />
-                <IntentSignalsCardV2 company={company} />
+                <TOTVSDetectionCardV3 company={company} />
+                <IntentSignalsCardV3 company={company} />
               </div>
+
+              {/* Empresas Similares */}
+              <SimilarCompaniesCard 
+                companyId={company.id}
+                companyName={company.name}
+              />
 
               {/* AI Recommendation */}
               <QualificationRecommendation 

@@ -3,6 +3,9 @@ project_id = "ioaxzpwlurpduanzkfrt"
 [functions.detect-totvs-usage-v3]
 verify_jwt = false
 
+[functions.detect-intent-signals-v3]
+verify_jwt = false
+
 [functions.company-monitoring-cron]
 verify_jwt = false
 
