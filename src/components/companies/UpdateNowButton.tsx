@@ -212,18 +212,26 @@ export function UpdateNowButton({
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 {selectedOrg.logo_url ? (
-                  <img src={selectedOrg.logo_url} alt={`Logo ${selectedOrg.name}`} className="h-10 w-10 rounded-sm object-contain" loading="lazy" />
+                  <img src={selectedOrg.logo_url} alt={`Logo ${selectedOrg.name}`} className="h-12 w-12 rounded-sm object-contain" loading="lazy" />
                 ) : (
-                  <div className="h-10 w-10 rounded-sm bg-muted" />
+                  <div className="h-12 w-12 rounded-sm bg-muted" />
                 )}
                 <div>
                   <div className="text-lg font-semibold">{selectedOrg.name}</div>
                   <div className="text-sm text-muted-foreground">{selectedOrg.primary_domain || selectedOrg.website_url || '—'}</div>
                 </div>
               </div>
+
+              {selectedOrg.description && (
+                <div className="rounded-md border p-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Descrição da Empresa</div>
+                  <div className="text-sm">{selectedOrg.description}</div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-md border p-3">
-                  <div className="text-xs text-muted-foreground">Indústria</div>
+                  <div className="text-xs text-muted-foreground">Indústria Principal</div>
                   <div className="font-medium">{selectedOrg.industry || '—'}</div>
                 </div>
                 <div className="rounded-md border p-3">
@@ -231,17 +239,75 @@ export function UpdateNowButton({
                   <div className="font-medium">{selectedOrg.estimated_num_employees ?? '—'}</div>
                 </div>
                 <div className="rounded-md border p-3">
-                  <div className="text-xs text-muted-foreground">Local</div>
+                  <div className="text-xs text-muted-foreground">Localização</div>
                   <div className="font-medium">{[selectedOrg.city, selectedOrg.state, selectedOrg.country].filter(Boolean).join(', ') || '—'}</div>
                 </div>
                 <div className="rounded-md border p-3">
-                  <div className="text-xs text-muted-foreground">Fundação</div>
+                  <div className="text-xs text-muted-foreground">Ano de Fundação</div>
                   <div className="font-medium">{selectedOrg.founded_year ?? '—'}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                {selectedOrg.website_url && <a href={selectedOrg.website_url} target="_blank" rel="noreferrer" className="text-primary text-sm underline">Abrir site</a>}
-                {selectedOrg.linkedin_url && <a href={selectedOrg.linkedin_url} target="_blank" rel="noreferrer" className="text-primary text-sm underline">Abrir LinkedIn</a>}
+
+              {selectedOrg.industries && selectedOrg.industries.length > 0 && (
+                <div className="rounded-md border p-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Indústrias</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedOrg.industries.map((ind, idx) => (
+                      <span key={idx} className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                        {ind}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedOrg.secondary_industries && selectedOrg.secondary_industries.length > 0 && (
+                <div className="rounded-md border p-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Indústrias Secundárias</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedOrg.secondary_industries.map((ind, idx) => (
+                      <span key={idx} className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium">
+                        {ind}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedOrg.keywords && selectedOrg.keywords.length > 0 && (
+                <div className="rounded-md border p-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Palavras-chave</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedOrg.keywords.slice(0, 12).map((kw, idx) => (
+                      <span key={idx} className="inline-flex items-center rounded-md bg-secondary/50 px-2 py-1 text-xs">
+                        {kw}
+                      </span>
+                    ))}
+                    {selectedOrg.keywords.length > 12 && (
+                      <span className="inline-flex items-center rounded-md bg-secondary/50 px-2 py-1 text-xs font-medium">
+                        +{selectedOrg.keywords.length - 12} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 flex-wrap">
+                {selectedOrg.website_url && (
+                  <a href={selectedOrg.website_url} target="_blank" rel="noreferrer" className="text-primary text-sm underline">
+                    Abrir site
+                  </a>
+                )}
+                {selectedOrg.linkedin_url && (
+                  <a href={selectedOrg.linkedin_url} target="_blank" rel="noreferrer" className="text-primary text-sm underline">
+                    Abrir LinkedIn
+                  </a>
+                )}
+                {selectedOrg.id && (
+                  <a href={`https://app.apollo.io/#/organizations/${selectedOrg.id}`} target="_blank" rel="noreferrer" className="text-primary text-sm underline">
+                    Ver no Apollo
+                  </a>
+                )}
               </div>
               <div className="text-sm text-muted-foreground">
                 Revise as informações e confirme para atribuir e iniciar o enriquecimento completo com Apollo.
