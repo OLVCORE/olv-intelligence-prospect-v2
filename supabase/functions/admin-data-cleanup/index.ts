@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
@@ -53,8 +54,7 @@ serve(async (req) => {
     const { action, password, tables } = await req.json();
 
     // Validar senha re-autenticando o usuário
-    const { data: userData } = await supabase.auth.getUser();
-    const userEmail = userData.user?.email;
+    const userEmail = user.email;
     
     if (!userEmail || !password) {
       return new Response(
@@ -63,13 +63,13 @@ serve(async (req) => {
       );
     }
 
-    // Re-autenticar para validar senha
-    const supabaseAdmin = createClient(
+    // Re-autenticar para validar senha usando cliente anônimo
+    const authClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    const { error: signInError } = await authClient.auth.signInWithPassword({
       email: userEmail,
       password: password,
     });
@@ -80,6 +80,12 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Criar cliente com service role para deletar dados
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     // Executar ação de limpeza
     if (action === 'cleanup' && tables && Array.isArray(tables)) {

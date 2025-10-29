@@ -1179,8 +1179,9 @@ export default function DocumentationPage() {
                                   </div>
                                 </div>
 
-                                <div className="bg-muted/30 p-3 rounded text-sm">
-                                  <strong>⏱️ Tempo estimado:</strong> 5-30 segundos
+                                <div className="bg-muted/30 p-3 rounded text-sm flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <strong>Tempo estimado:</strong> 5-30 segundos
                                 </div>
                               </div>
                             </AccordionContent>
@@ -1219,7 +1220,8 @@ export default function DocumentationPage() {
                                 </div>
 
                                 <Button className="w-full bg-green-500 hover:bg-green-600">
-                                  ✓ Aprovar Lead
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  Aprovar Lead
                                 </Button>
                               </div>
                             </AccordionContent>
@@ -1235,7 +1237,10 @@ export default function DocumentationPage() {
                             <AccordionContent>
                               <div className="space-y-3">
                                 <div className="bg-red-500/10 p-4 rounded border border-red-500/20">
-                                  <h5 className="font-semibold text-red-400 mb-2">⚠️ Quando usar:</h5>
+                                  <h5 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5" />
+                                    Quando usar:
+                                  </h5>
                                   <ul className="text-sm space-y-1">
                                     <li>• Dados ruins ou incompletos</li>
                                     <li>• Empresa fora do ICP</li>
@@ -1263,7 +1268,8 @@ export default function DocumentationPage() {
                                 </div>
 
                                 <Button variant="destructive" className="w-full">
-                                  ✗ Rejeitar Lead
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Rejeitar Lead
                                 </Button>
                               </div>
                             </AccordionContent>
@@ -1296,7 +1302,9 @@ export default function DocumentationPage() {
                                 </div>
 
                                 <Button className="w-full bg-purple-500 hover:bg-purple-600">
-                                  🎯 Qualificar ICP →
+                                  <Target className="h-4 w-4 mr-2" />
+                                  Qualificar ICP
+                                  <ArrowRight className="h-4 w-4 ml-2" />
                                 </Button>
                               </div>
                             </AccordionContent>
@@ -1307,7 +1315,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="scoring">
                       <AccordionTrigger className="text-lg font-semibold">
-                        📊 Sistema de Scoring (0-100)
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-primary" />
+                          Sistema de Scoring (0-100)
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="space-y-3">
@@ -1317,7 +1328,10 @@ export default function DocumentationPage() {
                               <span className="font-mono text-green-400 whitespace-nowrap">70-100</span>
                             </div>
                             <p className="text-sm">
-                              <strong>✅ Aprovado Automaticamente</strong> - Lead com dados completos e validados
+                              <strong className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-400 inline" />
+                                Aprovado Automaticamente
+                              </strong> - Lead com dados completos e validados
                             </p>
                           </div>
 
@@ -1327,7 +1341,10 @@ export default function DocumentationPage() {
                               <span className="font-mono text-yellow-400 whitespace-nowrap">30-69</span>
                             </div>
                             <p className="text-sm">
-                              <strong>⚠️ Revisão Manual</strong> - Lead requer aprovação manual do operador
+                              <strong className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-yellow-400 inline" />
+                                Revisão Manual
+                              </strong> - Lead requer aprovação manual do operador
                             </p>
                           </div>
 
@@ -1337,7 +1354,10 @@ export default function DocumentationPage() {
                               <span className="font-mono text-red-400 whitespace-nowrap">0-29</span>
                             </div>
                             <p className="text-sm">
-                              <strong>❌ Rejeitado Automaticamente</strong> - Dados insuficientes ou inválidos
+                              <strong className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-red-400 inline" />
+                                Rejeitado Automaticamente
+                              </strong> - Dados insuficientes ou inválidos
                             </p>
                           </div>
                         </div>
@@ -1372,13 +1392,14 @@ export default function DocumentationPage() {
 
                 {/* Continue with remaining tabs... */}
                 <TabsContent value="qualificacao" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                    🎯 Módulo 3: Qualificação ICP + IA
+                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                    <Target className="h-8 w-8" />
+                    Módulo 3: Qualificação ICP + IA
                   </h2>
                   
                   <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-lg">
                     <p className="flex items-start gap-2">
-                      <span className="text-xl">🤖</span>
+                      <Bot className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
                         <strong>IA Avançada:</strong> Este módulo usa inteligência artificial (Gemini 2.5 Flash) 
                         para gerar propostas de valor personalizadas e scripts de abordagem únicos para cada lead.
@@ -1396,8 +1417,9 @@ export default function DocumentationPage() {
                 </TabsContent>
 
                 <TabsContent value="pipeline" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                    📊 Módulo 4: Pipeline Visual
+                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                    <Workflow className="h-8 w-8" />
+                    Módulo 4: Pipeline Visual
                   </h2>
                   
                   <Card className="p-6 bg-gradient-to-br from-pink-500/10 to-purple-500/5">
