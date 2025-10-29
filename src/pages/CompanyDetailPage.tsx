@@ -50,6 +50,8 @@ import phantomLogo from "@/assets/logos/phantombuster.png";
 import { CompanyEnrichmentTabs } from '@/components/companies/CompanyEnrichmentTabs';
 import { UpdateNowButton } from '@/components/companies/UpdateNowButton';
 import { AutoEnrichButton } from '@/components/companies/AutoEnrichButton';
+import { CreditsDashboard } from '@/components/companies/CreditsDashboard';
+import { CreditUsageHistory } from '@/components/companies/CreditUsageHistory';
 import CompanyGlobalSearch from '@/components/companies/CompanyGlobalSearch';
 import { useRealtimeCompanyChanges } from '@/hooks/useRealtimeCompanyChanges';
 
@@ -562,6 +564,23 @@ export default function CompanyDetailPage() {
                 </TooltipTrigger>
                 <TooltipContent>
                   🎯 RADAR Inteligente: People, Similares, Technologies, Insights, Trends, Visitors, News, Vagas
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger 
+                    value="credits" 
+                    className="gap-2 data-[state=active]:glass-card data-[state=active]:text-primary"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    Créditos
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Controle de uso de créditos Apollo.io e histórico de consumo
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1595,6 +1614,14 @@ export default function CompanyDetailPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* TAB: Créditos Apollo */}
+        <TabsContent value="credits" className="space-y-6 animate-fade-in">
+          <div className="grid gap-6 md:grid-cols-2">
+            <CreditsDashboard />
+            <CreditUsageHistory />
+          </div>
         </TabsContent>
       </Tabs>
 

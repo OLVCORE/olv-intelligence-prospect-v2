@@ -514,6 +514,98 @@ export type Database = {
           },
         ]
       }
+      apollo_credit_config: {
+        Row: {
+          alert_threshold: number
+          block_threshold: number
+          id: string
+          plan_type: string
+          reset_date: string
+          total_credits: number
+          trial_ends_at: string
+          updated_at: string
+          used_credits: number
+        }
+        Insert: {
+          alert_threshold?: number
+          block_threshold?: number
+          id?: string
+          plan_type?: string
+          reset_date?: string
+          total_credits?: number
+          trial_ends_at?: string
+          updated_at?: string
+          used_credits?: number
+        }
+        Update: {
+          alert_threshold?: number
+          block_threshold?: number
+          id?: string
+          plan_type?: string
+          reset_date?: string
+          total_credits?: number
+          trial_ends_at?: string
+          updated_at?: string
+          used_credits?: number
+        }
+        Relationships: []
+      }
+      apollo_credit_usage: {
+        Row: {
+          actual_credits: number | null
+          company_id: string | null
+          company_name: string | null
+          completed_at: string | null
+          error_code: string | null
+          error_message: string | null
+          estimated_credits: number
+          id: string
+          modes: string[]
+          organization_id: string
+          requested_at: string
+          requested_by: string | null
+          status: string
+        }
+        Insert: {
+          actual_credits?: number | null
+          company_id?: string | null
+          company_name?: string | null
+          completed_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          estimated_credits: number
+          id?: string
+          modes: string[]
+          organization_id: string
+          requested_at?: string
+          requested_by?: string | null
+          status: string
+        }
+        Update: {
+          actual_credits?: number | null
+          company_id?: string | null
+          company_name?: string | null
+          completed_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          estimated_credits?: number
+          id?: string
+          modes?: string[]
+          organization_id?: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apollo_credit_usage_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_features: {
         Row: {
           enabled: boolean
@@ -5473,6 +5565,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_apollo_credits: {
+        Args: { credits_consumed: number }
+        Returns: undefined
       }
       promote_canvas_decision: {
         Args: { p_block_id: string; p_target_type: string }
