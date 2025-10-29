@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
 import { useDisplacementOpportunities } from '@/hooks/useDisplacementOpportunities';
+import { MonitoringStatusIndicator } from '@/components/MonitoringStatusIndicator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -80,6 +81,9 @@ export default function SalesIntelligenceFeed() {
           </Button>
         </div>
       </div>
+
+      {/* 🚦 SEMÁFORO DE STATUS EM TEMPO REAL 24/7 */}
+      <MonitoringStatusIndicator variant="full" />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

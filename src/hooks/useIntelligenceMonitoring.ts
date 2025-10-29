@@ -40,17 +40,34 @@ export function useMonitoringConfig(userId?: string) {
   return useQuery({
     queryKey: ['intelligence-monitoring-config', userId],
     queryFn: async () => {
+      if (!userId) return null;
+
       const { data, error } = await supabase
         .from('intelligence_monitoring_config')
         .select('*')
-        .eq('user_id', userId!)
+        .eq('user_id', userId)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+      if (error && error.code === 'PGRST116') {
+        // Config não existe, criar padrão
+        console.log('[MonitoringConfig] Config não existe, criando padrão...');
+        const { data: initData, error: initError } = await supabase.functions.invoke('init-monitoring-config', {
+          body: { user_id: userId },
+        });
+
+        if (initError) {
+          console.error('[MonitoringConfig] Erro ao criar config padrão:', initError);
+          return null;
+        }
+
+        return initData?.config || null;
+      }
+      
+      if (error) {
         throw error;
       }
       
-      return data as IntelligenceMonitoringConfig | null;
+      return data as IntelligenceMonitoringConfig;
     },
     enabled: !!userId,
   });
