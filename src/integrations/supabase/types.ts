@@ -1208,6 +1208,7 @@ export type Database = {
           apollo_organization_id: string | null
           apollo_score: Json | null
           apollo_signals: Json | null
+          apollo_url: string | null
           buying_intent_score: number | null
           buying_intent_signals: Json | null
           cnpj: string | null
@@ -1218,21 +1219,27 @@ export type Database = {
           disqualification_reason: string | null
           domain: string | null
           employee_count_from_apollo: number | null
+          employee_count_range: string | null
           employee_trends: Json | null
           employees: number | null
           founding_year: number | null
           funding_rounds: Json | null
           funding_total: number | null
+          headquarters_city: string | null
+          headquarters_country: string | null
+          headquarters_state: string | null
           id: string
           industry: string | null
           investors: Json | null
           is_disqualified: boolean | null
           job_postings: Json | null
           job_postings_count: number | null
+          last_apollo_sync_at: string | null
           last_funding_round_amount: number | null
           last_funding_round_date: string | null
           lead_score: number | null
           lead_score_updated_at: string | null
+          linkedin_company_id: string | null
           linkedin_url: string | null
           location: Json | null
           market_segments: string[] | null
@@ -1242,10 +1249,12 @@ export type Database = {
           phone_numbers: string[] | null
           raw_data: Json | null
           revenue: string | null
+          revenue_range: string | null
           revenue_range_from_apollo: string | null
           sic_codes: string[] | null
           similar_companies: Json | null
           social_urls: Json | null
+          sub_industry: string | null
           suggested_leads: Json | null
           technologies: string[] | null
           technologies_full: Json | null
@@ -1266,6 +1275,7 @@ export type Database = {
           apollo_organization_id?: string | null
           apollo_score?: Json | null
           apollo_signals?: Json | null
+          apollo_url?: string | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
           cnpj?: string | null
@@ -1276,21 +1286,27 @@ export type Database = {
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
+          employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
+          headquarters_city?: string | null
+          headquarters_country?: string | null
+          headquarters_state?: string | null
           id?: string
           industry?: string | null
           investors?: Json | null
           is_disqualified?: boolean | null
           job_postings?: Json | null
           job_postings_count?: number | null
+          last_apollo_sync_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
+          linkedin_company_id?: string | null
           linkedin_url?: string | null
           location?: Json | null
           market_segments?: string[] | null
@@ -1300,10 +1316,12 @@ export type Database = {
           phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
+          revenue_range?: string | null
           revenue_range_from_apollo?: string | null
           sic_codes?: string[] | null
           similar_companies?: Json | null
           social_urls?: Json | null
+          sub_industry?: string | null
           suggested_leads?: Json | null
           technologies?: string[] | null
           technologies_full?: Json | null
@@ -1324,6 +1342,7 @@ export type Database = {
           apollo_organization_id?: string | null
           apollo_score?: Json | null
           apollo_signals?: Json | null
+          apollo_url?: string | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
           cnpj?: string | null
@@ -1334,21 +1353,27 @@ export type Database = {
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
+          employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
+          headquarters_city?: string | null
+          headquarters_country?: string | null
+          headquarters_state?: string | null
           id?: string
           industry?: string | null
           investors?: Json | null
           is_disqualified?: boolean | null
           job_postings?: Json | null
           job_postings_count?: number | null
+          last_apollo_sync_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
+          linkedin_company_id?: string | null
           linkedin_url?: string | null
           location?: Json | null
           market_segments?: string[] | null
@@ -1358,10 +1383,12 @@ export type Database = {
           phone_numbers?: string[] | null
           raw_data?: Json | null
           revenue?: string | null
+          revenue_range?: string | null
           revenue_range_from_apollo?: string | null
           sic_codes?: string[] | null
           similar_companies?: Json | null
           social_urls?: Json | null
+          sub_industry?: string | null
           suggested_leads?: Json | null
           technologies?: string[] | null
           technologies_full?: Json | null
@@ -1470,6 +1497,60 @@ export type Database = {
           },
         ]
       }
+      company_insights: {
+        Row: {
+          auto_score: number | null
+          company_id: string
+          drivers: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_score?: number | null
+          company_id: string
+          drivers?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_score?: number | null
+          company_id?: string
+          drivers?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      company_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: number
+          location: string | null
+          portal: string | null
+          posted_at: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: never
+          location?: string | null
+          portal?: string | null
+          posted_at?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: never
+          location?: string | null
+          portal?: string | null
+          posted_at?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       company_monitoring: {
         Row: {
           check_frequency_hours: number | null
@@ -1519,6 +1600,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      company_news: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: number
+          portal: string | null
+          published_at: string | null
+          score: number | null
+          title: string
+          url: string
+          why: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: never
+          portal?: string | null
+          published_at?: string | null
+          score?: number | null
+          title: string
+          url: string
+          why?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: never
+          portal?: string | null
+          published_at?: string | null
+          score?: number | null
+          title?: string
+          url?: string
+          why?: string | null
+        }
+        Relationships: []
+      }
+      company_people: {
+        Row: {
+          apollo_organization_id: string | null
+          company_id: string
+          confidence: number | null
+          created_at: string
+          department: string | null
+          is_current: boolean | null
+          location_city: string | null
+          location_country: string | null
+          location_state: string | null
+          person_id: string
+          seniority: string | null
+          source: string | null
+          title_at_company: string | null
+          updated_at: string
+        }
+        Insert: {
+          apollo_organization_id?: string | null
+          company_id: string
+          confidence?: number | null
+          created_at?: string
+          department?: string | null
+          is_current?: boolean | null
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+          person_id: string
+          seniority?: string | null
+          source?: string | null
+          title_at_company?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apollo_organization_id?: string | null
+          company_id?: string
+          confidence?: number | null
+          created_at?: string
+          department?: string | null
+          is_current?: boolean | null
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+          person_id?: string
+          seniority?: string | null
+          source?: string | null
+          title_at_company?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       company_previews: {
         Row: {
@@ -1612,6 +1780,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      company_technologies: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          source: string | null
+          technology: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          source?: string | null
+          technology: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          source?: string | null
+          technology?: string
+        }
+        Relationships: []
+      }
+      company_updates: {
+        Row: {
+          activity_id: string
+          company_id: string
+          created_at: string
+          id: number
+          modes: string[]
+          organization_id: string
+          request_id: string
+          updated_count: number
+          updated_fields: string[]
+        }
+        Insert: {
+          activity_id: string
+          company_id: string
+          created_at?: string
+          id?: never
+          modes: string[]
+          organization_id: string
+          request_id: string
+          updated_count: number
+          updated_fields: string[]
+        }
+        Update: {
+          activity_id?: string
+          company_id?: string
+          created_at?: string
+          id?: never
+          modes?: string[]
+          organization_id?: string
+          request_id?: string
+          updated_count?: number
+          updated_fields?: string[]
+        }
+        Relationships: []
       }
       competitors: {
         Row: {
@@ -2924,6 +3152,105 @@ export type Database = {
           source?: string | null
           title?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      people: {
+        Row: {
+          apollo_person_id: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          current_company_apollo_id: string | null
+          current_company_linkedin_id: string | null
+          department: string | null
+          email_hash: string | null
+          email_primary: string | null
+          email_status: string | null
+          ended_at: string | null
+          first_name: string | null
+          full_name: string | null
+          headline: string | null
+          id: string
+          job_title: string | null
+          languages: Json | null
+          last_name: string | null
+          last_seen_at: string | null
+          last_updated_at: string | null
+          linkedin_profile_id: string | null
+          linkedin_url: string | null
+          phones: Json | null
+          seniority: string | null
+          skills: Json | null
+          source: string | null
+          started_at: string | null
+          state: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          apollo_person_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          current_company_apollo_id?: string | null
+          current_company_linkedin_id?: string | null
+          department?: string | null
+          email_hash?: string | null
+          email_primary?: string | null
+          email_status?: string | null
+          ended_at?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          job_title?: string | null
+          languages?: Json | null
+          last_name?: string | null
+          last_seen_at?: string | null
+          last_updated_at?: string | null
+          linkedin_profile_id?: string | null
+          linkedin_url?: string | null
+          phones?: Json | null
+          seniority?: string | null
+          skills?: Json | null
+          source?: string | null
+          started_at?: string | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apollo_person_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          current_company_apollo_id?: string | null
+          current_company_linkedin_id?: string | null
+          department?: string | null
+          email_hash?: string | null
+          email_primary?: string | null
+          email_status?: string | null
+          ended_at?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          job_title?: string | null
+          languages?: Json | null
+          last_name?: string | null
+          last_seen_at?: string | null
+          last_updated_at?: string | null
+          linkedin_profile_id?: string | null
+          linkedin_url?: string | null
+          phones?: Json | null
+          seniority?: string | null
+          skills?: Json | null
+          source?: string | null
+          started_at?: string | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -4434,6 +4761,42 @@ export type Database = {
           id?: string
           query?: string
           results_count?: number | null
+        }
+        Relationships: []
+      }
+      similar_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          employees_max: number | null
+          employees_min: number | null
+          location: string | null
+          similar_company_external_id: string
+          similar_name: string | null
+          similarity_score: number | null
+          source: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          location?: string | null
+          similar_company_external_id: string
+          similar_name?: string | null
+          similarity_score?: number | null
+          source?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          location?: string | null
+          similar_company_external_id?: string
+          similar_name?: string | null
+          similarity_score?: number | null
+          source?: string | null
         }
         Relationships: []
       }

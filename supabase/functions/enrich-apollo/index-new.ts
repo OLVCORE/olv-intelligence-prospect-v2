@@ -1,0 +1,437 @@
+// deno-lint-ignore-file no-explicit-any
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const ORIGINS = new Set<string>([
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://83aa9319-3cdb-4039-89a3-d5632b977732.lovableproject.com'
+]);
+
+const schema = {
+  organization_id: (v: any) => typeof v === 'string' && v.length >= 5,
+  company_id: (v: any) => typeof v === 'string' && v.length > 0,
+  modes: (v: any) => Array.isArray(v) && v.length > 0 && v.every(m => ['company','people','similar'].includes(m)),
+  force: (v: any) => typeof v === 'boolean' || v === undefined,
+  activity_id: (v: any) => typeof v === 'string' || v === undefined
+};
+
+function cors(origin: string) {
+  const allow = ORIGINS.has(origin) ? origin : '*';
+  return {
+    'access-control-allow-origin': allow,
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'POST,OPTIONS',
+    'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key'
+  };
+}
+
+serve(async (req: Request) => {
+  const c = cors(req.headers.get('origin') || '');
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: c });
+
+  try {
+    const auth = req.headers.get('authorization') || '';
+    if (!auth.startsWith('Bearer ')) {
+      return J({ error: 'missing_or_invalid_authorization', hint: 'Envie Authorization: Bearer <token>' }, 401, c);
+    }
+    if (!req.headers.get('content-type')?.includes('application/json')) {
+      return J({ error: 'invalid_content_type', hint: 'Use Content-Type: application/json' }, 400, c);
+    }
+
+    const body: any = await req.json().catch(() => null);
+    
+    // Validação manual
+    if (!body || !schema.organization_id(body.organization_id) || !schema.company_id(body.company_id) || !schema.modes(body.modes)) {
+      return J({ error: 'invalid_payload', hint: 'Campos obrigatórios: organization_id (string), company_id (uuid), modes (array)' }, 400, c);
+    }
+
+    const input = {
+      organization_id: body.organization_id,
+      company_id: body.company_id,
+      modes: body.modes as Array<'company'|'people'|'similar'>,
+      force: body.force || false,
+      activity_id: body.activity_id
+    };
+
+    const url = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const apolloKey = Deno.env.get('APOLLO_API_KEY');
+
+    if (!apolloKey) {
+      return J({ error: 'integration_not_configured', hint: 'APOLLO_API_KEY não configurada' }, 501, c);
+    }
+
+    const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+    const requestId = crypto.randomUUID();
+    const activityId = input.activity_id || crypto.randomUUID();
+    const out: Record<string, unknown> = { ok: true, requestId, activityId, modes: input.modes };
+
+    console.log('[enrich-apollo] Iniciando:', { companyId: input.company_id, orgId: input.organization_id, modes: input.modes });
+
+    // COMPANY
+    if (input.modes.includes('company')) {
+      console.log('[enrich-apollo] Buscando dados da empresa...');
+      const companyData = await apolloFetchCompany(input.organization_id, apolloKey);
+      if (!companyData) {
+        console.log('[enrich-apollo] Nenhum dado de empresa retornado');
+        return J({ error: 'apollo_empty_company', hint: 'Apollo não retornou dados da empresa' }, 502, c);
+      }
+
+      const patch = mapApolloCompany(companyData);
+      console.log('[enrich-apollo] Atualizando empresa com', Object.keys(patch).length, 'campos');
+      
+      const { error: uerr, count } = await sb
+        .from('companies')
+        .update({ ...patch, last_apollo_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', input.company_id)
+        .select('id', { count: 'exact' });
+
+      if (uerr) {
+        console.error('[enrich-apollo] Erro ao atualizar empresa:', uerr);
+        return J({ error: 'db_update_failed', hint: uerr.message, mode: 'company' }, 500, c);
+      }
+      
+      if (!count || count === 0) {
+        console.error('[enrich-apollo] Zero linhas atualizadas para company_id:', input.company_id);
+        return J({ error: 'db_zero_rows', hint: 'Nenhuma linha afetada. Verifique company_id.' }, 409, c);
+      }
+      
+      out.companyUpdated = count;
+      out.companyFields = Object.keys(patch);
+      console.log('[enrich-apollo] Empresa atualizada:', count, 'linhas');
+
+      // Atualizar technologies
+      if (companyData.current_technologies && Array.isArray(companyData.current_technologies)) {
+        const techs = companyData.current_technologies.map((t: any) => ({
+          company_id: input.company_id,
+          technology: t.name || t,
+          category: t.category || null,
+          source: 'apollo'
+        }));
+
+        if (techs.length > 0) {
+          await sb.from('company_technologies').delete().eq('company_id', input.company_id);
+          await sb.from('company_technologies').upsert(techs);
+          console.log('[enrich-apollo] Technologies salvas:', techs.length);
+        }
+      }
+    }
+
+    // PEOPLE
+    if (input.modes.includes('people')) {
+      console.log('[enrich-apollo] Buscando people...');
+      const peopleAll = await apolloFetchPeoplePaginated(input.organization_id, apolloKey);
+      if (!Array.isArray(peopleAll)) {
+        console.log('[enrich-apollo] Nenhum dado de people retornado');
+        out.peopleFound = 0;
+        out.peopleUpserted = 0;
+        out.peopleLinked = 0;
+      } else {
+        console.log('[enrich-apollo] People encontrados:', peopleAll.length);
+        
+        const mapped = peopleAll.map(mapApolloPerson);
+        const chunks = chunk(mapped, 100);
+
+        let upserted = 0;
+        let linked = 0;
+
+        for (const ch of chunks) {
+          const { data: pdata, error: perr } = await sb
+            .from('people')
+            .upsert(ch, { onConflict: 'apollo_person_id' })
+            .select('id, apollo_person_id');
+
+          if (perr) {
+            console.error('[enrich-apollo] Erro ao upsert people:', perr);
+            return J({ error: 'db_upsert_people_failed', hint: perr.message, mode: 'people' }, 500, c);
+          }
+          
+          upserted += pdata?.length || 0;
+
+          const links = (pdata || []).map(p => {
+            const src = ch.find(ci => ci.apollo_person_id === p.apollo_person_id);
+            return {
+              company_id: input.company_id,
+              person_id: p.id,
+              apollo_organization_id: input.organization_id,
+              department: src?.department || null,
+              seniority: src?.seniority || null,
+              location_city: src?.city || null,
+              location_state: src?.state || null,
+              location_country: src?.country || null,
+              title_at_company: src?.job_title || null,
+              is_current: true,
+              source: 'apollo'
+            };
+          });
+
+          if (links.length > 0) {
+            const { data: lkd, error: lkerr } = await sb
+              .from('company_people')
+              .upsert(links, { onConflict: 'company_id,person_id' })
+              .select('company_id');
+
+            if (lkerr) {
+              console.error('[enrich-apollo] Erro ao vincular people:', lkerr);
+              return J({ error: 'db_upsert_company_people_failed', hint: lkerr.message, mode: 'people' }, 500, c);
+            }
+            linked += lkd?.length || 0;
+          }
+        }
+
+        out.peopleFound = peopleAll.length;
+        out.peopleUpserted = upserted;
+        out.peopleLinked = linked;
+        console.log('[enrich-apollo] People processados:', { found: peopleAll.length, upserted, linked });
+      }
+    }
+
+    // SIMILARES
+    if (input.modes.includes('similar')) {
+      console.log('[enrich-apollo] Buscando similares...');
+      const similars = await apolloFetchSimilarCompanies(input.organization_id, apolloKey);
+      if (!Array.isArray(similars)) {
+        console.log('[enrich-apollo] Nenhum dado de similares retornado');
+        out.similarFound = 0;
+        out.similarLinked = 0;
+      } else {
+        console.log('[enrich-apollo] Similares encontrados:', similars.length);
+        
+        const mappedSim = similars.map(s => ({
+          company_id: input.company_id,
+          similar_company_external_id: s.orgId || s.id,
+          similar_name: s.name,
+          location: s.location || null,
+          employees_min: s.employeesMin || s.estimated_num_employees || null,
+          employees_max: s.employeesMax || null,
+          similarity_score: s.score || null,
+          source: 'apollo'
+        }));
+        
+        const chunksSim = chunk(mappedSim, 100);
+        let simLinked = 0;
+
+        for (const ch of chunksSim) {
+          const { data: simd, error: simerr } = await sb
+            .from('similar_companies')
+            .upsert(ch, { onConflict: 'company_id,similar_company_external_id' })
+            .select('company_id');
+
+          if (simerr) {
+            console.error('[enrich-apollo] Erro ao salvar similares:', simerr);
+            return J({ error: 'db_upsert_similar_failed', hint: simerr.message, mode: 'similar' }, 500, c);
+          }
+          simLinked += simd?.length || 0;
+        }
+
+        out.similarFound = similars.length;
+        out.similarLinked = simLinked;
+        console.log('[enrich-apollo] Similares processados:', { found: similars.length, linked: simLinked });
+      }
+    }
+
+    // Auditoria
+    await sb.from('company_updates').insert({
+      activity_id: activityId,
+      request_id: requestId,
+      company_id: input.company_id,
+      organization_id: input.organization_id,
+      modes: input.modes,
+      updated_fields: (out.companyFields as string[]) || [],
+      updated_count: Number(out.companyUpdated || 0)
+    });
+
+    console.log('[enrich-apollo] Concluído com sucesso');
+    return J(out, 202, c);
+
+  } catch (e: any) {
+    console.error('[enrich-apollo] Erro interno:', e);
+    return J({ error: 'internal_error', message: String(e?.message || e) }, 500, c);
+  }
+});
+
+function J(data: unknown, status: number, headers: Record<string, string>) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'content-type': 'application/json', ...headers }
+  });
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+// Integração real com Apollo API
+async function apolloFetchCompany(orgId: string, apiKey: string): Promise<any | null> {
+  try {
+    const response = await fetch(`https://api.apollo.io/v1/organizations/${orgId}`, {
+      headers: {
+        'X-Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('[Apollo] Erro ao buscar empresa:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.organization || data;
+  } catch (error) {
+    console.error('[Apollo] Exceção ao buscar empresa:', error);
+    return null;
+  }
+}
+
+async function apolloFetchPeoplePaginated(orgId: string, apiKey: string): Promise<any[]> {
+  const allPeople: any[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  try {
+    while (page <= 10) { // Limite de 1000 pessoas (10 páginas)
+      const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_ids: [orgId],
+          page,
+          per_page: perPage
+        })
+      });
+
+      if (!response.ok) {
+        console.error('[Apollo] Erro ao buscar people (página', page, '):', response.status);
+        break;
+      }
+
+      const data = await response.json();
+      const people = data.people || [];
+      
+      if (people.length === 0) break;
+      
+      allPeople.push(...people);
+      
+      if (people.length < perPage) break; // Última página
+      
+      page++;
+      
+      // Rate limiting - aguardar 500ms entre requisições
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    return allPeople;
+  } catch (error) {
+    console.error('[Apollo] Exceção ao buscar people:', error);
+    return [];
+  }
+}
+
+async function apolloFetchSimilarCompanies(orgId: string, apiKey: string): Promise<any[]> {
+  try {
+    const response = await fetch(`https://api.apollo.io/v1/organizations/${orgId}/similar_companies`, {
+      headers: {
+        'X-Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('[Apollo] Erro ao buscar similares:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.similar_companies || [];
+  } catch (error) {
+    console.error('[Apollo] Exceção ao buscar similares:', error);
+    return [];
+  }
+}
+
+// Mapeamentos
+function mapApolloCompany(a: any): Record<string, unknown> {
+  return {
+    apollo_organization_id: a?.id || null,
+    linkedin_company_id: a?.linkedin_uid || null,
+    domain: a?.primary_domain || a?.domain || null,
+    website: a?.website_url || null,
+    industry: a?.industry || null,
+    sub_industry: a?.sub_industry || null,
+    employees: a?.estimated_num_employees || null,
+    employee_count_range: a?.employee_range || null,
+    founding_year: a?.founded_year || null,
+    headquarters_city: a?.city || null,
+    headquarters_state: a?.state || null,
+    headquarters_country: a?.country || null,
+    revenue_range: a?.revenue_range || null,
+    linkedin_url: a?.linkedin_url || null,
+    apollo_url: `https://app.apollo.io/#/organizations/${a?.id}` || null,
+    location: {
+      city: a?.city || null,
+      state: a?.state || null,
+      country: a?.country || null,
+      street: a?.street_address || null,
+      postal_code: a?.postal_code || null
+    },
+    phone_numbers: a?.phone ? [a.phone] : []
+  };
+}
+
+function mapApolloPerson(p: any) {
+  const emailPrimary = selectPrimaryEmail(p?.email || p?.emails);
+  return {
+    apollo_person_id: p?.id || null,
+    linkedin_profile_id: p?.linkedin_uid || null,
+    linkedin_url: p?.linkedin_url || null,
+    first_name: p?.first_name || null,
+    last_name: p?.last_name || null,
+    full_name: p?.name || [p?.first_name, p?.last_name].filter(Boolean).join(' ') || null,
+    job_title: p?.title || null,
+    seniority: p?.seniority || null,
+    department: p?.department || p?.functions?.[0] || null,
+    email_primary: emailPrimary || null,
+    email_hash: emailPrimary ? simpleHash(emailPrimary) : null,
+    email_status: p?.email_status || null,
+    phones: p?.phone_numbers ? JSON.stringify(p.phone_numbers) : JSON.stringify([]),
+    city: p?.city || null,
+    state: p?.state || null,
+    country: p?.country || null,
+    timezone: p?.time_zone || null,
+    languages: p?.languages ? JSON.stringify(p.languages) : JSON.stringify([]),
+    skills: p?.skills ? JSON.stringify(p.skills) : JSON.stringify([]),
+    headline: p?.headline || null,
+    current_company_apollo_id: p?.organization_id || null,
+    current_company_linkedin_id: null,
+    started_at: p?.employment_history?.[0]?.start_date || null,
+    ended_at: null,
+    last_seen_at: null,
+    last_updated_at: new Date().toISOString(),
+    source: 'apollo',
+    updated_at: new Date().toISOString()
+  };
+}
+
+function selectPrimaryEmail(emails: unknown): string | null {
+  if (typeof emails === 'string' && emails.includes('@')) return emails;
+  if (!Array.isArray(emails)) return null;
+  const e = emails.find(v => typeof v === 'string' && v.includes('@'));
+  return e || null;
+}
+
+function simpleHash(plain: string): string {
+  const data = new TextEncoder().encode(plain.toLowerCase().trim());
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum = ((sum << 5) - sum + data[i]) & 0xffffffff;
+  }
+  return sum.toString(16);
+}

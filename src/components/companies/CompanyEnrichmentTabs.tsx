@@ -13,7 +13,11 @@ import {
   Briefcase 
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useDecisionMakers } from "@/hooks/useDecisionMakers";
+import { useCompanyPeople } from "@/hooks/useCompanyPeople";
+import { useCompanySimilar } from "@/hooks/useCompanySimilar";
+import { useCompanyTechnologies } from "@/hooks/useCompanyTechnologies";
+import { useCompanyNews } from "@/hooks/useCompanyNews";
+import { useCompanyJobs } from "@/hooks/useCompanyJobs";
 
 interface CompanyEnrichmentTabsProps {
   companyId: string;
@@ -36,15 +40,28 @@ export function CompanyEnrichmentTabs({
   news = [],
   jobPostings = [],
 }: CompanyEnrichmentTabsProps) {
-  const { data: decisionMakers } = useDecisionMakers(companyId);
-  const peopleCount = decisionMakers?.length ?? 0;
-  const similarCount = similarCompanies?.length ?? 0;
-  const techCount = technologiesFull?.length ?? 0;
+  // Buscar dados das novas tabelas
+  const { data: people = [] } = useCompanyPeople(companyId);
+  const { data: similar = [] } = useCompanySimilar(companyId);
+  const { data: technologies = [] } = useCompanyTechnologies(companyId);
+  const { data: newsFromDB = [] } = useCompanyNews(companyId);
+  const { data: jobsFromDB = [] } = useCompanyJobs(companyId);
+
+  // Usar dados do banco se disponíveis, senão fallback para props
+  const finalPeople = people.length > 0 ? people : [];
+  const finalSimilar = similar.length > 0 ? similar : similarCompanies;
+  const finalTechnologies = technologies.length > 0 ? technologies : technologiesFull;
+  const finalNews = newsFromDB.length > 0 ? newsFromDB : news;
+  const finalJobs = jobsFromDB.length > 0 ? jobsFromDB : jobPostings;
+
+  const peopleCount = finalPeople.length;
+  const similarCount = finalSimilar.length;
+  const techCount = finalTechnologies.length;
   const insightsCount = companyInsights ? (Array.isArray(companyInsights) ? companyInsights.length : Object.keys(companyInsights).length) : 0;
   const trendsCount = employeeTrends ? (Array.isArray(employeeTrends) ? employeeTrends.length : Object.keys(employeeTrends).length) : 0;
   const visitorsCount = websiteVisitors ? (Array.isArray(websiteVisitors) ? websiteVisitors.length : Object.keys(websiteVisitors).length) : 0;
-  const newsCount = news?.length ?? 0;
-  const jobsCount = jobPostings?.length ?? 0;
+  const newsCount = finalNews.length;
+  const jobsCount = finalJobs.length;
 
   return (
     <Tabs defaultValue="people" className="w-full">
@@ -99,15 +116,87 @@ export function CompanyEnrichmentTabs({
       </TabsList>
 
       <TabsContent value="people" className="mt-6">
-        <DecisionMakersList companyId={companyId} />
+        {finalPeople.length > 0 ? (
+          <div className="space-y-3">
+            {finalPeople.map((person: any) => (
+              <div key={person.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h4 className="font-semibold">{person.full_name}</h4>
+                    <p className="text-sm text-muted-foreground">{person.job_title || person.title_at_company}</p>
+                    {person.department && (
+                      <p className="text-xs text-muted-foreground">{person.department}</p>
+                    )}
+                    {person.email_primary && (
+                      <p className="text-sm">{person.email_primary}</p>
+                    )}
+                  </div>
+                  {person.linkedin_url && (
+                    <a
+                      href={person.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      LinkedIn →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            Nenhuma pessoa encontrada. Clique em "Atualizar agora" para buscar dados.
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="similar" className="mt-6">
-        <SimilarCompaniesList similarCompanies={similarCompanies} />
+        {finalSimilar.length > 0 ? (
+          <div className="space-y-3">
+            {finalSimilar.map((company: any, idx: number) => (
+              <div key={company.similar_company_external_id || idx} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                <div className="space-y-1">
+                  <h4 className="font-semibold">{company.similar_name || company.name}</h4>
+                  {company.location && (
+                    <p className="text-sm text-muted-foreground">{company.location}</p>
+                  )}
+                  {(company.employees_min || company.employees) && (
+                    <p className="text-sm text-muted-foreground">
+                      {company.employees_min && company.employees_max
+                        ? `${company.employees_min} - ${company.employees_max} funcionários`
+                        : `${company.employees || company.employees_min} funcionários`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            Nenhuma empresa similar encontrada. Clique em "Atualizar agora" para buscar dados.
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="technologies" className="mt-6">
-        <TechnologiesFullList technologies={technologiesFull} />
+        {finalTechnologies.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {finalTechnologies.map((tech: any, idx: number) => (
+              <div key={tech.technology || tech.name || idx} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                <div className="font-medium text-sm">{tech.technology || tech.name}</div>
+                {tech.category && (
+                  <p className="text-xs text-muted-foreground mt-1">{tech.category}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            Nenhuma tecnologia encontrada. Clique em "Atualizar agora" para buscar dados.
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="insights" className="mt-6">
@@ -153,9 +242,9 @@ export function CompanyEnrichmentTabs({
       </TabsContent>
 
       <TabsContent value="news" className="mt-6">
-        {news.length > 0 ? (
-          <div className="space-y-4">
-            {news.map((item, index) => (
+        {finalNews.length > 0 ? (
+          <div className="space-y-3">
+            {finalNews.map((item: any, index: number) => (
               <div key={index} className="border rounded-lg p-4">
                 <h3 className="font-semibold">{item.title || "Sem título"}</h3>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -182,9 +271,9 @@ export function CompanyEnrichmentTabs({
       </TabsContent>
 
       <TabsContent value="jobs" className="mt-6">
-        {jobPostings.length > 0 ? (
-          <div className="space-y-4">
-            {jobPostings.map((job, index) => (
+        {finalJobs.length > 0 ? (
+          <div className="space-y-3">
+            {finalJobs.map((job: any, index: number) => (
               <div key={index} className="border rounded-lg p-4">
                 <h3 className="font-semibold">{job.title || "Sem título"}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
