@@ -196,12 +196,12 @@ export default function Dashboard() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Monitoring Row */}
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
               <EnrichmentMonitor />
               <SystemHealthPanel />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-3 items-start">
               {/* Chart grande - 2 colunas */}
               <div className="lg:col-span-2">
                 <PremiumCard
