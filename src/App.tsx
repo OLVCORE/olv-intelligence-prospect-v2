@@ -33,6 +33,7 @@ const GovernancePage = lazy(() => import("./pages/GovernancePage"));
 const AccountStrategyPage = lazy(() => import("./pages/AccountStrategyPage"));
 const StrategyHistoryPage = lazy(() => import("./pages/StrategyHistoryPage"));
 const CompetitiveIntelligencePage = lazy(() => import("./pages/CompetitiveIntelligencePage"));
+const CompanyDiscoveryPage = lazy(() => import("./pages/CompanyDiscoveryPage"));
 const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
@@ -411,6 +412,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CompetitiveIntelligencePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/company-discovery"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CompanyDiscoveryPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

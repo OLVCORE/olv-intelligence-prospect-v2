@@ -2710,6 +2710,100 @@ export type Database = {
         }
         Relationships: []
       }
+      discovery_batches: {
+        Row: {
+          added_to_bank: number
+          city: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          max_employees: number | null
+          min_employees: number | null
+          name: string
+          niche_code: string | null
+          rejected: number
+          search_mode: string
+          sector_code: string | null
+          source_company_id: string | null
+          started_at: string | null
+          state: string | null
+          status: string
+          total_found: number
+          updated_at: string
+          user_id: string
+          validated: number
+        }
+        Insert: {
+          added_to_bank?: number
+          city?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_employees?: number | null
+          min_employees?: number | null
+          name: string
+          niche_code?: string | null
+          rejected?: number
+          search_mode: string
+          sector_code?: string | null
+          source_company_id?: string | null
+          started_at?: string | null
+          state?: string | null
+          status?: string
+          total_found?: number
+          updated_at?: string
+          user_id: string
+          validated?: number
+        }
+        Update: {
+          added_to_bank?: number
+          city?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_employees?: number | null
+          min_employees?: number | null
+          name?: string
+          niche_code?: string | null
+          rejected?: number
+          search_mode?: string
+          sector_code?: string | null
+          source_company_id?: string | null
+          started_at?: string | null
+          state?: string | null
+          status?: string
+          total_found?: number
+          updated_at?: string
+          user_id?: string
+          validated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discovery_batches_niche_code_fkey"
+            columns: ["niche_code"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["niche_code"]
+          },
+          {
+            foreignKeyName: "discovery_batches_sector_code_fkey"
+            columns: ["sector_code"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["sector_code"]
+          },
+          {
+            foreignKeyName: "discovery_batches_source_company_id_fkey"
+            columns: ["source_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrichment_field_mapping: {
         Row: {
           active: boolean | null
@@ -5418,6 +5512,116 @@ export type Database = {
           {
             foreignKeyName: "fk_similar_companies_company"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggested_companies: {
+        Row: {
+          added_to_bank_at: string | null
+          apollo_data: Json | null
+          city: string | null
+          cnpj: string | null
+          cnpj_validated: boolean | null
+          company_id: string | null
+          company_name: string
+          created_at: string
+          discovery_batch_id: string | null
+          domain: string | null
+          id: string
+          linkedin_data: Json | null
+          linkedin_url: string | null
+          niche_code: string | null
+          receita_ws_data: Json | null
+          sector_code: string | null
+          similarity_reasons: string[] | null
+          similarity_score: number | null
+          source: string
+          source_company_id: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_to_bank_at?: string | null
+          apollo_data?: Json | null
+          city?: string | null
+          cnpj?: string | null
+          cnpj_validated?: boolean | null
+          company_id?: string | null
+          company_name: string
+          created_at?: string
+          discovery_batch_id?: string | null
+          domain?: string | null
+          id?: string
+          linkedin_data?: Json | null
+          linkedin_url?: string | null
+          niche_code?: string | null
+          receita_ws_data?: Json | null
+          sector_code?: string | null
+          similarity_reasons?: string[] | null
+          similarity_score?: number | null
+          source: string
+          source_company_id?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_to_bank_at?: string | null
+          apollo_data?: Json | null
+          city?: string | null
+          cnpj?: string | null
+          cnpj_validated?: boolean | null
+          company_id?: string | null
+          company_name?: string
+          created_at?: string
+          discovery_batch_id?: string | null
+          domain?: string | null
+          id?: string
+          linkedin_data?: Json | null
+          linkedin_url?: string | null
+          niche_code?: string | null
+          receita_ws_data?: Json | null
+          sector_code?: string | null
+          similarity_reasons?: string[] | null
+          similarity_score?: number | null
+          source?: string
+          source_company_id?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggested_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggested_companies_niche_code_fkey"
+            columns: ["niche_code"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["niche_code"]
+          },
+          {
+            foreignKeyName: "suggested_companies_sector_code_fkey"
+            columns: ["sector_code"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["sector_code"]
+          },
+          {
+            foreignKeyName: "suggested_companies_source_company_id_fkey"
+            columns: ["source_company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]

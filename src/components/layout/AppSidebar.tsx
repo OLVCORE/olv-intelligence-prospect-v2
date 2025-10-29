@@ -144,11 +144,18 @@ const menuGroups: MenuGroup[] = [
     icon: Shield,
     items: [
       {
-        title: "Competitive Intelligence",
+        title: "Qualificação ICP",
         icon: Shield,
         url: "/competitive-intelligence",
         competitive: true,
-        description: "Battle cards, win/loss analysis e monitoramento competitivo em tempo real"
+        description: "Análise de empresas existentes - Detecção TOTVS e Sinais de Intenção"
+      },
+      {
+        title: "Descoberta de Empresas",
+        icon: Search,
+        url: "/company-discovery",
+        competitive: true,
+        description: "Buscar e descobrir novas empresas similares"
       },
     ]
   },

@@ -221,3 +221,9 @@ verify_jwt = false
 
   [functions.company-suggest]
   verify_jwt = false
+
+  [functions.discover-companies]
+  verify_jwt = false
+
+  [functions.validate-enrich-company]
+  verify_jwt = false
