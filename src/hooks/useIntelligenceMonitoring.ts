@@ -43,11 +43,15 @@ export function useMonitoringConfig(userId?: string) {
     queryFn: async () => {
       if (!userId) return null;
 
+      // Buscar o monitoramento ativo mais recente do usuário
       const { data, error } = await supabase
         .from('intelligence_monitoring_config')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
       if (error && error.code === 'PGRST116') {
         // Config não existe, criar padrão
@@ -90,26 +94,20 @@ export function useSaveMonitoringConfig() {
         updated_at: new Date().toISOString(),
       };
 
-      // Tentar inserir primeiro
-      const { data: existingConfig } = await supabase
-        .from('intelligence_monitoring_config')
-        .select('id')
-        .eq('user_id', config.user_id)
-        .single();
-
-      if (existingConfig) {
-        // Atualizar
+      // Se tiver ID, atualizar. Se não, inserir novo monitoramento
+      if (config.id) {
+        // Atualizar monitoramento existente
         const { data, error } = await supabase
           .from('intelligence_monitoring_config')
           .update(dataToSave)
-          .eq('user_id', config.user_id)
+          .eq('id', config.id)
           .select()
           .single();
 
         if (error) throw error;
         return data;
       } else {
-        // Inserir
+        // Inserir novo monitoramento
         const { data, error } = await supabase
           .from('intelligence_monitoring_config')
           .insert(dataToSave)

@@ -21,14 +21,20 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
   const [nextCheck, setNextCheck] = useState<Date | null>(null);
   const [now, setNow] = useState<Date>(new Date());
 
-  // Query para buscar status do monitoramento
+  // Query para buscar status do monitoramento ativo mais recente
   const { data: monitoringStatus, isLoading } = useQuery({
     queryKey: ['monitoring-health-status'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
       const { data, error } = await supabase
         .from('intelligence_monitoring_config')
         .select('*')
+        .eq('user_id', user.id)
         .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;

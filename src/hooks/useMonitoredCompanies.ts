@@ -7,12 +7,15 @@ export function useMonitoredCompanies(userId?: string) {
     queryFn: async () => {
       if (!userId) return [];
 
-      // Buscar config para obter os filtros
+      // Buscar o monitoramento ativo mais recente do usuário
       const { data: config } = await supabase
         .from('intelligence_monitoring_config')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (!config || !config.is_active) {
         return [];
