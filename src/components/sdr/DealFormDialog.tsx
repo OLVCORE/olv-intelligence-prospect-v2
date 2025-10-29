@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DraggableDialog } from '@/components/ui/draggable-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -113,12 +113,28 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     setEnriching(true);
     try {
       let companyId = selectedCompany?.id as string | undefined;
+      const clean = (formData.cnpj || '').replace(/\D/g, '');
 
-      // Se não há empresa selecionada, localizar/criar pela CNPJ
+      // Se não há empresa selecionada, BUSCAR DADOS REAIS PRIMEIRO
       if (!companyId) {
-        const clean = (formData.cnpj || '').replace(/\D/g, '');
+        // 🔥 PASSO 1: BUSCAR DADOS REAIS DA RECEITA FEDERAL
+        console.log('🔍 Buscando dados reais da Receita Federal para CNPJ:', clean);
+        const { data: receitaResponse, error: receitaError } = await supabase.functions.invoke('enrich-receitaws', {
+          body: { cnpj: clean }
+        });
 
-        // Tentar localizar por CNPJ (com ou sem máscara)
+        if (receitaError) {
+          throw new Error('Erro ao buscar dados da Receita Federal: ' + receitaError.message);
+        }
+
+        if (!receitaResponse || receitaResponse.error) {
+          throw new Error('CNPJ não encontrado na Receita Federal');
+        }
+
+        const receitaData = receitaResponse;
+        console.log('✅ Dados da Receita Federal recebidos:', receitaData);
+
+        // 🔥 PASSO 2: VERIFICAR SE EMPRESA JÁ EXISTE NO BANCO
         const { data: existing, error: findError } = await supabase
           .from('companies')
           .select('id, name, cnpj, employees, industry, revenue, lead_score')
@@ -127,60 +143,108 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
         if (findError && findError.code !== 'PGRST116') throw findError;
 
         if (existing) {
+          // Empresa já existe, usar ela
           companyId = existing.id;
-          setSelectedCompany(existing);
+          console.log('✅ Empresa já existe no banco:', existing.name);
         } else {
-          // Criar empresa mínima para permitir enriquecimento
+          // 🔥 PASSO 3: CRIAR EMPRESA COM DADOS REAIS DA RECEITA FEDERAL
+          const companyData: any = {
+            name: receitaData.nome || receitaData.fantasia || `Empresa ${clean}`,
+            cnpj: formData.cnpj,
+            industry: receitaData.atividade_principal?.[0]?.text || null,
+            raw_data: {
+              receitaws: receitaData
+            }
+          };
+
+          // Adicionar dados de localização se disponíveis
+          if (receitaData.municipio && receitaData.uf) {
+            companyData.location = {
+              city: receitaData.municipio,
+              state: receitaData.uf,
+              country: 'Brasil',
+              address: [
+                receitaData.logradouro,
+                receitaData.numero,
+                receitaData.complemento,
+                receitaData.bairro,
+                receitaData.cep
+              ].filter(Boolean).join(', ')
+            };
+          }
+
           const { data: created, error: insertErr } = await supabase
             .from('companies')
-            .insert({
-              name: formData.company_name || `Empresa ${clean}`,
-              cnpj: formData.cnpj,
-              industry: formData.industry || null,
-              employees: formData.employees ? parseInt(formData.employees) : null,
-            })
-            .select('id, name, cnpj, employees, industry, revenue, lead_score')
+            .insert(companyData)
+            .select('id, name, cnpj, employees, industry, revenue, lead_score, location')
             .single();
+          
           if (insertErr) throw insertErr;
           companyId = created.id;
-          setSelectedCompany(created);
+          console.log('✅ Empresa criada com dados da Receita Federal:', created.name);
         }
-      }
 
-      // Invocar orquestrador com company_id (requisito da função)
-      const { error } = await supabase.functions.invoke('enrich-company-360', {
-        body: { company_id: companyId },
-      });
-      if (error) throw error;
+        // Recarregar dados atualizados da empresa
+        const { data: updated, error: updateError } = await supabase
+          .from('companies')
+          .select('id, name, cnpj, employees, industry, revenue, lead_score, location')
+          .eq('id', companyId)
+          .single();
 
-      // Recarregar dados atualizados da empresa
-      const { data: updated } = await supabase
-        .from('companies')
-        .select('id, name, cnpj, employees, industry, revenue, lead_score')
-        .eq('id', companyId)
-        .single();
+        if (updateError) throw updateError;
 
-      if (updated) {
-        setSelectedCompany(updated);
-        setFormData({
-          ...formData,
-          company_name: updated.name || formData.company_name,
-          cnpj: updated.cnpj || formData.cnpj,
-          employees: updated.employees?.toString() || formData.employees,
-          industry: updated.industry || formData.industry,
-          title: formData.title || `Prospecção - ${updated.name}`,
+        if (updated) {
+          setSelectedCompany(updated);
+          setFormData({
+            ...formData,
+            company_name: updated.name || formData.company_name,
+            cnpj: updated.cnpj || formData.cnpj,
+            employees: updated.employees?.toString() || formData.employees,
+            industry: updated.industry || formData.industry,
+            title: formData.title || `Prospecção - ${updated.name}`,
+          });
+        }
+
+        toast({
+          title: '✅ Dados da Receita Federal carregados!',
+          description: `Empresa: ${updated?.name || 'N/A'}`,
+        });
+      } else {
+        // Empresa já selecionada, apenas enriquecer 360°
+        const { error } = await supabase.functions.invoke('enrich-company-360', {
+          body: { company_id: companyId },
+        });
+        if (error) throw error;
+
+        // Recarregar dados atualizados
+        const { data: updated } = await supabase
+          .from('companies')
+          .select('id, name, cnpj, employees, industry, revenue, lead_score')
+          .eq('id', companyId)
+          .single();
+
+        if (updated) {
+          setSelectedCompany(updated);
+          setFormData({
+            ...formData,
+            company_name: updated.name || formData.company_name,
+            cnpj: updated.cnpj || formData.cnpj,
+            employees: updated.employees?.toString() || formData.employees,
+            industry: updated.industry || formData.industry,
+            title: formData.title || `Prospecção - ${updated.name}`,
+          });
+        }
+
+        toast({
+          title: '✅ Enriquecimento 360° concluído!',
+          description: 'Dados atualizados com sucesso.',
         });
       }
-
-      toast({
-        title: '✅ Empresa enriquecida!',
-        description: 'Dados atualizados com sucesso.',
-      });
     } catch (error: any) {
       console.error('Enrichment error:', error);
       toast({
-        title: 'Erro ao enriquecer empresa',
-        description: error.message || 'Tente novamente',
+        title: 'Erro ao buscar dados',
+        description: error.message || 'Verifique o CNPJ e tente novamente',
         variant: 'destructive',
       });
     } finally {
@@ -335,14 +399,13 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Criar Novo Deal</DialogTitle>
-          <DialogDescription>
-            Selecione uma empresa existente ou crie um deal manual
-          </DialogDescription>
-        </DialogHeader>
+    <DraggableDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Criar Novo Deal"
+      description="Selecione uma empresa existente ou crie um deal manual"
+      className="max-w-2xl"
+    >
 
         <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual')} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -632,7 +695,7 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           <TabsContent value="manual" className="space-y-4 mt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
-                💡 <strong>Dica:</strong> Preencha o CNPJ e clique em "Buscar Dados" para preencher automaticamente
+                📋 <strong>Busca Oficial:</strong> Preencha o CNPJ e clique em "Receita Federal" para carregar dados cadastrais oficiais
               </div>
 
               <div className="space-y-2">
@@ -670,12 +733,15 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Buscar Dados
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Receita Federal
                       </>
                     )}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 Digite o CNPJ e clique para buscar dados oficiais da Receita Federal
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -846,7 +912,6 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
             </form>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
