@@ -362,10 +362,7 @@ export default function Dashboard() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Monitoring Row */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              <EnrichmentMonitor />
-              <SystemHealthPanel />
-            </div>
+            <EnrichmentMonitor />
 
             <div className="grid gap-6 lg:grid-cols-3 items-start">
               {/* Chart grande - 2 colunas */}
@@ -474,29 +471,36 @@ export default function Dashboard() {
                 tooltip="Ranking dos segmentos de mercado com maior presença no pipeline. Mostra número de empresas por indústria e média de funcionários, permitindo identificar verticais estratégicos."
               >
                 <div className="space-y-3 mt-4">
-                  {data.companiesByIndustry.slice(0, 5).map((industry, i) => (
-                    <div 
-                      key={i} 
-                      className="flex items-center justify-between group cursor-pointer hover:bg-primary/5 p-3 rounded-xl transition-all"
-                      onClick={() => navigate(`/companies?industry=${encodeURIComponent(industry.industry)}`)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent-cyan group-hover:scale-110 transition-transform" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{industry.industry}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {industry.avgEmployees.toLocaleString()} funcionários
-                          </p>
+                  {data.companiesByIndustry.slice(0, 5).map((industry, i) => {
+                    // Categorizar segmento para exibição limpa
+                    const displayName = industry.industry.length > 50 
+                      ? industry.industry.substring(0, 50) + '...'
+                      : industry.industry;
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="flex items-center justify-between group cursor-pointer hover:bg-primary/5 p-3 rounded-xl transition-all"
+                        onClick={() => navigate(`/companies?industry=${encodeURIComponent(industry.industry)}`)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent-cyan group-hover:scale-110 transition-transform" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate" title={industry.industry}>{displayName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {industry.avgEmployees.toLocaleString()} funcionários
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{industry.count}</Badge>
+                          <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{industry.count}</Badge>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </PremiumCard>
 
@@ -623,11 +627,32 @@ export default function Dashboard() {
                 tooltip="Ranking horizontal dos principais segmentos de mercado por volume de empresas. Use para priorizar verticais de maior penetração."
               >
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
+                  <BarChart 
+                    data={data.companiesByIndustry.slice(0, 8).map(item => ({
+                      ...item,
+                      shortIndustry: item.industry.length > 35 
+                        ? item.industry.substring(0, 35) + '...'
+                        : item.industry
+                    }))} 
+                    layout="vertical"
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" />
-                    <YAxis dataKey="industry" type="category" width={120} className="text-xs" />
-                    <Tooltip />
+                    <YAxis dataKey="shortIndustry" type="category" width={150} className="text-xs" />
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+                              <p className="font-semibold text-sm mb-1">{data.industry}</p>
+                              <p className="text-xs text-muted-foreground">Empresas: {data.count}</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
                     <Bar dataKey="count" fill={CHART_COLORS.secondary} radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

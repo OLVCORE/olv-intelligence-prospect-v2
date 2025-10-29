@@ -45,8 +45,8 @@ export function EnrichmentMonitor() {
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Monitor em tempo real do processo de enriquecimento automático de dados das empresas. Inclui informações de Apollo.io, ReceitaWS, tecnologias detectadas e análise de maturidade digital.</p>
+              <TooltipContent className="max-w-xs whitespace-normal">
+                <p className="break-words">Monitor em tempo real do processo de enriquecimento automático de dados das empresas. Inclui informações de Apollo.io, ReceitaWS, tecnologias detectadas e análise de maturidade digital.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -76,8 +76,8 @@ export function EnrichmentMonitor() {
                   <p className="text-xs text-muted-foreground">Completas</p>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Empresas com 100% dos dados enriquecidos incluindo informações financeiras, decisores, tecnologias e análise completa.</p>
+              <TooltipContent className="max-w-xs whitespace-normal">
+                <p className="break-words">Empresas com 100% dos dados enriquecidos incluindo informações financeiras, decisores, tecnologias e análise completa.</p>
               </TooltipContent>
             </Tooltip>
 
@@ -89,8 +89,8 @@ export function EnrichmentMonitor() {
                   <p className="text-xs text-muted-foreground">Em Progresso</p>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Empresas em processo de enriquecimento. Dados sendo coletados de múltiplas fontes e APIs em paralelo.</p>
+              <TooltipContent className="max-w-xs whitespace-normal">
+                <p className="break-words">Empresas em processo de enriquecimento. Dados sendo coletados de múltiplas fontes e APIs em paralelo.</p>
               </TooltipContent>
             </Tooltip>
 
@@ -102,8 +102,8 @@ export function EnrichmentMonitor() {
                   <p className="text-xs text-muted-foreground">Pendentes</p>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Empresas aguardando início do processo de enriquecimento. Serão processadas automaticamente na fila.</p>
+              <TooltipContent className="max-w-xs whitespace-normal">
+                <p className="break-words">Empresas aguardando início do processo de enriquecimento. Serão processadas automaticamente na fila.</p>
               </TooltipContent>
             </Tooltip>
           </div>
