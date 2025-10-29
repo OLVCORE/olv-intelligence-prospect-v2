@@ -82,18 +82,19 @@ serve(async (req: Request) => {
       const patch = mapApolloCompany(companyData);
       console.log('[enrich-apollo] Atualizando empresa com', Object.keys(patch).length, 'campos');
       
-      const { error: uerr, count } = await sb
+      const { data: updatedData, error: uerr } = await sb
         .from('companies')
         .update({ ...patch, last_apollo_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', input.company_id)
-        .select('id', { count: 'exact' });
+        .select('id');
 
       if (uerr) {
         console.error('[enrich-apollo] Erro ao atualizar empresa:', uerr);
         return J({ error: 'db_update_failed', hint: uerr.message, mode: 'company' }, 500, c);
       }
       
-      if (!count || count === 0) {
+      const count = updatedData?.length || 0;
+      if (count === 0) {
         console.error('[enrich-apollo] Zero linhas atualizadas para company_id:', input.company_id);
         return J({ error: 'db_zero_rows', hint: 'Nenhuma linha afetada. Verifique company_id.' }, 409, c);
       }
