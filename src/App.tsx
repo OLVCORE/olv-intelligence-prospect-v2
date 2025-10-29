@@ -491,6 +491,16 @@ const App = () => (
               }
             />
             <Route
+              path="/central-icp/discovery"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CompanyDiscoveryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/sales-intelligence/feed"
               element={
                 <ProtectedRoute>
