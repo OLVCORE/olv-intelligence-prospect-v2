@@ -59,15 +59,12 @@ export function useCompanyPeople(companyId: string | undefined) {
       return (data || []).map(cp => {
         const person = cp.people as any;
         return {
-          ...(person || {}),
-          location_city: cp.location_city,
-          location_state: cp.location_state,
-          location_country: cp.location_country,
-          title_at_company: cp.title_at_company,
-          is_current: cp.is_current
+          ...cp,
+          people: person || {}
         };
-      }) as CompanyPerson[];
+      });
     },
-    enabled: !!companyId
+    enabled: !!companyId,
+    staleTime: 30000
   });
 }

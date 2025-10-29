@@ -1562,6 +1562,7 @@ export default function CompanyDetailPage() {
             <CardContent>
               <CompanyEnrichmentTabs
                 companyId={id!}
+                company={company}
                 similarCompanies={(company.similar_companies && company.similar_companies.length > 0)
                   ? company.similar_companies
                   : ((company.raw_data?.apollo?.similar_companies || []).map((s: any) => ({
