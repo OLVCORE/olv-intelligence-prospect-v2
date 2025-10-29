@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 type OrgResult = {
@@ -46,6 +47,26 @@ export function UpdateNowButton({
   const [assignOpen, setAssignOpen] = useState(false);
   const [orgResults, setOrgResults] = useState<OrgResult[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(null);
+  const getAuthHeaders = async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) throw new Error('auth_required');
+    return {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    } as Record<string, string>;
+  };
+
+  const invokeEnrichApollo = async (payload: any) => {
+    const headers = await getAuthHeaders();
+    const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+      body: payload,
+      headers,
+    });
+    if (error) throw error;
+    return data as any;
+  };
+
   const handleUpdate = async () => {
     setUpdating(true);
     try {
@@ -53,15 +74,11 @@ export function UpdateNowButton({
       if (apolloOrganizationId) {
         console.log('[UpdateNow] 🔄 Atualizando com Apollo Org ID:', apolloOrganizationId);
         
-        const { data, error } = await supabase.functions.invoke('enrich-apollo', {
-          body: {
-            type: 'ciclo3_enrich_complete',
-            companyId,
-            apolloOrganizationId
-          }
+        const data = await invokeEnrichApollo({
+          type: 'enrich_company',
+          companyId,
+          apolloOrgId: apolloOrganizationId,
         });
-
-        if (error) throw error;
 
         const decisorsCount = data?.decisors_saved || 0;
         const fieldsCount = data?.fields_enriched || 0;
@@ -80,15 +97,11 @@ export function UpdateNowButton({
           .replace(/\/.*$/, '')
           .trim();
 
-        const { data, error } = await supabase.functions.invoke('enrich-apollo', {
-          body: {
-            type: 'search_organizations',
-            name: companyName,
-            domain: cleanDomain
-          }
+        const data = await invokeEnrichApollo({
+          type: 'search_organizations',
+          name: companyName,
+          domain: cleanDomain,
         });
-
-        if (error) throw error;
 
         const orgs = (data?.organizations ?? []) as OrgResult[];
         const total = data?.total ?? orgs.length ?? 0;
@@ -121,13 +134,11 @@ export function UpdateNowButton({
     setUpdating(true);
     try {
       console.log('[UpdateNow] ✅ Atribuindo Apollo Org e enriquecendo:', selectedOrg.id);
-      const { data, error } = await supabase.functions.invoke('apollo-assign', {
-        body: {
-          companyId,
-          apolloOrganizationId: selectedOrg.id
-        }
+      const data = await invokeEnrichApollo({
+        type: 'assign_apollo_org',
+        companyId,
+        apolloOrganizationId: selectedOrg.id,
       });
-      if (error) throw error;
 
       const decisorsCount = data?.decisors_saved || data?.decisors_collected || 0;
       const fieldsCount = data?.fields_enriched || 0;
@@ -142,9 +153,21 @@ export function UpdateNowButton({
       onSuccess?.();
     } catch (error: any) {
       console.error('[UpdateNow] ❌ Erro ao enriquecer após seleção:', error);
-      toast.error('Erro ao enriquecer com Apollo', {
-        description: error.message || 'Tente novamente mais tarde'
-      });
+      if (error instanceof FunctionsHttpError) {
+        try {
+          // @ts-ignore
+          const detail = await (error as any)?.context?.response?.json();
+          toast.error('Erro ao enriquecer com Apollo', { description: detail?.error || detail?.message || 'Falha na função' });
+        } catch {
+          toast.error('Erro ao enriquecer com Apollo', { description: 'Falha na função' });
+        }
+      } else if (error?.message === 'auth_required') {
+        toast.error('Sessão expirada. Faça login para continuar.');
+      } else {
+        toast.error('Erro ao enriquecer com Apollo', {
+          description: error?.message || 'Tente novamente mais tarde'
+        });
+      }
     } finally {
       setUpdating(false);
     }
