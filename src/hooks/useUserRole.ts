@@ -1,38 +1,41 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = 'admin' | 'user' | 'viewer';
+export type UserRole = 'admin' | 'moderator' | 'user';
 
 export function useUserRole() {
-  const { user } = useAuth();
-
-  const { data: userRole, isLoading } = useQuery({
-    queryKey: ['user-role', user?.id],
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      if (!user?.id) return null;
-
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return 'user' as AppRole; // Default to 'user' if error
-      }
-
-      const roleRow = Array.isArray(data) ? data[0] : (data as any);
-      return (roleRow?.role as AppRole) || 'user';
+      const { data } = await supabase.auth.getSession();
+      return data.session;
     },
-    enabled: !!user?.id,
   });
 
+  const { data: roles, isLoading } = useQuery({
+    queryKey: ['user-roles', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id);
+      
+      if (error) throw error;
+      return data?.map(r => r.role as UserRole) || [];
+    },
+    enabled: !!session?.user?.id,
+  });
+
+  const isAdmin = roles?.includes('admin') || false;
+  const isModerator = roles?.includes('moderator') || false;
+  
   return {
-    role: userRole || 'user',
-    isAdmin: userRole === 'admin',
+    roles: roles || [],
+    isAdmin,
+    isModerator,
     isLoading,
+    userId: session?.user?.id,
   };
 }

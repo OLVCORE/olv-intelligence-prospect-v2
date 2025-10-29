@@ -49,6 +49,7 @@ import {
   Activity,
   Layers,
   Info,
+  Lock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -64,8 +65,10 @@ import APIManagementGrid from "@/components/dashboard/APIManagementGrid";
 import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
 import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
 import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
+import PlatformCostsPanel from "@/components/dashboard/PlatformCostsPanel";
 import { DashboardActionsMenu } from "@/components/dashboard/DashboardActionsMenu";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -83,6 +86,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const { isAdmin, isLoading: isLoadingRole } = useUserRole();
 
   const handleExportPDF = async () => {
     try {
@@ -578,24 +582,60 @@ export default function Dashboard() {
             </div>
           </TabsContent>
 
-          {/* APIs & Cost Tab - NEW */}
+          {/* APIs & Cost Tab - PROTECTED */}
           <TabsContent value="apis" className="space-y-6">
-            {/* Financial Overview */}
-            <FinancialOverview />
-
-            {/* Apollo Credits + Alerts */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <ApolloCreditPanel />
-              <RealTimeAlerts />
-            </div>
-
-            {/* APIs Grid */}
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent-cyan/20 to-primary/20 rounded-3xl blur-xl opacity-30" />
-              <div className="relative">
-                <APIManagementGrid />
+            {isLoadingRole ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-center space-y-4">
+                  <Shield className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
+                  <p className="text-muted-foreground">Verificando permissões...</p>
+                </div>
               </div>
-            </div>
+            ) : !isAdmin ? (
+              <Card className="bg-card/70 backdrop-blur-md border-border/50">
+                <CardContent className="p-12">
+                  <div className="text-center space-y-6">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-destructive/10 border-2 border-destructive/20">
+                      <Lock className="h-10 w-10 text-destructive" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold">Acesso Restrito</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">
+                        Esta seção contém informações sensíveis sobre custos e APIs. 
+                        Apenas administradores têm permissão para acessar este conteúdo.
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Se você precisa de acesso, entre em contato com um administrador do sistema.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Financial Overview */}
+                <FinancialOverview />
+
+                {/* Platform Costs */}
+                <PlatformCostsPanel />
+
+                {/* Apollo Credits + Alerts */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <ApolloCreditPanel />
+                  <RealTimeAlerts />
+                </div>
+
+                {/* APIs Grid */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent-cyan/20 to-primary/20 rounded-3xl blur-xl opacity-30" />
+                  <div className="relative">
+                    <APIManagementGrid />
+                  </div>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* Market Intel Tab */}
@@ -630,21 +670,33 @@ export default function Dashboard() {
                   <BarChart 
                     data={data.companiesByIndustry.slice(0, 8).map(item => ({
                       ...item,
-                      shortIndustry: item.industry.length > 35 
-                        ? item.industry.substring(0, 35) + '...'
+                      shortIndustry: item.industry.length > 30 
+                        ? item.industry.substring(0, 30) + '...'
                         : item.industry
                     }))} 
                     layout="vertical"
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="shortIndustry" type="category" width={150} className="text-xs" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      type="number" 
+                      stroke="hsl(var(--foreground))" 
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      dataKey="shortIndustry" 
+                      type="category" 
+                      width={140} 
+                      stroke="hsl(var(--foreground))" 
+                      fontSize={11}
+                      tickLine={false}
+                    />
                     <Tooltip 
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+                            <div className="bg-card border border-border rounded-lg p-3 shadow-lg max-w-xs">
                               <p className="font-semibold text-sm mb-1">{data.industry}</p>
                               <p className="text-xs text-muted-foreground">Empresas: {data.count}</p>
                             </div>
@@ -726,10 +778,28 @@ export default function Dashboard() {
               >
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={data.topTechnologies.slice(0, 10)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="technology" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      dataKey="technology" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={100} 
+                      stroke="hsl(var(--foreground))" 
+                      fontSize={11}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--foreground))" 
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
                     <Bar dataKey="count" fill={CHART_COLORS.quaternary} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
