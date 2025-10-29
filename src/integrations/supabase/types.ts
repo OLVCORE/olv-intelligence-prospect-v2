@@ -1516,7 +1516,15 @@ export type Database = {
           drivers?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_insights_company"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_jobs: {
         Row: {
@@ -1549,7 +1557,15 @@ export type Database = {
           title?: string | null
           url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_jobs_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_monitoring: {
         Row: {
@@ -1635,7 +1651,15 @@ export type Database = {
           url?: string
           why?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_news_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_people: {
         Row: {
@@ -1686,7 +1710,22 @@ export type Database = {
           title_at_company?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_people_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_company_people_person"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_previews: {
         Row: {
@@ -1803,7 +1842,15 @@ export type Database = {
           source?: string | null
           technology?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_technologies_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_updates: {
         Row: {
@@ -1839,7 +1886,15 @@ export type Database = {
           updated_count?: number
           updated_fields?: string[]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_company_updates_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competitors: {
         Row: {
@@ -4798,7 +4853,15 @@ export type Database = {
           similarity_score?: number | null
           source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_similar_companies_company"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       totvs_products: {
         Row: {

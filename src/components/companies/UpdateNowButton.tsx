@@ -63,17 +63,18 @@ export function UpdateNowButton({
         console.log('[UpdateNow] 🔄 Atualizando com Apollo Org ID:', apolloOrganizationId);
         
         const data = await invokeEnrichApollo({
-          type: 'enrich_company',
-          companyId,
-          apolloOrgId: apolloOrganizationId,
+          organization_id: apolloOrganizationId,
+          company_id: companyId,
+          modes: ['company', 'people', 'similar'],
+          force: true
         });
 
-        const decisorsCount = data?.decisors_saved || 0;
-        const fieldsCount = data?.fields_enriched || 0;
-        const similarsCount = data?.similar_companies || 0;
+        const peopleCount = data?.peopleLinked || 0;
+        const fieldsCount = data?.companyFields?.length || 0;
+        const similarsCount = data?.similarLinked || 0;
 
         toast.success(`✅ Dados atualizados com sucesso!`, {
-          description: `${decisorsCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
+          description: `${peopleCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
         });
       } else {
         // Se não tem apollo_organization_id, fazer busca/resolução inicial
@@ -132,27 +133,31 @@ export function UpdateNowButton({
     setUpdating(true);
     try {
       console.log('[UpdateNow] ✅ Atribuindo Apollo Org e enriquecendo:', selectedOrg.id);
-      // 1) Atribuir organização ao registro da empresa
-      const assign = await invokeEnrichApollo({
-        type: 'assign_apollo_org',
-        companyId,
-        apolloOrganizationId: selectedOrg.id,
-        selectedOrganization: selectedOrg,
-      });
+      
+      // 1) Atualizar o apollo_organization_id na empresa
+      const { error: updateError } = await supabase
+        .from('companies')
+        .update({ apollo_organization_id: selectedOrg.id })
+        .eq('id', companyId);
 
-      // 2) Disparar enriquecimento completo (decisores, tecnologias etc.)
+      if (updateError) {
+        throw new Error('Erro ao atribuir organização: ' + updateError.message);
+      }
+
+      // 2) Disparar enriquecimento completo (company, people, similar)
       const enriched = await invokeEnrichApollo({
-        type: 'enrich_company',
-        companyId,
-        apolloOrgId: selectedOrg.id,
+        organization_id: selectedOrg.id,
+        company_id: companyId,
+        modes: ['company', 'people', 'similar'],
+        force: true
       });
 
-      const decisorsCount = enriched?.people_count ?? assign?.decisors_saved ?? 0;
-      const fieldsCount = assign?.fields_enriched ?? 0;
-      const similarsCount = enriched?.similar_companies ?? 0;
+      const peopleCount = enriched?.peopleLinked || 0;
+      const fieldsCount = enriched?.companyFields?.length || 0;
+      const similarsCount = enriched?.similarLinked || 0;
 
       toast.success('✅ Dados atualizados com sucesso!', {
-        description: `${decisorsCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
+        description: `${peopleCount} decisores · ${fieldsCount} campos · ${similarsCount} similares`
       });
 
       setAssignOpen(false);
