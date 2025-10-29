@@ -72,7 +72,10 @@ verify_jwt = false
  [functions.ai-fit-analysis]
  verify_jwt = false
  
- [functions.enrich-apollo]
+  [functions.apollo-assign]
+  verify_jwt = true
+
+  [functions.enrich-apollo]
  verify_jwt = true
  
  [functions.enrich-receitaws]

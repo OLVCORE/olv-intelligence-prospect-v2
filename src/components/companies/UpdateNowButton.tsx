@@ -121,9 +121,8 @@ export function UpdateNowButton({
     setUpdating(true);
     try {
       console.log('[UpdateNow] ✅ Atribuindo Apollo Org e enriquecendo:', selectedOrg.id);
-      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+      const { data, error } = await supabase.functions.invoke('apollo-assign', {
         body: {
-          type: 'assign_apollo_org',
           companyId,
           apolloOrganizationId: selectedOrg.id
         }

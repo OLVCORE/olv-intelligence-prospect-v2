@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
+// import * as ciclo3Module from './ciclo3-handlers.ts'; // Temporariamente desabilitado devido a erro de tipos
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -40,49 +42,27 @@ serve(async (req) => {
 
     console.log('[Apollo] 🚀 Requisição:', { type, companyId });
 
-    // CICLO 3: RESOLUÇÃO E BUSCA DE ORGANIZAÇÕES
+    // CICLO 3: RESOLUÇÃO E BUSCA DE ORGANIZAÇÕES (TEMPORARIAMENTE DESABILITADO)
     if (type === 'ciclo3_resolve_organization') {
-      const result = await ciclo3Module.resolveAndEnrichOrganization(
-        APOLLO_API_KEY,
-        {
-          name: searchName || name || '',
-          domain: domain,
-          location: body.location
-        }
-      );
-      
       return new Response(
-        JSON.stringify(result || { organization: null, matchScore: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Handler temporariamente desabilitado', details: 'Use assign_apollo_org' }),
+        { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // CICLO 3: BUSCAR ORGANIZAÇÃO POR ID
+    // CICLO 3: BUSCAR ORGANIZAÇÃO POR ID (TEMPORARIAMENTE DESABILITADO)
     if (type === 'ciclo3_get_organization_by_id') {
-      const result = await ciclo3Module.getOrganizationById(
-        APOLLO_API_KEY,
-        organizationId || apolloOrganizationId || apolloOrgId || ''
-      );
-      
       return new Response(
-        JSON.stringify({ organization: result }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Handler temporariamente desabilitado', details: 'Use assign_apollo_org' }),
+        { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // CICLO 3: ENRIQUECIMENTO COMPLETO (100% CAMPOS + DECISORES)
+    // CICLO 3: ENRIQUECIMENTO COMPLETO (TEMPORARIAMENTE DESABILITADO)
     if (type === 'ciclo3_enrich_complete') {
-      const result = await ciclo3Module.enrichCompanyComplete(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-        APOLLO_API_KEY,
-        companyId || '',
-        apolloOrganizationId || apolloOrgId
-      );
-      
       return new Response(
-        JSON.stringify(result),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Handler temporariamente desabilitado', details: 'Use assign_apollo_org' }),
+        { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
