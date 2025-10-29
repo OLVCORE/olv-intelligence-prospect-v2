@@ -165,7 +165,7 @@ export function useRunMonitoringNow() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('auto-intelligence-monitor', {
-        body: {},
+        body: { manual_trigger: true },
       });
 
       if (error) throw error;

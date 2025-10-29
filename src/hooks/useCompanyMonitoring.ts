@@ -73,6 +73,7 @@ export function useToggleCompanyMonitoring() {
     },
     onSuccess: (_, { isActive }) => {
       queryClient.invalidateQueries({ queryKey: ['company-monitoring'] });
+      queryClient.invalidateQueries({ queryKey: ['monitored-companies'] });
       
       if (isActive) {
         toast.success('✅ Monitoramento ativado', {

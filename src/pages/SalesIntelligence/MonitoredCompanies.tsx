@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Building2, AlertCircle, TrendingUp, Search, ExternalLink, Activity, Filter, Users, MapPin } from 'lucide-react';
+import { Building2, AlertCircle, TrendingUp, Search, ExternalLink, Activity, Filter, Users, MapPin, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,13 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useMonitoredCompanies as useMonitoredCompaniesHook, useToggleCompanyMonitoring } from '@/hooks/useCompanyMonitoring';
 
 interface CompanyWithSignals {
   id: string;
@@ -40,8 +35,10 @@ interface CompanyWithSignals {
 export default function MonitoredCompaniesPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'signals' | 'urgent' | 'recent' | 'name'>('signals');
-  const [selectedState, setSelectedState] = useState<string>('all');
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [addQuery, setAddQuery] = useState('');
+  const [addResults, setAddResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
@@ -51,100 +48,50 @@ export default function MonitoredCompaniesPage() {
     },
   });
 
-  // Buscar empresas monitoradas com seus sinais
-  const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['monitored-companies-with-signals', user?.id, sortBy],
+  const { data: monitored = [], isLoading } = useMonitoredCompaniesHook();
+  const toggleMonitoring = useToggleCompanyMonitoring();
+
+  // Montar lista a partir da tabela company_monitoring
+  const companies = (monitored || []).map((row: any) => ({
+    id: row.companies?.id,
+    name: row.companies?.name,
+    domain: row.companies?.domain,
+    signal_count: 0,
+    urgent_signals: 0,
+    high_priority_signals: 0,
+    last_signal_date: null as string | null,
+    newest_signal_type: null as string | null,
+  })).filter(c => c.id && c.name);
+
+  // Opcional: enriquecer com sinais recentes para ranking simples
+  const { data: enriched = companies } = useQuery({
+    queryKey: ['monitored-companies-signals', companies.map(c => c.id).join(',')],
     queryFn: async () => {
-      if (!user?.id) return [];
-
-      // Buscar config para obter filtros
-      const { data: config } = await supabase
-        .from('intelligence_monitoring_config')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (!config) return [];
-
-      // Buscar empresas que atendem aos critérios
-      let companiesQuery = supabase
-        .from('companies')
-        .select('id, name, domain, headquarters_state, industry, employees')
-        .eq('is_disqualified', false);
-
-      if (config.target_states && config.target_states.length > 0) {
-        companiesQuery = companiesQuery.in('headquarters_state', config.target_states);
-      }
-
-      if (config.min_employees) {
-        companiesQuery = companiesQuery.gte('employees', config.min_employees);
-      }
-
-      if (config.max_employees) {
-        companiesQuery = companiesQuery.lte('employees', config.max_employees);
-      }
-
-      const { data: companiesList } = await companiesQuery;
-      if (!companiesList || companiesList.length === 0) return [];
-
-      // Para cada empresa, contar sinais
-      const companiesWithSignals: CompanyWithSignals[] = await Promise.all(
-        companiesList.map(async (company) => {
-          const { data: signals } = await supabase
-            .from('buying_signals')
-            .select('priority, signal_type, detected_at')
-            .eq('company_id', company.id)
-            .order('detected_at', { ascending: false });
-
-          const signal_count = signals?.length || 0;
-          const urgent_signals = signals?.filter(s => s.priority === 'urgent').length || 0;
-          const high_priority_signals = signals?.filter(s => s.priority === 'high').length || 0;
-          const last_signal_date = signals?.[0]?.detected_at || null;
-          const newest_signal_type = signals?.[0]?.signal_type || null;
-
-          return {
-            ...company,
-            signal_count,
-            urgent_signals,
-            high_priority_signals,
-            last_signal_date,
-            newest_signal_type,
-          };
-        })
-      );
-
-      // Ordenar
-      return companiesWithSignals.sort((a, b) => {
-        switch (sortBy) {
-          case 'signals':
-            return b.signal_count - a.signal_count;
-          case 'urgent':
-            return b.urgent_signals - a.urgent_signals;
-          case 'recent':
-            if (!a.last_signal_date) return 1;
-            if (!b.last_signal_date) return -1;
-            return new Date(b.last_signal_date).getTime() - new Date(a.last_signal_date).getTime();
-          case 'name':
-            return a.name.localeCompare(b.name);
-          default:
-            return 0;
-        }
-      });
+      const enrichedList = await Promise.all(companies.map(async (c) => {
+        const { data: signals } = await supabase
+          .from('buying_signals')
+          .select('priority, signal_type, detected_at')
+          .eq('company_id', c.id)
+          .order('detected_at', { ascending: false })
+          .limit(50);
+        return {
+          ...c,
+          signal_count: signals?.length || 0,
+          urgent_signals: signals?.filter(s => s.priority === 'urgent').length || 0,
+          high_priority_signals: signals?.filter(s => s.priority === 'high').length || 0,
+          last_signal_date: signals?.[0]?.detected_at || null,
+          newest_signal_type: signals?.[0]?.signal_type || null,
+        };
+      }));
+      return enrichedList;
     },
-    enabled: !!user?.id,
+    enabled: companies.length > 0,
   });
 
-  // Filtrar por busca e estado
-  const filteredCompanies = companies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.domain?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = selectedState === 'all' || company.headquarters_state === selectedState;
-    return matchesSearch && matchesState;
-  });
-
-  // Estados únicos das empresas
-  const availableStates = Array.from(new Set(companies.map(c => c.headquarters_state).filter(Boolean)));
+  const filteredCompanies = (enriched || companies).filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.domain?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getPriorityColor = (urgent: number, high: number) => {
     if (urgent > 0) return 'bg-red-500';
@@ -190,44 +137,107 @@ export default function MonitoredCompaniesPage() {
             Empresas Monitoradas
           </h1>
           <p className="text-muted-foreground mt-1">
-            {filteredCompanies.length} empresas sendo monitoradas ativamente
+            {filteredCompanies.length} empresa(s) com monitoramento ativo
           </p>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Menu
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Navegação Rápida</DropdownMenuLabel>
-            <DropdownMenuItem 
-              onClick={() => navigate('/sales-intelligence/feed')}
-              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-            >
-              <Activity className="h-4 w-4 mr-2" />
-              Ver Feed de Sinais
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => navigate('/sales-intelligence/config')}
-              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Configurar Monitoramento
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Monitorar Empresa
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar empresa da base</DialogTitle>
+                <DialogDescription>Busque na sua base e ative o monitoramento para uma empresa específica.</DialogDescription>
+              </DialogHeader>
+              <div className="flex gap-2">
+                <Input placeholder="Buscar por nome ou domínio..." value={addQuery} onChange={(e) => setAddQuery(e.target.value)} />
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    setIsSearching(true);
+                    const { data } = await supabase
+                      .from('companies')
+                      .select('id, name, domain')
+                      .or(`name.ilike.%${addQuery}%,domain.ilike.%${addQuery}%`)
+                      .order('name', { ascending: true })
+                      .limit(20);
+                    setAddResults(data || []);
+                    setIsSearching(false);
+                  }}
+                >
+                  Buscar
+                </Button>
+              </div>
+              <div className="max-h-72 overflow-y-auto mt-3 space-y-2">
+                {isSearching && <p className="text-sm text-muted-foreground">Buscando...</p>}
+                {!isSearching && addResults.length === 0 && addQuery && (
+                  <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada</p>
+                )}
+                {addResults.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{r.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{r.domain}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        toggleMonitoring.mutate({ companyId: r.id, isActive: true }, {
+                          onSuccess: () => setOpenAddDialog(false)
+                        })
+                      }
+                    >
+                      Monitorar
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenAddDialog(false)}>Fechar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Menu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Navegação Rápida</DropdownMenuLabel>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/feed')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Activity className="h-4 w-4 mr-2" />
+                Ver Feed de Sinais
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/config')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Configurar Monitoramento
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Filtros e Ordenação</CardTitle>
+          <CardTitle className="text-sm">Busca</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Busca */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -238,32 +248,6 @@ export default function MonitoredCompaniesPage() {
                 className="pl-9"
               />
             </div>
-
-            {/* Ordenação */}
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Ordenar por..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="signals">Mais Sinais</SelectItem>
-                <SelectItem value="urgent">Mais Urgentes</SelectItem>
-                <SelectItem value="recent">Mais Recentes</SelectItem>
-                <SelectItem value="name">Nome (A-Z)</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Filtro de Estado */}
-            <Select value={selectedState} onValueChange={setSelectedState}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por estado..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Estados</SelectItem>
-                {availableStates.map(state => (
-                  <SelectItem key={state} value={state}>{state}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
