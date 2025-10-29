@@ -928,6 +928,74 @@ export type Database = {
         }
         Relationships: []
       }
+      buying_signals: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          detected_at: string
+          id: string
+          is_reviewed: boolean | null
+          priority: string | null
+          raw_data: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          signal_description: string | null
+          signal_title: string
+          signal_type: string
+          source_type: string | null
+          source_url: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          is_reviewed?: boolean | null
+          priority?: string | null
+          raw_data?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signal_description?: string | null
+          signal_title: string
+          signal_type: string
+          source_type?: string | null
+          source_url?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          is_reviewed?: boolean | null
+          priority?: string | null
+          raw_data?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signal_description?: string | null
+          signal_title?: string
+          signal_type?: string
+          source_type?: string | null
+          source_url?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buying_signals_company_id_fkey1"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_recordings: {
         Row: {
           call_sid: string
@@ -2798,6 +2866,71 @@ export type Database = {
           {
             foreignKeyName: "discovery_batches_source_company_id_fkey"
             columns: ["source_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      displacement_opportunities: {
+        Row: {
+          assigned_to: string | null
+          company_id: string
+          competitor_name: string
+          competitor_type: string | null
+          created_at: string
+          detected_at: string
+          displacement_reason: string
+          estimated_revenue: number | null
+          evidence: string | null
+          id: string
+          next_action: string | null
+          next_action_date: string | null
+          opportunity_score: number | null
+          raw_data: Json | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_id: string
+          competitor_name: string
+          competitor_type?: string | null
+          created_at?: string
+          detected_at?: string
+          displacement_reason: string
+          estimated_revenue?: number | null
+          evidence?: string | null
+          id?: string
+          next_action?: string | null
+          next_action_date?: string | null
+          opportunity_score?: number | null
+          raw_data?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company_id?: string
+          competitor_name?: string
+          competitor_type?: string | null
+          created_at?: string
+          detected_at?: string
+          displacement_reason?: string
+          estimated_revenue?: number | null
+          evidence?: string | null
+          id?: string
+          next_action?: string | null
+          next_action_date?: string | null
+          opportunity_score?: number | null
+          raw_data?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "displacement_opportunities_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -6204,7 +6337,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      buying_signals_summary: {
+        Row: {
+          avg_confidence: number | null
+          company_id: string | null
+          high_priority_signals: number | null
+          last_signal_date: string | null
+          new_signals: number | null
+          signal_types: Json | null
+          total_signals: number | null
+          urgent_signals: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buying_signals_company_id_fkey1"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_deal_health_score: {

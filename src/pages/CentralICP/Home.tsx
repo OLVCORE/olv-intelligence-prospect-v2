@@ -69,6 +69,14 @@ export default function CentralICPHome() {
       status: 'Planejado'
     },
     {
+      icon: Zap,
+      title: 'Sales Intelligence Feed',
+      description: 'Sinais de compra em tempo real e displacement radar',
+      path: '/sales-intelligence/feed',
+      color: 'bg-yellow-500',
+      status: 'Ativo'
+    },
+    {
       icon: TrendingUp,
       title: 'Inteligência Competitiva',
       description: 'Battle Cards, Win-Loss Analysis e Monitoramento',

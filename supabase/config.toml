@@ -227,3 +227,9 @@ verify_jwt = false
 
   [functions.validate-enrich-company]
   verify_jwt = false
+
+  [functions.detect-buying-signals]
+  verify_jwt = true
+
+  [functions.analyze-displacement-opportunities]
+  verify_jwt = true
