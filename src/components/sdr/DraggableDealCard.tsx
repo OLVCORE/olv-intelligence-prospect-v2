@@ -73,6 +73,10 @@ export function DraggableDealCard({ deal, isDragging, isSelected, onSelect, onCl
               e.stopPropagation();
               onClick?.(deal);
             }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onClick?.(deal);
+            }}
           >
             {/* Title */}
             <h4 className="font-medium text-sm leading-tight">{deal.title}</h4>

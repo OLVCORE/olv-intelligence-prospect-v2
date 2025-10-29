@@ -127,11 +127,13 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
           throw new Error('Erro ao buscar dados da Receita Federal: ' + receitaError.message);
         }
 
-        if (!receitaResponse || receitaResponse.error) {
+        if (!receitaResponse || (receitaResponse as any).error) {
           throw new Error('CNPJ não encontrado na Receita Federal');
         }
 
-        const receitaData = receitaResponse;
+        // A função retorna no formato { data: {...} } — extrair corretamente
+        const payload: any = receitaResponse as any;
+        const receitaData = payload?.data ?? payload;
         console.log('✅ Dados da Receita Federal recebidos:', receitaData);
 
         // 🔥 PASSO 2: VERIFICAR SE EMPRESA JÁ EXISTE NO BANCO

@@ -155,6 +155,10 @@ serve(async (req) => {
           raw_data: mergedRaw,
           cnpj_status: cnpjStatus
         };
+        // Atualizar também o nome oficial (Razão Social) quando disponível
+        if (data?.nome || data?.fantasia) {
+          updatePayload.name = data.nome || data.fantasia;
+        }
         if (data?.atividade_principal?.[0]?.text) {
           updatePayload.industry = data.atividade_principal[0].text;
         }

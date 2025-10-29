@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DraggableDialog } from '@/components/ui/draggable-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -79,17 +79,13 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
   const currentDeal = { ...deal, ...editedDeal };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{currentDeal.title}</span>
-            <Button onClick={handleSave} disabled={Object.keys(editedDeal).length === 0}>
-              <Save className="h-4 w-4 mr-2" />
-              Salvar
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={open} onOpenChange={onOpenChange} title={currentDeal.title} className="max-w-4xl max-h-[90vh]">
+        <div className="flex items-center justify-end mb-2">
+          <Button onClick={handleSave} disabled={Object.keys(editedDeal).length === 0}>
+            <Save className="h-4 w-4 mr-2" />
+            Salvar
+          </Button>
+        </div>
 
         <Tabs defaultValue="details" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
@@ -350,7 +346,6 @@ export function DealDetailsDialog({ deal, open, onOpenChange }: DealDetailsDialo
             />
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }

@@ -352,6 +352,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/sdr" element={<Navigate to="/sdr/workspace" replace />} />
             <Route
               path="/sdr/dashboard"
               element={
