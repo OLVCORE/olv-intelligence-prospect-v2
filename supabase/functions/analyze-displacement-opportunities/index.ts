@@ -24,7 +24,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const serperKey = Deno.env.get('SERPER_API_KEY');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -32,7 +31,7 @@ serve(async (req) => {
 
     const opportunities: any[] = [];
 
-    // Lista de concorrentes comuns do mercado ERP/CRM/Software empresarial
+    // Lista de concorrentes comuns
     const commonCompetitors = competitors || [
       'SAP',
       'Oracle',
@@ -42,8 +41,6 @@ serve(async (req) => {
       'Linx',
       'Omie',
       'Bling',
-      'Protheus',
-      'RM Totvs',
     ];
 
     // 1. Buscar menções negativas dos concorrentes
@@ -52,16 +49,14 @@ serve(async (req) => {
 
       for (const competitor of commonCompetitors) {
         try {
-          // Buscar reviews e reclamações
           const queries = [
             `${company_name} trocou ${competitor}`,
             `${company_name} migrou ${competitor}`,
-            `${competitor} problemas ${company_name}`,
-            `${competitor} reclamações suporte`,
+            `${competitor} problemas reclamações`,
           ];
 
           for (const query of queries) {
-            const searchResponse: Response = await fetch('https://google.serper.dev/search', {
+            const response = await fetch('https://google.serper.dev/search', {
               method: 'POST',
               headers: {
                 'X-API-KEY': serperKey,
@@ -70,21 +65,19 @@ serve(async (req) => {
               body: JSON.stringify({ q: query, num: 5 }),
             });
 
-            if (searchResponse.ok) {
-              const searchData = await searchResponse.json();
-              const results = searchData.organic || [];
+            if (response.ok) {
+              const data = await response.json();
+              const results = data.organic || [];
 
               for (const result of results) {
                 const fullText = `${result.title} ${result.snippet}`.toLowerCase();
 
-                // Detectar sinais de insatisfação ou troca
+                // Detectar sinais de insatisfação
                 const displacementSignals = [
                   { keyword: /trocou|migrou|substituiu|abandonou/i, reason: 'migração_confirmada', score: 0.9 },
                   { keyword: /problemas|falhas|bugs|lento/i, reason: 'problemas_técnicos', score: 0.7 },
                   { keyword: /caro|preço alto|custo elevado/i, reason: 'custo_alto', score: 0.75 },
-                  { keyword: /suporte ruim|atendimento péssimo|sem suporte/i, reason: 'suporte_inadequado', score: 0.8 },
-                  { keyword: /insatisfeito|decepcionado|frustrado/i, reason: 'insatisfação_geral', score: 0.7 },
-                  { keyword: /descontinuado|fim do suporte|obsoleto/i, reason: 'produto_descontinuado', score: 0.95 },
+                  { keyword: /suporte ruim|atendimento péssimo/i, reason: 'suporte_inadequado', score: 0.8 },
                 ];
 
                 for (const signal of displacementSignals) {
@@ -111,60 +104,7 @@ serve(async (req) => {
       }
     }
 
-    // 2. Analisar com IA para enriquecer oportunidades
-    if (lovableApiKey && opportunities.length > 0) {
-      console.log('[Displacement] Enriquecendo oportunidades com IA...');
-
-      try {
-        const topOpportunities = opportunities.slice(0, 3);
-        
-        const aiResponse: Response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a competitive displacement sales strategist. Analyze competitive weaknesses and recommend sales tactics.',
-              },
-              {
-                role: 'user',
-                content: `Company: ${company_name}\n\nDisplacement Opportunities:\n${JSON.stringify(topOpportunities, null, 2)}\n\nProvide:\n1. Best displacement strategy for each opportunity\n2. Key talking points to win against each competitor\n3. Estimated deal value\n4. Recommended next action\n\nRespond in JSON format with 'next_action' and 'estimated_revenue' for each opportunity.`,
-              },
-            ],
-          }),
-        });
-
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
-          const aiAnalysis = aiData.choices?.[0]?.message?.content;
-          console.log('[Displacement] Análise IA:', aiAnalysis);
-
-          // Tentar parsear e enriquecer oportunidades
-          try {
-            const parsed = JSON.parse(aiAnalysis);
-            if (Array.isArray(parsed)) {
-              parsed.forEach((analysis: any, index: number) => {
-                if (opportunities[index]) {
-                  opportunities[index].next_action = analysis.next_action;
-                  opportunities[index].estimated_revenue = analysis.estimated_revenue;
-                }
-              });
-            }
-          } catch (e) {
-            console.log('[Displacement] Não foi possível parsear análise IA');
-          }
-        }
-      } catch (error) {
-        console.error('[Displacement] Erro na análise IA:', error);
-      }
-    }
-
-    // 3. Salvar oportunidades no banco
+    // 2. Salvar oportunidades no banco
     if (opportunities.length > 0) {
       console.log(`[Displacement] Salvando ${opportunities.length} oportunidades...`);
 
