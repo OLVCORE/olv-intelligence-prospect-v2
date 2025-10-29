@@ -47,7 +47,7 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-24 z-50 group">
+      <div className="fixed bottom-20 right-6 z-50 group">
         {/* Botão principal com design neutro e profissional */}
         <Button
           onClick={() => setIsOpen(true)}
@@ -83,7 +83,7 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
         </Button>
         
         {/* Anel pulsante discreto */}
-        <div className="absolute inset-0 rounded-2xl bg-primary/30 animate-ping opacity-15" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/30 animate-ping opacity-15" />
       </div>
     );
   }
