@@ -239,3 +239,6 @@ verify_jwt = false
 
   [functions.init-monitoring-config]
   verify_jwt = true
+
+  [functions.trevo-assistant]
+  verify_jwt = true
