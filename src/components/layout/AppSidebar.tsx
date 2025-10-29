@@ -189,11 +189,32 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
+    label: "Execução",
+    icon: Rocket,
+    items: [
+      {
+        title: "SDR Sales Suite",
+        icon: MessageSquare,
+        url: "/sdr/workspace",
+        highlighted: true,
+        description: "Plataforma completa de automação de prospecção e vendas",
+        submenu: [
+          { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
+          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
+          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
+          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
+          { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
+          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e ferramentas externas" },
+        ],
+      },
+    ]
+  },
+  {
     label: "Estratégia",
     icon: Target,
     items: [
       {
-        title: "Account Strategy Hub",
+        title: "ROI-Labs",
         icon: Target,
         url: "/account-strategy",
         special: true,
@@ -226,27 +247,6 @@ const menuGroups: MenuGroup[] = [
         url: "/personas-library",
         description: "Perfis comportamentais de decisores e estratégias de abordagem"
       }
-    ]
-  },
-  {
-    label: "Execução",
-    icon: Rocket,
-    items: [
-      {
-        title: "SDR Sales Suite",
-        icon: MessageSquare,
-        url: "/sdr/workspace",
-        highlighted: true,
-        description: "Plataforma completa de automação de prospecção e vendas",
-        submenu: [
-          { title: "Sales Workspace", icon: Activity, url: "/sdr/workspace", description: "Centro de comando unificado do vendedor" },
-          { title: "Dashboard SDR", icon: LayoutDashboard, url: "/sdr/dashboard", description: "Visão geral de performance e métricas" },
-          { title: "Inbox Unificado", icon: Inbox, url: "/sdr/inbox", description: "Central de mensagens multi-canal consolidada" },
-          { title: "Sequências", icon: Repeat, url: "/sdr/sequences", description: "Cadências automatizadas de follow-up" },
-          { title: "Tarefas", icon: ListChecks, url: "/sdr/tasks", description: "Gestão de tarefas e lembretes inteligentes" },
-          { title: "Integrações", icon: Zap, url: "/sdr/integrations", description: "Conecte com CRM, e-mail e ferramentas externas" },
-        ],
-      },
     ]
   },
   {
