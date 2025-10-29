@@ -104,7 +104,7 @@ ${staleDeals?.map((d: any) => `
 
 Gere 3-5 sugestões PRIORITÁRIAS agora.`;
 
-    // Chamar Lovable AI
+    // Chamar Lovable AI (usando modelo mais econômico)
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -112,18 +112,26 @@ Gere 3-5 sugestões PRIORITÁRIAS agora.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.7,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error("AI error:", aiResponse.status, errorText);
+      
+      // Tratar erros específicos
+      if (aiResponse.status === 402) {
+        throw new Error("Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage");
+      }
+      if (aiResponse.status === 429) {
+        throw new Error("Limite de requisições excedido. Aguarde alguns instantes");
+      }
+      
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
