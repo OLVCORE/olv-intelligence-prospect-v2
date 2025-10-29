@@ -153,6 +153,7 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
         .insert({
           user_id: user.id,
           schedule_name: formData.name,
+          target_regions: formData.regions.length > 0 ? formData.regions : null,
           target_states: formData.states,
           target_cities: formData.city ? [formData.city] : null,
           target_sectors: [formData.sector],
