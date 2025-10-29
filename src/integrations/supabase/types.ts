@@ -3711,6 +3711,7 @@ export type Database = {
           check_frequency_hours: number | null
           competitor_names: string[] | null
           created_at: string
+          custom_niche: string | null
           id: string
           is_active: boolean | null
           keywords_blacklist: string[] | null
@@ -3730,6 +3731,7 @@ export type Database = {
           monitor_tech_adoption: boolean | null
           next_check_at: string | null
           schedule_name: string | null
+          target_cities: string[] | null
           target_mesoregions: string[] | null
           target_microregions: string[] | null
           target_municipalities: string[] | null
@@ -3744,6 +3746,7 @@ export type Database = {
           check_frequency_hours?: number | null
           competitor_names?: string[] | null
           created_at?: string
+          custom_niche?: string | null
           id?: string
           is_active?: boolean | null
           keywords_blacklist?: string[] | null
@@ -3763,6 +3766,7 @@ export type Database = {
           monitor_tech_adoption?: boolean | null
           next_check_at?: string | null
           schedule_name?: string | null
+          target_cities?: string[] | null
           target_mesoregions?: string[] | null
           target_microregions?: string[] | null
           target_municipalities?: string[] | null
@@ -3777,6 +3781,7 @@ export type Database = {
           check_frequency_hours?: number | null
           competitor_names?: string[] | null
           created_at?: string
+          custom_niche?: string | null
           id?: string
           is_active?: boolean | null
           keywords_blacklist?: string[] | null
@@ -3796,6 +3801,7 @@ export type Database = {
           monitor_tech_adoption?: boolean | null
           next_check_at?: string | null
           schedule_name?: string | null
+          target_cities?: string[] | null
           target_mesoregions?: string[] | null
           target_microregions?: string[] | null
           target_municipalities?: string[] | null

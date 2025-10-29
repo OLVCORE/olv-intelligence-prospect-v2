@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import PageHeader from '@/components/layout/PageHeader';
+import AddCompanyDialog from '@/components/SalesIntelligence/AddCompanyDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +37,7 @@ interface CompanyWithSignals {
 export default function MonitoredCompaniesPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddCompany, setShowAddCompany] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [addQuery, setAddQuery] = useState('');
   const [addResults, setAddResults] = useState<any[]>([]);
@@ -132,107 +135,18 @@ export default function MonitoredCompaniesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Building2 className="h-8 w-8" />
-            Empresas Monitoradas
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {filteredCompanies.length} empresa(s) com monitoramento ativo
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Monitorar Empresa
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar empresa da base</DialogTitle>
-                <DialogDescription>Busque na sua base e ative o monitoramento para uma empresa específica.</DialogDescription>
-              </DialogHeader>
-              <div className="flex gap-2">
-                <Input placeholder="Buscar por nome ou domínio..." value={addQuery} onChange={(e) => setAddQuery(e.target.value)} />
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    setIsSearching(true);
-                    const { data } = await supabase
-                      .from('companies')
-                      .select('id, name, domain')
-                      .or(`name.ilike.%${addQuery}%,domain.ilike.%${addQuery}%`)
-                      .order('name', { ascending: true })
-                      .limit(20);
-                    setAddResults(data || []);
-                    setIsSearching(false);
-                  }}
-                >
-                  Buscar
-                </Button>
-              </div>
-              <div className="max-h-72 overflow-y-auto mt-3 space-y-2">
-                {isSearching && <p className="text-sm text-muted-foreground">Buscando...</p>}
-                {!isSearching && addResults.length === 0 && addQuery && (
-                  <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada</p>
-                )}
-                {addResults.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between p-2 border rounded-md">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{r.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{r.domain}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        toggleMonitoring.mutate({ companyId: r.id, isActive: true }, {
-                          onSuccess: () => setOpenAddDialog(false)
-                        })
-                      }
-                    >
-                      Monitorar
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenAddDialog(false)}>Fechar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Menu
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Navegação Rápida</DropdownMenuLabel>
-              <DropdownMenuItem 
-                onClick={() => navigate('/sales-intelligence/feed')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Activity className="h-4 w-4 mr-2" />
-                Ver Feed de Sinais
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => navigate('/sales-intelligence/config')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Configurar Monitoramento
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <PageHeader
+        title="Empresas Monitoradas"
+        description={`${filteredCompanies.length} empresa(s) com monitoramento ativo`}
+        actions={
+          <>
+            <Button size="sm" onClick={() => setShowAddCompany(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Monitorar Empresa
+            </Button>
+          </>
+        }
+      />
 
       {/* Filtros */}
       <Card>

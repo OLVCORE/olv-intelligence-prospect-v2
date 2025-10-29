@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import PageHeader from '@/components/layout/PageHeader';
+import NewMonitoringDialog from '@/components/SalesIntelligence/NewMonitoringDialog';
+import AddCompanyDialog from '@/components/SalesIntelligence/AddCompanyDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +68,8 @@ export default function SalesIntelligenceFeed() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPriority, setSelectedPriority] = useState<SignalPriority | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showNewMonitoring, setShowNewMonitoring] = useState(false);
+  const [showAddCompany, setShowAddCompany] = useState(false);
   const companyIdFromUrl = searchParams.get('company');
   
   const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(companyIdFromUrl || undefined, {
@@ -120,96 +125,22 @@ export default function SalesIntelligenceFeed() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Zap className="h-8 w-8 text-primary" />
-            Sales Intelligence Feed
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Sinais de compra em tempo real e oportunidades de competitive displacement
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros & Configuração
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 z-[100] bg-popover">
-              <DropdownMenuLabel>Filtros de Prioridade</DropdownMenuLabel>
-              <DropdownMenuItem 
-                onClick={() => setSelectedPriority(undefined)}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Target className="h-4 w-4 mr-2" />
-                Todos os Sinais
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setSelectedPriority('urgent')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-destructive"
-              >
-                <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
-                Urgente
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setSelectedPriority('high')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-orange-500"
-              >
-                <TrendingUp className="h-4 w-4 mr-2 text-orange-500" />
-                Alta
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setSelectedPriority('medium')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-yellow-500"
-              >
-                <Clock className="h-4 w-4 mr-2 text-yellow-500" />
-                Média
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
-              <DropdownMenuItem 
-                onClick={() => navigate('/sales-intelligence/companies')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Building2 className="h-4 w-4 mr-2" />
-                Empresas Monitoradas
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => navigate('/companies')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Empresa Individual
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => navigate('/sales-intelligence/config')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Crosshair className="h-4 w-4 mr-2" />
-                Novo Monitoramento
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuLabel>Monitoramento 24/7</DropdownMenuLabel>
-              <DropdownMenuItem 
-                onClick={() => navigate('/sales-intelligence/config')}
-                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Configurar Monitoramento
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <PageHeader
+        title="Sales Intelligence Feed"
+        description="Sinais de compra em tempo real e oportunidades de competitive displacement"
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setShowAddCompany(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Empresa
+            </Button>
+            <Button onClick={() => setShowNewMonitoring(true)}>
+              <Plus className="w-4 w-4 mr-2" />
+              Novo Monitoramento
+            </Button>
+          </>
+        }
+      />
 
       {/* Indicador de Status em Tempo Real */}
       <MonitoringStatusIndicator variant="full" />
@@ -550,6 +481,16 @@ export default function SalesIntelligenceFeed() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Modais */}
+      <NewMonitoringDialog
+        open={showNewMonitoring}
+        onOpenChange={setShowNewMonitoring}
+      />
+      <AddCompanyDialog
+        open={showAddCompany}
+        onOpenChange={setShowAddCompany}
+      />
     </div>
   );
 }
