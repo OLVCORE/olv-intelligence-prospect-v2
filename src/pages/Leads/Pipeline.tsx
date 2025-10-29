@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Search, TrendingUp, DollarSign, Calendar, 
-  Flame, Droplet, Snowflake, Clock, ArrowRight 
+  Flame, Droplet, Snowflake, Clock, ArrowRight, Target 
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,7 @@ const STAGES = [
 ];
 
 export default function Pipeline() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -44,7 +46,7 @@ export default function Pipeline() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 
@@ -98,20 +100,62 @@ export default function Pipeline() {
 
   const filteredDeals = deals?.filter(deal =>
     deal.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const dealsByStage = STAGES.reduce((acc, stage) => {
-    acc[stage.id] = filteredDeals?.filter(deal => deal.deal_stage === stage.id) || [];
+    acc[stage.id] = filteredDeals.filter(deal => deal.deal_stage === stage.id);
     return acc;
   }, {} as Record<string, any[]>);
 
+  const totalDeals = filteredDeals.length;
+  const totalValue = filteredDeals.reduce((sum, d) => sum + (d.deal_value || 0), 0);
+  const hotDeals = filteredDeals.filter(d => d.temperature === 'hot').length;
+  const closedThisMonth = filteredDeals.filter(d => {
+    if (d.deal_stage !== 'closed_won') return false;
+    const closedDate = new Date(d.stage_changed_at);
+    const now = new Date();
+    return closedDate.getMonth() === now.getMonth() && closedDate.getFullYear() === now.getFullYear();
+  }).length;
+
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <TrendingUp className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
           <p className="text-muted-foreground">Carregando pipeline...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (totalDeals === 0) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Pipeline de Vendas</h1>
+            <p className="text-muted-foreground mt-1">Gerencie seus deals visualmente</p>
+          </div>
+        </div>
+
+        <Card className="p-12 text-center">
+          <Target className="w-20 h-20 text-muted-foreground mx-auto mb-6" />
+          <h2 className="text-2xl font-bold mb-3">
+            Nenhum deal no pipeline
+          </h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Comece capturando e qualificando leads para criar seus primeiros deals e visualizar o pipeline de vendas.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate('/leads/capture')} size="lg">
+              <ArrowRight className="w-5 h-5 mr-2" />
+              Capturar Leads
+            </Button>
+            <Button onClick={() => navigate('/leads/quarantine')} variant="outline" size="lg">
+              Ver Quarentena
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -125,9 +169,9 @@ export default function Pipeline() {
             Gerencie seus deals visualmente
           </p>
         </div>
-        <Button>
+        <Button onClick={() => navigate('/leads/capture')}>
           <ArrowRight className="w-4 h-4 mr-2" />
-          Novo Deal
+          Capturar Leads
         </Button>
       </div>
 
@@ -137,7 +181,7 @@ export default function Pipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total de Deals</p>
-                <p className="text-2xl font-bold">{deals?.length || 0}</p>
+                <p className="text-2xl font-bold">{totalDeals}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-primary" />
             </div>
@@ -149,9 +193,7 @@ export default function Pipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valor Total</p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(deals?.reduce((sum, d) => sum + (d.deal_value || 0), 0) || 0)}
-                </p>
+                <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
             </div>
@@ -163,9 +205,7 @@ export default function Pipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Deals Quentes</p>
-                <p className="text-2xl font-bold">
-                  {deals?.filter(d => d.temperature === 'hot').length || 0}
-                </p>
+                <p className="text-2xl font-bold">{hotDeals}</p>
               </div>
               <Flame className="w-8 h-8 text-red-500" />
             </div>
@@ -177,9 +217,7 @@ export default function Pipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Fechados (Mês)</p>
-                <p className="text-2xl font-bold">
-                  {deals?.filter(d => d.deal_stage === 'closed_won').length || 0}
-                </p>
+                <p className="text-2xl font-bold">{closedThisMonth}</p>
               </div>
               <Calendar className="w-8 h-8 text-purple-500" />
             </div>
@@ -190,12 +228,12 @@ export default function Pipeline() {
       <Card className="p-4">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar deal..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-10"
             />
           </div>
           <Select value={temperatureFilter} onValueChange={setTemperatureFilter}>
@@ -235,7 +273,7 @@ export default function Pipeline() {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={`flex-1 space-y-2 p-2 rounded-lg transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-accent' : 'bg-muted/50'
+                      snapshot.isDraggingOver ? 'bg-primary/10' : 'bg-secondary'
                     }`}
                     style={{ minHeight: '400px' }}
                   >
@@ -265,10 +303,10 @@ export default function Pipeline() {
                               )}
 
                               <div className="space-y-1 text-xs text-muted-foreground">
-                                {deal.industry && (
+                                {deal.sector && (
                                   <div className="flex items-center gap-1">
                                     <Badge variant="outline" className="text-xs">
-                                      {deal.industry}
+                                      {deal.sector}
                                     </Badge>
                                   </div>
                                 )}
