@@ -209,3 +209,6 @@ verify_jwt = false
 
   [functions.generate-company-diagnostic]
   verify_jwt = true
+
+  [functions.company-suggest]
+  verify_jwt = false
