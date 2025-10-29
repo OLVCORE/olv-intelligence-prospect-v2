@@ -17,7 +17,7 @@ export function useTOTVSDetection() {
         body: {
           company_id: companyId,
           company_name: companyName,
-          company_domain: companyDomain,
+          domain: companyDomain,
         },
       });
 
@@ -27,15 +27,16 @@ export function useTOTVSDetection() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['company'] });
+      queryClient.invalidateQueries({ queryKey: ['totvs-detection'] });
       
-      if (data.result.should_disqualify || data.result.total_score > 0) {
+      if (data.status === 'disqualified') {
         toast.error('⛔ EMPRESA DESCARTADA - JÁ É CLIENTE TOTVS', {
-          description: `Detectado uso de produtos TOTVS (Score: ${data.result.total_score}/100). OLV não pode prospectar clientes TOTVS existentes.`,
+          description: `Detectado uso de produtos TOTVS (Score: ${data.score}/100). ${data.evidences?.length || 0} evidências encontradas.`,
           duration: 8000,
         });
       } else {
         toast.success('✅ Empresa qualificada - Sem uso de TOTVS detectado', {
-          description: 'Lead válido para prospecção ativa',
+          description: `Lead válido para prospecção ativa (Score: ${data.score}/100)`,
         });
       }
     },

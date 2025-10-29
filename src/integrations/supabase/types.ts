@@ -3154,6 +3154,47 @@ export type Database = {
           },
         ]
       }
+      intent_signals_detection: {
+        Row: {
+          checked_at: string
+          company_id: string
+          company_name: string
+          created_at: string
+          id: string
+          score: number
+          signals: Json
+          sources_checked: number
+        }
+        Insert: {
+          checked_at?: string
+          company_id: string
+          company_name: string
+          created_at?: string
+          id?: string
+          score: number
+          signals?: Json
+          sources_checked?: number
+        }
+        Update: {
+          checked_at?: string
+          company_id?: string
+          company_name?: string
+          created_at?: string
+          id?: string
+          score?: number
+          signals?: Json
+          sources_checked?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_signals_detection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_data: {
         Row: {
           active_processes: number | null
@@ -5073,6 +5114,50 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      totvs_usage_detection: {
+        Row: {
+          checked_at: string
+          company_id: string
+          company_name: string
+          created_at: string
+          evidences: Json
+          id: string
+          score: number
+          sources_checked: number
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          company_id: string
+          company_name: string
+          created_at?: string
+          evidences?: Json
+          id?: string
+          score: number
+          sources_checked?: number
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          company_id?: string
+          company_name?: string
+          created_at?: string
+          evidences?: Json
+          id?: string
+          score?: number
+          sources_checked?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totvs_usage_detection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
