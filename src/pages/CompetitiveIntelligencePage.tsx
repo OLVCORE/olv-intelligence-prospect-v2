@@ -9,8 +9,8 @@ import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompet
 import { CompetitorInsightsIntegration } from "@/components/competitive/CompetitorInsightsIntegration";
 import { useState } from "react";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
-import { TOTVSDetectionCard } from "@/components/competitive/TOTVSDetectionCard";
-import { IntentSignalsCard } from "@/components/competitive/IntentSignalsCard";
+import { TOTVSDetectionCardV2 } from "@/components/competitive/TOTVSDetectionCardV2";
+import { IntentSignalsCardV2 } from "@/components/competitive/IntentSignalsCardV2";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { MonitoringToggleButton } from "@/components/competitive/MonitoringToggleButton";
 import { MonitoringDashboard } from "@/components/competitive/MonitoringDashboard";
@@ -247,8 +247,8 @@ export default function CompetitiveIntelligencePage() {
               </Alert>
 
               <div className="grid gap-6 md:grid-cols-2">
-                <TOTVSDetectionCard company={company} />
-                <IntentSignalsCard company={company} />
+                <TOTVSDetectionCardV2 company={company} />
+                <IntentSignalsCardV2 company={company} />
               </div>
 
               {/* AI Recommendation */}
