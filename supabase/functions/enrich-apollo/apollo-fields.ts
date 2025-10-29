@@ -260,21 +260,8 @@ export function mapPersonFields(person: any, companyId: string, apolloOrgId: str
   };
 }
 
-/**
- * Calcular tenure em meses
- */
-function calculateTenureMonths(startDate?: string): number | null {
-  if (!startDate) return null;
-  
-  try {
-    const start = new Date(startDate);
-    const now = new Date();
-    const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-    return months >= 0 ? months : null;
-  } catch {
-    return null;
-  }
-}
+// (função duplicada removida – usar calculateTenureMonths definido acima)
+
 
 
 /**
