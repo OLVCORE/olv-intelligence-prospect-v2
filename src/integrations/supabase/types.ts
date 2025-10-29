@@ -3067,6 +3067,168 @@ export type Database = {
           },
         ]
       }
+      icp_batch_companies: {
+        Row: {
+          batch_job_id: string
+          cnpj: string | null
+          company_id: string | null
+          company_name: string
+          created_at: string
+          domain: string | null
+          error_message: string | null
+          id: string
+          intent_confidence: string | null
+          intent_methodology: Json | null
+          intent_score: number | null
+          intent_signals: Json | null
+          niche: string | null
+          platforms_scanned: string[] | null
+          processed_at: string | null
+          region: string | null
+          sector: string | null
+          status: string
+          totvs_disqualification_reason: string | null
+          totvs_evidences: Json | null
+          totvs_methodology: Json | null
+          totvs_score: number | null
+          totvs_status: string | null
+        }
+        Insert: {
+          batch_job_id: string
+          cnpj?: string | null
+          company_id?: string | null
+          company_name: string
+          created_at?: string
+          domain?: string | null
+          error_message?: string | null
+          id?: string
+          intent_confidence?: string | null
+          intent_methodology?: Json | null
+          intent_score?: number | null
+          intent_signals?: Json | null
+          niche?: string | null
+          platforms_scanned?: string[] | null
+          processed_at?: string | null
+          region?: string | null
+          sector?: string | null
+          status?: string
+          totvs_disqualification_reason?: string | null
+          totvs_evidences?: Json | null
+          totvs_methodology?: Json | null
+          totvs_score?: number | null
+          totvs_status?: string | null
+        }
+        Update: {
+          batch_job_id?: string
+          cnpj?: string | null
+          company_id?: string | null
+          company_name?: string
+          created_at?: string
+          domain?: string | null
+          error_message?: string | null
+          id?: string
+          intent_confidence?: string | null
+          intent_methodology?: Json | null
+          intent_score?: number | null
+          intent_signals?: Json | null
+          niche?: string | null
+          platforms_scanned?: string[] | null
+          processed_at?: string | null
+          region?: string | null
+          sector?: string | null
+          status?: string
+          totvs_disqualification_reason?: string | null
+          totvs_evidences?: Json | null
+          totvs_methodology?: Json | null
+          totvs_score?: number | null
+          totvs_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icp_batch_companies_batch_job_id_fkey"
+            columns: ["batch_job_id"]
+            isOneToOne: false
+            referencedRelation: "icp_batch_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "icp_batch_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icp_batch_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          disqualified_companies: number
+          errors: number
+          file_url: string | null
+          id: string
+          name: string
+          niche: string | null
+          processed_companies: number
+          qualified_companies: number
+          region: string | null
+          report_url: string | null
+          sector: string | null
+          source: string
+          started_at: string | null
+          status: string
+          total_companies: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          disqualified_companies?: number
+          errors?: number
+          file_url?: string | null
+          id?: string
+          name: string
+          niche?: string | null
+          processed_companies?: number
+          qualified_companies?: number
+          region?: string | null
+          report_url?: string | null
+          sector?: string | null
+          source: string
+          started_at?: string | null
+          status?: string
+          total_companies?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          disqualified_companies?: number
+          errors?: number
+          file_url?: string | null
+          id?: string
+          name?: string
+          niche?: string | null
+          processed_companies?: number
+          qualified_companies?: number
+          region?: string | null
+          report_url?: string | null
+          sector?: string | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          total_companies?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       insights: {
         Row: {
           company_id: string
@@ -3207,6 +3369,7 @@ export type Database = {
           confidence: string | null
           created_at: string
           id: string
+          methodology: Json | null
           platforms_scanned: string[] | null
           region: string | null
           score: number
@@ -3223,6 +3386,7 @@ export type Database = {
           confidence?: string | null
           created_at?: string
           id?: string
+          methodology?: Json | null
           platforms_scanned?: string[] | null
           region?: string | null
           score: number
@@ -3239,6 +3403,7 @@ export type Database = {
           confidence?: string | null
           created_at?: string
           id?: string
+          methodology?: Json | null
           platforms_scanned?: string[] | null
           region?: string | null
           score?: number
@@ -3499,6 +3664,33 @@ export type Database = {
           source?: string | null
           title?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      niches: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          keywords: string[]
+          niche_name: string
+          sector: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords: string[]
+          niche_name: string
+          sector: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[]
+          niche_name?: string
+          sector?: string
         }
         Relationships: []
       }
@@ -5241,6 +5433,7 @@ export type Database = {
           disqualification_reason: string | null
           evidences: Json
           id: string
+          methodology: Json | null
           platforms_scanned: string[] | null
           region: string | null
           score: number
@@ -5258,6 +5451,7 @@ export type Database = {
           disqualification_reason?: string | null
           evidences?: Json
           id?: string
+          methodology?: Json | null
           platforms_scanned?: string[] | null
           region?: string | null
           score: number
@@ -5275,6 +5469,7 @@ export type Database = {
           disqualification_reason?: string | null
           evidences?: Json
           id?: string
+          methodology?: Json | null
           platforms_scanned?: string[] | null
           region?: string | null
           score?: number

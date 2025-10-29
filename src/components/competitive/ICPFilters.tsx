@@ -1,12 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Filter, MapPin, Building2, TrendingUp, Layers } from "lucide-react";
+import { Filter, MapPin, Building2, TrendingUp, Layers, Target } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ICPFiltersProps {
   filters: {
     region?: string;
     sector?: string;
+    niche?: string;
     status?: string;
     temperature?: string;
   };
@@ -58,6 +61,28 @@ const TEMPERATURE_OPTIONS = [
 ];
 
 export function ICPFilters({ filters, onFilterChange, stats }: ICPFiltersProps) {
+  // Buscar nichos baseado no setor selecionado
+  const { data: niches } = useQuery({
+    queryKey: ['niches', filters.sector],
+    queryFn: async () => {
+      if (!filters.sector || filters.sector === 'all') return [];
+
+      const { data, error } = await supabase
+        .from('niches')
+        .select('*')
+        .eq('sector', filters.sector)
+        .order('niche_name');
+
+      if (error) {
+        console.error('Error fetching niches:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!filters.sector && filters.sector !== 'all'
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -148,6 +173,38 @@ export function ICPFilters({ filters, onFilterChange, stats }: ICPFiltersProps) 
 
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Nicho
+            </label>
+            <Select
+              value={filters.niche || 'all'}
+              onValueChange={(value) => onFilterChange('niche', value)}
+              disabled={!filters.sector || filters.sector === 'all'}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o nicho" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os nichos</SelectItem>
+                {niches && niches.length > 0 ? (
+                  niches.map((niche: any) => (
+                    <SelectItem key={niche.id} value={niche.niche_name}>
+                      {niche.niche_name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    {filters.sector && filters.sector !== 'all' 
+                      ? 'Nenhum nicho disponível' 
+                      : 'Selecione um setor primeiro'}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Layers className="h-4 w-4" />
               Status TOTVS
             </label>
@@ -203,6 +260,12 @@ export function ICPFilters({ filters, onFilterChange, stats }: ICPFiltersProps) 
             <Badge variant="secondary" className="gap-1">
               <Building2 className="h-3 w-3" />
               {SECTORS.find(s => s.value === filters.sector)?.label}
+            </Badge>
+          )}
+          {filters.niche && filters.niche !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              <Target className="h-3 w-3" />
+              {filters.niche}
             </Badge>
           )}
           {filters.status && filters.status !== 'all' && (
