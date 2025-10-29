@@ -47,21 +47,9 @@ export function UpdateNowButton({
   const [assignOpen, setAssignOpen] = useState(false);
   const [orgResults, setOrgResults] = useState<OrgResult[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(null);
-  const getAuthHeaders = async () => {
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-    if (!token) throw new Error('auth_required');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    } as Record<string, string>;
-  };
-
   const invokeEnrichApollo = async (payload: any) => {
-    const headers = await getAuthHeaders();
     const { data, error } = await supabase.functions.invoke('enrich-apollo', {
       body: payload,
-      headers,
     });
     if (error) throw error;
     return data as any;
@@ -121,9 +109,19 @@ export function UpdateNowButton({
       onSuccess?.();
     } catch (error: any) {
       console.error('[UpdateNow] ❌ Erro:', error);
-      toast.error("Erro ao atualizar dados da empresa", {
-        description: error.message || "Tente novamente mais tarde"
-      });
+      if (error instanceof FunctionsHttpError) {
+        try {
+          // @ts-ignore
+          const detail = await (error as any)?.context?.response?.json();
+          toast.error('Erro ao atualizar dados da empresa', { description: detail?.error || detail?.message || 'Falha na função' });
+        } catch {
+          toast.error('Erro ao atualizar dados da empresa', { description: 'Falha na função' });
+        }
+      } else {
+        toast.error('Erro ao atualizar dados da empresa', {
+          description: error.message || 'Tente novamente mais tarde'
+        });
+      }
     } finally {
       setUpdating(false);
     }
