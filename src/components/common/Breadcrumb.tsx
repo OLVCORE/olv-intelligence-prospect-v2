@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ChevronRight, Home } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ChevronRight, Home, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const breadcrumbNameMap: Record<string, string> = {
   'central-icp': 'Central ICP',
@@ -31,6 +32,7 @@ const routeRedirects: Record<string, string> = {
 
 export function Breadcrumb() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pathnames = location.pathname.split('/').filter((x) => x);
 
   if (pathnames.length === 0 || location.pathname === '/dashboard') {
@@ -38,14 +40,15 @@ export function Breadcrumb() {
   }
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-4 px-2">
-      <Link 
-        to="/dashboard" 
-        className="hover:text-foreground transition-colors flex items-center gap-1"
-      >
-        <Home className="w-4 h-4" />
-        <span className="hidden sm:inline">Dashboard</span>
-      </Link>
+    <nav className="flex items-center justify-between mb-4 px-2">
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <Link 
+          to="/dashboard" 
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <Home className="w-4 h-4" />
+          <span className="hidden sm:inline">Dashboard</span>
+        </Link>
       
       {pathnames.map((value, index) => {
         const to = `/${pathnames.slice(0, index + 1).join('/')}`;
@@ -75,6 +78,27 @@ export function Breadcrumb() {
           </React.Fragment>
         );
       })}
+      </div>
+
+      {/* Botões de navegação */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="h-8 w-8 p-0"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(1)}
+          className="h-8 w-8 p-0"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
     </nav>
   );
 }

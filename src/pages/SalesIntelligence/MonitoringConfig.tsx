@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle, CheckCircle2, Circle, Info, DollarSign, Users, TrendingUp, Cpu, Handshake, Globe, RefreshCw, Crosshair, Save, Building2 } from 'lucide-react';
+import { Settings, Play, Pause, Clock, MapPin, Target, Filter, AlertCircle, CheckCircle2, Circle, Info, DollarSign, Users, TrendingUp, Cpu, Handshake, Globe, RefreshCw, Crosshair, Save, Building2, Plus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMonitoringConfig, useSaveMonitoringConfig, useToggleMonitoring, useRunMonitoringNow } from '@/hooks/useIntelligenceMonitoring';
@@ -16,8 +17,17 @@ import { useBrazilStates, useBrazilRegions } from '@/hooks/useBrazilGeography';
 import { useSectors } from '@/hooks/useSectors';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useMonitoredCompanies } from '@/hooks/useMonitoredCompanies';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function MonitoringConfigPage() {
+  const navigate = useNavigate();
   const { data: user } = useQuery({
     queryKey: ['current-user'],
     queryFn: async () => {
@@ -187,6 +197,44 @@ export default function MonitoringConfigPage() {
           </div>
           
           <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtros & Configuração
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Navegação Rápida</DropdownMenuLabel>
+                <DropdownMenuItem 
+                  onClick={() => navigate('/sales-intelligence/feed')}
+                  className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Ver Feed de Sinais
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
+                <DropdownMenuItem 
+                  onClick={() => navigate('/companies')}
+                  className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Empresa Individual
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => navigate('/sales-intelligence/config')}
+                  className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+                  disabled
+                >
+                  <Crosshair className="h-4 w-4 mr-2" />
+                  Configuração (Atual)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Badge variant={config?.is_active ? "default" : "secondary"} className="gap-1">
               <Circle className={`h-3 w-3 ${config?.is_active ? 'fill-green-500' : 'fill-gray-400'}`} />
               {config?.is_active ? 'Ativo' : 'Pausado'}
