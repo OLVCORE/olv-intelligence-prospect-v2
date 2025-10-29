@@ -326,7 +326,7 @@ export function AppSidebar() {
           )}
         </Link>
       </SidebarHeader>
-      <SidebarContent className="px-1 py-2">
+      <SidebarContent className="px-1 py-1">
         <TooltipProvider delayDuration={200}>
           {menuGroups.map((group) => {
             const isGroupActive = group.items.some(item => 
@@ -335,14 +335,14 @@ export function AppSidebar() {
             );
             
             return (
-            <Collapsible key={group.label} className="group/group mb-1" defaultOpen={isGroupActive}>
-              <SidebarGroup className="px-3">
+            <Collapsible key={group.label} className="group/group mb-0.5" defaultOpen={isGroupActive}>
+              <SidebarGroup className="px-2 py-0">
                 <SidebarGroupLabel asChild>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <CollapsibleTrigger className="flex items-center gap-3 text-sm font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-3 px-2 mb-1 rounded-lg bg-primary/10 hover:bg-primary/15 group-data-[collapsible=icon]:justify-center">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
-                          <group.icon className="h-5 w-5 text-sidebar-primary" />
+                      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-all cursor-pointer w-full touch-manipulation active:scale-95 py-1.5 px-2 mb-0.5 rounded-lg bg-primary/10 hover:bg-primary/15 group-data-[collapsible=icon]:justify-center">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/10 group-hover:from-sidebar-primary/30 group-hover:to-sidebar-primary/20 transition-all flex-shrink-0">
+                          <group.icon className="h-4 w-4 text-sidebar-primary" />
                         </div>
                         <span className="flex-1 group-data-[collapsible=icon]:hidden text-left">{group.label}</span>
                         <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 transition-transform duration-200 group-data-[state=open]/group:rotate-90 group-data-[collapsible=icon]:hidden flex-shrink-0" />
@@ -362,9 +362,9 @@ export function AppSidebar() {
                     </TooltipContent>
                   </Tooltip>
                 </SidebarGroupLabel>
-                <CollapsibleContent className="mt-1">
+                <CollapsibleContent className="mt-0.5">
                   <SidebarGroupContent>
-                    <SidebarMenu className="space-y-1">
+                    <SidebarMenu className="space-y-0.5">
                       {group.items.map((item) => {
                     const isActive = location.pathname === item.url;
                     const hasSubmenu = (item as any).submenu;
