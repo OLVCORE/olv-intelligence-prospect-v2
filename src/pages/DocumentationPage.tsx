@@ -24,6 +24,14 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'lov-mermaid': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
+
 export default function DocumentationPage() {
   const [activeSection, setActiveSection] = useState('visao-geral');
 
@@ -194,56 +202,90 @@ export default function DocumentationPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <div className="bg-muted/30 p-6 rounded-lg font-mono text-sm space-y-4">
-                            <div className="space-y-2">
-                              <h4 className="font-bold text-primary flex items-center gap-2">
-                                <Database className="h-5 w-5" />
-                                BANCO DE DADOS
-                              </h4>
-                              <ul className="ml-4 space-y-1 text-muted-foreground">
-                                <li>• <code className="text-foreground">leads_sources</code> - Fontes de captura</li>
-                                <li>• <code className="text-foreground">leads_quarantine</code> - Quarentena inteligente</li>
-                                <li>• <code className="text-foreground">companies</code> - Empresas qualificadas</li>
-                                <li>• <code className="text-foreground">interactions</code> - Histórico de interações</li>
-                                <li>• <code className="text-foreground">icp_analysis_history</code> - Análises ICP</li>
-                              </ul>
-                            </div>
-
-                            <div className="text-center">
-                              <ArrowDownUp className="h-8 w-8 mx-auto text-primary animate-pulse" />
-                            </div>
-
-                            <div className="space-y-2">
-                              <h4 className="font-bold text-primary flex items-center gap-2">
-                                <Zap className="h-5 w-5" />
-                                EDGE FUNCTIONS
-                              </h4>
-                              <ul className="ml-4 space-y-1 text-muted-foreground">
-                                <li>• <code className="text-foreground">validate-lead-comprehensive</code></li>
-                                <li>• <code className="text-foreground">upload-leads-csv</code></li>
-                                <li>• <code className="text-foreground">capture-lead-api</code></li>
-                                <li>• <code className="text-foreground">calculate-icp-score-advanced</code></li>
-                                <li>• <code className="text-foreground">generate-value-proposition</code></li>
-                              </ul>
-                            </div>
-
-                            <div className="text-center">
-                              <ArrowDownUp className="h-8 w-8 mx-auto text-primary animate-pulse" />
-                            </div>
-
-                            <div className="space-y-2">
-                              <h4 className="font-bold text-primary flex items-center gap-2">
-                                <Monitor className="h-5 w-5" />
-                                INTERFACE (5 PÁGINAS)
-                              </h4>
-                              <ul className="ml-4 space-y-1 text-muted-foreground">
-                                <li>• <code className="text-foreground">/leads/capture</code> - Captura de Leads</li>
-                                <li>• <code className="text-foreground">/leads/quarantine</code> - Quarentena Inteligente</li>
-                                <li>• <code className="text-foreground">/leads/icp-analysis</code> - Qualificação ICP</li>
-                                <li>• <code className="text-foreground">/leads/pipeline</code> - Pipeline Visual</li>
-                                <li>• <code className="text-foreground">/leads/analytics</code> - Analytics</li>
-                              </ul>
-                            </div>
+                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                            <lov-mermaid>
+{`graph TB
+    subgraph CAPTURA["📥 CAMADA DE CAPTURA"]
+        style CAPTURA fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+        A1[📤 Upload CSV/Excel]
+        A2[🌐 Web Scraping<br/>Empresas Aqui]
+        A3[🔗 API Pública<br/>Formulários Web]
+    end
+    
+    subgraph DATABASE["💾 BANCO DE DADOS"]
+        style DATABASE fill:#3b82f6,stroke:#2563eb,stroke-width:3px,color:#fff
+        B1[(leads_sources<br/>Fontes)]
+        B2[(leads_quarantine<br/>Quarentena)]
+        B3[(companies<br/>Empresas)]
+        B4[(interactions<br/>Interações)]
+        B5[(icp_analysis<br/>Análises ICP)]
+    end
+    
+    subgraph FUNCTIONS["⚡ EDGE FUNCTIONS"]
+        style FUNCTIONS fill:#8b5cf6,stroke:#7c3aed,stroke-width:3px,color:#fff
+        C1[validate-lead<br/>Validação]
+        C2[upload-csv<br/>Upload]
+        C3[capture-api<br/>API]
+        C4[calculate-icp<br/>ICP Score]
+        C5[generate-value<br/>Proposta IA]
+    end
+    
+    subgraph INTERFACE["🖥️ INTERFACE"]
+        style INTERFACE fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#fff
+        D1[/leads/capture]
+        D2[/leads/quarantine]
+        D3[/leads/icp-analysis]
+        D4[/leads/pipeline]
+        D5[/leads/analytics]
+    end
+    
+    A1 --> C2
+    A2 --> C2
+    A3 --> C3
+    
+    C2 --> B2
+    C3 --> B2
+    C2 --> B1
+    
+    B2 --> C1
+    C1 --> B2
+    
+    B2 --> D2
+    D2 --> C4
+    
+    C4 --> B5
+    C4 --> C5
+    C5 --> B3
+    
+    B3 --> D4
+    B3 --> D5
+    
+    D1 --> A1
+    D1 --> A2
+    D1 --> A3
+    
+    style A1 fill:#34d399,stroke:#10b981,stroke-width:2px
+    style A2 fill:#34d399,stroke:#10b981,stroke-width:2px
+    style A3 fill:#34d399,stroke:#10b981,stroke-width:2px
+    
+    style B1 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style B2 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style B3 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style B4 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style B5 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    
+    style C1 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+    style C2 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+    style C3 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+    style C4 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+    style C5 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+    
+    style D1 fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+    style D2 fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+    style D3 fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+    style D4 fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+    style D5 fill:#fbbf24,stroke:#f59e0b,stroke-width:2px`}
+                            </lov-mermaid>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -256,69 +298,34 @@ export default function DocumentationPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 p-6 rounded-lg">
-                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-blue-500">1</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">CAPTURA</h4>
-                                  <p className="text-sm text-muted-foreground">Upload CSV • Web Scraping • API</p>
-                                </div>
-                              </div>
-                              <div className="ml-6">
-                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-green-500">2</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">VALIDAÇÃO</h4>
-                                  <p className="text-sm text-muted-foreground">ReceitaWS • LinkedIn • Website</p>
-                                </div>
-                              </div>
-                              <div className="ml-6">
-                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-yellow-500">3</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">QUARENTENA</h4>
-                                  <p className="text-sm text-muted-foreground">Aprovação Manual • Score 0-100</p>
-                                </div>
-                              </div>
-                              <div className="ml-6">
-                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-purple-500">4</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">QUALIFICAÇÃO ICP</h4>
-                                  <p className="text-sm text-muted-foreground">Score ICP • Proposta IA • Script</p>
-                                </div>
-                              </div>
-                              <div className="ml-6">
-                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-pink-500">5</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">PIPELINE</h4>
-                                  <p className="text-sm text-muted-foreground">Kanban Visual • Gestão de Deals</p>
-                                </div>
-                              </div>
-                              <div className="ml-6">
-                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-green-600">6</Badge>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold flex items-center gap-2">
-                                    FECHAMENTO
-                                    <Trophy className="h-5 w-5 text-green-400" />
-                                  </h4>
-                                  <p className="text-sm text-muted-foreground">Venda Realizada!</p>
-                                </div>
-                              </div>
-                            </div>
+                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                            <lov-mermaid>
+{`flowchart LR
+    A[📥 CAPTURA] --> B[🔍 VALIDAÇÃO]
+    B --> C[⏳ QUARENTENA]
+    C --> D[🎯 QUALIFICAÇÃO ICP]
+    D --> E[📊 PIPELINE]
+    E --> F[💰 FECHAMENTO]
+    
+    B -.->|APIs Externas| B1[ReceitaWS<br/>LinkedIn<br/>Website<br/>Email]
+    C -.->|Humano| C1[Aprovação<br/>Manual<br/>Revisão]
+    D -.->|IA| D1[Score ICP<br/>Proposta IA<br/>Script<br/>ROI]
+    E -.->|Visual| E1[Kanban<br/>Drag & Drop<br/>Real-time]
+    F -.->|Sucesso| F1[🎉 VENDA<br/>FECHADA!]
+    
+    style A fill:#10b981,stroke:#059669,stroke-width:4px,color:#fff,font-size:16px
+    style B fill:#3b82f6,stroke:#2563eb,stroke-width:4px,color:#fff,font-size:16px
+    style C fill:#f59e0b,stroke:#d97706,stroke-width:4px,color:#fff,font-size:16px
+    style D fill:#8b5cf6,stroke:#7c3aed,stroke-width:4px,color:#fff,font-size:16px
+    style E fill:#ec4899,stroke:#db2777,stroke-width:4px,color:#fff,font-size:16px
+    style F fill:#06b6d4,stroke:#0891b2,stroke-width:4px,color:#fff,font-size:16px
+    
+    style B1 fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,stroke-dasharray: 5 5
+    style C1 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,stroke-dasharray: 5 5
+    style D1 fill:#f3e8ff,stroke:#8b5cf6,stroke-width:2px,stroke-dasharray: 5 5
+    style E1 fill:#fce7f3,stroke:#ec4899,stroke-width:2px,stroke-dasharray: 5 5
+    style F1 fill:#ecfeff,stroke:#06b6d4,stroke-width:2px,stroke-dasharray: 5 5`}
+                            </lov-mermaid>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -1134,7 +1141,59 @@ export default function DocumentationPage() {
                           Ações Disponíveis
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-4">
+                      <AccordionContent className="space-y-6">
+                        
+                        {/* Diagrama de Estados do Lead */}
+                        <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                          <h4 className="font-semibold mb-4 flex items-center gap-2">
+                            <GitBranch className="h-5 w-5 text-primary" />
+                            Estados do Lead na Quarentena
+                          </h4>
+                          <lov-mermaid>
+{`stateDiagram-v2
+    [*] --> PENDING: Lead Capturado
+    
+    PENDING --> VALIDATING: Clicar "Validar"
+    PENDING --> APPROVED: Clicar "Aprovar"
+    PENDING --> REJECTED: Clicar "Rejeitar"
+    
+    VALIDATING --> APPROVED: Score ≥ 70
+    VALIDATING --> PENDING: Score 30-69
+    VALIDATING --> REJECTED: Score < 30
+    
+    APPROVED --> ICP_ANALYSIS: Clicar "Qualificar ICP"
+    REJECTED --> [*]: Lead Descartado
+    DUPLICATE --> [*]: Lead Ignorado
+    
+    ICP_ANALYSIS --> PIPELINE: Score ICP calculado
+    PIPELINE --> CLOSED_WON: Deal Fechado ✅
+    PIPELINE --> CLOSED_LOST: Deal Perdido ❌
+    
+    CLOSED_WON --> [*]: Venda Realizada! 🎉
+    CLOSED_LOST --> [*]: Oportunidade Perdida
+    
+    note right of PENDING
+        Aguardando revisão manual
+        Score: 30-69
+    end note
+    
+    note right of VALIDATING
+        Validação em andamento
+        Tempo: 5-30s
+    end note
+    
+    note right of APPROVED
+        Pronto para qualificação ICP
+        Score: ≥ 70
+    end note
+    
+    note right of REJECTED
+        Não passou na validação
+        Score: < 30
+    end note`}
+                          </lov-mermaid>
+                        </div>
+                        
                         <Accordion type="single" collapsible>
                           <AccordionItem value="validar">
                             <AccordionTrigger className="text-base">
@@ -1407,13 +1466,196 @@ export default function DocumentationPage() {
                     </p>
                   </div>
 
+                  <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                    <h4 className="font-semibold mb-4 flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      Algoritmo de Scoring ICP (0-100 pontos)
+                    </h4>
+                    <lov-mermaid>
+{`graph TD
+    START[Lead Aprovado] --> CALC[Cálculo ICP Score]
+    
+    CALC --> DIM1[1️⃣ Setor<br/>0-30 pts]
+    CALC --> DIM2[2️⃣ Porte<br/>0-25 pts]
+    CALC --> DIM3[3️⃣ Região<br/>0-20 pts]
+    CALC --> DIM4[4️⃣ Status TOTVS<br/>0-20 pts]
+    CALC --> DIM5[5️⃣ Concorrente<br/>0-15 pts]
+    CALC --> DIM6[6️⃣ Qualidade Dados<br/>0-10 pts]
+    CALC --> DIM7[7️⃣ Sinais Intenção<br/>0-10 pts]
+    
+    DIM1 --> TOTAL[Score Total<br/>0-130 pts]
+    DIM2 --> TOTAL
+    DIM3 --> TOTAL
+    DIM4 --> TOTAL
+    DIM5 --> TOTAL
+    DIM6 --> TOTAL
+    DIM7 --> TOTAL
+    
+    TOTAL --> TEMP{Temperatura?}
+    
+    TEMP -->|80-100| HOT[🔥 HOT<br/>ABORDAR HOJE!]
+    TEMP -->|60-79| WARM[🟡 WARM<br/>Abordar esta semana]
+    TEMP -->|0-59| COLD[🔵 COLD<br/>Nutrir]
+    
+    HOT --> AI[🤖 IA Gera]
+    WARM --> AI
+    COLD --> AI
+    
+    AI --> PROP[📝 Proposta de Valor]
+    AI --> SCRIPT[💬 Script Abordagem]
+    AI --> ROI[💰 ROI Estimado]
+    
+    PROP --> PIPELINE[📊 Pipeline]
+    SCRIPT --> PIPELINE
+    ROI --> PIPELINE
+    
+    PIPELINE --> DEAL[🎯 Deal Criado]
+    
+    style START fill:#3b82f6,stroke:#2563eb,stroke-width:3px,color:#fff
+    style CALC fill:#8b5cf6,stroke:#7c3aed,stroke-width:3px,color:#fff
+    style TOTAL fill:#ec4899,stroke:#db2777,stroke-width:3px,color:#fff
+    style HOT fill:#ef4444,stroke:#dc2626,stroke-width:3px,color:#fff
+    style WARM fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#fff
+    style COLD fill:#3b82f6,stroke:#2563eb,stroke-width:3px,color:#fff
+    style AI fill:#8b5cf6,stroke:#7c3aed,stroke-width:3px,color:#fff
+    style PIPELINE fill:#06b6d4,stroke:#0891b2,stroke-width:3px,color:#fff
+    style DEAL fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    
+    style DIM1 fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style DIM2 fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style DIM3 fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style DIM4 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style DIM5 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style DIM6 fill:#fce7f3,stroke:#ec4899,stroke-width:2px
+    style DIM7 fill:#fce7f3,stroke:#ec4899,stroke-width:2px
+    
+    style PROP fill:#f3e8ff,stroke:#8b5cf6,stroke-width:2px
+    style SCRIPT fill:#f3e8ff,stroke:#8b5cf6,stroke-width:2px
+    style ROI fill:#f3e8ff,stroke:#8b5cf6,stroke-width:2px`}
+                    </lov-mermaid>
+                  </div>
+
                   <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-blue-500/5">
-                    <h3 className="text-xl font-bold mb-4">Em breve: Documentação completa deste módulo</h3>
-                    <p className="text-muted-foreground">
-                      Este é o módulo mais poderoso do sistema, onde a IA analisa cada lead em 7 dimensões 
-                      diferentes e gera propostas comerciais personalizadas.
-                    </p>
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <Sparkles className="h-6 w-6 text-purple-400" />
+                      7 Dimensões de Análise
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-blue-500">1</Badge>
+                          Setor (0-30 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Agro/Cooperativas (30), Construção (28), Distribuição (26), Varejo (24)...
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-blue-500">2</Badge>
+                          Porte (0-25 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          50-500 funcionários (25 - SWEET SPOT), 20-49 (18), 501-1000 (15)...
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-green-500">3</Badge>
+                          Região (0-20 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          SP (20), MG/RS/PR/SC (18), GO/MT/MS (16), BA/ES (14), RJ (12)...
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-yellow-500">4</Badge>
+                          Status TOTVS (0-20 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          NÃO usa TOTVS (+20), Usa TOTVS (-30), Desconhecido (+10)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-orange-500">5</Badge>
+                          Concorrente (0-15 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          SAP/Oracle (15), Microsoft Dynamics (14), Senior (13), Sankhya (12)...
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-pink-500">6</Badge>
+                          Qualidade Dados (0-10 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          10% do data_quality_score (completude dos campos)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Badge className="bg-purple-500">7</Badge>
+                          Sinais Intenção (0-10 pts)
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          3 pontos por sinal detectado (crescimento rápido, expansão, novos produtos...)
+                        </p>
+                      </div>
+                    </div>
                   </Card>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Card className="p-4 bg-red-500/10 border-red-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Flame className="h-8 w-8 text-red-400" />
+                        <div>
+                          <h4 className="font-semibold text-red-400">HOT</h4>
+                          <p className="text-xs text-muted-foreground">80-100 pontos</p>
+                        </div>
+                      </div>
+                      <p className="text-sm">
+                        <strong>ABORDAR HOJE!</strong><br/>
+                        Lead pronto para contato imediato. Alta chance de conversão.
+                      </p>
+                    </Card>
+                    
+                    <Card className="p-4 bg-yellow-500/10 border-yellow-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Thermometer className="h-8 w-8 text-yellow-400" />
+                        <div>
+                          <h4 className="font-semibold text-yellow-400">WARM</h4>
+                          <p className="text-xs text-muted-foreground">60-79 pontos</p>
+                        </div>
+                      </div>
+                      <p className="text-sm">
+                        <strong>Abordar esta semana</strong><br/>
+                        Lead qualificado. Planeje abordagem estratégica.
+                      </p>
+                    </Card>
+                    
+                    <Card className="p-4 bg-blue-500/10 border-blue-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Snowflake className="h-8 w-8 text-blue-400" />
+                        <div>
+                          <h4 className="font-semibold text-blue-400">COLD</h4>
+                          <p className="text-xs text-muted-foreground">0-59 pontos</p>
+                        </div>
+                      </div>
+                      <p className="text-sm">
+                        <strong>Nutrir</strong><br/>
+                        Lead em desenvolvimento. Envie conteúdo educativo.
+                      </p>
+                    </Card>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="pipeline" className="mt-0 space-y-6">
