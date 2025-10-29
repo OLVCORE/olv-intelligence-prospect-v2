@@ -258,53 +258,53 @@ function APIGroupCard({ title, apis, color, defaultOpen = false }: APIGroupCardP
                 return (
                   <TooltipProvider key={api.name}>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all group">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className={`p-2 rounded-lg border ${
-                              api.status === 'active' 
-                                ? 'bg-green-500/10 border-green-500/20 group-hover:bg-green-500/20' 
-                                : 'bg-muted/50 border-border'
-                            } transition-all`}>
-                              <Icon className={`h-4 w-4 ${
-                                api.status === 'active' ? 'text-green-500' : 'text-muted-foreground'
-                              }`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{api.name}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-1">{api.description}</p>
-                            </div>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all group">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-lg border ${
+                            api.status === 'active' 
+                              ? 'bg-green-500/10 border-green-500/20 group-hover:bg-green-500/20' 
+                              : 'bg-muted/50 border-border'
+                          } transition-all`}>
+                            <Icon className={`h-4 w-4 ${
+                              api.status === 'active' ? 'text-green-500' : 'text-muted-foreground'
+                            }`} />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={api.status === 'active' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {api.status === 'active' ? 'Ativa' : 'Inativa'}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleConfigureClick(api.name)}
-                            >
-                              <Shield className="h-4 w-4 text-muted-foreground" />
-                            </Button>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{api.name}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{api.description}</p>
                           </div>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-md">
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold">{api.name}</p>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{api.description}</p>
-                          <div className="pt-2 border-t border-border space-y-1">
-                            <p className="text-xs"><strong>Custo:</strong> {api.cost}</p>
-                            {api.status === 'active' && (
-                              <p className="text-xs"><strong>Uptime:</strong> {api.uptime}%</p>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={api.status === 'active' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {api.status === 'active' ? 'Ativa' : 'Inativa'}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleConfigureClick(api.name)}
+                          >
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                          </Button>
                         </div>
-                      </TooltipContent>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-md z-[9999]">
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold">{api.name}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{api.description}</p>
+                        <div className="pt-2 border-t border-border space-y-1">
+                          <p className="text-xs"><strong>Custo:</strong> {api.cost}</p>
+                          {api.status === 'active' && (
+                            <p className="text-xs"><strong>Uptime:</strong> {api.uptime}%</p>
+                          )}
+                        </div>
+                      </div>
+                    </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 );

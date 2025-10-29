@@ -220,20 +220,20 @@ export function PlatformCostsCompact() {
                     const Icon = platform.icon;
                     return (
                       <Tooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-help group">
-                            <div className="flex items-center gap-3">
-                              <div className="p-1.5 rounded-lg bg-green-500/10 border border-green-500/20 group-hover:bg-green-500/20 transition-all">
-                                <Icon className="h-4 w-4 text-green-500" />
-                              </div>
-                              <span className="text-sm font-medium">{platform.name}</span>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-help group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-green-500/10 border border-green-500/20 group-hover:bg-green-500/20 transition-all">
+                              <Icon className="h-4 w-4 text-green-500" />
                             </div>
-                            <span className="text-sm font-semibold text-primary">US$ {platform.cost}</span>
+                            <span className="text-sm font-medium">{platform.name}</span>
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-md">
-                          <p className="text-xs leading-relaxed">{platform.description}</p>
-                        </TooltipContent>
+                          <span className="text-sm font-semibold text-primary">US$ {platform.cost}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-md z-[9999]">
+                        <p className="text-xs leading-relaxed">{platform.description}</p>
+                      </TooltipContent>
                       </Tooltip>
                     );
                   })}
@@ -285,23 +285,23 @@ export function PlatformCostsCompact() {
                     const Icon = platform.icon;
                     return (
                       <Tooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-help group">
-                            <div className="flex items-center gap-3 flex-1">
-                              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 group-hover:bg-amber-500/20 transition-all">
-                                <Icon className="h-4 w-4 text-amber-500" />
-                              </div>
-                              <div className="flex-1">
-                                <span className="text-sm font-medium block">{platform.name}</span>
-                                <span className="text-xs text-muted-foreground">{platform.timeline}</span>
-                              </div>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-help group">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 group-hover:bg-amber-500/20 transition-all">
+                              <Icon className="h-4 w-4 text-amber-500" />
                             </div>
-                            <span className="text-sm font-semibold text-amber-500">US$ {platform.cost}</span>
+                            <div className="flex-1">
+                              <span className="text-sm font-medium block">{platform.name}</span>
+                              <span className="text-xs text-muted-foreground">{platform.timeline}</span>
+                            </div>
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-md">
-                          <p className="text-xs leading-relaxed">{platform.description}</p>
-                        </TooltipContent>
+                          <span className="text-sm font-semibold text-amber-500">US$ {platform.cost}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-md z-[9999]">
+                        <p className="text-xs leading-relaxed">{platform.description}</p>
+                      </TooltipContent>
                       </Tooltip>
                     );
                   })}
