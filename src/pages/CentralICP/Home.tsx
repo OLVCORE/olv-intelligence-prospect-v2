@@ -42,7 +42,7 @@ export default function CentralICPHome() {
       description: 'Qualifique empresas uma por vez com análise detalhada',
       path: '/central-icp/individual',
       color: 'bg-green-500',
-      status: 'Em Desenvolvimento'
+      status: 'Ativo'
     },
     {
       icon: Zap,
@@ -50,7 +50,7 @@ export default function CentralICPHome() {
       description: 'Processe centenas de empresas automaticamente',
       path: '/central-icp/batch',
       color: 'bg-purple-500',
-      status: 'Em Desenvolvimento'
+      status: 'Ativo'
     },
     {
       icon: BarChart3,
@@ -58,7 +58,7 @@ export default function CentralICPHome() {
       description: 'Visualize empresas qualificadas e desqualificadas',
       path: '/central-icp/dashboard',
       color: 'bg-orange-500',
-      status: 'Em Desenvolvimento'
+      status: 'Ativo'
     },
     {
       icon: Shield,
