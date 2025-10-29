@@ -233,3 +233,6 @@ verify_jwt = false
 
   [functions.analyze-displacement-opportunities]
   verify_jwt = true
+
+  [functions.auto-intelligence-monitor]
+  verify_jwt = false

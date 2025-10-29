@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity } from 'lucide-react';
+import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +75,14 @@ export default function CentralICPHome() {
       path: '/sales-intelligence/feed',
       color: 'bg-yellow-500',
       status: 'Ativo'
+    },
+    {
+      icon: Settings,
+      title: 'Configurar Monitoramento Automático',
+      description: 'Defina filtros geográficos, setores e frequência 24/7',
+      path: '/sales-intelligence/config',
+      color: 'bg-yellow-600',
+      status: 'Novo'
     },
     {
       icon: TrendingUp,

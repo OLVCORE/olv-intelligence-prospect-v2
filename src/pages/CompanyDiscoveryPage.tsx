@@ -10,6 +10,7 @@ import { Search, Target, CheckCircle2, XCircle, Download, Plus, RefreshCw } from
 import { useSectors } from "@/hooks/useSectors";
 import { useNichesBySector } from "@/hooks/useNichesBySector";
 import { useDiscoverCompanies, useSuggestedCompanies, useValidateEnrichCompany, useAddCompaniesToBank } from "@/hooks/useCompanyDiscovery";
+import { useBrazilStates, useMunicipalitiesByState } from "@/hooks/useBrazilGeography";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,7 @@ export default function CompanyDiscoveryPage() {
   const [searchMode, setSearchMode] = useState<'new' | 'similar'>('new');
   const [sectorCode, setSectorCode] = useState<string>('');
   const [nicheCode, setNicheCode] = useState<string>('');
+  const [region, setRegion] = useState<string>('all');
   const [state, setState] = useState<string>('');
   const [city, setCity] = useState<string>('');
   const [sourceCompanyId, setSourceCompanyId] = useState<string>('');
@@ -24,6 +26,8 @@ export default function CompanyDiscoveryPage() {
 
   const { data: sectors } = useSectors();
   const { data: niches } = useNichesBySector(sectorCode);
+  const { data: brazilStates } = useBrazilStates();
+  const { data: municipalities } = useMunicipalitiesByState(state);
   const discoverMutation = useDiscoverCompanies();
   const validateMutation = useValidateEnrichCompany();
   const addToBankMutation = useAddCompaniesToBank();
@@ -188,30 +192,51 @@ export default function CompanyDiscoveryPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Estado *</label>
-                <Select value={state} onValueChange={setState}>
+                <label className="text-sm font-medium">Região</label>
+                <Select value={region} onValueChange={setRegion}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
+                    <SelectValue placeholder="Todas as regiões" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SP">São Paulo</SelectItem>
-                    <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                    <SelectItem value="MG">Minas Gerais</SelectItem>
-                    <SelectItem value="RS">Rio Grande do Sul</SelectItem>
-                    <SelectItem value="PR">Paraná</SelectItem>
-                    <SelectItem value="SC">Santa Catarina</SelectItem>
+                    <SelectItem value="all">Todas as regiões</SelectItem>
+                    <SelectItem value="Norte">Norte</SelectItem>
+                    <SelectItem value="Nordeste">Nordeste</SelectItem>
+                    <SelectItem value="Centro-Oeste">Centro-Oeste</SelectItem>
+                    <SelectItem value="Sudeste">Sudeste</SelectItem>
+                    <SelectItem value="Sul">Sul</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Cidade (opcional)</label>
-                <Select value={city} onValueChange={setCity}>
+                <label className="text-sm font-medium">Estado *</label>
+                <Select value={state} onValueChange={setState}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Todas as cidades" />
+                    <SelectValue placeholder="Selecione o estado" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as cidades</SelectItem>
+                  <SelectContent className="max-h-[300px]">
+                    {brazilStates?.filter(s => !region || region === 'all' || s.region === region).map((s) => (
+                      <SelectItem key={s.state_code} value={s.state_code}>
+                        {s.state_name} ({s.state_code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Município (opcional)</label>
+                <Select value={city} onValueChange={setCity} disabled={!state}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={state ? "Selecione o município" : "Primeiro selecione um estado"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="all">Todos os municípios</SelectItem>
+                    {municipalities?.map((m) => (
+                      <SelectItem key={m.municipality_code} value={m.municipality_name}>
+                        {m.municipality_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
