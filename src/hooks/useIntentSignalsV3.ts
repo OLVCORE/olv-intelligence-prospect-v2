@@ -67,7 +67,7 @@ export function useLatestIntentSignalsV3(companyId?: string) {
         .eq('company_id', companyId)
         .order('checked_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching intent signals:', error);

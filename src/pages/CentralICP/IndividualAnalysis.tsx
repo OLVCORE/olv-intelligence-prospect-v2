@@ -117,12 +117,27 @@ export default function IndividualAnalysis() {
                 <CardTitle className="text-xl">{company.name}</CardTitle>
                 <CardDescription>
                   {company.cnpj && `CNPJ: ${company.cnpj} • `}
-                  {company.domain || company.city}
-                  {company.state && ` • ${company.state}`}
+                  {(company.domain || company.website) && (company.domain || company.website)}
+                  {(company.headquarters_city || company.headquarters_state) && ` • ${company.headquarters_city || ''}${company.headquarters_city && company.headquarters_state ? ' - ' : ''}${company.headquarters_state || ''}`}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div><span className="text-muted-foreground">Razão Social:</span> <span className="font-medium">{company.name}</span></div>
+              <div><span className="text-muted-foreground">CNPJ:</span> <span className="font-medium">{company.cnpj || '—'}</span></div>
+              <div><span className="text-muted-foreground">Domínio:</span> <span className="font-medium">{company.domain || company.website || '—'}</span></div>
+              <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{company.headquarters_state || '—'}</span></div>
+              <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{company.headquarters_city || '—'}</span></div>
+              <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{company.headquarters_country || '—'}</span></div>
+            </div>
+            {(!company.headquarters_state || !company.niche_code) && (
+              <div className="mt-3 text-xs text-destructive">
+                Dados ausentes para análises: {!company.headquarters_state ? 'Estado (UF)' : ''}{!company.headquarters_state && !company.niche_code ? ' e ' : ''}{!company.niche_code ? 'Nicho' : ''}.
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
 
@@ -168,13 +183,21 @@ export default function IndividualAnalysis() {
                 name: company.name,
                 cnpj: company.cnpj,
                 domain: company.domain,
-                state: company.state,
-                city: company.city,
+                state: company.headquarters_state,
+                city: company.headquarters_city,
                 sector_code: company.sector_code,
                 niche_code: company.niche_code,
               }}
             />
-            <IntentSignalsCardV3 company={company} />
+            <IntentSignalsCardV3 company={{
+              id: company.id,
+              name: company.name,
+              cnpj: company.cnpj,
+              domain: company.domain || company.website,
+              region: company.headquarters_state,
+              sector: company.sector_code,
+              niche: company.niche_code,
+            }} />
           </div>
 
           {/* AI Recommendation */}
