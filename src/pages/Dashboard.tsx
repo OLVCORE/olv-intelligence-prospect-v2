@@ -622,8 +622,8 @@ export default function Dashboard() {
                 {/* Platform Costs */}
                 <PlatformCostsPanel />
 
-                {/* Apollo Credits + Alerts em 2 colunas */}
-                <div className="grid gap-6 md:grid-cols-2">
+                {/* Apollo Credits + Alerts em 2 colunas (sempre lado a lado) */}
+                <div className="grid grid-cols-2 gap-6">
                   <ApolloCreditPanel />
                   <RealTimeAlerts />
                 </div>

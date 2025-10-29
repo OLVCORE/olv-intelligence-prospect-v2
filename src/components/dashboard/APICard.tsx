@@ -225,20 +225,18 @@ export function APICard({ name, status, cost, uptime, logo, onConfigure, signupU
             <div aria-hidden className="text-2xl" title={name}>{logo ?? "🔗"}</div>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               {name}
-              {guide && (
-                <TooltipProvider>
-                  <TooltipUI>
-                    <TooltipTrigger asChild>
-                      <button className="p-1 rounded hover:bg-muted/50" aria-label={`Sobre ${name}`}>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{guide.description}</p>
-                    </TooltipContent>
-                  </TooltipUI>
-                </TooltipProvider>
-              )}
+              <TooltipProvider>
+                <TooltipUI>
+                  <TooltipTrigger asChild>
+                    <button className="p-1 rounded hover:bg-muted/50" aria-label={`Sobre ${name}`}>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">{guide?.description || 'Integração disponível. Clique em Configurar para ver o passo a passo e as secrets necessárias.'}</p>
+                  </TooltipContent>
+                </TooltipUI>
+              </TooltipProvider>
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
@@ -310,8 +308,11 @@ export function APICard({ name, status, cost, uptime, logo, onConfigure, signupU
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 border-primary/50" 
-            onClick={() => setConfigDialogOpen(true)}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 border-primary/50 transition-all duration-200 hover:scale-105" 
+            onClick={() => {
+              console.log('Configurar clicked for:', name);
+              setConfigDialogOpen(true);
+            }}
             aria-label={`Configurar ${name}`}
           >
             <Settings2 className="h-4 w-4 mr-2" />

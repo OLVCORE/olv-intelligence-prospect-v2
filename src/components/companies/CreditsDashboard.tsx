@@ -16,7 +16,10 @@ export function CreditsDashboard() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 5000
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
   });
 
   if (isLoading || !config) return null;

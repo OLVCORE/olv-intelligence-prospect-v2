@@ -57,7 +57,7 @@ export function APIManagementGrid() {
           <h3 className="text-sm font-semibold tracking-tight">APIs Críticas</h3>
         </div>
         {API_STATUS.critical.map((api) => (
-          <APICard key={api.name} {...api} />
+          <APICard key={api.name} {...api} onConfigure={() => console.log(`Configure ${api.name}`)} />
         ))}
       </div>
       <div className="space-y-4">
@@ -66,7 +66,7 @@ export function APIManagementGrid() {
           <h3 className="text-sm font-semibold tracking-tight">APIs Alta Prioridade</h3>
         </div>
         {API_STATUS.highPriority.map((api) => (
-          <APICard key={api.name} {...api} />
+          <APICard key={api.name} {...api} onConfigure={() => console.log(`Configure ${api.name}`)} />
         ))}
       </div>
       <div className="space-y-4">
@@ -75,7 +75,7 @@ export function APIManagementGrid() {
           <h3 className="text-sm font-semibold tracking-tight">APIs Complementares</h3>
         </div>
         {API_STATUS.complementary.map((api) => (
-          <APICard key={api.name} {...api} />
+          <APICard key={api.name} {...api} onConfigure={() => console.log(`Configure ${api.name}`)} />
         ))}
       </div>
     </div>
