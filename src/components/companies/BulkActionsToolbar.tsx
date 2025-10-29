@@ -10,7 +10,8 @@ import {
   Building2,
   Download,
   FileSpreadsheet,
-  Zap
+  Zap,
+  MoreHorizontal
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -177,6 +178,35 @@ export function BulkActionsToolbar({
               <Download className="h-4 w-4 mr-2" />
               Exportar CSV
             </Button>
+          )}
+
+          {/* Ações em Massa */}
+          {hasSelection && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isProcessing || isDeleting}
+                  data-testid="bulk-actions-dropdown"
+                  aria-label="Ações em Massa"
+                >
+                  <MoreHorizontal className="h-4 w-4 mr-2" />
+                  Ações em Massa
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onExportSelected} disabled={isProcessing}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} disabled={isProcessing || isDeleting}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir em Massa
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {/* Deletar Selecionadas */}
