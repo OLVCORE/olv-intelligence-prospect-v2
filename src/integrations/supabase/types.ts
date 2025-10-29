@@ -111,6 +111,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "account_strategies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "account_strategies_persona_id_fkey"
             columns: ["persona_id"]
             isOneToOne: false
@@ -261,6 +268,20 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "account_touchpoints_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "account_touchpoints_next_action_owner_fkey"
+            columns: ["next_action_owner"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       activities: {
@@ -350,6 +371,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contacts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -604,6 +632,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "apollo_credit_usage_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       app_features: {
@@ -717,7 +752,15 @@ export type Database = {
           user_id?: string
           webhook_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bitrix_sync_config_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       bitrix_sync_log: {
         Row: {
@@ -999,6 +1042,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "business_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       buyer_personas: {
@@ -1132,6 +1182,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buying_signals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1508,45 +1565,68 @@ export type Database = {
           apollo_score: Json | null
           apollo_signals: Json | null
           apollo_url: string | null
+          assigned_at: string | null
+          assigned_to: string | null
           buying_intent_score: number | null
           buying_intent_signals: Json | null
+          closed_at: string | null
           cnpj: string | null
           cnpj_status: string | null
           company_insights: Json | null
+          competitor_won: string | null
           created_at: string
+          demo_scheduled_at: string | null
           digital_maturity_score: number | null
+          discount_percentage: number | null
           disqualification_reason: string | null
           domain: string | null
           employee_count_from_apollo: number | null
           employee_count_range: string | null
           employee_trends: Json | null
           employees: number | null
+          estimated_deal_value: number | null
           field_meta: Json | null
+          first_contact_at: string | null
           founding_year: number | null
           funding_rounds: Json | null
           funding_total: number | null
           headquarters_city: string | null
           headquarters_country: string | null
           headquarters_state: string | null
+          icp_score: number | null
+          icp_score_breakdown: Json | null
           id: string
           industry: string | null
           investors: Json | null
           is_disqualified: boolean | null
           job_postings: Json | null
           job_postings_count: number | null
+          journey_stage: string | null
           last_apollo_sync_at: string | null
+          last_contact_at: string | null
           last_funding_round_amount: number | null
           last_funding_round_date: string | null
           lead_score: number | null
           lead_score_updated_at: string | null
+          lead_source_id: string | null
           linkedin_company_id: string | null
           linkedin_url: string | null
           location: Json | null
+          loss_details: string | null
+          loss_reason: string | null
           market_segments: string[] | null
+          meeting_scheduled_at: string | null
           naics_codes: string[] | null
           name: string
           news: Json | null
+          next_action: string | null
+          next_action_date: string | null
+          next_action_owner: string | null
+          payment_terms: string | null
           phone_numbers: string[] | null
+          proposal_sent_at: string | null
+          proposed_products: Json | null
+          quarantine_id: string | null
           raw_data: Json | null
           revenue: string | null
           revenue_range: string | null
@@ -1558,6 +1638,11 @@ export type Database = {
           suggested_leads: Json | null
           technologies: string[] | null
           technologies_full: Json | null
+          temperature: string | null
+          total_calls: number | null
+          total_emails: number | null
+          total_meetings: number | null
+          total_whatsapp: number | null
           totvs_detection_score: number | null
           totvs_detection_sources: Json | null
           totvs_last_checked_at: string | null
@@ -1576,45 +1661,68 @@ export type Database = {
           apollo_score?: Json | null
           apollo_signals?: Json | null
           apollo_url?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
+          closed_at?: string | null
           cnpj?: string | null
           cnpj_status?: string | null
           company_insights?: Json | null
+          competitor_won?: string | null
           created_at?: string
+          demo_scheduled_at?: string | null
           digital_maturity_score?: number | null
+          discount_percentage?: number | null
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
           employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
+          estimated_deal_value?: number | null
           field_meta?: Json | null
+          first_contact_at?: string | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
           headquarters_city?: string | null
           headquarters_country?: string | null
           headquarters_state?: string | null
+          icp_score?: number | null
+          icp_score_breakdown?: Json | null
           id?: string
           industry?: string | null
           investors?: Json | null
           is_disqualified?: boolean | null
           job_postings?: Json | null
           job_postings_count?: number | null
+          journey_stage?: string | null
           last_apollo_sync_at?: string | null
+          last_contact_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
+          lead_source_id?: string | null
           linkedin_company_id?: string | null
           linkedin_url?: string | null
           location?: Json | null
+          loss_details?: string | null
+          loss_reason?: string | null
           market_segments?: string[] | null
+          meeting_scheduled_at?: string | null
           naics_codes?: string[] | null
           name: string
           news?: Json | null
+          next_action?: string | null
+          next_action_date?: string | null
+          next_action_owner?: string | null
+          payment_terms?: string | null
           phone_numbers?: string[] | null
+          proposal_sent_at?: string | null
+          proposed_products?: Json | null
+          quarantine_id?: string | null
           raw_data?: Json | null
           revenue?: string | null
           revenue_range?: string | null
@@ -1626,6 +1734,11 @@ export type Database = {
           suggested_leads?: Json | null
           technologies?: string[] | null
           technologies_full?: Json | null
+          temperature?: string | null
+          total_calls?: number | null
+          total_emails?: number | null
+          total_meetings?: number | null
+          total_whatsapp?: number | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
@@ -1644,45 +1757,68 @@ export type Database = {
           apollo_score?: Json | null
           apollo_signals?: Json | null
           apollo_url?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
           buying_intent_score?: number | null
           buying_intent_signals?: Json | null
+          closed_at?: string | null
           cnpj?: string | null
           cnpj_status?: string | null
           company_insights?: Json | null
+          competitor_won?: string | null
           created_at?: string
+          demo_scheduled_at?: string | null
           digital_maturity_score?: number | null
+          discount_percentage?: number | null
           disqualification_reason?: string | null
           domain?: string | null
           employee_count_from_apollo?: number | null
           employee_count_range?: string | null
           employee_trends?: Json | null
           employees?: number | null
+          estimated_deal_value?: number | null
           field_meta?: Json | null
+          first_contact_at?: string | null
           founding_year?: number | null
           funding_rounds?: Json | null
           funding_total?: number | null
           headquarters_city?: string | null
           headquarters_country?: string | null
           headquarters_state?: string | null
+          icp_score?: number | null
+          icp_score_breakdown?: Json | null
           id?: string
           industry?: string | null
           investors?: Json | null
           is_disqualified?: boolean | null
           job_postings?: Json | null
           job_postings_count?: number | null
+          journey_stage?: string | null
           last_apollo_sync_at?: string | null
+          last_contact_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
+          lead_source_id?: string | null
           linkedin_company_id?: string | null
           linkedin_url?: string | null
           location?: Json | null
+          loss_details?: string | null
+          loss_reason?: string | null
           market_segments?: string[] | null
+          meeting_scheduled_at?: string | null
           naics_codes?: string[] | null
           name?: string
           news?: Json | null
+          next_action?: string | null
+          next_action_date?: string | null
+          next_action_owner?: string | null
+          payment_terms?: string | null
           phone_numbers?: string[] | null
+          proposal_sent_at?: string | null
+          proposed_products?: Json | null
+          quarantine_id?: string | null
           raw_data?: Json | null
           revenue?: string | null
           revenue_range?: string | null
@@ -1694,6 +1830,11 @@ export type Database = {
           suggested_leads?: Json | null
           technologies?: string[] | null
           technologies_full?: Json | null
+          temperature?: string | null
+          total_calls?: number | null
+          total_emails?: number | null
+          total_meetings?: number | null
+          total_whatsapp?: number | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
@@ -1703,7 +1844,36 @@ export type Database = {
           website_visitors_count?: number | null
           website_visitors_data?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "companies_lead_source_id_fkey"
+            columns: ["lead_source_id"]
+            isOneToOne: false
+            referencedRelation: "leads_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "companies_next_action_owner_fkey"
+            columns: ["next_action_owner"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "companies_quarantine_id_fkey"
+            columns: ["quarantine_id"]
+            isOneToOne: false
+            referencedRelation: "leads_quarantine"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_battle_cards: {
         Row: {
@@ -1957,6 +2127,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_monitoring_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -3009,6 +3186,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "discovery_batches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       displacement_opportunities: {
@@ -3067,6 +3251,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "displacement_opportunities_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "displacement_opportunities_company_id_fkey"
             columns: ["company_id"]
@@ -3237,6 +3428,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "executive_reports_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "executive_reports_versions_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
@@ -3372,7 +3570,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "google_sheets_sync_config_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       governance_signals: {
         Row: {
@@ -3426,6 +3632,90 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "buying_signals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icp_analysis_history: {
+        Row: {
+          ai_model_used: string | null
+          analysis_duration_ms: number | null
+          analysis_version: number
+          analyzed_at: string | null
+          analyzed_by: string | null
+          buying_signals: Json | null
+          company_id: string
+          competitor_erp: string | null
+          estimated_roi: string | null
+          has_totvs: boolean | null
+          icp_score: number
+          id: string
+          intent_score: number | null
+          pain_points: Json | null
+          recommended_products: Json | null
+          score_breakdown: Json
+          technologies_detected: Json | null
+          temperature: string
+          totvs_products: Json | null
+          value_proposition: string | null
+        }
+        Insert: {
+          ai_model_used?: string | null
+          analysis_duration_ms?: number | null
+          analysis_version?: number
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          buying_signals?: Json | null
+          company_id: string
+          competitor_erp?: string | null
+          estimated_roi?: string | null
+          has_totvs?: boolean | null
+          icp_score: number
+          id?: string
+          intent_score?: number | null
+          pain_points?: Json | null
+          recommended_products?: Json | null
+          score_breakdown: Json
+          technologies_detected?: Json | null
+          temperature: string
+          totvs_products?: Json | null
+          value_proposition?: string | null
+        }
+        Update: {
+          ai_model_used?: string | null
+          analysis_duration_ms?: number | null
+          analysis_version?: number
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          buying_signals?: Json | null
+          company_id?: string
+          competitor_erp?: string | null
+          estimated_roi?: string | null
+          has_totvs?: boolean | null
+          icp_score?: number
+          id?: string
+          intent_score?: number | null
+          pain_points?: Json | null
+          recommended_products?: Json | null
+          score_breakdown?: Json
+          technologies_detected?: Json | null
+          temperature?: string
+          totvs_products?: Json | null
+          value_proposition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icp_analysis_history_analyzed_by_fkey"
+            columns: ["analyzed_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "icp_analysis_history_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -3626,7 +3916,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "icp_batch_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       insights: {
         Row: {
@@ -3704,7 +4002,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integration_configs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       intelligence_monitoring_config: {
         Row: {
@@ -3812,7 +4118,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intelligence_monitoring_config_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       intent_signals: {
         Row: {
@@ -3929,6 +4243,78 @@ export type Database = {
           },
         ]
       }
+      interactions: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          interaction_date: string | null
+          interaction_type: string
+          metadata: Json | null
+          next_action_date_suggested: string | null
+          next_action_suggested: string | null
+          outcome: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          interaction_date?: string | null
+          interaction_type: string
+          metadata?: Json | null
+          next_action_date_suggested?: string | null
+          next_action_suggested?: string | null
+          outcome?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          interaction_date?: string | null
+          interaction_type?: string
+          metadata?: Json | null
+          next_action_date_suggested?: string | null
+          next_action_suggested?: string | null
+          outcome?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       job_postings_detected: {
         Row: {
           company_id: string
@@ -3979,6 +4365,225 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_quarantine: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          auto_score: number | null
+          buying_signals: Json | null
+          captured_at: string | null
+          city: string | null
+          cnpj: string | null
+          cnpj_status: string | null
+          cnpj_valid: boolean | null
+          company_size: string | null
+          competitor_erp: string | null
+          created_at: string | null
+          data_quality_score: number | null
+          email: string | null
+          email_verified: boolean | null
+          employees: number | null
+          enriched_data: Json | null
+          enrichment_status: string | null
+          has_email: boolean | null
+          has_linkedin: boolean | null
+          has_totvs: boolean | null
+          id: string
+          intent_score: number | null
+          name: string
+          niche: string | null
+          notes: string | null
+          phone: string | null
+          region: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          revenue: number | null
+          sector: string | null
+          source_id: string | null
+          source_metadata: Json | null
+          state: string | null
+          technologies_detected: Json | null
+          totvs_products: Json | null
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+          validation_score: number | null
+          validation_status: string | null
+          website: string | null
+          website_active: boolean | null
+          website_ssl: boolean | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          auto_score?: number | null
+          buying_signals?: Json | null
+          captured_at?: string | null
+          city?: string | null
+          cnpj?: string | null
+          cnpj_status?: string | null
+          cnpj_valid?: boolean | null
+          company_size?: string | null
+          competitor_erp?: string | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          email?: string | null
+          email_verified?: boolean | null
+          employees?: number | null
+          enriched_data?: Json | null
+          enrichment_status?: string | null
+          has_email?: boolean | null
+          has_linkedin?: boolean | null
+          has_totvs?: boolean | null
+          id?: string
+          intent_score?: number | null
+          name: string
+          niche?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          revenue?: number | null
+          sector?: string | null
+          source_id?: string | null
+          source_metadata?: Json | null
+          state?: string | null
+          technologies_detected?: Json | null
+          totvs_products?: Json | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_score?: number | null
+          validation_status?: string | null
+          website?: string | null
+          website_active?: boolean | null
+          website_ssl?: boolean | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          auto_score?: number | null
+          buying_signals?: Json | null
+          captured_at?: string | null
+          city?: string | null
+          cnpj?: string | null
+          cnpj_status?: string | null
+          cnpj_valid?: boolean | null
+          company_size?: string | null
+          competitor_erp?: string | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          email?: string | null
+          email_verified?: boolean | null
+          employees?: number | null
+          enriched_data?: Json | null
+          enrichment_status?: string | null
+          has_email?: boolean | null
+          has_linkedin?: boolean | null
+          has_totvs?: boolean | null
+          id?: string
+          intent_score?: number | null
+          name?: string
+          niche?: string | null
+          notes?: string | null
+          phone?: string | null
+          region?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          revenue?: number | null
+          sector?: string | null
+          source_id?: string | null
+          source_metadata?: Json | null
+          state?: string | null
+          technologies_detected?: Json | null
+          totvs_products?: Json | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_score?: number | null
+          validation_status?: string | null
+          website?: string | null
+          website_active?: boolean | null
+          website_ssl?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_quarantine_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "leads_quarantine_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "leads_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_quarantine_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      leads_sources: {
+        Row: {
+          api_credentials: Json | null
+          config: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          source_name: string
+          success_rate: number | null
+          total_approved: number | null
+          total_captured: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_credentials?: Json | null
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          source_name: string
+          success_rate?: number | null
+          total_approved?: number | null
+          total_captured?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_credentials?: Json | null
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          source_name?: string
+          success_rate?: number | null
+          total_approved?: number | null
+          total_captured?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4064,7 +4669,15 @@ export type Database = {
           updated_at?: string | null
           variables?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -4504,7 +5117,15 @@ export type Database = {
           updated_at?: string
           whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       quote_history: {
         Row: {
@@ -4606,11 +5227,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quote_history_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "quote_history_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "quote_history_deal_id_fkey"
@@ -4760,7 +5395,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       scenario_analysis: {
         Row: {
@@ -4842,6 +5485,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scenario_analysis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "scenario_analysis_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
@@ -4881,7 +5531,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sdr_api_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       sdr_audit: {
         Row: {
@@ -5234,7 +5892,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sdr_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       sdr_notifications: {
         Row: {
@@ -5267,7 +5933,15 @@ export type Database = {
           type?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sdr_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       sdr_opportunities: {
         Row: {
@@ -5331,6 +6005,13 @@ export type Database = {
           won_date?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sdr_opportunities_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "sdr_opportunities_canvas_id_fkey"
             columns: ["canvas_id"]
@@ -5759,7 +6440,15 @@ export type Database = {
           url?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sdr_webhooks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       sdr_workflows: {
         Row: {
@@ -5804,7 +6493,15 @@ export type Database = {
           trigger_type?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sdr_workflows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       search_history: {
         Row: {
@@ -6006,6 +6703,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "suggested_companies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       totvs_products: {
@@ -6167,7 +6871,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       value_milestones: {
         Row: {
@@ -6222,6 +6934,13 @@ export type Database = {
           value_tracking_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "value_milestones_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "value_milestones_value_tracking_id_fkey"
             columns: ["value_tracking_id"]
@@ -6327,6 +7046,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "value_tracking_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -6438,6 +7164,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visual_proposals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "visual_proposals_quote_id_fkey"
@@ -6574,6 +7307,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "win_loss_analysis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "win_loss_analysis_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
@@ -6604,6 +7344,47 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pipeline_overview: {
+        Row: {
+          assigned_count: number | null
+          avg_icp_score: number | null
+          journey_stage: string | null
+          temperature: string | null
+          total_companies: number | null
+          total_pipeline_value: number | null
+          with_next_action: number | null
+        }
+        Relationships: []
+      }
+      sdr_performance: {
+        Row: {
+          avg_icp_score: number | null
+          total_calls: number | null
+          total_companies_assigned: number | null
+          total_interactions: number | null
+          total_lost: number | null
+          total_meetings: number | null
+          total_revenue: number | null
+          total_won: number | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      source_performance: {
+        Row: {
+          avg_auto_score: number | null
+          is_active: boolean | null
+          priority: number | null
+          source_name: string | null
+          total_approved: number | null
+          total_captured: number | null
+          total_converted_to_companies: number | null
+          total_rejected: number | null
+          total_won: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
