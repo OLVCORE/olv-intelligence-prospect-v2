@@ -50,12 +50,17 @@ import {
   Layers,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 import FinancialOverview from "@/components/dashboard/FinancialOverview";
 import ApolloCreditPanel from "@/components/dashboard/ApolloCreditPanel";
 import APIManagementGrid from "@/components/dashboard/APIManagementGrid";
 import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
 import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
 import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
+import { DashboardActionsMenu } from "@/components/dashboard/DashboardActionsMenu";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 
 const CHART_COLORS = {
@@ -69,6 +74,123 @@ const CHART_COLORS = {
 export default function Dashboard() {
   const { data, isLoading } = useDashboardExecutive();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      const doc = new jsPDF();
+      
+      doc.setFontSize(20);
+      doc.text('Dashboard Executive - Command Center', 14, 22);
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 30);
+      
+      // Core Metrics
+      doc.setFontSize(14);
+      doc.text('Métricas Principais', 14, 45);
+      (doc as any).autoTable({
+        startY: 50,
+        head: [['Métrica', 'Valor']],
+        body: [
+          ['Empresas Ativas', data.totalCompanies.toString()],
+          ['Decisores Mapeados', data.totalDecisors.toString()],
+          ['Pipeline Revenue', `R$ ${(data.pipelineValue / 1000000).toFixed(1)}M`],
+          ['Conversações', data.totalConversations.toString()],
+          ['Taxa de Conversão', `${data.conversionRate.toFixed(1)}%`],
+        ],
+      });
+
+      doc.save(`dashboard_executive_${new Date().toISOString().slice(0,10)}.pdf`);
+      
+      toast({
+        title: "✅ PDF Exportado",
+        description: "Dashboard exportado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao exportar",
+        description: "Não foi possível gerar o PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      setIsExporting(true);
+      const csvData = [
+        ['Métrica', 'Valor'],
+        ['Empresas Ativas', data.totalCompanies],
+        ['Decisores Mapeados', data.totalDecisors],
+        ['Pipeline Revenue', data.pipelineValue],
+        ['Conversações', data.totalConversations],
+        ['Taxa de Conversão', data.conversionRate],
+        ['Valor Médio de Deal', data.avgDealSize],
+        ['Empresas em Risco', data.companiesAtRisk],
+      ];
+
+      const csvContent = csvData.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dashboard_executive_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "✅ CSV Exportado",
+        description: "Dashboard exportado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao exportar",
+        description: "Não foi possível gerar o CSV",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportXLS = () => {
+    handleExportCSV(); // Por enquanto, usar CSV como XLS
+  };
+
+  const handleExportJSON = () => {
+    try {
+      setIsExporting(true);
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dashboard_executive_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "✅ JSON Exportado",
+        description: "Dashboard exportado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao exportar",
+        description: "Não foi possível gerar o JSON",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -94,21 +216,54 @@ export default function Dashboard() {
         {/* Hero Header */}
         <div className="relative">
           <div className="flex items-start justify-between mb-8">
-            <div className="space-y-3 animate-float">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20">
-                <Activity className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-sm font-medium">Live Intelligence</span>
+            <div className="space-y-4 animate-float">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20 shadow-lg shadow-primary/10">
+                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
+                  Live Intelligence
+                </span>
               </div>
-              <h1 className="text-6xl font-bold tracking-tight text-gradient">
-                Command Center
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl">
-                Análise estratégica em tempo real com inteligência artificial avançada
-              </p>
+              
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent-cyan/20 to-primary/20 blur-xl animate-pulse" />
+                  <div className="relative p-3 rounded-2xl glass-card border-2 border-primary/30 shadow-lg shadow-primary/20">
+                    <Activity className="h-8 w-8 text-primary animate-pulse" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-gradient flex items-center gap-3">
+                    Command Center
+                  </h1>
+                  <p className="text-lg text-muted-foreground mt-2 max-w-2xl">
+                    Análise estratégica em tempo real com inteligência artificial avançada
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm text-muted-foreground">Powered by</span>
+                    <span className="text-sm font-semibold bg-gradient-to-r from-primary via-accent-cyan to-primary bg-clip-text text-transparent">
+                      OLV Internacional
+                    </span>
+                    <span className="text-sm text-muted-foreground">+</span>
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-sm font-semibold bg-gradient-to-r from-accent-cyan to-primary bg-clip-text text-transparent">
+                        IA Intelligence
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
-              <ExportButton data={data} filename={`dashboard_${new Date().toISOString().slice(0,10)}`} variant="attention" size="sm" />
-              <EnhancedBatchEnrichment />
+            
+            <div className="flex items-center gap-3">
+              <DashboardActionsMenu
+                data={data}
+                isExporting={isExporting}
+                onExportPDF={handleExportPDF}
+                onExportCSV={handleExportCSV}
+                onExportXLS={handleExportXLS}
+                onExportJSON={handleExportJSON}
+              />
             </div>
           </div>
 
