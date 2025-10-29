@@ -36,15 +36,18 @@ const REGIONS = [
 
 const SECTORS = [
   { value: 'all', label: 'Todos os Setores' },
-  { value: 'Agro', label: 'Agronegócio' },
-  { value: 'Construção', label: 'Construção' },
-  { value: 'Distribuição', label: 'Distribuição' },
-  { value: 'Financial Services', label: 'Serviços Financeiros' },
-  { value: 'Logística', label: 'Logística' },
-  { value: 'Manufatura', label: 'Manufatura' },
-  { value: 'Prestadores de Serviços', label: 'Prestadores de Serviços' },
-  { value: 'Saúde', label: 'Saúde' },
-  { value: 'Varejo', label: 'Varejo' },
+  { value: 'agro', label: 'Agronegócio' },
+  { value: 'construcao', label: 'Construção' },
+  { value: 'distribuicao', label: 'Distribuição' },
+  { value: 'educacional', label: 'Educacional' },
+  { value: 'financial_services', label: 'Serviços Financeiros' },
+  { value: 'hotelaria', label: 'Hotelaria e Turismo' },
+  { value: 'juridico', label: 'Jurídico' },
+  { value: 'logistica', label: 'Logística' },
+  { value: 'manufatura', label: 'Manufatura' },
+  { value: 'servicos', label: 'Prestadores de Serviços' },
+  { value: 'saude', label: 'Saúde' },
+  { value: 'varejo', label: 'Varejo' },
 ];
 
 const STATUS_OPTIONS = [
@@ -70,7 +73,7 @@ export function ICPFilters({ filters, onFilterChange, stats }: ICPFiltersProps) 
       const { data, error } = await supabase
         .from('niches')
         .select('*')
-        .eq('sector', filters.sector)
+        .eq('sector_code', filters.sector)
         .order('niche_name');
 
       if (error) {
@@ -188,7 +191,7 @@ export function ICPFilters({ filters, onFilterChange, stats }: ICPFiltersProps) 
                 <SelectItem value="all">Todos os nichos</SelectItem>
                 {niches && niches.length > 0 ? (
                   niches.map((niche: any) => (
-                    <SelectItem key={niche.id} value={niche.niche_name}>
+                    <SelectItem key={niche.niche_code} value={niche.niche_code}>
                       {niche.niche_name}
                     </SelectItem>
                   ))

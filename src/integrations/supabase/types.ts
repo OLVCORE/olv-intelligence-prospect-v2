@@ -3067,6 +3067,39 @@ export type Database = {
           },
         ]
       }
+      icp_audit_log: {
+        Row: {
+          action: string
+          batch_company_id: string | null
+          created_at: string
+          evidence_snippet: string | null
+          evidence_url: string | null
+          id: string
+          reason: string | null
+          validation_rules_applied: Json | null
+        }
+        Insert: {
+          action: string
+          batch_company_id?: string | null
+          created_at?: string
+          evidence_snippet?: string | null
+          evidence_url?: string | null
+          id?: string
+          reason?: string | null
+          validation_rules_applied?: Json | null
+        }
+        Update: {
+          action?: string
+          batch_company_id?: string | null
+          created_at?: string
+          evidence_snippet?: string | null
+          evidence_url?: string | null
+          id?: string
+          reason?: string | null
+          validation_rules_applied?: Json | null
+        }
+        Relationships: []
+      }
       icp_batch_companies: {
         Row: {
           batch_job_id: string
@@ -3669,30 +3702,50 @@ export type Database = {
       }
       niches: {
         Row: {
+          cnaes: string[] | null
           created_at: string
           description: string | null
           id: string
           keywords: string[]
+          ncms: string[] | null
+          niche_code: string
           niche_name: string
-          sector: string
+          sector_code: string
+          totvs_products: string[] | null
         }
         Insert: {
+          cnaes?: string[] | null
           created_at?: string
           description?: string | null
           id?: string
           keywords: string[]
+          ncms?: string[] | null
+          niche_code: string
           niche_name: string
-          sector: string
+          sector_code: string
+          totvs_products?: string[] | null
         }
         Update: {
+          cnaes?: string[] | null
           created_at?: string
           description?: string | null
           id?: string
           keywords?: string[]
+          ncms?: string[] | null
+          niche_code?: string
           niche_name?: string
-          sector?: string
+          sector_code?: string
+          totvs_products?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "niches_sector_code_fkey"
+            columns: ["sector_code"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["sector_code"]
+          },
+        ]
       }
       people: {
         Row: {
@@ -5300,6 +5353,30 @@ export type Database = {
           id?: string
           query?: string
           results_count?: number | null
+        }
+        Relationships: []
+      }
+      sectors: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          sector_code: string
+          sector_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          sector_code: string
+          sector_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          sector_code?: string
+          sector_name?: string
         }
         Relationships: []
       }
