@@ -168,7 +168,12 @@ serve(async (req: Request) => {
         console.log('[enrich-apollo] People encontrados:', peopleAll.length);
         
         const mapped = peopleAll.map(mapApolloPerson);
-        const chunks = chunk(mapped, 100);
+        
+        // Deduplicar por chaves únicas antes de fazer upsert
+        const deduped = deduplicatePeople(mapped);
+        console.log('[enrich-apollo] People após deduplicação:', deduped.length, '(removidos', mapped.length - deduped.length, 'duplicados)');
+        
+        const chunks = chunk(deduped, 100);
 
         let upserted = 0;
         let linked = 0;
@@ -682,6 +687,24 @@ function simpleHash(plain: string): string {
     sum = ((sum << 5) - sum + data[i]) & 0xffffffff;
   }
   return sum.toString(16);
+}
+
+function deduplicatePeople(people: any[]): any[] {
+  const seen = new Map<string, boolean>();
+  const result: any[] = [];
+  
+  for (const p of people) {
+    // Criar chave única baseada em apollo_person_id, linkedin_profile_id ou email_hash
+    const key = p.apollo_person_id || p.linkedin_profile_id || p.email_hash || null;
+    if (!key) continue; // Pular pessoas sem nenhuma chave única
+    
+    if (!seen.has(key)) {
+      seen.set(key, true);
+      result.push(p);
+    }
+  }
+  
+  return result;
 }
 
 async function apolloSearchOrganizations(name: string, domain: string, apiKey: string): Promise<any> {
