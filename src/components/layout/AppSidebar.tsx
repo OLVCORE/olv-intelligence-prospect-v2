@@ -94,7 +94,7 @@ type MenuGroup = {
 
 const menuGroups: MenuGroup[] = [
   {
-    label: "Central de Comando",
+    label: "Comando",
     icon: LayoutDashboard,
     items: [
       {
@@ -112,7 +112,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Prospecção & Qualificação",
+    label: "Prospecção",
     icon: Crosshair,
     items: [
       {
@@ -140,7 +140,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Central ICP",
+    label: "ICP",
     icon: Target,
     items: [
       {
@@ -189,7 +189,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Planejamento Estratégico",
+    label: "Estratégia",
     icon: Target,
     items: [
       {
@@ -229,7 +229,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Execução & Prospecção Ativa",
+    label: "Execução",
     icon: Rocket,
     items: [
       {
@@ -250,7 +250,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Métricas & Performance",
+    label: "Métricas",
     icon: BarChart3,
     items: [
       {
@@ -274,7 +274,7 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: "Governança & Administração",
+    label: "Governança",
     icon: Settings,
     items: [
       {
@@ -351,13 +351,13 @@ export function AppSidebar() {
                     <TooltipContent side="right" className="max-w-[300px] z-[100]">
                       <p className="font-semibold text-sm mb-1">{group.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {group.label === "Central de Comando" && "Visão executiva e busca global de inteligência comercial"}
-                        {group.label === "Prospecção & Qualificação" && "Gestão de base de empresas e análise 360° com IA"}
-                        {group.label === "Análise Competitiva" && "Battle cards, win/loss e monitoramento em tempo real"}
-                        {group.label === "Planejamento Estratégico" && "ROI, CPQ, cenários, propostas e canvas colaborativo"}
-                        {group.label === "Execução & Prospecção Ativa" && "Suite completa de automação de vendas e outbound"}
-                        {group.label === "Métricas & Performance" && "Dashboards, metas e analytics de conversão"}
-                        {group.label === "Governança & Administração" && "Transformação digital, migração de dados e consultoria"}
+                        {group.label === "Comando" && "Visão executiva e busca global de inteligência comercial"}
+                        {group.label === "Prospecção" && "Gestão de base de empresas e análise 360° com IA"}
+                        {group.label === "ICP" && "Qualificação de leads, análise individual, em massa e inteligência competitiva"}
+                        {group.label === "Estratégia" && "ROI, CPQ, cenários, propostas e canvas colaborativo"}
+                        {group.label === "Execução" && "Suite completa de automação de vendas e outbound"}
+                        {group.label === "Métricas" && "Dashboards, metas e analytics de conversão"}
+                        {group.label === "Governança" && "Transformação digital, migração de dados e consultoria"}
                       </p>
                     </TooltipContent>
                   </Tooltip>
