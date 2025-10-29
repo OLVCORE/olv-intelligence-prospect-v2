@@ -217,13 +217,20 @@ export default function MonitoringConfigPage() {
                 <DropdownMenuSeparator />
                 
                 <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
-                <DropdownMenuItem 
-                  onClick={() => navigate('/companies')}
-                  className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Empresa Individual
-                </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/companies')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Empresas Monitoradas
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate('/companies')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Empresa Individual
+              </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate('/sales-intelligence/config')}
                   className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"

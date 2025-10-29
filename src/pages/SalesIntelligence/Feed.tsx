@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +27,15 @@ import {
   Plus,
   Building2,
   MapPin,
-  Crosshair
+  Crosshair,
+  Search,
+  Users
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
 import { useDisplacementOpportunities } from '@/hooks/useDisplacementOpportunities';
 import { MonitoringStatusIndicator } from '@/components/MonitoringStatusIndicator';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -56,18 +62,55 @@ const priorityColors: Record<SignalPriority, 'default' | 'destructive' | 'outlin
 
 export default function SalesIntelligenceFeed() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPriority, setSelectedPriority] = useState<SignalPriority | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const companyIdFromUrl = searchParams.get('company');
   
-  const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(undefined, {
+  const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(companyIdFromUrl || undefined, {
     status: 'new',
     priority: selectedPriority,
     limit: 50,
   });
 
-  const { data: opportunities = [], isLoading: oppsLoading } = useDisplacementOpportunities(undefined, {
+  const { data: opportunities = [], isLoading: oppsLoading } = useDisplacementOpportunities(companyIdFromUrl || undefined, {
     status: 'open',
     minScore: 0.7,
   });
+
+  // Buscar dados das empresas para enriquecer sinais
+  const companyIds = useMemo(() => {
+    return Array.from(new Set(signals.map(s => s.company_id)));
+  }, [signals]);
+
+  const { data: companiesMap = {} } = useQuery({
+    queryKey: ['companies-for-signals', companyIds],
+    queryFn: async () => {
+      if (companyIds.length === 0) return {};
+      
+      const { data } = await supabase
+        .from('companies')
+        .select('id, name, domain, headquarters_state, employees')
+        .in('id', companyIds);
+      
+      return (data || []).reduce((acc, company) => {
+        acc[company.id] = company;
+        return acc;
+      }, {} as Record<string, any>);
+    },
+    enabled: companyIds.length > 0,
+  });
+
+  // Filtrar sinais por busca de empresa
+  const filteredSignals = useMemo(() => {
+    if (!searchTerm) return signals;
+    return signals.filter(signal => {
+      const company = companiesMap[signal.company_id];
+      if (!company) return false;
+      return company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             company.domain?.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }, [signals, searchTerm, companiesMap]);
 
   const updateStatus = useUpdateSignalStatus();
 
@@ -131,6 +174,13 @@ export default function SalesIntelligenceFeed() {
               <DropdownMenuSeparator />
               
               <DropdownMenuLabel>Ações Rápidas</DropdownMenuLabel>
+              <DropdownMenuItem 
+                onClick={() => navigate('/sales-intelligence/companies')}
+                className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Empresas Monitoradas
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => navigate('/companies')}
                 className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
@@ -222,7 +272,7 @@ export default function SalesIntelligenceFeed() {
         <TabsList>
           <TabsTrigger value="signals">
             <Zap className="h-4 w-4 mr-2" />
-            Sinais de Compra ({signals.length})
+            Sinais de Compra ({filteredSignals.length})
           </TabsTrigger>
           <TabsTrigger value="displacement">
             <Target className="h-4 w-4 mr-2" />
@@ -232,16 +282,46 @@ export default function SalesIntelligenceFeed() {
 
         {/* Buying Signals Tab */}
         <TabsContent value="signals" className="space-y-4">
+          {/* Filtros de busca */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por empresa..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {companyIdFromUrl && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchParams({});
+                      setSearchTerm('');
+                    }}
+                  >
+                    Limpar Filtro
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {signalsLoading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Carregando sinais...</p>
             </div>
-          ) : signals.length === 0 ? (
+          ) : filteredSignals.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Nenhum sinal novo</p>
-                <p className="text-muted-foreground">Execute a detecção de sinais em empresas para ver resultados aqui</p>
+                <p className="text-lg font-medium">Nenhum sinal encontrado</p>
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'Tente ajustar os filtros de busca' : 'Execute a detecção de sinais em empresas para ver resultados aqui'}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -278,71 +358,111 @@ export default function SalesIntelligenceFeed() {
                 </Button>
               </div>
 
-              {signals.map((signal) => (
-                <Card key={signal.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={priorityColors[signal.priority]}>
-                            {signal.priority.toUpperCase()}
-                          </Badge>
-                          <Badge variant="outline">
-                            {signalTypeLabels[signal.signal_type]}
-                          </Badge>
-                          {signal.confidence_score && (
-                            <Badge variant="secondary">
-                              {Math.round(signal.confidence_score * 100)}% confiança
+              {filteredSignals.map((signal) => {
+                const company = companiesMap[signal.company_id];
+                
+                return (
+                  <Card key={signal.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1">
+                          {/* Empresa */}
+                          {company && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <Button
+                                variant="link"
+                                className="p-0 h-auto font-semibold"
+                                onClick={() => navigate(`/companies/${company.id}`)}
+                              >
+                                {company.name}
+                              </Button>
+                              {company.headquarters_state && (
+                                <Badge variant="outline" className="gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {company.headquarters_state}
+                                </Badge>
+                              )}
+                              {company.employees && (
+                                <Badge variant="outline" className="gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {company.employees}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <Badge variant={priorityColors[signal.priority]}>
+                              {signal.priority.toUpperCase()}
                             </Badge>
+                            <Badge variant="outline">
+                              {signalTypeLabels[signal.signal_type]}
+                            </Badge>
+                            {signal.confidence_score && (
+                              <Badge variant="secondary">
+                                {Math.round(signal.confidence_score * 100)}% confiança
+                              </Badge>
+                            )}
+                          </div>
+                          <CardTitle className="text-lg">{signal.signal_title}</CardTitle>
+                          <CardDescription className="flex items-center gap-2 text-xs">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(signal.detected_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      {signal.signal_description && (
+                        <p className="text-sm text-muted-foreground">{signal.signal_description}</p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="flex gap-2">
+                          {company && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/companies/${company.id}`)}
+                            >
+                              <Building2 className="h-4 w-4 mr-2" />
+                              Ver Empresa
+                            </Button>
+                          )}
+                          {signal.source_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={signal.source_url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Ver Fonte
+                              </a>
+                            </Button>
                           )}
                         </div>
-                        <CardTitle className="text-lg">{signal.signal_title}</CardTitle>
-                        <CardDescription className="flex items-center gap-2 text-xs">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(signal.detected_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
 
-                  <CardContent className="space-y-4">
-                    {signal.signal_description && (
-                      <p className="text-sm text-muted-foreground">{signal.signal_description}</p>
-                    )}
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="flex gap-2">
-                        {signal.source_url && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={signal.source_url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Ver Fonte
-                            </a>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleSignalAction(signal.id, 'contacted')}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Entrar em Contato
                           </Button>
-                        )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSignalAction(signal.id, 'ignored')}
+                          >
+                            Ignorar
+                          </Button>
+                        </div>
                       </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleSignalAction(signal.id, 'contacted')}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Entrar em Contato
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSignalAction(signal.id, 'ignored')}
-                        >
-                          Ignorar
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </>
           )}
         </TabsContent>

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings } from 'lucide-react';
+import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,12 +77,20 @@ export default function CentralICPHome() {
       status: 'Ativo'
     },
     {
+      icon: Building2,
+      title: 'Empresas Monitoradas',
+      description: 'Acompanhe empresas detectadas e seus movimentos',
+      path: '/sales-intelligence/companies',
+      color: 'bg-blue-500',
+      status: 'Novo'
+    },
+    {
       icon: Settings,
       title: 'Configurar Monitoramento Automático',
       description: 'Defina filtros geográficos, setores e frequência 24/7',
       path: '/sales-intelligence/config',
       color: 'bg-yellow-600',
-      status: 'Novo'
+      status: 'Ativo'
     },
     {
       icon: TrendingUp,

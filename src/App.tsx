@@ -42,6 +42,7 @@ const ResultsDashboard = lazy(() => import("./pages/CentralICP/ResultsDashboard"
 const AuditCompliance = lazy(() => import("./pages/CentralICP/AuditCompliance"));
 const SalesIntelligenceFeed = lazy(() => import("./pages/SalesIntelligence/Feed"));
 const MonitoringConfig = lazy(() => import("./pages/SalesIntelligence/MonitoringConfig"));
+const MonitoredCompanies = lazy(() => import("./pages/SalesIntelligence/MonitoredCompanies"));
 const PersonasLibraryPage = lazy(() => import("./pages/PersonasLibraryPage"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigrationPage"));
 const EnhancedBenchmarkPage = lazy(() => import("./pages/EnhancedBenchmarkPage"));
@@ -481,6 +482,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <MonitoringConfig />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales-intelligence/companies"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <MonitoredCompanies />
                   </AppLayout>
                 </ProtectedRoute>
               }
