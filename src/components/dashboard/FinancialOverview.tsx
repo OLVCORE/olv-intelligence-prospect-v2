@@ -24,42 +24,48 @@ export function FinancialOverview() {
 
   const used = config?.used_credits ?? 21;
   const total = config?.total_credits ?? 1000;
+  const available = total - used;
 
   return (
-    <Card className="bg-card/70 backdrop-blur-md border-border/50">
+    <Card className="bg-card/70 backdrop-blur-md border-border/50 elevation-2 border-glow">
       <CardContent className="p-6">
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>APIs Ativas</span>
-              <Activity className="h-4 w-4 text-primary" />
+          <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card/50 to-transparent p-5 hover:shadow-md transition-all hover-scale">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+              <span className="font-medium">APIs Ativas</span>
+              <Activity className="h-5 w-5 text-primary" />
             </div>
-            <p className="mt-2 text-2xl font-bold">13<span className="text-muted-foreground">/20</span></p>
-            <Badge variant="secondary" className="mt-3">Saudável</Badge>
+            <p className="text-3xl font-bold tracking-tight mb-3">
+              13<span className="text-xl text-muted-foreground">/20</span>
+            </p>
+            <Badge variant="secondary" className="bg-green-500/10 text-green-700 border-green-500/20">Saudável</Badge>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Custo Mensal Estimado</span>
-              <DollarSign className="h-4 w-4 text-primary" />
+          <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card/50 to-transparent p-5 hover:shadow-md transition-all hover-scale">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+              <span className="font-medium">Custo Mensal</span>
+              <DollarSign className="h-5 w-5 text-primary" />
             </div>
-            <p className="mt-2 text-2xl font-bold">R$ 1.2K <span className="text-muted-foreground">+ US$ 350</span></p>
-            <Badge variant="outline" className="mt-3">Estimate</Badge>
+            <p className="text-2xl font-bold tracking-tight mb-1">R$ 1.2K</p>
+            <p className="text-sm text-muted-foreground mb-2">+ US$ 350</p>
+            <Badge variant="outline">Estimado</Badge>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Créditos Apollo</span>
-              <CreditCard className="h-4 w-4 text-primary" />
+          <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card/50 to-transparent p-5 hover:shadow-md transition-all hover-scale">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+              <span className="font-medium">Créditos Apollo</span>
+              <CreditCard className="h-5 w-5 text-primary" />
             </div>
-            <p className="mt-2 text-2xl font-bold">{total - used}<span className="text-muted-foreground">/{total}</span></p>
-            <Badge className="mt-3">Trial</Badge>
+            <p className="text-3xl font-bold tracking-tight mb-3">
+              {available}<span className="text-xl text-muted-foreground">/{total}</span>
+            </p>
+            <Badge className="bg-primary/10 text-primary border-primary/20">Trial Ativo</Badge>
           </div>
-          <div className="rounded-xl border border-border/50 bg-card p-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Alertas Críticos</span>
-              <ShieldCheck className="h-4 w-4 text-primary" />
+          <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card/50 to-transparent p-5 hover:shadow-md transition-all hover-scale">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+              <span className="font-medium">Alertas Críticos</span>
+              <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
-            <p className="mt-2 text-2xl font-bold">2</p>
-            <Badge variant="destructive" className="mt-3">Atenção</Badge>
+            <p className="text-3xl font-bold tracking-tight mb-3">2</p>
+            <Badge variant="destructive" className="pulse-glow">Atenção</Badge>
           </div>
         </div>
       </CardContent>

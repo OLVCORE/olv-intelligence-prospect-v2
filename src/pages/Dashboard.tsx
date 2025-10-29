@@ -54,6 +54,8 @@ import FinancialOverview from "@/components/dashboard/FinancialOverview";
 import ApolloCreditPanel from "@/components/dashboard/ApolloCreditPanel";
 import APIManagementGrid from "@/components/dashboard/APIManagementGrid";
 import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
+import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
+import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
 
 
 const CHART_COLORS = {
@@ -152,12 +154,22 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* AI Prediction Banner - NEW */}
+        <AIPredictionBanner />
+
+        {/* Quick Actions - NEW */}
+        <QuickActionsPanel />
+
         {/* Main Content */}
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="glass-card p-1.5 gap-1">
             <TabsTrigger value="overview" className="gap-2 data-[state=active]:glass-card">
               <Layers className="h-4 w-4" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="apis" className="gap-2 data-[state=active]:glass-card">
+              <DollarSign className="h-4 w-4" />
+              APIs & Cost
             </TabsTrigger>
             <TabsTrigger value="mercado" className="gap-2 data-[state=active]:glass-card">
               <Globe className="h-4 w-4" />
@@ -183,18 +195,6 @@ export default function Dashboard() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Financial Overview - New */}
-            <FinancialOverview />
-
-            {/* Apollo Credits + Alerts */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <ApolloCreditPanel />
-              <RealTimeAlerts />
-            </div>
-
-            {/* APIs Grid */}
-            <APIManagementGrid />
-
             {/* Monitoring Row */}
             <div className="grid gap-6 md:grid-cols-2">
               <EnrichmentMonitor />
@@ -401,6 +401,26 @@ export default function Dashboard() {
                   </div>
                 </div>
               </PremiumCard>
+            </div>
+          </TabsContent>
+
+          {/* APIs & Cost Tab - NEW */}
+          <TabsContent value="apis" className="space-y-6">
+            {/* Financial Overview */}
+            <FinancialOverview />
+
+            {/* Apollo Credits + Alerts */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <ApolloCreditPanel />
+              <RealTimeAlerts />
+            </div>
+
+            {/* APIs Grid */}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent-cyan/20 to-primary/20 rounded-3xl blur-xl opacity-30" />
+              <div className="relative">
+                <APIManagementGrid />
+              </div>
             </div>
           </TabsContent>
 

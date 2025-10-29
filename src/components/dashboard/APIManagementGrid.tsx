@@ -48,20 +48,29 @@ export const API_STATUS: {
 export function APIManagementGrid() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold tracking-tight">APIs Críticas</h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-1 w-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
+          <h3 className="text-sm font-semibold tracking-tight">APIs Críticas</h3>
+        </div>
         {API_STATUS.critical.map((api) => (
           <APICard key={api.name} {...api} />
         ))}
       </div>
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold tracking-tight">APIs Alta Prioridade</h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-1 w-12 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500" />
+          <h3 className="text-sm font-semibold tracking-tight">APIs Alta Prioridade</h3>
+        </div>
         {API_STATUS.highPriority.map((api) => (
           <APICard key={api.name} {...api} />
         ))}
       </div>
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold tracking-tight">APIs Complementares</h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-1 w-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+          <h3 className="text-sm font-semibold tracking-tight">APIs Complementares</h3>
+        </div>
         {API_STATUS.complementary.map((api) => (
           <APICard key={api.name} {...api} />
         ))}

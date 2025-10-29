@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Activity } from "lucide-react";
 
 export type AlertItem = {
   type: "critical" | "warning" | "success";
@@ -23,20 +24,36 @@ const badgeByType: Record<AlertItem["type"], string> = {
 
 export function RealTimeAlerts({ items = ALERTS }: { items?: AlertItem[] }) {
   return (
-    <Card className="bg-card/70 backdrop-blur-md border-border/50">
+    <Card className="bg-card/70 backdrop-blur-md border-border/50 elevation-2">
       <CardHeader>
-        <CardTitle>Alertas em Tempo Real</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Activity className="h-4 w-4 text-primary animate-pulse" />
+          </div>
+          Alertas em Tempo Real
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3">
           {items.map((a, i) => (
-            <li key={i} className="flex items-start gap-3 p-3 rounded-xl border bg-card animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
-              <span className={cn("px-2 py-1 rounded-full text-xs mt-0.5", badgeByType[a.type])}>
-                {a.type === 'critical' ? 'Crítico' : a.type === 'warning' ? 'Aviso' : 'OK'}
-              </span>
-              <div className="flex-1">
-                <p className={cn("text-sm", a.type === 'critical' ? 'pulse' : '')}>{a.message}</p>
-                <p className="text-xs text-muted-foreground mt-1">{new Date(a.timestamp).toLocaleString('pt-BR')}</p>
+            <li 
+              key={i} 
+              className="flex items-start gap-3 p-4 rounded-xl border border-border/50 bg-gradient-to-br from-card/50 to-transparent hover:shadow-md transition-all animate-fade-in" 
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <div className="flex-shrink-0 mt-0.5">
+                <span className={cn("px-3 py-1.5 rounded-full text-xs font-medium shadow-sm", badgeByType[a.type])} aria-label={`Tipo: ${a.type}`}>
+                  {a.type === 'critical' ? '🔴 Crítico' : a.type === 'warning' ? '🟡 Aviso' : '🟢 OK'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn("text-sm font-medium mb-1", a.type === 'critical' ? 'text-destructive' : '')}>{a.message}</p>
+                <p className="text-xs text-muted-foreground">{new Date(a.timestamp).toLocaleString('pt-BR', { 
+                  day: '2-digit', 
+                  month: '2-digit', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}</p>
               </div>
             </li>
           ))}
