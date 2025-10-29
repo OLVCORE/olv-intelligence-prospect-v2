@@ -50,6 +50,7 @@ import phantomLogo from "@/assets/logos/phantombuster.png";
 import { CompanyEnrichmentTabs } from '@/components/companies/CompanyEnrichmentTabs';
 import { UpdateNowButton } from '@/components/companies/UpdateNowButton';
 import CompanyGlobalSearch from '@/components/companies/CompanyGlobalSearch';
+import { useRealtimeCompanyChanges } from '@/hooks/useRealtimeCompanyChanges';
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -61,6 +62,9 @@ export default function CompanyDetailPage() {
   const [isEnriching, setIsEnriching] = useState(false);
   const [isTestingApollo, setIsTestingApollo] = useState(false);
   const [isRunningPhantom, setIsRunningPhantom] = useState(false);
+
+  // ✅ MICROCICLO 2: Ativar Realtime para mudanças na empresa
+  useRealtimeCompanyChanges(id);
 
   // Função para parsear colaboradores/decisores do formato da planilha
   const parseCollaborators = (cargosStr?: string, linkedinStr?: string) => {

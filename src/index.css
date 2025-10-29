@@ -396,5 +396,30 @@ All colors MUST be HSL.
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  /* MICROCICLO 3: Badges de fonte (Apollo, LinkedIn, Google) */
+  .badge-apollo {
+    background-color: hsl(217 91% 60% / 0.1);
+    color: hsl(217 91% 50%);
+    border-color: hsl(217 91% 60% / 0.3);
+  }
+
+  .badge-linkedin {
+    background-color: hsl(203 100% 35% / 0.1);
+    color: hsl(203 100% 35%);
+    border-color: hsl(203 100% 35% / 0.3);
+  }
+
+  .badge-google {
+    background-color: hsl(4 90% 58% / 0.1);
+    color: hsl(4 90% 48%);
+    border-color: hsl(4 90% 58% / 0.3);
+  }
+
+  .badge-manual {
+    background-color: hsl(142 71% 45% / 0.1);
+    color: hsl(142 71% 40%);
+    border-color: hsl(142 71% 45% / 0.3);
+  }
 }
 

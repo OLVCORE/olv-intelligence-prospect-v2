@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DecisionMakersList } from "./DecisionMakersList";
-import { SimilarCompaniesList } from "./SimilarCompaniesList";
+import { SimilarCompaniesTab } from "./SimilarCompaniesTab";
 import { TechnologiesFullList } from "./TechnologiesFullList";
 import { CompanyInsightsTab } from "./CompanyInsightsTab";
+import { PeopleTab } from "./PeopleTab";
 import { 
   Users, 
   Building2, 
@@ -119,87 +120,11 @@ export function CompanyEnrichmentTabs({
       </TabsList>
 
       <TabsContent value="people" className="mt-6">
-        {finalPeople.length > 0 ? (
-          <div className="space-y-3">
-            {finalPeople.map((cp: any) => {
-              const person = cp.people || cp;
-              return (
-                <div key={cp.person_id || person.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <h4 className="font-semibold">{person.full_name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {cp.title_at_company || person.job_title}
-                      </p>
-                      {(cp.department || person.department) && (
-                        <p className="text-xs text-muted-foreground">
-                          {cp.department || person.department}
-                        </p>
-                      )}
-                      {(cp.seniority || person.seniority) && (
-                        <Badge variant="outline" className="text-xs mr-2">
-                          {cp.seniority || person.seniority}
-                        </Badge>
-                      )}
-                      {person.email_primary && (
-                        <p className="text-sm text-muted-foreground mt-1">{person.email_primary}</p>
-                      )}
-                      {(cp.location_city || person.city) && (
-                        <p className="text-xs text-muted-foreground">
-                          {[cp.location_city || person.city, cp.location_state || person.state, cp.location_country || person.country]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                      )}
-                    </div>
-                    {person.linkedin_url && (
-                      <a
-                        href={person.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline text-sm flex-shrink-0 ml-4"
-                      >
-                        LinkedIn →
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhuma pessoa encontrada. Clique em "Atualizar agora" para buscar dados do Apollo.
-          </div>
-        )}
+        <PeopleTab companyId={companyId} />
       </TabsContent>
 
       <TabsContent value="similar" className="mt-6">
-        {finalSimilar.length > 0 ? (
-          <div className="space-y-3">
-            {finalSimilar.map((company: any, idx: number) => (
-              <div key={company.similar_company_external_id || idx} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-                <div className="space-y-1">
-                  <h4 className="font-semibold">{company.similar_name || company.name}</h4>
-                  {company.location && (
-                    <p className="text-sm text-muted-foreground">{company.location}</p>
-                  )}
-                  {(company.employees_min || company.employees) && (
-                    <p className="text-sm text-muted-foreground">
-                      {company.employees_min && company.employees_max
-                        ? `${company.employees_min} - ${company.employees_max} funcionários`
-                        : `${company.employees || company.employees_min} funcionários`}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhuma empresa similar encontrada. Clique em "Atualizar agora" para buscar dados.
-          </div>
-        )}
+        <SimilarCompaniesTab companyId={companyId} />
       </TabsContent>
 
       <TabsContent value="technologies" className="mt-6">
