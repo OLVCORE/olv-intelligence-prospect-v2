@@ -19,6 +19,7 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
   const [status, setStatus] = useState<SystemStatus>('offline');
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [nextCheck, setNextCheck] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
 
   // Query para buscar status do monitoramento
   const { data: monitoringStatus, isLoading } = useQuery({
@@ -52,6 +53,12 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
     },
     refetchInterval: 30000,
   });
+
+  // Relógio local para atualizar contadores em tempo real
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Calcular status baseado nos dados
   useEffect(() => {
@@ -94,7 +101,7 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
     else {
       setStatus('offline');
     }
-  }, [monitoringStatus]);
+  }, [monitoringStatus, now]);
 
   // Realtime: Escutar mudanças na config
   useEffect(() => {
@@ -159,7 +166,22 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
           badgeVariant: 'destructive' as const,
         };
     }
+   };
+
+  // Utilitários de tempo para contagem regressiva e relativo
+  const formatDuration = (ms: number) => {
+    const abs = Math.abs(ms);
+    const h = Math.floor(abs / 3600000);
+    const m = Math.floor((abs % 3600000) / 60000);
+    const s = Math.floor((abs % 60000) / 1000);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
   };
+
+  const timeSince = (date: Date) => formatDuration(now.getTime() - date.getTime());
+  const timeUntil = (date: Date) => formatDuration(date.getTime() - now.getTime());
 
   const config = getStatusConfig();
   const StatusIcon = config.icon;
@@ -243,6 +265,7 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
               <div>
                 <p className="text-xs text-muted-foreground">Última verificação</p>
                 <p className="font-medium">{lastCheck.toLocaleTimeString('pt-BR')}</p>
+                <p className="text-[10px] text-muted-foreground">há {timeSince(lastCheck)}</p>
               </div>
             </div>
           )}
@@ -252,6 +275,11 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
               <div>
                 <p className="text-xs text-muted-foreground">Próxima verificação</p>
                 <p className="font-medium">{nextCheck.toLocaleTimeString('pt-BR')}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {nextCheck.getTime() >= now.getTime()
+                    ? `em ${timeUntil(nextCheck)}`
+                    : `atrasada há ${timeSince(nextCheck)}`}
+                </p>
               </div>
             </div>
           )}
