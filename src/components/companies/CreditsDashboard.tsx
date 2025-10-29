@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, TrendingUp, Clock, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, TrendingUp, Clock, Zap, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 
 export function CreditsDashboard() {
   const { data: config, isLoading } = useQuery({
@@ -31,88 +32,173 @@ export function CreditsDashboard() {
   const daysLeft = Math.ceil((new Date(config.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const trialExpired = daysLeft <= 0;
 
-  return (
-    <Card className={isCritical ? 'border-destructive' : isWarning ? 'border-yellow-500' : isTrial ? 'border-primary' : ''}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Créditos Apollo
-          </div>
-          {isTrial && (
-            <div className="flex items-center gap-2 text-sm font-normal">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-primary">Trial</span>
-            </div>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isTrial && !trialExpired && (
-          <div className="flex items-center gap-2 p-3 bg-primary/10 text-primary rounded-md text-sm">
-            <Clock className="h-4 w-4" />
-            <span>
-              <strong>{daysLeft} dia(s)</strong> restantes no trial
-            </span>
-          </div>
-        )}
-        
-        {trialExpired && (
-          <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>
-              <strong>Trial expirado!</strong> Faça upgrade para continuar.
-            </span>
-          </div>
-        )}
+  const dailyAverage = used > 0 && daysLeft > 0 ? Math.round(used / (30 - daysLeft)) : 0;
+  const projectedTotal = dailyAverage > 0 ? Math.min(used + (dailyAverage * daysLeft), total) : used;
 
-        <Progress
-          value={percentage}
-          className={isCritical ? 'bg-destructive/20' : isWarning ? 'bg-yellow-500/20' : ''}
-        />
-        
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-sm text-muted-foreground">Usados</p>
-            <p className="text-2xl font-bold">{used}</p>
+  return (
+    <div className="space-y-6">
+      {/* Header com status */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-3 rounded-xl ${isCritical ? 'bg-destructive/10' : isWarning ? 'bg-yellow-500/10' : 'bg-primary/10'}`}>
+            <Activity className={`h-6 w-6 ${isCritical ? 'text-destructive' : isWarning ? 'text-yellow-600' : 'text-primary'}`} />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Disponíveis</p>
-            <p className={`text-2xl font-bold ${isCritical ? 'text-destructive' : 'text-green-600'}`}>
-              {available}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold">{total}</p>
+            <h3 className="text-lg font-semibold">Status de Créditos</h3>
+            <p className="text-sm text-muted-foreground">Apollo.io API</p>
           </div>
         </div>
-
-        {!isTrial && (
-          <div className="text-sm text-muted-foreground text-center">
-            Renovação: {new Date(config.reset_date).toLocaleDateString('pt-BR')}
-          </div>
+        {isTrial && (
+          <Badge className="bg-primary/10 text-primary border-primary/20 px-3 py-1">
+            <Zap className="h-3.5 w-3.5 mr-1" />
+            Trial Ativo
+          </Badge>
         )}
+      </div>
 
-        {(isCritical || isWarning) && !trialExpired && (
-          <div className={`flex items-start gap-2 p-3 rounded-md ${isCritical ? 'bg-destructive/10 text-destructive' : 'bg-yellow-500/10 text-yellow-700'}`}>
-            <AlertCircle className="h-5 w-5 mt-0.5" />
-            <div className="text-sm">
-              {isCritical ? (
-                <>
-                  <strong>Créditos críticos!</strong> Restam apenas {available} créditos.
-                  {isTrial ? ' Considere fazer upgrade antes do fim do trial.' : ' Faça upgrade urgente.'}
-                </>
-              ) : (
-                <>
-                  <strong>Atenção!</strong> Restam apenas {available} créditos.
-                  Use com moderação para aproveitar o trial.
-                </>
-              )}
+      {/* Alertas críticos */}
+      {trialExpired && (
+        <div className="flex items-start gap-3 p-4 bg-destructive/10 border-2 border-destructive/20 rounded-xl animate-pulse">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">⚠️ Trial Expirado!</p>
+            <p className="text-sm text-destructive/80 mt-1">
+              Faça upgrade do plano para continuar utilizando os recursos de enriquecimento.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isCritical && !trialExpired && (
+        <div className="flex items-start gap-3 p-4 bg-destructive/10 border-2 border-destructive/20 rounded-xl">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0 animate-pulse" />
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">🚨 Créditos Críticos!</p>
+            <p className="text-sm text-destructive/80 mt-1">
+              Restam apenas <strong>{available} créditos</strong> de {total}.
+              {isTrial ? ' Considere fazer upgrade antes do fim do trial.' : ' Faça upgrade urgente para continuar enriquecendo empresas.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isWarning && !isCritical && !trialExpired && (
+        <div className="flex items-start gap-3 p-4 bg-yellow-500/10 border-2 border-yellow-500/20 rounded-xl">
+          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-yellow-700">⚠️ Atenção ao Consumo!</p>
+            <p className="text-sm text-yellow-700/80 mt-1">
+              Restam <strong>{available} créditos</strong>. Use com moderação para aproveitar ao máximo o trial.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!isCritical && !isWarning && !trialExpired && (
+        <div className="flex items-start gap-3 p-4 bg-green-500/10 border-2 border-green-500/20 rounded-xl">
+          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-green-700">✅ Créditos Saudáveis</p>
+            <p className="text-sm text-green-700/80 mt-1">
+              Você tem <strong>{available} créditos disponíveis</strong>. Continue enriquecendo suas empresas!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Trial countdown */}
+      {isTrial && !trialExpired && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <Clock className="h-4 w-4" />
+              <span>Trial Restante</span>
             </div>
+            <p className="text-3xl font-bold text-primary">{Math.max(0, daysLeft)}</p>
+            <p className="text-xs text-muted-foreground mt-1">dias</p>
+          </div>
+          <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <TrendingUp className="h-4 w-4" />
+              <span>Média Diária</span>
+            </div>
+            <p className="text-3xl font-bold">{dailyAverage}</p>
+            <p className="text-xs text-muted-foreground mt-1">créditos/dia</p>
+          </div>
+        </div>
+      )}
+
+      {/* Barra de progresso */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Consumo</span>
+          <span className="font-semibold">
+            {used} / {total} créditos ({percentage.toFixed(1)}%)
+          </span>
+        </div>
+        <Progress
+          value={percentage}
+          className={`h-3 ${isCritical ? '[&>*]:bg-destructive' : isWarning ? '[&>*]:bg-yellow-500' : '[&>*]:bg-primary'}`}
+        />
+      </div>
+
+      {/* Grid de métricas */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
+          <p className="text-xs text-muted-foreground mb-2">Usados</p>
+          <p className="text-2xl font-bold">{used}</p>
+          <p className="text-xs text-muted-foreground mt-1">créditos</p>
+        </div>
+        <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
+          <p className="text-xs text-muted-foreground mb-2">Disponíveis</p>
+          <p className={`text-2xl font-bold ${isCritical ? 'text-destructive' : isWarning ? 'text-yellow-600' : 'text-green-600'}`}>
+            {available}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">créditos</p>
+        </div>
+        <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
+          <p className="text-xs text-muted-foreground mb-2">Total</p>
+          <p className="text-2xl font-bold text-primary">{total}</p>
+          <p className="text-xs text-muted-foreground mt-1">créditos</p>
+        </div>
+      </div>
+
+      {/* Projeção e renovação */}
+      <div className="grid grid-cols-2 gap-4">
+        {dailyAverage > 0 && (
+          <div className="p-4 rounded-xl bg-muted/20 border border-border">
+            <p className="text-xs text-muted-foreground mb-1">Projeção de Uso</p>
+            <p className="text-xl font-bold">{projectedTotal}</p>
+            <p className="text-xs text-muted-foreground mt-1">créditos até o fim do período</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+        <div className="p-4 rounded-xl bg-muted/20 border border-border">
+          <p className="text-xs text-muted-foreground mb-1">
+            {isTrial ? 'Fim do Trial' : 'Renovação'}
+          </p>
+          <p className="text-xl font-bold">
+            {new Date(isTrial ? config.trial_ends_at : config.reset_date).toLocaleDateString('pt-BR')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isTrial ? 'Upgrade necessário após essa data' : 'Créditos resetam automaticamente'}
+          </p>
+        </div>
+      </div>
+
+      {/* Limites configurados */}
+      <div className="p-4 rounded-xl bg-muted/20 border border-border">
+        <p className="text-sm font-semibold mb-3">Limites de Alerta Configurados</p>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">⚠️ Alerta em:</p>
+            <p className="font-semibold text-yellow-600">{config.alert_threshold} créditos</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">🚨 Bloqueio em:</p>
+            <p className="font-semibold text-destructive">{config.block_threshold} créditos</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
