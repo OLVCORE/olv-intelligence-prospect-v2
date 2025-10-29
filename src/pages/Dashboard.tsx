@@ -70,6 +70,8 @@ import ScrollToTop from "@/components/common/ScrollToTop";
 import APICostExecutiveDashboard from "@/components/dashboard/APICostExecutiveDashboard";
 import PlatformCostsCompact from "@/components/dashboard/PlatformCostsCompact";
 import APIManagementCompact from "@/components/dashboard/APIManagementCompact";
+import ApolloCreditPanelCollapsible from "@/components/dashboard/ApolloCreditPanelCollapsible";
+import CostEvolutionChart from "@/components/dashboard/CostEvolutionChart";
 import { DashboardActionsMenu } from "@/components/dashboard/DashboardActionsMenu";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -622,9 +624,12 @@ export default function Dashboard() {
                 {/* Executive KPIs Dashboard */}
                 <APICostExecutiveDashboard />
 
+                {/* Cost Evolution Chart */}
+                <CostEvolutionChart />
+
                 {/* Apollo Credits + Platform Costs */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <ApolloCreditPanel />
+                  <ApolloCreditPanelCollapsible />
                   <PlatformCostsCompact />
                 </div>
 

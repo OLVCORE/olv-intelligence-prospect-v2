@@ -76,14 +76,17 @@ function APIGroupCard({ title, apis, color, defaultOpen = false }: APIGroupCardP
   };
 
   const handleAuthSubmit = () => {
-    // Simples validação - em produção, usar autenticação real
-    if (password === "admin123") {
-      toast.success(`Acesso concedido para configurar ${selectedAPI}`);
+    // Senha: Adapta2025!
+    if (password === "Adapta2025!") {
+      toast.success(`✅ Acesso concedido para configurar ${selectedAPI}`);
       setShowAuthDialog(false);
       setPassword("");
       // Aqui iria abrir o modal de configuração real
+      toast.info(`🔧 Modal de configuração de ${selectedAPI} em desenvolvimento`, {
+        description: "Esta funcionalidade será implementada na próxima fase."
+      });
     } else {
-      toast.error("Senha incorreta. Acesso negado.");
+      toast.error("❌ Senha incorreta. Acesso negado.");
     }
   };
 
@@ -182,8 +185,8 @@ function APIGroupCard({ title, apis, color, defaultOpen = false }: APIGroupCardP
                     if (e.key === 'Enter') handleAuthSubmit();
                   }}
                 />
-                <p className="text-xs text-muted-foreground italic">
-                  💡 Demo: use "admin123" para acessar
+                <p className="text-xs text-primary font-semibold">
+                  🔐 Senha: Adapta2025!
                 </p>
               </div>
             </AlertDialogDescription>
