@@ -174,55 +174,127 @@ serve(async (req: Request) => {
         let linked = 0;
 
         for (const ch of chunks) {
-          // Filtrar pessoas sem apollo_person_id (não podemos fazer upsert sem chave única)
-          const validPeople = ch.filter(p => p.apollo_person_id);
-          if (validPeople.length === 0) {
-            console.log('[enrich-apollo] Nenhuma pessoa com apollo_person_id neste chunk');
-            continue;
-          }
+          // Separar pessoas por chave única para evitar conflitos
+          const byApollo = ch.filter(p => p.apollo_person_id);
+          const byLinkedin = ch.filter(p => !p.apollo_person_id && p.linkedin_profile_id);
+          const byEmail = ch.filter(p => !p.apollo_person_id && !p.linkedin_profile_id && p.email_hash);
 
-          const { data: pdata, error: perr } = await sb
-            .from('people')
-            .upsert(validPeople, { onConflict: 'apollo_person_id', ignoreDuplicates: false })
-            .select('id, apollo_person_id');
+          // Upsert por apollo_person_id
+          if (byApollo.length > 0) {
+            const { data: pdata, error: perr } = await sb
+              .from('people')
+              .upsert(byApollo, { onConflict: 'apollo_person_id', ignoreDuplicates: false })
+              .select('id, apollo_person_id, linkedin_profile_id, email_hash');
 
-          if (perr) {
-            console.error('[enrich-apollo] Erro ao upsert people:', perr);
-            return J({ error: 'db_upsert_people_failed', hint: perr.message, mode: 'people' }, 500, c);
-          }
-          
-          const peopleUpsertedInChunk = pdata?.length || 0;
-          upserted += peopleUpsertedInChunk;
-          console.log(`[enrich-apollo] Upserted ${peopleUpsertedInChunk} people neste chunk`);
+            if (perr) {
+              console.error('[enrich-apollo] Erro ao upsert people (apollo_id):', perr);
+              // Continuar com outros grupos em vez de falhar completamente
+            } else {
+              upserted += pdata?.length || 0;
+              
+              const links = (pdata || []).map(p => {
+                const src = byApollo.find(ci => ci.apollo_person_id === p.apollo_person_id);
+                return {
+                  company_id: input.company_id,
+                  person_id: p.id,
+                  apollo_organization_id: input.organization_id,
+                  department: src?.department || null,
+                  seniority: src?.seniority || null,
+                  location_city: src?.city || null,
+                  location_state: src?.state || null,
+                  location_country: src?.country || null,
+                  title_at_company: src?.job_title || null,
+                  is_current: true,
+                  source: 'apollo'
+                };
+              });
 
-          const links = (pdata || []).map(p => {
-            const src = ch.find(ci => ci.apollo_person_id === p.apollo_person_id);
-            return {
-              company_id: input.company_id,
-              person_id: p.id,
-              apollo_organization_id: input.organization_id,
-              department: src?.department || null,
-              seniority: src?.seniority || null,
-              location_city: src?.city || null,
-              location_state: src?.state || null,
-              location_country: src?.country || null,
-              title_at_company: src?.job_title || null,
-              is_current: true,
-              source: 'apollo'
-            };
-          });
-
-          if (links.length > 0) {
-            const { data: lkd, error: lkerr } = await sb
-              .from('company_people')
-              .upsert(links, { onConflict: 'company_id,person_id' })
-              .select('company_id');
-
-            if (lkerr) {
-              console.error('[enrich-apollo] Erro ao vincular people:', lkerr);
-              return J({ error: 'db_upsert_company_people_failed', hint: lkerr.message, mode: 'people' }, 500, c);
+              if (links.length > 0) {
+                const { data: lkd, error: lkerr } = await sb
+                  .from('company_people')
+                  .upsert(links, { onConflict: 'company_id,person_id' })
+                  .select('company_id');
+                if (!lkerr) linked += lkd?.length || 0;
+              }
             }
-            linked += lkd?.length || 0;
+          }
+
+          // Upsert por linkedin_profile_id
+          if (byLinkedin.length > 0) {
+            const { data: pdata, error: perr } = await sb
+              .from('people')
+              .upsert(byLinkedin, { onConflict: 'linkedin_profile_id', ignoreDuplicates: false })
+              .select('id, apollo_person_id, linkedin_profile_id, email_hash');
+
+            if (perr) {
+              console.error('[enrich-apollo] Erro ao upsert people (linkedin_id):', perr);
+            } else {
+              upserted += pdata?.length || 0;
+              
+              const links = (pdata || []).map(p => {
+                const src = byLinkedin.find(ci => ci.linkedin_profile_id === p.linkedin_profile_id);
+                return {
+                  company_id: input.company_id,
+                  person_id: p.id,
+                  apollo_organization_id: input.organization_id,
+                  department: src?.department || null,
+                  seniority: src?.seniority || null,
+                  location_city: src?.city || null,
+                  location_state: src?.state || null,
+                  location_country: src?.country || null,
+                  title_at_company: src?.job_title || null,
+                  is_current: true,
+                  source: 'apollo'
+                };
+              });
+
+              if (links.length > 0) {
+                const { data: lkd, error: lkerr } = await sb
+                  .from('company_people')
+                  .upsert(links, { onConflict: 'company_id,person_id' })
+                  .select('company_id');
+                if (!lkerr) linked += lkd?.length || 0;
+              }
+            }
+          }
+
+          // Upsert por email_hash
+          if (byEmail.length > 0) {
+            const { data: pdata, error: perr } = await sb
+              .from('people')
+              .upsert(byEmail, { onConflict: 'email_hash', ignoreDuplicates: false })
+              .select('id, apollo_person_id, linkedin_profile_id, email_hash');
+
+            if (perr) {
+              console.error('[enrich-apollo] Erro ao upsert people (email_hash):', perr);
+            } else {
+              upserted += pdata?.length || 0;
+              
+              const links = (pdata || []).map(p => {
+                const src = byEmail.find(ci => ci.email_hash === p.email_hash);
+                return {
+                  company_id: input.company_id,
+                  person_id: p.id,
+                  apollo_organization_id: input.organization_id,
+                  department: src?.department || null,
+                  seniority: src?.seniority || null,
+                  location_city: src?.city || null,
+                  location_state: src?.state || null,
+                  location_country: src?.country || null,
+                  title_at_company: src?.job_title || null,
+                  is_current: true,
+                  source: 'apollo'
+                };
+              });
+
+              if (links.length > 0) {
+                const { data: lkd, error: lkerr } = await sb
+                  .from('company_people')
+                  .upsert(links, { onConflict: 'company_id,person_id' })
+                  .select('company_id');
+                if (!lkerr) linked += lkd?.length || 0;
+              }
+            }
           }
         }
 
