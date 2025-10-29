@@ -78,7 +78,7 @@ export function DashboardActionsMenu({
           size="default"
           disabled={isExporting}
           aria-label="Menu de ações do dashboard"
-          className="gap-2 glass-card hover:shadow-lg transition-all"
+          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg transition-all"
         >
           {isExporting ? (
             <Loader2 className="h-4 w-4 animate-spin" />

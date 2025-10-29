@@ -50,6 +50,12 @@ import {
   Layers,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Tooltip as TooltipUI, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 import { useState } from "react";
 import FinancialOverview from "@/components/dashboard/FinancialOverview";
 import ApolloCreditPanel from "@/components/dashboard/ApolloCreditPanel";
@@ -277,6 +283,7 @@ export default function Dashboard() {
               trend="neutral"
               color="blue"
               onClick={() => navigate('/companies')}
+              tooltip="Total de empresas cadastradas e ativas na plataforma. Clique para ver a lista completa de empresas."
             />
             <HeroMetric
               title="Decisores Mapeados"
@@ -286,6 +293,7 @@ export default function Dashboard() {
               trend="neutral"
               color="green"
               onClick={() => navigate('/companies')}
+              tooltip="Número total de decisores identificados e mapeados nas empresas. Clique para explorar a base de decisores."
             />
             <HeroMetric
               title="Pipeline Revenue"
@@ -296,6 +304,7 @@ export default function Dashboard() {
               color="cyan"
               highlight
               onClick={() => navigate('/sdr/pipeline')}
+              tooltip="Valor total estimado do pipeline de vendas. Representa o potencial de receita de todas as oportunidades em andamento. Clique para ver o pipeline detalhado."
             />
             <HeroMetric
               title="Conversações"
@@ -305,6 +314,7 @@ export default function Dashboard() {
               trend="neutral"
               color="purple"
               onClick={() => navigate('/sdr/inbox')}
+              tooltip="Total de conversações ativas com empresas e decisores. Inclui e-mails, mensagens e interações diversas. Clique para acessar a caixa de entrada."
             />
           </div>
         </div>
@@ -844,6 +854,7 @@ function HeroMetric({
   color,
   highlight = false,
   onClick,
+  tooltip,
 }: {
   title: string;
   value: string;
@@ -853,6 +864,7 @@ function HeroMetric({
   color: 'blue' | 'green' | 'cyan' | 'purple';
   highlight?: boolean;
   onClick?: () => void;
+  tooltip?: string;
 }) {
   const colorClasses = {
     blue: { bg: 'from-blue-500/20 to-blue-500/5', icon: 'text-blue-600', border: 'border-blue-500/20' },
@@ -863,7 +875,7 @@ function HeroMetric({
 
   const colors = colorClasses[color];
 
-  return (
+  const content = (
     <div 
       className={`relative overflow-hidden rounded-2xl glass-card glass-card-hover p-6 transition-all duration-300 ${
         highlight ? 'ring-2 ring-primary' : ''
@@ -904,6 +916,23 @@ function HeroMetric({
       </div>
     </div>
   );
+
+  if (tooltip) {
+    return (
+      <TooltipProvider>
+        <TooltipUI>
+          <TooltipTrigger asChild>
+            {content}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </TooltipUI>
+      </TooltipProvider>
+    );
+  }
+
+  return content;
 }
 
 // Premium Card Component
