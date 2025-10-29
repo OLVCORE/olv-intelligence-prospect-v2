@@ -123,17 +123,20 @@ Gere 3-5 sugestões PRIORITÁRIAS agora.`;
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, errorText);
+      console.error("OpenAI error:", aiResponse.status, errorText);
       
-      // Tratar erros específicos
+      // Tratar erros específicos da OpenAI
+      if (aiResponse.status === 401) {
+        throw new Error("Chave OpenAI inválida. Verifique OPENAI_API_KEY nas configurações");
+      }
       if (aiResponse.status === 402) {
-        throw new Error("Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage");
+        throw new Error("Créditos OpenAI insuficientes. Adicione créditos em platform.openai.com/account/billing");
       }
       if (aiResponse.status === 429) {
-        throw new Error("Limite de requisições excedido. Aguarde alguns instantes");
+        throw new Error("Limite de requisições OpenAI excedido. Aguarde alguns instantes");
       }
       
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      throw new Error(`OpenAI API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
