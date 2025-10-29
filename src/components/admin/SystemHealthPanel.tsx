@@ -246,6 +246,18 @@ export function SystemHealthPanel() {
             <Zap className="h-5 w-5 text-primary" />
             Status das APIs e Integrações
             <Badge variant="outline" className="text-xs">Painel Admin</Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-1 hover:bg-primary/10 rounded transition-colors ml-auto">
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Monitor de saúde e status de todas as APIs e integrações do sistema. Visualize custos estimados, uptime e configure chaves de acesso de forma segura.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -48,6 +48,7 @@ import {
   TrendingDown,
   Activity,
   Layers,
+  Info,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -369,11 +370,12 @@ export default function Dashboard() {
             <div className="grid gap-6 lg:grid-cols-3 items-start">
               {/* Chart grande - 2 colunas */}
               <div className="lg:col-span-2">
-                <PremiumCard
-                  title="Distribuição Geográfica & Maturidade"
-                  description="Performance por região com análise de maturidade digital"
-                  icon={Globe}
-                >
+              <PremiumCard
+                title="Distribuição Geográfica & Maturidade"
+                description="Performance por região com análise de maturidade digital"
+                icon={Globe}
+                tooltip="Visualização combinada mostrando a distribuição de empresas por região e sua maturidade digital média. Regiões com maior maturidade apresentam melhor preparo para adoção de soluções tecnológicas."
+              >
                   <ResponsiveContainer width="100%" height={350}>
                     <ComposedChart data={data.companiesByRegion}>
                       <defs>
@@ -424,7 +426,7 @@ export default function Dashboard() {
 
               {/* Sidebar com métricas */}
               <div className="space-y-6">
-                <PremiumCard title="Performance Overview" icon={Activity} compact>
+                <PremiumCard title="Performance Overview" icon={Activity} compact tooltip="Resumo executivo das principais métricas de performance incluindo valor total do pipeline, tamanho médio de deals e volume de conversações ativas.">
                   <div className="space-y-4">
                     <MetricRow
                       label="Total Pipeline"
@@ -447,7 +449,7 @@ export default function Dashboard() {
                   </div>
                 </PremiumCard>
 
-                <PremiumCard title="Health Status" icon={Shield} compact>
+                <PremiumCard title="Health Status" icon={Shield} compact tooltip="Indicadores de saúde das empresas no pipeline baseados em análise financeira, operacional e comportamental. Scores mais altos indicam maior estabilidade e potencial de conversão.">
                   <div className="space-y-3">
                     {data.healthDistribution.slice(0, 3).map((health, i) => (
                       <div key={i} className="space-y-2">
@@ -469,6 +471,7 @@ export default function Dashboard() {
                 title="Top Segmentos"
                 description="Principais indústrias"
                 icon={BarChart3}
+                tooltip="Ranking dos segmentos de mercado com maior presença no pipeline. Mostra número de empresas por indústria e média de funcionários, permitindo identificar verticais estratégicos."
               >
                 <div className="space-y-3 mt-4">
                   {data.companiesByIndustry.slice(0, 5).map((industry, i) => (
@@ -501,6 +504,7 @@ export default function Dashboard() {
                 title="Maturidade Digital"
                 description="Distribuição"
                 icon={Zap}
+                tooltip="Distribuição das empresas por níveis de maturidade digital: Emergente, Intermediário, Avançado e Líder. Empresas com maior maturidade têm processos mais digitalizados e maior propensão à inovação."
               >
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
@@ -540,6 +544,7 @@ export default function Dashboard() {
                 title="Alertas Críticos"
                 description="Empresas em risco"
                 icon={AlertTriangle}
+                tooltip="Monitor de empresas que requerem atenção imediata. Alto Risco: empresas com indicadores críticos que necessitam intervenção urgente. Monitoramento: empresas com sinais de atenção para acompanhamento."
               >
                 <div className="space-y-4 mt-4">
                   <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
@@ -596,6 +601,7 @@ export default function Dashboard() {
                 title="Distribuição Geográfica"
                 description="Empresas por região"
                 icon={Globe}
+                tooltip="Mapa de calor mostrando concentração de empresas por região geográfica com análise de maturidade digital média. Identifique territórios estratégicos para expansão."
               >
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={data.companiesByRegion}>
@@ -614,6 +620,7 @@ export default function Dashboard() {
                 title="Top Segmentos"
                 description="Principais indústrias"
                 icon={BarChart3}
+                tooltip="Ranking horizontal dos principais segmentos de mercado por volume de empresas. Use para priorizar verticais de maior penetração."
               >
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={data.companiesByIndustry.slice(0, 8)} layout="vertical">
@@ -635,6 +642,7 @@ export default function Dashboard() {
                 title="Fit por Produto TOTVS"
                 description="Compatibilidade"
                 icon={Award}
+                tooltip="Análise de fit score por linha de produto TOTVS. Mostra número de empresas compatíveis com cada produto baseado em perfil, segmento e necessidades detectadas."
               >
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={data.fitByProduct}>
@@ -651,6 +659,7 @@ export default function Dashboard() {
                 title="Top Empresas - Fit Score"
                 description="Maiores oportunidades"
                 icon={Target}
+                tooltip="Ranking das empresas com maior fit score. Scores acima de 80% indicam alta compatibilidade e probabilidade de conversão. Clique para ver detalhes da empresa."
               >
                 <div className="space-y-3 mt-4">
                   {data.topFitCompanies.slice(0, 6).map((company, i) => (
@@ -688,6 +697,7 @@ export default function Dashboard() {
                 title="Stack Tecnológico"
                 description="Top 10 tecnologias"
                 icon={Zap}
+                tooltip="As 10 tecnologias mais utilizadas pelas empresas no pipeline. Identifique padrões de tech stack para personalizar abordagens de venda e integrações."
               >
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={data.topTechnologies.slice(0, 10)}>
@@ -704,6 +714,7 @@ export default function Dashboard() {
                 title="Maturidade Digital"
                 description="Distribuição"
                 icon={Activity}
+                tooltip="Gráfico de pizza mostrando distribuição percentual de empresas por nível de maturidade digital. Quanto maior a maturidade, maior a receptividade para soluções avançadas."
               >
                 <ResponsiveContainer width="100%" height={320}>
                   <PieChart>
@@ -731,7 +742,18 @@ export default function Dashboard() {
           <TabsContent value="saude" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-4">
               {data.healthDistribution.map((health, i) => (
-                <PremiumCard key={i} title={health.category} icon={Shield} compact>
+                <PremiumCard 
+                  key={i} 
+                  title={health.category} 
+                  icon={Shield} 
+                  compact
+                  tooltip={`Score de saúde ${health.category.toLowerCase()}: avalia ${
+                    health.category.toLowerCase().includes('financeira') ? 'estabilidade financeira, faturamento e solidez econômica' :
+                    health.category.toLowerCase().includes('operacional') ? 'eficiência operacional, processos e performance' :
+                    health.category.toLowerCase().includes('digital') ? 'maturidade digital, presença online e adoção tecnológica' :
+                    'indicadores gerais de performance e qualidade da empresa'
+                  }. Scores acima de 70 indicam saúde boa.`}
+                >
                   <div className="space-y-3 mt-2">
                     <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent-cyan bg-clip-text text-transparent">
                       {health.score.toFixed(1)}
@@ -746,6 +768,7 @@ export default function Dashboard() {
               title="Status Crítico"
               description="Empresas que requerem atenção"
               icon={AlertTriangle}
+              tooltip="Dashboard de alertas críticos. Alto Risco: empresas com scores críticos necessitando intervenção imediata. Monitoramento: empresas com indicadores de atenção."
             >
               <div className="grid gap-4 md:grid-cols-2 mt-4">
                 <div className="p-6 rounded-2xl bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border border-red-500/20">
@@ -787,6 +810,7 @@ export default function Dashboard() {
               title="Oportunidades Emergentes"
               description="Identificadas por Inteligência Artificial"
               icon={Sparkles}
+              tooltip="IA identifica oportunidades emergentes baseadas em padrões de comportamento, tendências de mercado e sinais digitais. Cada oportunidade inclui potencial de receita e empresas alvo."
             >
               <div className="grid gap-4 md:grid-cols-2 mt-4">
                 {data.emergingOpportunities.slice(0, 6).map((opp, i) => (
@@ -815,6 +839,7 @@ export default function Dashboard() {
               title="Tendências de Mercado"
               description="Análise preditiva baseada em IA"
               icon={TrendingUp}
+              tooltip="Tendências de mercado detectadas por IA através de análise de dados públicos, notícias, tech stack e comportamento digital das empresas. Antecipe movimentos do mercado."
             >
               <div className="grid gap-4 md:grid-cols-3 mt-4">
                 {data.marketTrends.map((trend, i) => (
@@ -942,12 +967,14 @@ function PremiumCard({
   icon: Icon,
   children,
   compact = false,
+  tooltip,
 }: {
   title: string;
   description?: string;
   icon: any;
   children: React.ReactNode;
   compact?: boolean;
+  tooltip?: string;
 }) {
   return (
     <div className="rounded-2xl glass-card glass-card-hover p-6">
@@ -956,7 +983,23 @@ function PremiumCard({
           <Icon className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg">{title}</h3>
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            {title}
+            {tooltip && (
+              <TooltipProvider>
+                <TooltipUI>
+                  <TooltipTrigger asChild>
+                    <button className="p-0.5 hover:bg-primary/10 rounded transition-colors">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>{tooltip}</p>
+                  </TooltipContent>
+                </TooltipUI>
+              </TooltipProvider>
+            )}
+          </h3>
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}

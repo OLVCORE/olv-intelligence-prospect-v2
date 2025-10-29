@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAllEnrichmentStatus } from "@/hooks/useEnrichmentStatus";
-import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Activity, CheckCircle2, AlertCircle, Loader2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function EnrichmentMonitor() {
@@ -37,6 +38,18 @@ export function EnrichmentMonitor() {
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
           Status de Enriquecimento
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="p-1 hover:bg-primary/10 rounded transition-colors">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Monitor em tempo real do processo de enriquecimento automático de dados das empresas. Inclui informações de Apollo.io, ReceitaWS, tecnologias detectadas e análise de maturidade digital.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
         <CardDescription>
           Progresso da análise automática de empresas
@@ -53,25 +66,48 @@ export function EnrichmentMonitor() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-            <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{fullyEnriched}</p>
-            <p className="text-xs text-muted-foreground">Completas</p>
-          </div>
+        <TooltipProvider>
+          <div className="grid grid-cols-3 gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20 cursor-help">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{fullyEnriched}</p>
+                  <p className="text-xs text-muted-foreground">Completas</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Empresas com 100% dos dados enriquecidos incluindo informações financeiras, decisores, tecnologias e análise completa.</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Loader2 className="h-6 w-6 text-blue-600 mx-auto mb-2 animate-spin" />
-            <p className="text-2xl font-bold">{inProgress}</p>
-            <p className="text-xs text-muted-foreground">Em Progresso</p>
-          </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 cursor-help">
+                  <Loader2 className="h-6 w-6 text-blue-600 mx-auto mb-2 animate-spin" />
+                  <p className="text-2xl font-bold">{inProgress}</p>
+                  <p className="text-xs text-muted-foreground">Em Progresso</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Empresas em processo de enriquecimento. Dados sendo coletados de múltiplas fontes e APIs em paralelo.</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <div className="text-center p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
-            <AlertCircle className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{notStarted}</p>
-            <p className="text-xs text-muted-foreground">Pendentes</p>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-center p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 cursor-help">
+                  <AlertCircle className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{notStarted}</p>
+                  <p className="text-xs text-muted-foreground">Pendentes</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Empresas aguardando início do processo de enriquecimento. Serão processadas automaticamente na fila.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-        </div>
+        </TooltipProvider>
 
         {/* Recent Activity */}
         <div className="space-y-2">

@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Activity } from "lucide-react";
+import { Activity, Info } from "lucide-react";
 
 export type AlertItem = {
   type: "critical" | "warning" | "success";
@@ -31,6 +32,18 @@ export function RealTimeAlerts({ items = ALERTS }: { items?: AlertItem[] }) {
             <Activity className="h-4 w-4 text-primary animate-pulse" />
           </div>
           Alertas em Tempo Real
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="p-1 hover:bg-primary/10 rounded transition-colors ml-auto">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Monitor em tempo real de alertas críticos, avisos e status de APIs. Mantenha-se informado sobre eventos importantes que requerem atenção imediata.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
       </CardHeader>
       <CardContent>
