@@ -19,6 +19,14 @@ const breadcrumbNameMap: Record<string, string> = {
   'intelligence-360': 'Intelligence 360°',
   'account-strategy': 'Account Strategy',
   'settings': 'Configurações',
+  'sales-intelligence': 'Sales Intelligence',
+  'feed': 'Feed',
+  'config': 'Configuração',
+};
+
+// Rotas que devem ser redirecionadas (não existem diretamente)
+const routeRedirects: Record<string, string> = {
+  '/sales-intelligence': '/sales-intelligence/feed',
 };
 
 export function Breadcrumb() {
@@ -43,6 +51,8 @@ export function Breadcrumb() {
         const to = `/${pathnames.slice(0, index + 1).join('/')}`;
         const isLast = index === pathnames.length - 1;
         const label = breadcrumbNameMap[value] || value;
+        // Aplicar redirecionamento se necessário
+        const finalTo = routeRedirects[to] || to;
 
         return (
           <React.Fragment key={to}>
@@ -56,7 +66,7 @@ export function Breadcrumb() {
               </span>
             ) : (
               <Link 
-                to={to} 
+                to={finalTo} 
                 className="hover:text-foreground transition-colors truncate max-w-[150px] sm:max-w-none"
               >
                 {label}
