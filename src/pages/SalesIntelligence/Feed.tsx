@@ -35,7 +35,7 @@ import {
   Users,
   History
 } from 'lucide-react';
-import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
+import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority, SignalStatus } from '@/hooks/useBuyingSignals';
 import { useDisplacementOpportunities } from '@/hooks/useDisplacementOpportunities';
 import { MonitoringStatusIndicator } from '@/components/MonitoringStatusIndicator';
 import { useQuery } from '@tanstack/react-query';
@@ -72,7 +72,25 @@ export default function SalesIntelligenceFeed() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewMonitoring, setShowNewMonitoring] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'new' | 'in_progress' | 'contacted' | 'ignored' | 'closed'>('new');
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('');
   const companyIdFromUrl = searchParams.get('company');
+
+  const { data: regionsData } = useBrazilRegions();
+  const { data: brazilStates = [] } = useBrazilStates();
+
+  const regions = regionsData || [];
+
+  // Mapa de regiões para estados
+  const regionStateMap: Record<string, string[]> = {
+    "Norte": ["AC", "AP", "AM", "PA", "RO", "RR", "TO"],
+    "Nordeste": ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
+    "Centro-Oeste": ["DF", "GO", "MT", "MS"],
+    "Sudeste": ["ES", "MG", "RJ", "SP"],
+    "Sul": ["PR", "RS", "SC"]
+  };
   
   const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(companyIdFromUrl || undefined, {
     status: selectedStatus === 'all' ? undefined : (selectedStatus as SignalStatus),
