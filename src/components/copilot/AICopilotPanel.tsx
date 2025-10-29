@@ -36,7 +36,7 @@ export function AICopilotPanel() {
 
   if (isMinimized) {
     return (
-      <Card className="fixed bottom-6 right-6 w-16 h-16 cursor-pointer hover:shadow-lg transition-shadow z-50">
+      <Card className="fixed bottom-24 right-6 w-16 h-16 cursor-pointer hover:shadow-lg transition-shadow z-40">
         <CardContent 
           className="p-0 h-full flex items-center justify-center"
           onClick={() => setIsMinimized(false)}

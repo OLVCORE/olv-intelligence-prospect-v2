@@ -79,7 +79,7 @@ export function CompanyIntelligenceChat({ company }: CompanyIntelligenceChatProp
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80 z-40"
         size="icon"
       >
         <Brain className="h-6 w-6" />
