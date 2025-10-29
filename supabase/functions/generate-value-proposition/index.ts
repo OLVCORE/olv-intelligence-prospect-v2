@@ -73,7 +73,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
     
     const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -125,14 +125,14 @@ Gere uma proposta de valor personalizada em Markdown com:
 
 Tom profissional mas acessível, máximo 500 palavras.`
 
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
+            'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o-mini',
             messages: [{
               role: 'user',
               content: prompt
@@ -165,14 +165,14 @@ SCRIPT DEVE TER:
 
 Formato conversacional, máximo 200 palavras.`
 
-        const scriptResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const scriptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
+            'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o-mini',
             messages: [{
               role: 'user',
               content: scriptPrompt
@@ -224,7 +224,7 @@ Que tal agendarmos 30 minutos na próxima semana para eu mostrar casos de sucess
         usedAI = false
       }
     } else {
-      console.log('[VALUE PROP] ⚠️ LOVABLE_API_KEY não configurada, usando fallback')
+      console.log('[VALUE PROP] ⚠️ OPENAI_API_KEY não configurada, usando fallback')
       valueProposition = FALLBACK_TEMPLATE(lead, icpScore, temperature, painPoints, recommendedProducts)
       scriptAbordagem = `**Script de Abordagem:**
 
