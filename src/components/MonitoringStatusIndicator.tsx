@@ -242,18 +242,16 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
             </div>
             <p className="text-sm text-muted-foreground">{config.description}</p>
             
-            {/* Botão de ação quando offline */}
-            {status === 'offline' && (
-              <Button
-                variant="default"
-                size="sm"
-                className="mt-3"
-                onClick={() => navigate('/sales-intelligence/config')}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Configurar Monitoramento
-              </Button>
-            )}
+            {/* Botão de ação - sempre visível */}
+            <Button
+              variant={status === 'offline' ? 'default' : 'outline'}
+              size="sm"
+              className="mt-3"
+              onClick={() => navigate('/sales-intelligence/config')}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              {status === 'offline' ? 'Ativar Monitoramento' : 'Ajustar Configuração'}
+            </Button>
           </div>
         </div>
 

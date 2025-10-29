@@ -3,6 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   TrendingUp, 
   Zap, 
@@ -11,8 +19,10 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  Filter
+  Filter,
+  Settings
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useBuyingSignals, useUpdateSignalStatus, SignalType, SignalPriority } from '@/hooks/useBuyingSignals';
 import { useDisplacementOpportunities } from '@/hooks/useDisplacementOpportunities';
 import { MonitoringStatusIndicator } from '@/components/MonitoringStatusIndicator';
@@ -41,6 +51,7 @@ const priorityColors: Record<SignalPriority, 'default' | 'destructive' | 'outlin
 };
 
 export default function SalesIntelligenceFeed() {
+  const navigate = useNavigate();
   const [selectedPriority, setSelectedPriority] = useState<SignalPriority | undefined>();
   
   const { data: signals = [], isLoading: signalsLoading } = useBuyingSignals(undefined, {
@@ -75,10 +86,41 @@ export default function SalesIntelligenceFeed() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros & Configuração
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Filtros de Prioridade</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setSelectedPriority(undefined)}>
+                <Target className="h-4 w-4 mr-2" />
+                Todos os Sinais
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedPriority('urgent')}>
+                <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
+                Urgente
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedPriority('high')}>
+                <TrendingUp className="h-4 w-4 mr-2 text-orange-500" />
+                Alta
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedPriority('medium')}>
+                <Clock className="h-4 w-4 mr-2 text-yellow-500" />
+                Média
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuLabel>Monitoramento 24/7</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate('/sales-intelligence/config')}>
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar Monitoramento
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
