@@ -10,7 +10,18 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, FileText, GraduationCap, Lightbulb, Target, Zap, CheckCircle2, AlertCircle } from 'lucide-react';
+import { 
+  BookOpen, FileText, GraduationCap, Target, Zap, CheckCircle2, AlertCircle,
+  Download, Upload, Globe, Link2, CheckCheck, Bot, MessageSquare, BarChart3,
+  Database, Network, Monitor, ArrowDownUp, Filter, Search, Play, Calendar,
+  Building2, MapPin, Users, Briefcase, TrendingUp, DollarSign, Clock,
+  Sparkles, Rocket, Trophy, Shield, Settings, Lock, Mail, Phone, Linkedin,
+  ExternalLink, FileSpreadsheet, Code, Workflow, GitBranch, Activity, Eye,
+  ThumbsUp, ThumbsDown, Ban, RefreshCw, Send, Copy, FileCode, Package,
+  Layers, ServerCog, CloudCog, Cpu, HardDrive, CircleDot, ArrowRight,
+  CircleCheck, AlertTriangle, Info, XCircle, Flame, Snowflake, Thermometer,
+  Lightbulb
+} from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DocumentationPage() {
@@ -69,8 +80,9 @@ export default function DocumentationPage() {
                 {/* TAB 1: VISÃO GERAL DO SISTEMA */}
                 <TabsContent value="visao-geral" className="mt-0 space-y-6">
                   <div className="space-y-4">
-                    <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                      🎯 O QUE É A MÁQUINA DE VENDAS?
+                    <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                      <Target className="h-8 w-8" />
+                      O QUE É A MÁQUINA DE VENDAS?
                     </h2>
                     
                     <p className="text-lg text-foreground/90">
@@ -80,13 +92,18 @@ export default function DocumentationPage() {
                     <Accordion type="multiple" className="w-full">
                       <AccordionItem value="funcionalidades">
                         <AccordionTrigger className="text-lg font-semibold">
-                          ✅ Funcionalidades Principais
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-primary" />
+                            Funcionalidades Principais
+                          </div>
                         </AccordionTrigger>
                         <AccordionContent className="space-y-3">
                           <div className="grid md:grid-cols-2 gap-3">
                             <Card className="p-4 bg-blue-500/10 border-blue-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">📥</span>
+                                <div className="p-2 rounded-lg bg-blue-500/20">
+                                  <Download className="h-6 w-6 text-blue-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-blue-400">Captura Inteligente</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -98,7 +115,9 @@ export default function DocumentationPage() {
                             
                             <Card className="p-4 bg-green-500/10 border-green-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">✓</span>
+                                <div className="p-2 rounded-lg bg-green-500/20">
+                                  <CheckCheck className="h-6 w-6 text-green-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-green-400">Validação Automática</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -110,7 +129,9 @@ export default function DocumentationPage() {
 
                             <Card className="p-4 bg-purple-500/10 border-purple-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">🤖</span>
+                                <div className="p-2 rounded-lg bg-purple-500/20">
+                                  <Bot className="h-6 w-6 text-purple-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-purple-400">Qualificação com IA</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -122,7 +143,9 @@ export default function DocumentationPage() {
 
                             <Card className="p-4 bg-orange-500/10 border-orange-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">💬</span>
+                                <div className="p-2 rounded-lg bg-orange-500/20">
+                                  <MessageSquare className="h-6 w-6 text-orange-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-orange-400">Proposta Personalizada</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -134,7 +157,9 @@ export default function DocumentationPage() {
 
                             <Card className="p-4 bg-pink-500/10 border-pink-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">📊</span>
+                                <div className="p-2 rounded-lg bg-pink-500/20">
+                                  <Workflow className="h-6 w-6 text-pink-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-pink-400">Pipeline Visual</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -146,7 +171,9 @@ export default function DocumentationPage() {
 
                             <Card className="p-4 bg-cyan-500/10 border-cyan-500/20">
                               <div className="flex items-start gap-3">
-                                <span className="text-2xl">📈</span>
+                                <div className="p-2 rounded-lg bg-cyan-500/20">
+                                  <BarChart3 className="h-6 w-6 text-cyan-400" />
+                                </div>
                                 <div>
                                   <h4 className="font-semibold text-cyan-400">Analytics Avançado</h4>
                                   <p className="text-sm text-muted-foreground">
@@ -161,12 +188,18 @@ export default function DocumentationPage() {
 
                       <AccordionItem value="arquitetura">
                         <AccordionTrigger className="text-lg font-semibold">
-                          🏗️ Arquitetura do Sistema
+                          <div className="flex items-center gap-2">
+                            <Layers className="h-5 w-5 text-primary" />
+                            Arquitetura do Sistema
+                          </div>
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="bg-muted/30 p-6 rounded-lg font-mono text-sm space-y-4">
                             <div className="space-y-2">
-                              <h4 className="font-bold text-primary">📊 BANCO DE DADOS</h4>
+                              <h4 className="font-bold text-primary flex items-center gap-2">
+                                <Database className="h-5 w-5" />
+                                BANCO DE DADOS
+                              </h4>
                               <ul className="ml-4 space-y-1 text-muted-foreground">
                                 <li>• <code className="text-foreground">leads_sources</code> - Fontes de captura</li>
                                 <li>• <code className="text-foreground">leads_quarantine</code> - Quarentena inteligente</li>
@@ -176,10 +209,15 @@ export default function DocumentationPage() {
                               </ul>
                             </div>
 
-                            <div className="text-center text-2xl">⇅</div>
+                            <div className="text-center">
+                              <ArrowDownUp className="h-8 w-8 mx-auto text-primary animate-pulse" />
+                            </div>
 
                             <div className="space-y-2">
-                              <h4 className="font-bold text-primary">⚡ EDGE FUNCTIONS</h4>
+                              <h4 className="font-bold text-primary flex items-center gap-2">
+                                <Zap className="h-5 w-5" />
+                                EDGE FUNCTIONS
+                              </h4>
                               <ul className="ml-4 space-y-1 text-muted-foreground">
                                 <li>• <code className="text-foreground">validate-lead-comprehensive</code></li>
                                 <li>• <code className="text-foreground">upload-leads-csv</code></li>
@@ -189,10 +227,15 @@ export default function DocumentationPage() {
                               </ul>
                             </div>
 
-                            <div className="text-center text-2xl">⇅</div>
+                            <div className="text-center">
+                              <ArrowDownUp className="h-8 w-8 mx-auto text-primary animate-pulse" />
+                            </div>
 
                             <div className="space-y-2">
-                              <h4 className="font-bold text-primary">🖥️ INTERFACE (5 PÁGINAS)</h4>
+                              <h4 className="font-bold text-primary flex items-center gap-2">
+                                <Monitor className="h-5 w-5" />
+                                INTERFACE (5 PÁGINAS)
+                              </h4>
                               <ul className="ml-4 space-y-1 text-muted-foreground">
                                 <li>• <code className="text-foreground">/leads/capture</code> - Captura de Leads</li>
                                 <li>• <code className="text-foreground">/leads/quarantine</code> - Quarentena Inteligente</li>
@@ -207,7 +250,10 @@ export default function DocumentationPage() {
 
                       <AccordionItem value="fluxo-dados">
                         <AccordionTrigger className="text-lg font-semibold">
-                          🔄 Fluxo de Dados Completo
+                          <div className="flex items-center gap-2">
+                            <GitBranch className="h-5 w-5 text-primary" />
+                            Fluxo de Dados Completo
+                          </div>
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 p-6 rounded-lg">
@@ -219,7 +265,9 @@ export default function DocumentationPage() {
                                   <p className="text-sm text-muted-foreground">Upload CSV • Web Scraping • API</p>
                                 </div>
                               </div>
-                              <div className="ml-6 text-2xl">↓</div>
+                              <div className="ml-6">
+                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
+                              </div>
                               <div className="flex items-center gap-3">
                                 <Badge className="bg-green-500">2</Badge>
                                 <div className="flex-1">
@@ -227,7 +275,9 @@ export default function DocumentationPage() {
                                   <p className="text-sm text-muted-foreground">ReceitaWS • LinkedIn • Website</p>
                                 </div>
                               </div>
-                              <div className="ml-6 text-2xl">↓</div>
+                              <div className="ml-6">
+                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
+                              </div>
                               <div className="flex items-center gap-3">
                                 <Badge className="bg-yellow-500">3</Badge>
                                 <div className="flex-1">
@@ -235,7 +285,9 @@ export default function DocumentationPage() {
                                   <p className="text-sm text-muted-foreground">Aprovação Manual • Score 0-100</p>
                                 </div>
                               </div>
-                              <div className="ml-6 text-2xl">↓</div>
+                              <div className="ml-6">
+                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
+                              </div>
                               <div className="flex items-center gap-3">
                                 <Badge className="bg-purple-500">4</Badge>
                                 <div className="flex-1">
@@ -243,7 +295,9 @@ export default function DocumentationPage() {
                                   <p className="text-sm text-muted-foreground">Score ICP • Proposta IA • Script</p>
                                 </div>
                               </div>
-                              <div className="ml-6 text-2xl">↓</div>
+                              <div className="ml-6">
+                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
+                              </div>
                               <div className="flex items-center gap-3">
                                 <Badge className="bg-pink-500">5</Badge>
                                 <div className="flex-1">
@@ -251,12 +305,17 @@ export default function DocumentationPage() {
                                   <p className="text-sm text-muted-foreground">Kanban Visual • Gestão de Deals</p>
                                 </div>
                               </div>
-                              <div className="ml-6 text-2xl">↓</div>
+                              <div className="ml-6">
+                                <ArrowRight className="h-6 w-6 text-muted-foreground rotate-90" />
+                              </div>
                               <div className="flex items-center gap-3">
                                 <Badge className="bg-green-600">6</Badge>
                                 <div className="flex-1">
-                                  <h4 className="font-semibold">FECHAMENTO</h4>
-                                  <p className="text-sm text-muted-foreground">Venda Realizada! 🎉</p>
+                                  <h4 className="font-semibold flex items-center gap-2">
+                                    FECHAMENTO
+                                    <Trophy className="h-5 w-5 text-green-400" />
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">Venda Realizada!</p>
                                 </div>
                               </div>
                             </div>
@@ -269,8 +328,9 @@ export default function DocumentationPage() {
 
                 {/* TAB 2: FLUXO COMPLETO */}
                 <TabsContent value="fluxo-completo" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                    📋 Etapas do Processo de Vendas
+                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                    <Activity className="h-8 w-8" />
+                    Etapas do Processo de Vendas
                   </h2>
 
                   <Accordion type="single" collapsible className="w-full">
@@ -299,21 +359,21 @@ export default function DocumentationPage() {
                             <h4 className="font-semibold mb-2">3 Fontes Disponíveis:</h4>
                             <ul className="space-y-2 ml-4">
                               <li className="flex items-start gap-2">
-                                <span className="text-xl">📤</span>
+                                <Upload className="h-5 w-5 text-blue-400 mt-0.5" />
                                 <div>
                                   <strong>Upload Manual (CSV/Excel)</strong>
                                   <p className="text-sm text-muted-foreground">Faça upload de arquivos com dados de empresas</p>
                                 </div>
                               </li>
                               <li className="flex items-start gap-2">
-                                <span className="text-xl">🌐</span>
+                                <Globe className="h-5 w-5 text-green-400 mt-0.5" />
                                 <div>
                                   <strong>Empresas Aqui (Web Scraping)</strong>
                                   <p className="text-sm text-muted-foreground">Busque empresas automaticamente na web</p>
                                 </div>
                               </li>
                               <li className="flex items-start gap-2">
-                                <span className="text-xl">🔗</span>
+                                <Link2 className="h-5 w-5 text-purple-400 mt-0.5" />
                                 <div>
                                   <strong>Formulário Web (API Pública)</strong>
                                   <p className="text-sm text-muted-foreground">Integre formulários do seu site via API</p>
@@ -442,7 +502,11 @@ export default function DocumentationPage() {
                             <span className="font-semibold text-purple-400">Resultado:</span>
                             <div className="ml-2 mt-2 space-y-1">
                               <div>• Score ICP de 0-100 pontos</div>
-                              <div>• Temperatura: 🔥 HOT / 🟡 WARM / 🔵 COLD</div>
+                              <div>• Temperatura: 
+                                <Flame className="h-4 w-4 inline text-orange-500" /> HOT / 
+                                <Thermometer className="h-4 w-4 inline text-yellow-500" /> WARM / 
+                                <Snowflake className="h-4 w-4 inline text-blue-500" /> COLD
+                              </div>
                               <div>• Proposta de valor gerada por IA</div>
                               <div>• Script de abordagem personalizado</div>
                               <div>• ROI estimado (12-24 meses)</div>
@@ -488,12 +552,30 @@ export default function DocumentationPage() {
                           <div className="mt-4">
                             <h4 className="font-semibold mb-2">Estágios do Pipeline:</h4>
                             <div className="flex flex-col gap-2">
-                              <Badge variant="outline" className="justify-start">🔍 Discovery → Prospecção inicial</Badge>
-                              <Badge variant="outline" className="justify-start">📞 Contact Made → Primeiro contato</Badge>
-                              <Badge variant="outline" className="justify-start">💬 Meeting → Reunião agendada</Badge>
-                              <Badge variant="outline" className="justify-start">📋 Proposal → Proposta apresentada</Badge>
-                              <Badge variant="outline" className="justify-start">🤝 Negotiation → Negociação</Badge>
-                              <Badge variant="outline" className="justify-start bg-green-500/20">✅ Closed Won → VENDA!</Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <Search className="h-4 w-4 mr-2" />
+                                Discovery → Prospecção inicial
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <Phone className="h-4 w-4 mr-2" />
+                                Contact Made → Primeiro contato
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Meeting → Reunião agendada
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <FileText className="h-4 w-4 mr-2" />
+                                Proposal → Proposta apresentada
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <DollarSign className="h-4 w-4 mr-2" />
+                                Negotiation → Negociação
+                              </Badge>
+                              <Badge variant="outline" className="justify-start bg-green-500/20">
+                                <Trophy className="h-4 w-4 mr-2" />
+                                Closed Won → VENDA!
+                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -524,12 +606,30 @@ export default function DocumentationPage() {
                           <div className="mt-4">
                             <h4 className="font-semibold mb-2">Métricas Disponíveis:</h4>
                             <div className="grid md:grid-cols-2 gap-2 text-sm">
-                              <div className="bg-muted/30 p-2 rounded">📊 Taxa de conversão por estágio</div>
-                              <div className="bg-muted/30 p-2 rounded">⏱️ Tempo médio no funil</div>
-                              <div className="bg-muted/30 p-2 rounded">💰 Valor médio de deal</div>
-                              <div className="bg-muted/30 p-2 rounded">🎯 Win rate por fonte</div>
-                              <div className="bg-muted/30 p-2 rounded">📈 Velocidade de vendas</div>
-                              <div className="bg-muted/30 p-2 rounded">🔥 Performance por SDR</div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-cyan-400" />
+                                Taxa de conversão por estágio
+                              </div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-cyan-400" />
+                                Tempo médio no funil
+                              </div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-cyan-400" />
+                                Valor médio de deal
+                              </div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <Target className="h-4 w-4 text-cyan-400" />
+                                Win rate por fonte
+                              </div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <Zap className="h-4 w-4 text-cyan-400" />
+                                Velocidade de vendas
+                              </div>
+                              <div className="bg-muted/30 p-2 rounded flex items-center gap-2">
+                                <Flame className="h-4 w-4 text-cyan-400" />
+                                Performance por SDR
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -540,13 +640,14 @@ export default function DocumentationPage() {
 
                 {/* TAB 3: CAPTURA */}
                 <TabsContent value="captura" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                    📥 Módulo 1: Captura de Leads
+                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                    <Download className="h-8 w-8" />
+                    Módulo 1: Captura de Leads
                   </h2>
 
                   <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-lg">
                     <p className="flex items-start gap-2">
-                      <span className="text-xl">💡</span>
+                      <Lightbulb className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
                         <strong>Dica:</strong> A captura de leads é o ponto de entrada do sistema. 
                         Quanto maior a qualidade dos dados capturados, melhor será a qualificação posterior.
@@ -557,7 +658,10 @@ export default function DocumentationPage() {
                   <Accordion type="multiple" defaultValue={['upload']} className="w-full">
                     <AccordionItem value="upload">
                       <AccordionTrigger className="text-lg font-semibold">
-                        📤 OPÇÃO 1: Upload Manual (CSV/Excel)
+                        <div className="flex items-center gap-2">
+                          <Upload className="h-5 w-5 text-primary" />
+                          OPÇÃO 1: Upload Manual (CSV/Excel)
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="space-y-4">
@@ -619,7 +723,10 @@ export default function DocumentationPage() {
                           </div>
 
                           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded">
-                            <h4 className="font-semibold text-red-400 mb-2">❌ Erros Comuns:</h4>
+                            <h4 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+                              <XCircle className="h-5 w-5" />
+                              Erros Comuns
+                            </h4>
                             <ul className="space-y-1 text-sm">
                               <li>• <strong>CSV vazio:</strong> Verifique se há pelo menos 1 linha de dados</li>
                               <li>• <strong>Coluna 'name' ausente:</strong> Adicione coluna name, empresa ou razao_social</li>
@@ -632,7 +739,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="scraping">
                       <AccordionTrigger className="text-lg font-semibold">
-                        🌐 OPÇÃO 2: Empresas Aqui (Web Scraping)
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-5 w-5 text-primary" />
+                          OPÇÃO 2: Empresas Aqui (Web Scraping)
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <p className="text-muted-foreground">
@@ -670,7 +780,10 @@ export default function DocumentationPage() {
                           </div>
 
                           <div className="bg-green-500/10 p-4 rounded">
-                            <h4 className="font-semibold text-green-400 mb-2">✅ Vantagens:</h4>
+                            <h4 className="font-semibold text-green-400 mb-2 flex items-center gap-2">
+                              <CheckCircle2 className="h-5 w-5" />
+                              Vantagens
+                            </h4>
                             <ul className="space-y-1 text-sm">
                               <li>• Dados públicos e atualizados</li>
                               <li>• Filtragem precisa por ICP</li>
@@ -684,7 +797,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="api">
                       <AccordionTrigger className="text-lg font-semibold">
-                        🔗 OPÇÃO 3: API Pública (Integração Web)
+                        <div className="flex items-center gap-2">
+                          <Link2 className="h-5 w-5 text-primary" />
+                          OPÇÃO 3: API Pública (Integração Web)
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <p className="text-muted-foreground">
@@ -742,7 +858,10 @@ export default function DocumentationPage() {
                           </div>
 
                           <div className="bg-green-500/10 p-4 rounded">
-                            <h4 className="font-semibold text-green-400 mb-2">✅ Casos de Uso:</h4>
+                            <h4 className="font-semibold text-green-400 mb-2 flex items-center gap-2">
+                              <CheckCircle2 className="h-5 w-5" />
+                              Casos de Uso
+                            </h4>
                             <ul className="space-y-1 text-sm">
                               <li>• Formulários de contato no website</li>
                               <li>• Landing pages de campanhas</li>
@@ -756,7 +875,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="metricas">
                       <AccordionTrigger className="text-lg font-semibold">
-                        📊 Métricas e Performance
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-primary" />
+                          Métricas e Performance
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
@@ -824,7 +946,7 @@ export default function DocumentationPage() {
 
                         <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded">
                           <p className="flex items-start gap-2 text-sm">
-                            <span className="text-xl">💡</span>
+                            <Info className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
                             <span>
                               <strong>Dica:</strong> A página atualiza automaticamente a cada 30 segundos. 
                               As queries usam cache inteligente de 5 minutos para melhor performance.
@@ -838,13 +960,14 @@ export default function DocumentationPage() {
 
                 {/* TAB 4: QUARENTENA */}
                 <TabsContent value="quarentena" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3">
-                    🔍 Módulo 2: Quarentena Inteligente
+                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
+                    <Filter className="h-8 w-8" />
+                    Módulo 2: Quarentena Inteligente
                   </h2>
 
                   <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg">
                     <p className="flex items-start gap-2">
-                      <span className="text-xl">⚠️</span>
+                      <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
                         <strong>Importante:</strong> A quarentena é o filtro de qualidade do sistema. 
                         Apenas leads aprovados seguem para qualificação ICP.
@@ -855,7 +978,10 @@ export default function DocumentationPage() {
                   <Accordion type="multiple" defaultValue={['filtros']} className="w-full">
                     <AccordionItem value="filtros">
                       <AccordionTrigger className="text-lg font-semibold">
-                        🔍 Filtros e Busca
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-5 w-5 text-primary" />
+                          Filtros e Busca
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
@@ -875,10 +1001,22 @@ export default function DocumentationPage() {
                             <h4 className="font-semibold mb-3">Filtro por Fonte</h4>
                             <div className="space-y-2">
                               <Badge variant="outline" className="w-full justify-start">Todas as fontes</Badge>
-                              <Badge variant="outline" className="w-full justify-start">📤 Upload Manual</Badge>
-                              <Badge variant="outline" className="w-full justify-start">🌐 Empresas Aqui</Badge>
-                              <Badge variant="outline" className="w-full justify-start">🔗 API Web</Badge>
-                              <Badge variant="outline" className="w-full justify-start">👥 Indicação</Badge>
+                              <Badge variant="outline" className="w-full justify-start flex items-center gap-2">
+                                <Upload className="h-4 w-4" />
+                                Upload Manual
+                              </Badge>
+                              <Badge variant="outline" className="w-full justify-start flex items-center gap-2">
+                                <Globe className="h-4 w-4" />
+                                Empresas Aqui
+                              </Badge>
+                              <Badge variant="outline" className="w-full justify-start flex items-center gap-2">
+                                <Link2 className="h-4 w-4" />
+                                API Web
+                              </Badge>
+                              <Badge variant="outline" className="w-full justify-start flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Indicação
+                              </Badge>
                             </div>
                           </Card>
                         </div>
@@ -899,7 +1037,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="cards">
                       <AccordionTrigger className="text-lg font-semibold">
-                        📋 Entendendo os Cards de Lead
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-5 w-5 text-primary" />
+                          Entendendo os Cards de Lead
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="space-y-4">
@@ -911,7 +1052,10 @@ export default function DocumentationPage() {
                                 <Badge className="mb-2">SEÇÃO 1: Cabeçalho</Badge>
                                 <div className="bg-background p-3 rounded border">
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold">📌 Cooperativa Agro LTDA</span>
+                                    <span className="font-semibold flex items-center gap-2">
+                                      <Building2 className="h-4 w-4" />
+                                      Cooperativa Agro LTDA
+                                    </span>
                                   </div>
                                   <div className="flex gap-2">
                                     <Badge variant="outline" className="bg-yellow-500/20">Pendente</Badge>
@@ -934,10 +1078,22 @@ export default function DocumentationPage() {
                                 <Badge className="mb-2">SEÇÃO 3: Validações</Badge>
                                 <div className="bg-background p-3 rounded border">
                                   <div className="flex flex-wrap gap-2">
-                                    <Badge className="bg-green-500">✅ CNPJ Válido</Badge>
-                                    <Badge className="bg-green-500">✅ Site Ativo</Badge>
-                                    <Badge className="bg-green-500">✅ LinkedIn</Badge>
-                                    <Badge className="bg-green-500">✅ Email</Badge>
+                                    <Badge className="bg-green-500 flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      CNPJ Válido
+                                    </Badge>
+                                    <Badge className="bg-green-500 flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      Site Ativo
+                                    </Badge>
+                                    <Badge className="bg-green-500 flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      LinkedIn
+                                    </Badge>
+                                    <Badge className="bg-green-500 flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      Email
+                                    </Badge>
                                   </div>
                                 </div>
                               </div>
@@ -973,7 +1129,10 @@ export default function DocumentationPage() {
 
                     <AccordionItem value="acoes">
                       <AccordionTrigger className="text-lg font-semibold">
-                        ⚡ Ações Disponíveis
+                        <div className="flex items-center gap-2">
+                          <Play className="h-5 w-5 text-primary" />
+                          Ações Disponíveis
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <Accordion type="single" collapsible>
