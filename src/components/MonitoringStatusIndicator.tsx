@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Activity, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Activity, AlertCircle, CheckCircle, Clock, Settings } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useNavigate } from 'react-router-dom';
 
 type SystemStatus = 'online' | 'warning' | 'offline';
 
@@ -13,6 +15,7 @@ interface StatusIndicatorProps {
 }
 
 export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorProps) {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<SystemStatus>('offline');
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [nextCheck, setNextCheck] = useState<Date | null>(null);
@@ -208,7 +211,7 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
             <div className={`absolute inset-0 h-12 w-12 rounded-full ${config.color} animate-ping opacity-75`} />
           </div>
 
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-lg">{config.label}</h3>
               <Badge variant={config.badgeVariant}>
@@ -216,6 +219,19 @@ export function MonitoringStatusIndicator({ variant = 'full' }: StatusIndicatorP
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">{config.description}</p>
+            
+            {/* Botão de ação quando offline */}
+            {status === 'offline' && (
+              <Button
+                variant="default"
+                size="sm"
+                className="mt-3"
+                onClick={() => navigate('/sales-intelligence/config')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar Monitoramento
+              </Button>
+            )}
           </div>
         </div>
 
