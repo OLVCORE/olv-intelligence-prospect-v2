@@ -172,6 +172,7 @@ export function UpdateNowButton({
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{selectedOrg ? 'Validar e confirmar' : 'Empresas encontradas no Apollo'}</DialogTitle>
+            <DialogDescription>Selecione a empresa do Apollo para atribuir e enriquecer. Revise os dados antes de confirmar.</DialogDescription>
           </DialogHeader>
 
           {!selectedOrg ? (

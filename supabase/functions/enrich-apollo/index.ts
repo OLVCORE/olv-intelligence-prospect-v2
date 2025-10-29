@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // import * as ciclo3Module from './ciclo3-handlers.ts'; // Temporariamente desabilitado devido a erro de tipos
 
 const corsHeaders = {
