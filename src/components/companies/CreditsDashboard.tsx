@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, TrendingUp, Clock, Zap, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 
 export function CreditsDashboard() {
-  const { data: config, isLoading } = useQuery({
+  const { data: config, isLoading, refetch } = useQuery({
     queryKey: ['apollo-credits'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -16,7 +16,7 @@ export function CreditsDashboard() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000
+    refetchInterval: 5000
   });
 
   if (isLoading || !config) return null;

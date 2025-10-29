@@ -3,15 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { CreditsDashboard } from "@/components/companies/CreditsDashboard";
 import { CreditUsageHistory } from "@/components/companies/CreditUsageHistory";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, History, Info } from "lucide-react";
+import { Clock, History, Info, Settings2 } from "lucide-react";
 
 export function ApolloCreditPanel() {
   const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
 
   const { data: config } = useQuery({
     queryKey: ["apollo-credits-days"],
@@ -20,6 +22,15 @@ export function ApolloCreditPanel() {
       return data as { plan_type: string; trial_ends_at: string } | null;
     },
     staleTime: 60_000,
+  });
+
+  const { data: fullConfig, refetch: refetchConfig } = useQuery({
+    queryKey: ["apollo-credits-config"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("apollo_credit_config").select("id, total_credits, alert_threshold, block_threshold").single();
+      if (error) throw error;
+      return data as { id: string; total_credits: number; alert_threshold: number; block_threshold: number };
+    },
   });
 
   const badge = useMemo(() => {

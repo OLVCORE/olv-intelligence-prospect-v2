@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Settings2, ExternalLink, Eye, Copy, Check, Key, BookOpen, Shield } from "lucide-react";
+import { Settings2, ExternalLink, Eye, Copy, Check, Key, BookOpen, Shield, Info } from "lucide-react";
 import React, { useState } from "react";
 import { 
   AlertDialog, 
@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip as TooltipUI, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -222,7 +223,23 @@ export function APICard({ name, status, cost, uptime, logo, onConfigure, signupU
         <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
           <div className="flex items-center gap-3">
             <div aria-hidden className="text-2xl" title={name}>{logo ?? "🔗"}</div>
-            <CardTitle className="text-base font-semibold">{name}</CardTitle>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              {name}
+              {guide && (
+                <TooltipProvider>
+                  <TooltipUI>
+                    <TooltipTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted/50" aria-label={`Sobre ${name}`}>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">{guide.description}</p>
+                    </TooltipContent>
+                  </TooltipUI>
+                </TooltipProvider>
+              )}
+            </CardTitle>
           </div>
           <div className="flex items-center gap-2">
             <span className={cn("status-dot", {
