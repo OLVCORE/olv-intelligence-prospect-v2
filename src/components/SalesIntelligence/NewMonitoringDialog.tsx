@@ -205,9 +205,12 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="dialog-description">
         <DialogHeader>
           <DialogTitle>Novo Monitoramento Específico</DialogTitle>
+          <p id="dialog-description" className="sr-only">
+            Configure um novo monitoramento específico para prospecção de leads
+          </p>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -310,6 +313,21 @@ export default function NewMonitoringDialog({ open, onOpenChange }: NewMonitorin
                   </div>
                 </PopoverContent>
               </Popover>
+              {formData.regions.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {formData.regions.map(region => (
+                    <Badge
+                      key={region}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => handleToggleRegion(region)}
+                    >
+                      {region}
+                      <X className="w-3 h-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
