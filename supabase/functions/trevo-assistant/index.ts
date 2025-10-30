@@ -428,16 +428,16 @@ Responda sempre em português, seja direto e focado em ações práticas.
       content: knowledgeBase
     };
 
-    const response = await fetch('https://api.lovable.app/v1/chat/completions', {
+    // Usando Lovable AI para geração de respostas
+    const response = await fetch('https://ai-gateway.lovable.app/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [systemMessage, ...messages],
-        temperature: 0.7,
         max_tokens: 2000,
       }),
     });
