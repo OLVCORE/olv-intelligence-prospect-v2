@@ -23,11 +23,14 @@ interface DealFormDialogProps {
 export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'select' | 'manual'>('select');
+  const [mode, setMode] = useState<'select' | 'manual' | 'icp'>('icp');
   const [companies, setCompanies] = useState<any[]>([]);
+  const [leadsQualified, setLeadsQualified] = useState<any[]>([]);
   const [searchingCompanies, setSearchingCompanies] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [selectedLeadICP, setSelectedLeadICP] = useState<any>(null);
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [icpComboboxOpen, setIcpComboboxOpen] = useState(false);
   
   const [enriching, setEnriching] = useState(false);
   const [contacts, setContacts] = useState<Array<{
@@ -54,7 +57,40 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     if (open && mode === 'select') {
       searchCompanies();
     }
+    if (open && mode === 'icp') {
+      searchLeadsQualified();
+    }
   }, [open, mode]);
+
+  const searchLeadsQualified = async (query?: string) => {
+    setSearchingCompanies(true);
+    try {
+      let queryBuilder = supabase
+        .from('leads_qualified')
+        .select('*')
+        .eq('status', 'qualificada')
+        .order('icp_score', { ascending: false });
+
+      if (query) {
+        const cleanQuery = query.replace(/[^\w\s]/g, '');
+        queryBuilder = queryBuilder.or(`razao_social.ilike.%${query}%,cnpj.ilike.%${cleanQuery}%`);
+      }
+
+      const { data, error } = await queryBuilder.limit(50);
+
+      if (error) throw error;
+      setLeadsQualified(data || []);
+    } catch (error: any) {
+      console.error('Error searching qualified leads:', error);
+      toast({
+        title: 'Erro ao buscar leads qualificados',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSearchingCompanies(false);
+    }
+  };
 
   const searchCompanies = async (query?: string) => {
     setSearchingCompanies(true);
@@ -97,6 +133,19 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
       title: `Prospecção - ${company.name}`,
     });
     setComboboxOpen(false);
+  };
+
+  const handleSelectLeadICP = (lead: any) => {
+    setSelectedLeadICP(lead);
+    setFormData({
+      ...formData,
+      company_name: lead.razao_social,
+      cnpj: lead.cnpj || '',
+      employees: lead.employees?.toString() || '',
+      industry: lead.segment || '',
+      title: `Prospecção - ${lead.razao_social}`,
+    });
+    setIcpComboboxOpen(false);
   };
 
   const handleEnrichCompany = async () => {
@@ -277,8 +326,59 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     try {
       let companyId: string | null = null;
 
+      // Modo ICP: usar lead qualificado aprovado
+      if (mode === 'icp') {
+        if (!selectedLeadICP) {
+          toast({
+            title: 'Selecione um lead ICP',
+            description: 'É necessário selecionar um lead aprovado pelo ICP',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Verificar se a company já existe pelo CNPJ ou razão social
+        const { data: existingCompany } = await supabase
+          .from('companies')
+          .select('id')
+          .or(`cnpj.eq.${selectedLeadICP.cnpj},name.eq.${selectedLeadICP.razao_social}`)
+          .maybeSingle();
+
+        if (existingCompany) {
+          companyId = existingCompany.id;
+        } else {
+          // Criar nova company a partir do lead ICP
+          const { data: newCompany, error: companyError } = await supabase
+            .from('companies')
+            .insert({ 
+              name: selectedLeadICP.razao_social,
+              cnpj: selectedLeadICP.cnpj || null,
+              icp_score: selectedLeadICP.icp_score || 0,
+              icp_temperature: selectedLeadICP.temperatura || null,
+              lead_qualified_id: selectedLeadICP.id,
+              approved_at: new Date().toISOString(),
+              pipeline_status: 'ativo',
+              raw_data: { origem: 'leads_qualified_icp' },
+            })
+            .select('id')
+            .single();
+
+          if (companyError) throw companyError;
+          companyId = newCompany.id;
+        }
+
+        // Marcar lead como aprovado/movido para pipeline
+        await supabase
+          .from('leads_qualified')
+          .update({ 
+            status: 'aprovada',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedLeadICP.id);
+      }
       // Modo SELECT: usar empresa selecionada
-      if (mode === 'select') {
+      else if (mode === 'select') {
         if (!selectedCompany) {
           toast({
             title: 'Selecione uma empresa',
@@ -409,11 +509,15 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
       className="max-w-2xl"
     >
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual' | 'icp')} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="icp" className="bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+              <Check className="h-4 w-4 mr-2" />
+              Leads Aprovados ICP
+            </TabsTrigger>
             <TabsTrigger value="select">
               <Building2 className="h-4 w-4 mr-2" />
-              Selecionar Empresa
+              Empresa Existente
             </TabsTrigger>
             <TabsTrigger value="manual">
               <Sparkles className="h-4 w-4 mr-2" />
@@ -687,6 +791,304 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
                     </>
                   ) : (
                     'Criar Deal'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+
+          {/* MODO: Leads Aprovados ICP */}
+          <TabsContent value="icp" className="space-y-4 mt-4">
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Check className="w-6 h-6 text-green-600 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-green-900 dark:text-green-100 mb-1">✅ Leads Pré-Qualificados pelo ICP</h4>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Selecione empresas que já passaram pela análise ICP e foram aprovadas. 
+                    Elas já têm score, temperatura e estão prontas para o pipeline!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* ICP Leads Autocomplete */}
+              <div className="space-y-2">
+                <Label>Buscar Lead Aprovado *</Label>
+                <div className="flex gap-2">
+                  <Popover open={icpComboboxOpen} onOpenChange={setIcpComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={icpComboboxOpen}
+                        className="flex-1 justify-between"
+                      >
+                        {selectedLeadICP ? (
+                          <span className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-green-600" />
+                            {selectedLeadICP.razao_social}
+                            {selectedLeadICP.icp_score > 0 && (
+                              <Badge variant="default" className="ml-auto bg-green-600">
+                                Score: {selectedLeadICP.icp_score}
+                              </Badge>
+                            )}
+                          </span>
+                        ) : (
+                          "Selecione um lead qualificado..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[500px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput 
+                          placeholder="Buscar por razão social ou CNPJ..." 
+                          onValueChange={(value) => searchLeadsQualified(value)}
+                        />
+                        <CommandEmpty>
+                          {searchingCompanies ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Buscando leads qualificados...
+                            </div>
+                          ) : (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              Nenhum lead qualificado encontrado
+                            </div>
+                          )}
+                        </CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            {leadsQualified.map((lead) => (
+                              <CommandItem
+                                key={lead.id}
+                                value={lead.id}
+                                onSelect={() => handleSelectLeadICP(lead)}
+                                className="flex items-start gap-3 py-3"
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4 mt-1",
+                                    selectedLeadICP?.id === lead.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{lead.razao_social}</span>
+                                    {lead.icp_score > 0 && (
+                                      <Badge variant="default" className="text-xs bg-green-600">
+                                        {lead.icp_score}/100
+                                      </Badge>
+                                    )}
+                                    {lead.temperatura === 'hot' && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        🔥 HOT
+                                      </Badge>
+                                    )}
+                                    {lead.temperatura === 'warm' && (
+                                      <Badge className="text-xs bg-orange-500">
+                                        🌡️ WARM
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {lead.cnpj && `📄 ${lead.cnpj}`}
+                                    {lead.uf && ` • 📍 ${lead.uf}`}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              {selectedLeadICP && (
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg space-y-2">
+                  <h4 className="font-medium text-sm text-green-900 dark:text-green-100">✅ Dados do Lead ICP</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedLeadICP.cnpj && (
+                      <div>
+                        <span className="text-muted-foreground">CNPJ:</span> {selectedLeadICP.cnpj}
+                      </div>
+                    )}
+                    {selectedLeadICP.uf && (
+                      <div>
+                        <span className="text-muted-foreground">UF:</span> {selectedLeadICP.uf}
+                      </div>
+                    )}
+                    {selectedLeadICP.icp_score && (
+                      <div>
+                        <span className="text-muted-foreground">Score ICP:</span> 
+                        <Badge variant="default" className="ml-2 bg-green-600">
+                          {selectedLeadICP.icp_score}/100
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedLeadICP.temperatura && (
+                      <div>
+                        <span className="text-muted-foreground">Temperatura:</span> 
+                        <Badge 
+                          variant={selectedLeadICP.temperatura === 'hot' ? 'destructive' : 'default'} 
+                          className="ml-2"
+                        >
+                          {selectedLeadICP.temperatura.toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Resto do formulário ICP (igual ao SELECT) */}
+              <div className="space-y-2">
+                <Label htmlFor="title-icp">Título do Deal *</Label>
+                <Input
+                  id="title-icp"
+                  placeholder="Ex: Prospecção via ICP"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="value-icp">Valor Estimado (R$)</Label>
+                  <Input
+                    id="value-icp"
+                    type="number"
+                    placeholder="50000"
+                    value={formData.value}
+                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stage-icp">Estágio</Label>
+                  <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="discovery">Discovery</SelectItem>
+                      <SelectItem value="qualification">Qualificação</SelectItem>
+                      <SelectItem value="proposal">Proposta</SelectItem>
+                      <SelectItem value="negotiation">Negociação</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Múltiplos Contatos */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Contatos *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addContact}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Adicionar Contato
+                  </Button>
+                </div>
+                
+                {contacts.map((contact, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Contato {index + 1}</span>
+                      {contacts.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeContact(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Nome completo *"
+                          value={contact.name}
+                          onChange={(e) => updateContact(index, 'name', e.target.value)}
+                          required={index === 0}
+                        />
+                      </div>
+                      <Input
+                        type="email"
+                        placeholder="email@empresa.com"
+                        value={contact.email}
+                        onChange={(e) => updateContact(index, 'email', e.target.value)}
+                      />
+                      <Input
+                        type="tel"
+                        placeholder="(11) 98765-4321"
+                        value={contact.phone}
+                        onChange={(e) => updateContact(index, 'phone', e.target.value)}
+                      />
+                      <div className="col-span-2">
+                        <Input
+                          placeholder="Cargo (ex: Gerente de TI)"
+                          value={contact.role}
+                          onChange={(e) => updateContact(index, 'role', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority-icp">Prioridade</Label>
+                <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description-icp">Observações</Label>
+                <Textarea
+                  id="description-icp"
+                  placeholder="Notas sobre o deal..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700">
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Criar Deal ICP
+                    </>
                   )}
                 </Button>
               </div>
