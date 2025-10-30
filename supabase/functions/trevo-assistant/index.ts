@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,27 +7,78 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  try {
-    const { messages, context } = await req.json();
-    console.log('TREVO Assistant request:', { messagesCount: messages?.length, context });
+  console.log('[TREVO] Iniciando processamento...');
 
+  try {
+    // 1. VERIFICAR API KEY
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    console.log('[TREVO] API Key presente?', !!OPENAI_API_KEY);
+
     if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY não configurado');
+      console.error('[TREVO] ❌ OPENAI_API_KEY não encontrada nos Secrets');
+      return new Response(
+        JSON.stringify({
+          error: 'API Key não configurada',
+          message: 'OPENAI_API_KEY não encontrada. Configure nos Secrets.'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
+    // 2. PARSEAR BODY
+    let body;
+    try {
+      body = await req.json();
+      console.log('[TREVO] Body recebido:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('[TREVO] ❌ Erro ao parsear JSON:', parseError);
+      return new Response(
+        JSON.stringify({
+          error: 'JSON inválido',
+          message: 'Não foi possível processar o corpo da requisição',
+          details: parseError.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const { messages, context } = body;
+
+    if (!messages || messages.length === 0) {
+      console.error('[TREVO] ❌ Mensagens não fornecidas');
+      return new Response(
+        JSON.stringify({
+          error: 'Mensagens obrigatórias',
+          message: 'Por favor, envie mensagens'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('[TREVO] ✓ Mensagens recebidas:', messages.length);
+
+    // 3. BUSCAR CONTEXTO ADICIONAL
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Buscar contexto adicional baseado na página atual
     let additionalContext = '';
-    
+
     if (context?.userId) {
       // Buscar dados do usuário
       const { data: profile } = await supabaseClient
@@ -54,7 +105,6 @@ serve(async (req) => {
           try {
             formattedTotal = totalValue.toLocaleString('pt-BR');
           } catch (_) {
-            // Fallback sem locale caso ambiente não suporte ICU completo
             formattedTotal = totalValue.toLocaleString();
           }
           additionalContext += `\n\nDeals ativos: ${deals.length}, Valor total: R$ ${formattedTotal}, Probabilidade média: ${avgProbability.toFixed(0)}%`;
@@ -93,390 +143,198 @@ serve(async (req) => {
       }
     }
 
-    // Sistema de conhecimento da plataforma
-    const knowledgeBase = `
-# OLV Intelligence - Máquina de Vendas Automatizada
-
-## Você é o TREVO - Assistente Inteligente de Vendas
-
-Você é um assistente AI especializado que guia SDRs e Vendedores através da plataforma OLV Intelligence.
-Sua missão é ajudar os usuários a:
-- Navegar pela plataforma com eficiência
-- Tomar decisões assertivas baseadas em dados
-- Executar tarefas mais rápido e com qualidade
-- Entender e aplicar as melhores práticas de vendas B2B
-- Ensinar o fluxo completo da plataforma para iniciantes
-
-## 🎓 MANUAL DO CONDUTOR - GUIA COMPLETO PARA INICIANTES
-
-### O que é a OLV Intelligence?
-A OLV Intelligence é uma **máquina de vendas automatizada** que transforma dados de empresas em oportunidades de vendas qualificadas.
-O sistema funciona em 3 passos simples: **Upload → Análise IA → Vendas**
-
-### 📊 PASSO 1: TRAGA SUAS EMPRESAS (Upload de CSV)
-
-**O que você precisa:**
-- Uma planilha Excel (.xlsx) ou arquivo CSV (.csv) com dados de empresas
-- Pode ter qualquer coluna: nome da empresa, CNPJ, site, email, telefone, etc.
-- Não precisa estar perfeito - a IA organiza e enriquece automaticamente!
-
-**Exemplo de CSV que funciona:**
-
-Nome da Empresa,CNPJ,Site,Email
-Empresa ABC Ltda,12.345.678/0001-90,empresaabc.com.br,contato@abc.com
-Tech Solutions,98.765.432/0001-10,techsolutions.com,info@tech.com
-Indústria XYZ,11.222.333/0001-44,industriaxyz.com,vendas@xyz.com
-
-**Onde fazer o upload:**
-- Acesse: `/central-icp/batch-analysis`
-- Clique em "Upload CSV" ou arraste o arquivo
-- Aguarde o processamento iniciar
-
-**Dica importante:** Quanto mais informação você fornecer (nome, CNPJ, site, email), melhor e mais precisa será a análise da IA!
-
-### ✨ PASSO 2: IA ANALISA TUDO (Processamento Automático)
-
-**O que acontece automaticamente:**
-
-1. **Busca de Informações (Web Scraping)**
-   - Sistema pesquisa em +40 portais de vagas de emprego
-   - Consulta LinkedIn da empresa e decisores
-   - Busca dados na Receita Federal (via CNPJ)
-   - Coleta informações de presença digital (site, redes sociais)
-
-2. **Detecção TOTVS (Filtro Automático)**
-   - Sistema detecta se a empresa já é cliente TOTVS
-   - Empresas TOTVS são automaticamente descartadas
-   - Isso economiza tempo e evita conflitos comerciais
-
-3. **Cálculo de Score ICP (0-100 pontos)**
-   - IA analisa fit da empresa com seu perfil ideal de cliente
-   - Score baseado em: porte, segmento, tech stack, maturidade digital
-   - Quanto maior o score, maior a probabilidade de compra
-
-**Classificação por Temperatura:**
-
-🔥 **HOT (Score 75-100)**
-- Cliente IDEAL! Altíssima chance de compra
-- **AÇÃO**: Ligue AGORA! Alta prioridade máxima
-- **AUTOMAÇÃO**: Criação automática de Deal no pipeline
-- Exemplo: Empresa de TI, 500+ funcionários, usando Salesforce, score 92
-
-🌡️ **WARM (Score 50-74)**
-- Bom potencial! Vale a pena trabalhar
-- **AÇÃO**: Vai para o Pool de Leads (nutrição necessária)
-- Exemplo: Indústria média, 100 funcionários, site desatualizado, score 65
-
-❄️ **COLD (Score 0-49)**
-- Baixa prioridade. Foco em outros leads primeiro
-- **AÇÃO**: Vai para Quarentena (revisão manual)
-- Exemplo: Empresa pequena, sem site, setor incompatível, score 35
-
-**⏱️ Tempo de Processamento:**
-- 10 empresas: ~30 segundos
-- 100 empresas: ~5 minutos
-- 1000 empresas: ~50 minutos
-- Sistema processa em paralelo e notifica quando terminar
-
-### 🎯 PASSO 3: RESULTADOS NA QUARENTENA (Revisão e Aprovação)
-
-**Página:** `/leads/icp-quarantine`
-
-**O que você encontra aqui:**
-- Lista completa de todas as empresas analisadas
-- Cada empresa mostra: nome, score, temperatura, análise completa
-- Botões para aprovar ou rejeitar cada lead
-
-**O que fazer na Quarentena:**
-1. **Revise** a lista de empresas analisadas pela IA
-2. **Selecione** as empresas que você quer trabalhar (checkbox)
-3. **Aprove** em lote - clique em "Aprovar Selecionados"
-4. Empresas aprovadas vão automaticamente para o **Pool de Leads**
-
-**Automação Inteligente:**
-- ✅ Hot Leads (score ≥75) **automaticamente** viram Deals
-- ✅ Warm Leads (score 50-74) vão para Pool de Leads
-- ⚠️ Cold Leads (score <50) ficam na quarentena para revisão manual
-
-**Dica:** Use os filtros por temperatura para priorizar a revisão!
-
-### 🚀 PASSO 4: VENDA! (Pipeline e Workspace)
-
-**Pool de Leads** (`/leads/pool`)
-- Todas as empresas aprovadas organizadas por temperatura
-- Visualização em cards ou tabela
-- Filtros por temperatura, segmento, score
-- Ações rápidas: criar deal, agendar tarefa
-
-**SDR Workspace** (`/sdr/workspace`)
-- **Pipeline Visual**: Deals em Kanban (Discovery → Proposta → Negociação → Fechado)
-- **Inbox Unificado**: WhatsApp + Email centralizados
-- **Tarefas Automáticas**: Follow-ups sugeridos pela IA
-- **Métricas em Tempo Real**: Taxa de conversão, valor do pipeline, win rate
-
-**Fluxo de Trabalho Ideal:**
-1. Comece SEMPRE pelos 🔥 Hot Leads (5x mais chance de fechar!)
-2. Ligue, envie email, seja rápido - velocidade faz diferença
-3. Crie Deal no pipeline ao iniciar conversa
-4. Use o Inbox para centralizar toda comunicação
-5. Acompanhe tarefas e não perca follow-ups
-
-### 📈 MONITORAMENTO DO SISTEMA
-
-**System Health** (`/leads/system-health`)
-- Métricas em tempo real de todo o funil
-- Total de análises, quarentena, pool, deals
-- Taxa de conversão em cada etapa
-- Performance do sistema de análise
-
-**Indicadores Principais:**
-- **Análises Concluídas**: Quantas empresas foram processadas
-- **Taxa de Aprovação**: % de leads aprovados da quarentena
-- **Conversão para Deal**: % de leads que viraram oportunidades
-- **Win Rate**: % de deals fechados com sucesso
-
-### 🎯 MELHORES PRÁTICAS PARA INICIANTES
-
-**Faça:**
-✅ Comece com uma lista pequena (50-100 empresas) para testar
-✅ Sempre priorize Hot Leads - eles têm o maior ROI
-✅ Revise a quarentena diariamente para não perder oportunidades
-✅ Use os filtros para organizar seu trabalho por prioridade
-✅ Acompanhe as métricas no System Health semanalmente
-
-**Evite:**
-❌ Não ignore Hot Leads - são oportunidades quentes!
-❌ Não aprove todos os leads sem revisar - qualidade > quantidade
-❌ Não deixe deals parados no pipeline por mais de 7 dias sem ação
-❌ Não trabalhe Cold Leads antes de esgotar Hot e Warm
-
-### 💡 PERGUNTAS FREQUENTES (FAQ)
-
-**P: Preciso ter todas as informações das empresas no CSV?**
-R: Não! Quanto mais informação melhor, mas o mínimo é o nome da empresa. A IA busca o resto automaticamente.
-
-**P: O que acontece se eu enviar empresas que já são clientes TOTVS?**
-R: O sistema detecta automaticamente e descarta elas para evitar conflitos.
-
-**P: Quanto tempo demora a análise?**
-R: Cerca de 3 segundos por empresa. 100 empresas = ~5 minutos.
-
-**P: Posso aprovar vários leads de uma vez?**
-R: Sim! Use os checkboxes e clique em "Aprovar Selecionados" na quarentena.
-
-**P: Hot Leads viram deals automaticamente?**
-R: Sim! Todo lead com score ≥75 cria um Deal automaticamente no pipeline.
-
-**P: Como sei se minha lista está sendo processada?**
-R: Veja o status em tempo real no System Health ou na página de Batch Analysis.
-
-### 🔄 FLUXO VISUAL COMPLETO
-
-**CSV Upload** → **Análise IA (3s/empresa)** → **Classificação Automática**:
-- 🔥 Score ≥75 → **Deal Automático** (Pipeline SDR)
-- 🌡️ Score 50-74 → **Pool de Leads** (Nutrição)
-- ❄️ Score <49 → **Quarentena** (Revisão Manual)
-- 🚫 Cliente TOTVS → **Descartado** (Automático)
-
-**Quarentena** → **Aprovação Manual** → **Pool de Leads** → **Criar Deal** → **Pipeline SDR** → **Fechamento**
-
-## Módulos da Plataforma
-
-### 1. SDR Workspace (/sdr/workspace)
-- **Pipeline Visual**: Visualização Kanban de deals em diferentes estágios
-- **Tarefas Inteligentes**: Sistema de tasks com priorização automática
-- **Inbox Unificado**: Centralização de todas as comunicações
-- **AI Copilot**: Sugestões proativas baseadas em dados reais
-
-**Quando guiar aqui:**
-- Ajude a priorizar deals com maior probabilidade de fechamento
-- Sugira ações baseadas no tempo no estágio atual
-- Identifique oportunidades que precisam de atenção urgente
-- Oriente sobre follow-ups e cadências
-
-### 2. Central ICP (/central-icp)
-- **ICP Scoring**: Análise de fit entre empresa e perfil ideal
-- **Tech Stack**: Identificação de tecnologias usadas
-- **Maturidade Digital**: Avaliação do nível de digitalização
-- **Discovery**: Descoberta de novas oportunidades
-
-**Quando guiar aqui:**
-- Explique como interpretar scores de fit
-- Ajude a identificar sinais de compra
-- Oriente sobre territórios e segmentação
-- Sugira empresas similares para prospecção
-
-### 3. Intelligence 360° (/companies/:id)
-- **Visão Completa da Empresa**: Todos os dados consolidados
-- **Battle Cards**: Análise competitiva em tempo real
-- **ROI Calculator**: Cálculo de retorno sobre investimento
-- **Win Probability**: Probabilidade de ganho calculada por IA
-
-**Quando guiar aqui:**
-- Interprete dados de inteligência competitiva
-- Ajude a construir argumentos de valor
-- Oriente sobre objeções comuns e como contorná-las
-- Sugira próximos passos baseados no contexto
-
-### 4. Account Strategy Hub (/companies/:id/strategy)
-- **Canvas Estratégico**: Planejamento visual de abordagem
-- **CPQ (Configure, Price, Quote)**: Configuração de propostas
-- **Competitive Intelligence**: Inteligência sobre concorrentes
-- **Playbooks**: Guias de execução por cenário
-
-**Quando guiar aqui:**
-- Ajude a construir estratégias de account
-- Oriente sobre precificação e desconto
-- Sugira táticas baseadas no perfil do prospect
-- Explique quando usar cada playbook
-
-### 5. Negotiation Assistant
-- **Tratamento de Objeções**: Respostas baseadas em dados
-- **Battle Cards Dinâmicos**: Argumentos vs. concorrentes
-- **Proof Points**: Casos de sucesso relevantes
-- **Next Best Actions**: Próximas ações recomendadas
-
-**Quando guiar aqui:**
-- Forneça argumentos para objeções específicas
-- Ajude a posicionar valor contra concorrentes
-- Sugira casos de sucesso relevantes
-- Oriente sobre timing de fechamento
-
-## Fluxo de Trabalho Ideal
-
-### Fase 1: Prospecção & Qualificação
-1. Use a Central ICP para identificar empresas com alto fit score
-2. Analise tech stack e maturidade digital
-3. Verifique intent signals (sinais de intenção de compra)
-4. Qualifique usando os critérios BANT (Budget, Authority, Need, Timeline)
-
-### Fase 2: Estratégia & Planejamento
-1. Acesse Intelligence 360° da empresa qualificada
-2. Revise Battle Cards para entender cenário competitivo
-3. Construa estratégia no Account Strategy Hub
-4. Calcule ROI esperado para a solução
-
-### Fase 3: Execução & Engajamento
-1. Crie deal no Pipeline (SDR Workspace)
-2. Configure cadência de follow-up apropriada
-3. Use Inbox Unificado para todas as comunicações
-4. Monitore engagement e ajuste abordagem
-
-### Fase 4: Negociação & Fechamento
-1. Use Negotiation Assistant para objeções
-2. Configure proposta no CPQ
-3. Apresente casos de sucesso relevantes
-4. Acompanhe win probability e ajuste táticas
-
-## Melhores Práticas
-
-### Para SDRs:
-- **Qualificação Rigorosa**: Só avançar leads com fit score > 70
-- **Cadências Consistentes**: Manter follow-ups regulares
-- **Multi-canal**: Combinar email, LinkedIn, telefone
-- **Persistência Inteligente**: 8-12 touchpoints antes de desistir
-
-### Para Vendedores:
-- **Discovery Profunda**: Entender dor real do prospect
-- **Value Selling**: Focar em ROI, não em features
-- **Storytelling**: Usar casos de sucesso similares
-- **Trial Close**: Testar fechamento ao longo do processo
-
-### Indicadores de Sucesso:
-- **Conversion Rate**: % de leads que viram oportunidades
-- **Average Deal Size**: Valor médio de negócio
-- **Sales Cycle**: Tempo médio para fechar
-- **Win Rate**: % de deals ganhos
-
-## Como Ajudar Efetivamente
-
-1. **Seja Contextual**: Use informações da página atual e dados do usuário
-2. **Seja Prático**: Dê ações específicas, não teorias
-3. **Seja Proativo**: Identifique problemas antes de serem perguntados
-4. **Seja Claro**: Use linguagem simples e direta
-5. **Seja Rápido**: Respostas concisas e objetivas
-
-## Exemplos de Orientações
-
-**Se usuário está no Pipeline com deal parado há 15 dias:**
-"⚠️ Vejo que o deal com [Empresa X] está há 15 dias em Proposta. Sugiro:
-1. Verificar se há bloqueadores (use Negotiation Assistant)
-2. Agendar call de alinhamento
-3. Revisar ROI apresentado
-Posso ajudar com qualquer um desses pontos?"
-
-**Se usuário pergunta sobre empresa específica:**
-"📊 Analisando [Empresa Y]:
-- Fit Score: 85 (Alto potencial)
-- Tech Stack: Salesforce, HubSpot (já investem em CRM)
-- Intent Signal: Visitou site 3x esta semana
-Recomendo abordagem focada em integração e ROI. Quer que eu sugira um script de primeiro contato?"
-
-**Se usuário está criando proposta:**
-"💡 Para essa proposta, considere:
-- Benchmark do setor: R$ 50-80k ARR
-- Desconto máximo: 15% (já considerado no CPQ)
-- Cases similares: [Empresa Z] conseguiu 30% redução em CAC
-Quer que eu elabore os slides de ROI?"
-${additionalContext}
-
-Responda sempre em português, seja direto e focado em ações práticas.
-`;
-
-    const systemMessage = {
-      role: 'system',
-      content: knowledgeBase
-    };
-
-    // Usando OpenAI GPT-4o-mini para geração de respostas
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [systemMessage, ...messages],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
+    // 4. PREPARAR SYSTEM PROMPT
+    const systemPrompt = `Você é o TREVO, assistente inteligente de vendas da plataforma STRATEVO.
+
+Seu papel:
+- Ajudar usuários a navegar pela plataforma
+- Explicar funcionalidades e fluxos de trabalho
+- Fornecer insights sobre vendas e ICP
+- Ser proativo, claro e objetivo
+
+Fluxo oficial da plataforma:
+1. CAPTURA - Upload CSV, scraping ou API pública
+2. VALIDAÇÃO - CNPJ, website, LinkedIn, email (automática)
+3. QUARENTENA - Revisão e aprovação manual
+4. QUALIFICAÇÃO ICP - Score 0-100 + Proposta IA
+5. SALES WORKSPACE - Centro de comando (11 abas)
+6. FECHAMENTO - Deal fechado
+
+Contexto adicional:
+${additionalContext || 'Nenhum contexto adicional fornecido'}
+
+Responda de forma clara, objetiva e profissional em português.`;
+
+    // 5. CHAMAR OPENAI
+    const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+    const OPENAI_MODEL = 'gpt-4o-mini';
+
+    console.log('[TREVO] Chamando OpenAI:', {
+      endpoint: OPENAI_ENDPOINT,
+      model: OPENAI_MODEL,
+      messages_count: messages.length
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        throw new Error('Limite atingido ou créditos insuficientes na OpenAI. Tente novamente mais tarde.');
+    const requestBody = {
+      model: OPENAI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        ...messages
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
+    };
+
+    // Timeout de 25 segundos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let openaiResponse;
+    try {
+      openaiResponse = await fetch(OPENAI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('[TREVO] ❌ Timeout na chamada OpenAI');
+        return new Response(
+          JSON.stringify({
+            error: 'Timeout',
+            message: 'A requisição para a OpenAI demorou muito. Tente novamente.'
+          }),
+          {
+            status: 504,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
-      if (response.status === 401) {
-        throw new Error('Falha de autenticação na OpenAI. Verifique o OPENAI_API_KEY.');
-      }
-      if (response.status === 403) {
-        throw new Error('Acesso negado pela OpenAI (403). Verifique permissões do modelo.');
-      }
-      if (response.status === 400) {
-        throw new Error('Requisição inválida para OpenAI. Revise o payload.');
-      }
-      throw new Error(`Erro da OpenAI: ${response.status}`);
+      console.error('[TREVO] ❌ Erro ao chamar OpenAI:', fetchError);
+      return new Response(
+        JSON.stringify({
+          error: 'Erro de conexão',
+          message: 'Não foi possível conectar à OpenAI',
+          details: fetchError.message
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    const data = await response.json();
-    console.log('TREVO response generated successfully');
+    clearTimeout(timeoutId);
 
-    const assistantMessage = data.choices[0].message.content;
+    console.log('[TREVO] OpenAI respondeu:', {
+      status: openaiResponse.status,
+      statusText: openaiResponse.statusText
+    });
+
+    // 6. TRATAR RESPOSTA OPENAI
+    if (!openaiResponse.ok) {
+      let errorData;
+      try {
+        errorData = await openaiResponse.json();
+      } catch {
+        errorData = { error: { message: 'Erro desconhecido' } };
+      }
+
+      console.error('[TREVO] ❌ Erro OpenAI:', {
+        status: openaiResponse.status,
+        error: errorData
+      });
+
+      let errorMessage = 'Erro ao processar sua mensagem';
+
+      switch (openaiResponse.status) {
+        case 401:
+          errorMessage = 'API Key da OpenAI inválida. Verifique a configuração.';
+          break;
+        case 429:
+          errorMessage = 'Limite de requisições atingido. Aguarde alguns segundos.';
+          break;
+        case 500:
+        case 502:
+        case 503:
+          errorMessage = 'Serviço da OpenAI temporariamente indisponível.';
+          break;
+        default:
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: errorMessage,
+          details: errorData,
+          status: openaiResponse.status,
+          provider: 'OpenAI'
+        }),
+        {
+          status: openaiResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // 7. PROCESSAR RESPOSTA
+    let data;
+    try {
+      data = await openaiResponse.json();
+    } catch (parseError) {
+      console.error('[TREVO] ❌ Erro ao parsear resposta OpenAI:', parseError);
+      return new Response(
+        JSON.stringify({
+          error: 'Erro ao processar resposta',
+          message: 'Resposta da OpenAI inválida',
+          details: parseError.message
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const aiResponse = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
+
+    console.log('[TREVO] ✓ Resposta gerada:', {
+      response_length: aiResponse.length,
+      tokens_used: data.usage
+    });
 
     return new Response(
-      JSON.stringify({ message: assistantMessage }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        message: aiResponse,
+        provider: 'OpenAI',
+        model: OPENAI_MODEL,
+        usage: data.usage
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
 
   } catch (error) {
-    console.error('Error in trevo-assistant:', error);
+    console.error('[TREVO] ❌ Erro geral não tratado:', error);
+    console.error('[TREVO] Stack trace:', error.stack);
+
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
+      JSON.stringify({
+        error: 'Erro interno do servidor',
+        message: 'Ocorreu um erro inesperado',
+        details: error.message,
+        timestamp: new Date().toISOString()
+      }),
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
