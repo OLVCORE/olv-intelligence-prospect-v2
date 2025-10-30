@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
@@ -73,7 +73,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
         const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
         toast({
-          title: "✅ Arquivo carregado!",
+          title: "Arquivo carregado!",
           description: `${mappedCount} de ${headers.length} colunas mapeadas automaticamente (${Math.round((mappedCount/headers.length)*100)}%)`,
         });
       },
@@ -193,8 +193,8 @@ export default function ICPBulkAnalysisWithMapping() {
     const errorCount = analysisResults.filter(r => r.error).length;
 
     toast({
-      title: "✅ Análise concluída!",
-      description: `✅ ${successCount} aprovadas | ❌ ${rejectedCount} descartadas (TOTVS) | ⚠️ ${errorCount} erros`,
+      title: "Análise concluída!",
+      description: `${successCount} aprovadas | ${rejectedCount} descartadas (TOTVS) | ${errorCount} erros`,
       duration: 10000,
     });
   };
@@ -223,7 +223,7 @@ export default function ICPBulkAnalysisWithMapping() {
     try {
       updateCompanyStatus({ 
         status: 'processing', 
-        currentStep: '📋 Coletando dados básicos', 
+        currentStep: 'Coletando dados básicos', 
         progress: 10 
       });
 
@@ -239,7 +239,7 @@ export default function ICPBulkAnalysisWithMapping() {
       }
 
       updateCompanyStatus({ 
-        currentStep: '🔍 Verificando base de dados', 
+        currentStep: 'Verificando base de dados', 
         progress: 20 
       });
 
@@ -275,7 +275,7 @@ export default function ICPBulkAnalysisWithMapping() {
       }
 
       updateCompanyStatus({ 
-        currentStep: '🌐 Verificando portais de vagas (40+ fontes)', 
+        currentStep: 'Verificando portais de vagas (40+ fontes)', 
         progress: 30 
       });
 
@@ -306,8 +306,8 @@ export default function ICPBulkAnalysisWithMapping() {
 
         updateCompanyStatus({ 
           currentStep: encontrouTotvs 
-            ? `❌ Cliente TOTVS detectado (${evidenciasTotvs.length} evidências)` 
-            : `✅ Sem vínculo TOTVS (${portaisVerificados} portais verificados)`, 
+            ? `Cliente TOTVS detectado (${evidenciasTotvs.length} evidências)` 
+            : `Sem vínculo TOTVS (${portaisVerificados} portais verificados)`, 
           progress: 60 
         });
       } catch (error) {
@@ -345,7 +345,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
         updateCompanyStatus({ 
           status: 'completed', 
-          currentStep: '❌ DESCARTADO - Cliente TOTVS', 
+          currentStep: 'DESCARTADO - Cliente TOTVS', 
           progress: 100,
           result
         });
@@ -354,14 +354,14 @@ export default function ICPBulkAnalysisWithMapping() {
       }
 
       updateCompanyStatus({ 
-        currentStep: '📊 Calculando Score ICP', 
+        currentStep: 'Calculando Score ICP', 
         progress: 70 
       });
 
       const icpResult = calculateICPScore(companyData);
 
       updateCompanyStatus({ 
-        currentStep: '💾 Salvando resultados', 
+        currentStep: 'Salvando resultados', 
         progress: 90 
       });
 
@@ -396,7 +396,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
       updateCompanyStatus({ 
         status: 'completed', 
-        currentStep: `✅ APROVADO - Score: ${icpResult.score} (${icpResult.temperatura.toUpperCase()})`, 
+        currentStep: `APROVADO - Score: ${icpResult.score} (${icpResult.temperatura.toUpperCase()})`, 
         progress: 100,
         result
       });
@@ -416,7 +416,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
       updateCompanyStatus({ 
         status: 'error', 
-        currentStep: `❌ ERRO: ${error.message}`, 
+        currentStep: `ERRO: ${error.message}`, 
         progress: 0,
         error: error.message
       });
@@ -481,9 +481,24 @@ export default function ICPBulkAnalysisWithMapping() {
   };
 
   const getTemperatureBadge = (temp: string) => {
-    if (temp === 'hot') return <Badge className="bg-red-500 text-white">🔥 HOT</Badge>;
-    if (temp === 'warm') return <Badge className="bg-yellow-500 text-white">🌡️ WARM</Badge>;
-    return <Badge className="bg-blue-500 text-white">❄️ COLD</Badge>;
+    if (temp === 'hot') return (
+      <Badge className="bg-red-500 text-white flex items-center gap-1">
+        <Flame className="w-3 h-3" />
+        HOT
+      </Badge>
+    );
+    if (temp === 'warm') return (
+      <Badge className="bg-yellow-500 text-white flex items-center gap-1">
+        <Thermometer className="w-3 h-3" />
+        WARM
+      </Badge>
+    );
+    return (
+      <Badge className="bg-blue-500 text-white flex items-center gap-1">
+        <Snowflake className="w-3 h-3" />
+        COLD
+      </Badge>
+    );
   };
 
   const getElapsedTime = () => {
@@ -512,10 +527,10 @@ export default function ICPBulkAnalysisWithMapping() {
             <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
             <p className="text-muted-foreground mb-6">
               Sistema robusto de análise que:<br/>
-              ✅ Verifica 40+ portais de vagas para detectar clientes TOTVS<br/>
-              ✅ Calcula score ICP detalhado para cada empresa<br/>
-              ✅ Processa até 3 empresas simultaneamente<br/>
-              ✅ Gera relatório completo com evidências
+              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Verifica 40+ portais de vagas para detectar clientes TOTVS</span><br/>
+              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Calcula score ICP detalhado para cada empresa</span><br/>
+              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Processa até 3 empresas simultaneamente</span><br/>
+              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Gera relatório completo com evidências</span>
             </p>
           </div>
           <div>
@@ -585,10 +600,16 @@ export default function ICPBulkAnalysisWithMapping() {
                           <SelectValue placeholder="Selecione um campo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__SKIP__">❌ Não mapear</SelectItem>
+                          <SelectItem value="__SKIP__">
+                            <span className="flex items-center gap-1">
+                              <Ban className="w-3 h-3" /> Não mapear
+                            </span>
+                          </SelectItem>
                           {mapping.systemField && mapping.systemField !== '__SKIP__' && (
                             <SelectItem value={mapping.systemField}>
-                              ⭐ {getFieldLabel(mapping.systemField)} (Sugerido)
+                              <span className="flex items-center gap-1">
+                                <Star className="w-3 h-3 text-yellow-500" /> {getFieldLabel(mapping.systemField)} (Sugerido)
+                              </span>
                             </SelectItem>
                           )}
                           {mapping.alternatives.map((alt) => (
@@ -652,7 +673,10 @@ export default function ICPBulkAnalysisWithMapping() {
           <div className="space-y-6">
             <div className="text-center">
               <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin mb-4" />
-              <h2 className="text-2xl font-bold mb-2">🔄 ANÁLISE ICP EM MASSA - PROCESSANDO</h2>
+              <h2 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
+                <RefreshCw className="w-6 h-6" />
+                ANÁLISE ICP EM MASSA - PROCESSANDO
+              </h2>
             </div>
 
             <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
@@ -661,16 +685,25 @@ export default function ICPBulkAnalysisWithMapping() {
                 <div className="text-sm text-muted-foreground">Total</div>
               </div>
               <div className="bg-green-50 p-4 rounded-lg text-center">
-                <div className="text-3xl font-bold text-green-600">{completed.length}</div>
-                <div className="text-sm text-muted-foreground">✅ Concluídas</div>
+                <div className="text-3xl font-bold text-green-600 flex items-center justify-center gap-2">
+                  <CheckCircle className="w-8 h-8" />
+                  {completed.length}
+                </div>
+                <div className="text-sm text-muted-foreground">Concluídas</div>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg text-center">
-                <div className="text-3xl font-bold text-blue-600">{processing.length}</div>
-                <div className="text-sm text-muted-foreground">🔄 Em andamento</div>
+                <div className="text-3xl font-bold text-blue-600 flex items-center justify-center gap-2">
+                  <RefreshCw className="w-8 h-8 animate-spin" />
+                  {processing.length}
+                </div>
+                <div className="text-sm text-muted-foreground">Em andamento</div>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg text-center">
-                <div className="text-3xl font-bold text-gray-600">{waiting.length}</div>
-                <div className="text-sm text-muted-foreground">⏳ Aguardando</div>
+                <div className="text-3xl font-bold text-gray-600 flex items-center justify-center gap-2">
+                  <Clock className="w-8 h-8" />
+                  {waiting.length}
+                </div>
+                <div className="text-sm text-muted-foreground">Aguardando</div>
               </div>
             </div>
 
@@ -691,8 +724,9 @@ export default function ICPBulkAnalysisWithMapping() {
                   <div key={company.index} className="border rounded-lg p-4 bg-blue-50">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <div className="font-bold text-blue-900">
-                          🔄 {company.name}
+                        <div className="font-bold text-blue-900 flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          {company.name}
                         </div>
                         <div className="text-sm text-blue-700">CNPJ: {company.cnpj}</div>
                       </div>
@@ -709,8 +743,13 @@ export default function ICPBulkAnalysisWithMapping() {
                   <div key={company.index} className="border rounded-lg p-4 bg-green-50">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-bold text-green-900">
-                          {company.result?.encontrou_totvs ? '❌' : '✅'} {company.name}
+                        <div className="font-bold text-green-900 flex items-center gap-2">
+                          {company.result?.encontrou_totvs ? (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          )}
+                          {company.name}
                         </div>
                         <div className="text-sm text-green-700">CNPJ: {company.cnpj}</div>
                         <div className="text-sm text-green-800 mt-1">{company.currentStep}</div>
@@ -724,8 +763,9 @@ export default function ICPBulkAnalysisWithMapping() {
                   <div key={company.index} className="border rounded-lg p-4 bg-red-50">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-bold text-red-900">
-                          ❌ {company.name}
+                        <div className="font-bold text-red-900 flex items-center gap-2">
+                          <XCircle className="w-4 h-4" />
+                          {company.name}
                         </div>
                         <div className="text-sm text-red-700">CNPJ: {company.cnpj}</div>
                         <div className="text-sm text-red-800 mt-1">{company.currentStep}</div>
@@ -782,23 +822,35 @@ export default function ICPBulkAnalysisWithMapping() {
           <div className="text-center space-y-6">
             <CheckCircle className="w-16 h-16 mx-auto text-green-500" />
             <div>
-              <h2 className="text-2xl font-bold mb-4">✅ ANÁLISE ICP EM MASSA - CONCLUÍDA</h2>
+              <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
+                <CheckCircle className="w-6 h-6" />
+                ANÁLISE ICP EM MASSA - CONCLUÍDA
+              </h2>
               
               <div className="bg-muted p-6 rounded-lg max-w-3xl mx-auto mb-6">
-                <h3 className="font-bold text-lg mb-4">📊 RESUMO GERAL</h3>
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  RESUMO GERAL
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
                   <div>
                     <div className="text-sm text-muted-foreground">Total analisadas:</div>
                     <div className="text-2xl font-bold">{analysisResults.length}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">✅ Aprovadas:</div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      Aprovadas:
+                    </div>
                     <div className="text-2xl font-bold text-green-600">
                       {approved.length} ({Math.round((approved.length / analysisResults.length) * 100)}%)
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">❌ Descartadas:</div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <XCircle className="w-4 h-4 text-red-600" />
+                      Descartadas:
+                    </div>
                     <div className="text-2xl font-bold text-red-600">
                       {rejected.length} ({Math.round((rejected.length / analysisResults.length) * 100)}%)
                     </div>
@@ -812,15 +864,24 @@ export default function ICPBulkAnalysisWithMapping() {
                 <div className="mt-6 pt-6 border-t">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <div className="text-sm text-muted-foreground">🔥 HOT (70-100):</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Flame className="w-4 h-4 text-red-500" />
+                        HOT (70-100):
+                      </div>
                       <div className="text-xl font-bold text-red-600">{hotCount}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">🌡️ WARM (40-69):</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Thermometer className="w-4 h-4 text-yellow-500" />
+                        WARM (40-69):
+                      </div>
                       <div className="text-xl font-bold text-yellow-600">{warmCount}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">❄️ COLD (0-39):</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Snowflake className="w-4 h-4 text-blue-500" />
+                        COLD (0-39):
+                      </div>
                       <div className="text-xl font-bold text-blue-600">{coldCount}</div>
                     </div>
                   </div>
@@ -848,12 +909,18 @@ export default function ICPBulkAnalysisWithMapping() {
         {/* Empresas Aprovadas */}
         {approved.length > 0 && (
           <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">📋 EMPRESAS APROVADAS ({approved.length})</h3>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-green-500" />
+              EMPRESAS APROVADAS ({approved.length})
+            </h3>
             
             {/* HOT */}
             {hotCount > 0 && (
               <div className="mb-6">
-                <h4 className="font-bold text-red-600 mb-2">🔥 HOT ({hotCount} empresas)</h4>
+                <h4 className="font-bold text-red-600 mb-2 flex items-center gap-2">
+                  <Flame className="w-4 h-4" />
+                  HOT ({hotCount} empresas)
+                </h4>
                 <div className="space-y-2">
                   {approved.filter(r => r.temperatura === 'hot').map((result, idx) => (
                     <div key={idx} className="border rounded-lg p-4 bg-red-50">
@@ -881,7 +948,10 @@ export default function ICPBulkAnalysisWithMapping() {
             {/* WARM */}
             {warmCount > 0 && (
               <div className="mb-6">
-                <h4 className="font-bold text-yellow-600 mb-2">🌡️ WARM ({warmCount} empresas)</h4>
+                <h4 className="font-bold text-yellow-600 mb-2 flex items-center gap-2">
+                  <Thermometer className="w-4 h-4" />
+                  WARM ({warmCount} empresas)
+                </h4>
                 <div className="space-y-2">
                   {approved.filter(r => r.temperatura === 'warm').slice(0, 5).map((result, idx) => (
                     <div key={idx} className="border rounded-lg p-4 bg-yellow-50">
@@ -909,7 +979,10 @@ export default function ICPBulkAnalysisWithMapping() {
             {/* COLD */}
             {coldCount > 0 && (
               <div>
-                <h4 className="font-bold text-blue-600 mb-2">❄️ COLD ({coldCount} empresas)</h4>
+                <h4 className="font-bold text-blue-600 mb-2 flex items-center gap-2">
+                  <Snowflake className="w-4 h-4" />
+                  COLD ({coldCount} empresas)
+                </h4>
                 <div className="text-sm text-muted-foreground">
                   Baixe o relatório completo para ver todas as empresas COLD
                 </div>
@@ -921,21 +994,31 @@ export default function ICPBulkAnalysisWithMapping() {
         {/* Empresas Descartadas */}
         {rejected.length > 0 && (
           <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">❌ EMPRESAS DESCARTADAS ({rejected.length})</h3>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-500" />
+              EMPRESAS DESCARTADAS ({rejected.length})
+            </h3>
             <div className="mb-4">
-              <h4 className="font-bold text-red-600 mb-2">🚫 Cliente TOTVS ({rejected.length} empresas)</h4>
+              <h4 className="font-bold text-red-600 mb-2 flex items-center gap-2">
+                <Ban className="w-4 h-4" />
+                Cliente TOTVS ({rejected.length} empresas)
+              </h4>
               <div className="space-y-2">
                 {rejected.slice(0, 10).map((result, idx) => (
                   <div key={idx} className="border rounded-lg p-4 bg-red-50">
                     <div className="font-bold">{result.name}</div>
                     <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                    <div className="text-sm text-red-700 mt-2">
-                      ❌ Motivo: {result.motivo}
-                      {result.evidencias && result.evidencias.length > 0 && (
-                        <div className="mt-1">
-                          📋 {result.evidencias.length} evidência(s) encontrada(s)
-                        </div>
-                      )}
+                    <div className="text-sm text-red-700 mt-2 flex items-start gap-2">
+                      <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        Motivo: {result.motivo}
+                        {result.evidencias && result.evidencias.length > 0 && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <ClipboardList className="w-3 h-3" />
+                            {result.evidencias.length} evidência(s) encontrada(s)
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -952,14 +1035,18 @@ export default function ICPBulkAnalysisWithMapping() {
         {/* Erros */}
         {errored.length > 0 && (
           <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">⚠️ ERROS NO PROCESSAMENTO ({errored.length})</h3>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-500" />
+              ERROS NO PROCESSAMENTO ({errored.length})
+            </h3>
             <div className="space-y-2">
               {errored.slice(0, 5).map((result, idx) => (
                 <div key={idx} className="border rounded-lg p-4 bg-gray-50">
                   <div className="font-bold">{result.name}</div>
                   <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                  <div className="text-sm text-red-600 mt-2">
-                    ❌ Erro: {result.error}
+                  <div className="text-sm text-red-600 mt-2 flex items-center gap-2">
+                    <XCircle className="w-4 h-4 flex-shrink-0" />
+                    Erro: {result.error}
                   </div>
                 </div>
               ))}
