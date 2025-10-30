@@ -16,6 +16,11 @@ import { WorkspaceSequencesMini } from '@/components/sdr/WorkspaceSequencesMini'
 import { AutomationPanel } from '@/components/sdr/AutomationPanel';
 import { ExecutiveDashboard } from '@/components/sdr/ExecutiveDashboard';
 import { ForecastPanel } from '@/components/sdr/ForecastPanel';
+import { AdvancedFunnelChart } from '@/components/sdr/analytics/AdvancedFunnelChart';
+import { PredictiveScoring } from '@/components/sdr/analytics/PredictiveScoring';
+import { RevenueForecasting } from '@/components/sdr/analytics/RevenueForecasting';
+import { VisualSequenceBuilder } from '@/components/sdr/sequences/VisualSequenceBuilder';
+import { SequenceTemplateLibrary } from '@/components/sdr/sequences/SequenceTemplateLibrary';
 import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSDRAutomations } from '@/hooks/useSDRAutomations';
@@ -146,7 +151,7 @@ export default function SDRWorkspacePage() {
 
         {/* Main Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-7 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-9 max-w-7xl">
             <TabsTrigger value="pipeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Pipeline
@@ -158,6 +163,14 @@ export default function SDRWorkspacePage() {
             <TabsTrigger value="forecast" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               Forecast
+            </TabsTrigger>
+            <TabsTrigger value="funnel" className="gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+              <TrendingUp className="h-4 w-4" />
+              Funil AI
+            </TabsTrigger>
+            <TabsTrigger value="prediction" className="gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+              <BarChart3 className="h-4 w-4" />
+              Predição
             </TabsTrigger>
             <TabsTrigger value="automations" className="gap-2">
               <Zap className="h-4 w-4" />
@@ -189,6 +202,17 @@ export default function SDRWorkspacePage() {
             <ForecastPanel />
           </TabsContent>
 
+          <TabsContent value="funnel" className="flex-1 mt-4">
+            <AdvancedFunnelChart />
+          </TabsContent>
+
+          <TabsContent value="prediction" className="flex-1 mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PredictiveScoring />
+              <RevenueForecasting />
+            </div>
+          </TabsContent>
+
           <TabsContent value="automations" className="flex-1 mt-4">
             <AutomationPanel />
           </TabsContent>
@@ -202,7 +226,22 @@ export default function SDRWorkspacePage() {
           </TabsContent>
 
           <TabsContent value="sequences" className="flex-1 mt-4">
-            <WorkspaceSequencesMini />
+            <Tabs defaultValue="builder" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="builder">Sequence Builder</TabsTrigger>
+                <TabsTrigger value="templates">Templates</TabsTrigger>
+                <TabsTrigger value="active">Ativas</TabsTrigger>
+              </TabsList>
+              <TabsContent value="builder">
+                <VisualSequenceBuilder />
+              </TabsContent>
+              <TabsContent value="templates">
+                <SequenceTemplateLibrary />
+              </TabsContent>
+              <TabsContent value="active">
+                <WorkspaceSequencesMini />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
