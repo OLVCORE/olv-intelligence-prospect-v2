@@ -730,7 +730,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <ICPQuarantineNewPage />
+                    <ICPQuarantinePage />
                   </AppLayout>
                 </ProtectedRoute>
               }
