@@ -58,10 +58,18 @@ serve(async (req) => {
       );
     }
 
-    const { message, context } = body;
+    const { message, messages: incomingMessages, context } = body;
 
-    // 3. VALIDAR MENSAGEM
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    // 3. VALIDAR MENSAGEM (aceita 'message' ou histórico 'messages')
+    let userMessageStr: string | null = null;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      userMessageStr = message.trim();
+    } else if (Array.isArray(incomingMessages)) {
+      const lastUser = [...incomingMessages].reverse().find((m: any) => m?.role === 'user' && typeof m.content === 'string');
+      userMessageStr = lastUser?.content || null;
+    }
+
+    if (!userMessageStr) {
       console.error('[TREVO] ❌ Mensagem inválida ou vazia');
       return new Response(
         JSON.stringify({
@@ -75,7 +83,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('[TREVO] ✅ Mensagem válida recebida:', message.substring(0, 100) + '...');
+    console.log('[TREVO] ✅ Mensagem válida recebida:', (userMessageStr || '').substring(0, 100) + '...');
 
     // 4. PREPARAR PROMPT DO SISTEMA
     const systemPrompt = `Você é o TREVO, assistente inteligente de vendas da plataforma STRATEVO.
@@ -108,18 +116,19 @@ ${context ? JSON.stringify(context, null, 2) : 'Nenhum contexto adicional'}
     const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
     const OPENAI_MODEL = 'gpt-4o-mini';
 
+    // Montar mensagens para a OpenAI preservando histórico quando enviado pelo cliente
+    const openaiMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt },
+      ...(Array.isArray(incomingMessages) && incomingMessages.length > 0
+        ? incomingMessages
+            .filter((m: any) => m && typeof m.content === 'string' && m.role !== 'system')
+            .map((m: any) => ({ role: m.role, content: m.content }))
+        : [{ role: 'user', content: userMessageStr! }])
+    ];
+
     const requestBody = {
       model: OPENAI_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: message
-        }
-      ],
+      messages: openaiMessages,
       temperature: 0.7,
       max_tokens: 1500,
     };
@@ -127,7 +136,9 @@ ${context ? JSON.stringify(context, null, 2) : 'Nenhum contexto adicional'}
     console.log('[TREVO] 🤖 Chamando OpenAI...', {
       endpoint: OPENAI_ENDPOINT,
       model: OPENAI_MODEL,
-      message_length: message.length
+      message_length: (userMessageStr?.length ?? 0),
+      has_history: Array.isArray(incomingMessages),
+      history_count: Array.isArray(incomingMessages) ? incomingMessages.length : 0
     });
 
     // 6. CHAMAR OPENAI COM TIMEOUT
@@ -260,6 +271,7 @@ ${context ? JSON.stringify(context, null, 2) : 'Nenhum contexto adicional'}
     return new Response(
       JSON.stringify({
         response: aiResponse,
+        message: aiResponse,
         provider: 'OpenAI',
         model: OPENAI_MODEL,
         usage: data.usage,
