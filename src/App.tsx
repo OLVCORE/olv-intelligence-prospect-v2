@@ -79,6 +79,8 @@ const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
 const Analytics = lazy(() => import("./pages/Leads/Analytics"));
 const LeadsPoolPage = lazy(() => import("./pages/LeadsPoolPage"));
 const LeadsQualifiedPage = lazy(() => import("./pages/LeadsQualifiedPage"));
+const EmailSequencesPage = lazy(() => import("./pages/EmailSequencesPage"));
+const SmartTasksPage = lazy(() => import("./pages/SmartTasksPage"));
 const CSVUploadWithMapping = lazy(() => import("./components/leads/CSVUploadWithMapping"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
@@ -429,7 +431,15 @@ const App = () => (
               path="/sdr/tasks"
               element={
                 <ProtectedRoute>
-                  <SDRTasksPage />
+                  <SmartTasksPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr/sequences"
+              element={
+                <ProtectedRoute>
+                  <EmailSequencesPage />
                 </ProtectedRoute>
               }
             />
