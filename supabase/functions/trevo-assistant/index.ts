@@ -15,9 +15,9 @@ serve(async (req) => {
     const { messages, context } = await req.json();
     console.log('TREVO Assistant request:', { messagesCount: messages?.length, context });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY não configurado');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY não configurado');
     }
 
     const supabaseClient = createClient(
@@ -428,34 +428,38 @@ Responda sempre em português, seja direto e focado em ações práticas.
       content: knowledgeBase
     };
 
-    // Usando Lovable AI para geração de respostas
-    const response = await fetch('https://ai-gateway.lovable.app/v1/chat/completions', {
+    // Usando OpenAI GPT-4o-mini para geração de respostas
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [systemMessage, ...messages],
+        temperature: 0.7,
         max_tokens: 2000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('OpenAI error:', response.status, errorText);
       
       if (response.status === 429) {
-        throw new Error('Limite de requisições atingido. Tente novamente em alguns instantes.');
+        throw new Error('Limite atingido ou créditos insuficientes na OpenAI. Tente novamente mais tarde.');
       }
       if (response.status === 401) {
-        throw new Error('Falha de autenticação. Verifique a configuração.');
+        throw new Error('Falha de autenticação na OpenAI. Verifique o OPENAI_API_KEY.');
       }
-      if (response.status === 402) {
-        throw new Error('Créditos do Lovable AI esgotados. Entre em contato com o administrador.');
+      if (response.status === 403) {
+        throw new Error('Acesso negado pela OpenAI (403). Verifique permissões do modelo.');
       }
-      throw new Error(`Erro na IA: ${response.status}`);
+      if (response.status === 400) {
+        throw new Error('Requisição inválida para OpenAI. Revise o payload.');
+      }
+      throw new Error(`Erro da OpenAI: ${response.status}`);
     }
 
     const data = await response.json();
