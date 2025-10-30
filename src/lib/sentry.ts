@@ -1,13 +1,8 @@
 import * as Sentry from "@sentry/react";
 
 export function initSentry() {
-  // Só inicializar em produção ou se explicitamente habilitado
-  if (import.meta.env.MODE === 'development' && !import.meta.env.VITE_ENABLE_SENTRY) {
-    return;
-  }
-
   Sentry.init({
-    dsn: "COLE_SEU_DSN_AQUI",
+    dsn: "https://71ebcf797231c84cfd695e09947c5896@o4510275860037632.ingest.us.sentry.io/4510275868819456",
     
     integrations: [
       new Sentry.BrowserTracing({
@@ -31,8 +26,12 @@ export function initSentry() {
     // Ambiente
     environment: import.meta.env.MODE,
     
+    // Enviar dados PII (IP, user info)
+    sendDefaultPii: true,
+    
     // Informações adicionais
     beforeSend(event, hint) {
+      // Log no console para debug
       // Adicionar contexto extra
       if (event.exception) {
         console.error('Erro capturado pelo Sentry:', hint.originalException);
