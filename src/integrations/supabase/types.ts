@@ -268,6 +268,7 @@ export type Database = {
           activity_date: string | null
           activity_type: string
           attachments: Json | null
+          channel: string | null
           company_id: string | null
           contact_email: string | null
           contact_id: string | null
@@ -278,20 +279,26 @@ export type Database = {
           created_by: string | null
           decision_maker_id: string | null
           description: string | null
+          direction: string | null
           duration_minutes: number | null
+          email_thread_id: string | null
           id: string
           metadata: Json | null
           next_action_date: string | null
           next_steps: string | null
           outcome: string | null
+          recording_url: string | null
+          sentiment: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
+          whatsapp_message_id: string | null
         }
         Insert: {
           activity_date?: string | null
           activity_type: string
           attachments?: Json | null
+          channel?: string | null
           company_id?: string | null
           contact_email?: string | null
           contact_id?: string | null
@@ -302,20 +309,26 @@ export type Database = {
           created_by?: string | null
           decision_maker_id?: string | null
           description?: string | null
+          direction?: string | null
           duration_minutes?: number | null
+          email_thread_id?: string | null
           id?: string
           metadata?: Json | null
           next_action_date?: string | null
           next_steps?: string | null
           outcome?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
+          whatsapp_message_id?: string | null
         }
         Update: {
           activity_date?: string | null
           activity_type?: string
           attachments?: Json | null
+          channel?: string | null
           company_id?: string | null
           contact_email?: string | null
           contact_id?: string | null
@@ -326,15 +339,20 @@ export type Database = {
           created_by?: string | null
           decision_maker_id?: string | null
           description?: string | null
+          direction?: string | null
           duration_minutes?: number | null
+          email_thread_id?: string | null
           id?: string
           metadata?: Json | null
           next_action_date?: string | null
           next_steps?: string | null
           outcome?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+          whatsapp_message_id?: string | null
         }
         Relationships: [
           {
@@ -2623,6 +2641,62 @@ export type Database = {
           },
         ]
       }
+      conversation_analysis: {
+        Row: {
+          activity_id: string
+          analyzed_at: string
+          id: string
+          key_topics: Json | null
+          keywords: Json | null
+          metadata: Json | null
+          objections_detected: Json | null
+          overall_sentiment: string | null
+          questions_asked: number | null
+          sentiment_score: number | null
+          sentiment_timeline: Json | null
+          suggested_actions: Json | null
+          talk_time_ratio: Json | null
+        }
+        Insert: {
+          activity_id: string
+          analyzed_at?: string
+          id?: string
+          key_topics?: Json | null
+          keywords?: Json | null
+          metadata?: Json | null
+          objections_detected?: Json | null
+          overall_sentiment?: string | null
+          questions_asked?: number | null
+          sentiment_score?: number | null
+          sentiment_timeline?: Json | null
+          suggested_actions?: Json | null
+          talk_time_ratio?: Json | null
+        }
+        Update: {
+          activity_id?: string
+          analyzed_at?: string
+          id?: string
+          key_topics?: Json | null
+          keywords?: Json | null
+          metadata?: Json | null
+          objections_detected?: Json | null
+          overall_sentiment?: string | null
+          questions_asked?: number | null
+          sentiment_score?: number | null
+          sentiment_timeline?: Json | null
+          suggested_actions?: Json | null
+          talk_time_ratio?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_analysis_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           assigned_to: string | null
@@ -2842,6 +2916,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sdr_performance"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      deal_health_scores: {
+        Row: {
+          activity_score: number | null
+          calculated_at: string
+          company_id: string
+          engagement_score: number | null
+          health_score: number
+          id: string
+          metadata: Json | null
+          recommendations: Json | null
+          risk_factors: Json | null
+          risk_level: string
+          stakeholder_score: number | null
+          velocity_score: number | null
+        }
+        Insert: {
+          activity_score?: number | null
+          calculated_at?: string
+          company_id: string
+          engagement_score?: number | null
+          health_score: number
+          id?: string
+          metadata?: Json | null
+          recommendations?: Json | null
+          risk_factors?: Json | null
+          risk_level?: string
+          stakeholder_score?: number | null
+          velocity_score?: number | null
+        }
+        Update: {
+          activity_score?: number | null
+          calculated_at?: string
+          company_id?: string
+          engagement_score?: number | null
+          health_score?: number
+          id?: string
+          metadata?: Json | null
+          recommendations?: Json | null
+          risk_factors?: Json | null
+          risk_level?: string
+          stakeholder_score?: number | null
+          velocity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_health_scores_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3244,6 +3371,219 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_sequence_enrollments: {
+        Row: {
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_by: string | null
+          current_step: number | null
+          enrolled_at: string
+          id: string
+          metadata: Json | null
+          next_send_at: string | null
+          paused_at: string | null
+          sequence_id: string
+          status: string
+        }
+        Insert: {
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_by?: string | null
+          current_step?: number | null
+          enrolled_at?: string
+          id?: string
+          metadata?: Json | null
+          next_send_at?: string | null
+          paused_at?: string | null
+          sequence_id: string
+          status?: string
+        }
+        Update: {
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_by?: string | null
+          current_step?: number | null
+          enrolled_at?: string
+          id?: string
+          metadata?: Json | null
+          next_send_at?: string | null
+          paused_at?: string | null
+          sequence_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_enrollments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_enrollments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "decision_makers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequence_messages: {
+        Row: {
+          body: string
+          bounced_at: string | null
+          clicked_at: string | null
+          enrollment_id: string
+          id: string
+          metadata: Json | null
+          opened_at: string | null
+          replied_at: string | null
+          sent_at: string
+          status: string
+          step_id: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          bounced_at?: string | null
+          clicked_at?: string | null
+          enrollment_id: string
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          sent_at?: string
+          status?: string
+          step_id: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          bounced_at?: string | null
+          clicked_at?: string | null
+          enrollment_id?: string
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          sent_at?: string
+          status?: string
+          step_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_messages_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequence_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sequence_messages_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequence_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequence_steps: {
+        Row: {
+          body_template: string
+          created_at: string
+          delay_days: number
+          delay_hours: number
+          id: string
+          is_active: boolean | null
+          send_time: string | null
+          sequence_id: string
+          step_order: number
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_template: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          is_active?: boolean | null
+          send_time?: string | null
+          sequence_id: string
+          step_order: number
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          is_active?: boolean | null
+          send_time?: string | null
+          sequence_id?: string
+          step_order?: number
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          status: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          status?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          status?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       enrichment_field_mapping: {
         Row: {
@@ -4675,6 +5015,145 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_bookings: {
+        Row: {
+          attendee_email: string
+          attendee_name: string
+          attendee_phone: string | null
+          company_id: string | null
+          confirmation_sent_at: string | null
+          contact_id: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          meeting_link_id: string
+          meeting_notes: string | null
+          meeting_url: string | null
+          notes: string | null
+          reminder_sent_at: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attendee_email: string
+          attendee_name: string
+          attendee_phone?: string | null
+          company_id?: string | null
+          confirmation_sent_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          meeting_link_id: string
+          meeting_notes?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attendee_email?: string
+          attendee_name?: string
+          attendee_phone?: string | null
+          company_id?: string | null
+          confirmation_sent_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          meeting_link_id?: string
+          meeting_notes?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_bookings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_bookings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "decision_makers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_bookings_meeting_link_id_fkey"
+            columns: ["meeting_link_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_links: {
+        Row: {
+          advance_notice_hours: number | null
+          availability_rules: Json
+          buffer_time_minutes: number | null
+          calendar_integration: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean | null
+          max_bookings_per_day: number | null
+          meeting_location: string | null
+          slug: string
+          timezone: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advance_notice_hours?: number | null
+          availability_rules?: Json
+          buffer_time_minutes?: number | null
+          calendar_integration?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          max_bookings_per_day?: number | null
+          meeting_location?: string | null
+          slug: string
+          timezone?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advance_notice_hours?: number | null
+          availability_rules?: Json
+          buffer_time_minutes?: number | null
+          calendar_integration?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          max_bookings_per_day?: number | null
+          meeting_location?: string | null
+          slug?: string
+          timezone?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_templates: {
         Row: {
           body: string
@@ -5001,6 +5480,57 @@ export type Database = {
           metadata?: Json | null
           pitch_type?: string
           target_persona?: string | null
+        }
+        Relationships: []
+      }
+      playbooks: {
+        Row: {
+          competitor_intel: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          objection_responses: Json | null
+          playbook_type: string
+          questions_to_ask: Json | null
+          steps: Json
+          talk_tracks: Json | null
+          trigger_conditions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          competitor_intel?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          objection_responses?: Json | null
+          playbook_type: string
+          questions_to_ask?: Json | null
+          steps?: Json
+          talk_tracks?: Json | null
+          trigger_conditions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          competitor_intel?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          objection_responses?: Json | null
+          playbook_type?: string
+          questions_to_ask?: Json | null
+          steps?: Json
+          talk_tracks?: Json | null
+          trigger_conditions?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -6566,6 +7096,90 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_tasks: {
+        Row: {
+          ai_suggestions: Json | null
+          assigned_to: string | null
+          auto_created: boolean | null
+          company_id: string | null
+          completed_at: string | null
+          contact_id: string | null
+          context: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string
+          id: string
+          priority: string
+          reminder_at: string | null
+          status: string
+          task_type: string
+          title: string
+          trigger_metadata: Json | null
+          trigger_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_suggestions?: Json | null
+          assigned_to?: string | null
+          auto_created?: boolean | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          priority?: string
+          reminder_at?: string | null
+          status?: string
+          task_type: string
+          title: string
+          trigger_metadata?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_suggestions?: Json | null
+          assigned_to?: string | null
+          auto_created?: boolean | null
+          company_id?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: string
+          reminder_at?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          trigger_metadata?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "decision_makers"
             referencedColumns: ["id"]
           },
         ]
