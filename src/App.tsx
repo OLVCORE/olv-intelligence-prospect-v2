@@ -79,6 +79,7 @@ const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
 const Analytics = lazy(() => import("./pages/Leads/Analytics"));
 const LeadsPoolPage = lazy(() => import("./pages/LeadsPoolPage"));
 const LeadsQualifiedPage = lazy(() => import("./pages/LeadsQualifiedPage"));
+const ICPQuarantinePage = lazy(() => import("./pages/ICPQuarantinePage"));
 const EmailSequencesPage = lazy(() => import("./pages/EmailSequencesPage"));
 const SmartTasksPage = lazy(() => import("./pages/SmartTasksPage"));
 const CSVUploadWithMapping = lazy(() => import("./components/leads/CSVUploadWithMapping"));
@@ -720,6 +721,14 @@ const App = () => (
                   <AppLayout>
                     <LeadsQualifiedPage />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/icp-quarantine"
+              element={
+                <ProtectedRoute>
+                  <ICPQuarantinePage />
                 </ProtectedRoute>
               }
             />

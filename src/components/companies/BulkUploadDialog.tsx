@@ -492,27 +492,25 @@ export function BulkUploadDialog({ children }: { children?: ReactNode }) {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('bulk-upload-companies', {
-        body: { companies }
+      // NOVO FLUXO: Redirecionar para análise ICP antes de cadastrar
+      toast.success(`📊 ${companies.length} empresas prontas para análise ICP`, {
+        description: 'Redirecionando para análise automática...',
       });
 
-      if (error) throw error;
-
-      setResult(data);
-      setProgress(100);
+      setIsUploading(false);
       
-if (data.success > 0) {
-  toast.success(`${data.success} empresas importadas com sucesso!`, {
-    action: {
-      label: 'Ver base de empresas',
-      onClick: () => navigate('/companies')
-    }
-  });
-}
-
-if (data.errors.length > 0) {
-  toast.warning(`${data.errors.length} empresas com erros`);
-}
+      // Fechar o dialog
+      setIsOpen(false);
+      
+      // Redirecionar para página de análise em massa com os dados
+      setTimeout(() => {
+        navigate('/central-icp/batch', {
+          state: {
+            empresas: companies,
+            origem: 'upload_massa'
+          }
+        });
+      }, 500);
 
     } catch (error) {
       console.error('Erro no upload:', error);

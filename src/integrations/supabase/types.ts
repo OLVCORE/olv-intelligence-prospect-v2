@@ -4019,6 +4019,90 @@ export type Database = {
           },
         ]
       }
+      icp_analysis_results: {
+        Row: {
+          analysis_data: Json | null
+          analyzed_at: string | null
+          cnae_principal: string | null
+          cnpj: string
+          created_at: string | null
+          email: string | null
+          icp_score: number | null
+          id: string
+          is_cliente_totvs: boolean | null
+          motivo_descarte: string | null
+          moved_to_pool: boolean | null
+          municipio: string | null
+          nome_fantasia: string | null
+          origem: string | null
+          porte: string | null
+          raw_data: Json | null
+          razao_social: string
+          reviewed: boolean | null
+          telefone: string | null
+          temperatura: string | null
+          totvs_check_date: string | null
+          totvs_evidences: Json | null
+          uf: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          analyzed_at?: string | null
+          cnae_principal?: string | null
+          cnpj: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          is_cliente_totvs?: boolean | null
+          motivo_descarte?: string | null
+          moved_to_pool?: boolean | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          origem?: string | null
+          porte?: string | null
+          raw_data?: Json | null
+          razao_social: string
+          reviewed?: boolean | null
+          telefone?: string | null
+          temperatura?: string | null
+          totvs_check_date?: string | null
+          totvs_evidences?: Json | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          analyzed_at?: string | null
+          cnae_principal?: string | null
+          cnpj?: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          is_cliente_totvs?: boolean | null
+          motivo_descarte?: string | null
+          moved_to_pool?: boolean | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          origem?: string | null
+          porte?: string | null
+          raw_data?: Json | null
+          razao_social?: string
+          reviewed?: boolean | null
+          telefone?: string | null
+          temperatura?: string | null
+          totvs_check_date?: string | null
+          totvs_evidences?: Json | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       icp_audit_log: {
         Row: {
           action: string
