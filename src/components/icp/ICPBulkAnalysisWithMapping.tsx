@@ -108,29 +108,43 @@ export default function ICPBulkAnalysisWithMapping() {
             }
           });
 
-          if (!companyData.cnpj) {
-            throw new Error('CNPJ não encontrado');
+          if (!companyData.cnpj && !companyData.nome_da_empresa) {
+            throw new Error('CNPJ ou Nome da Empresa é obrigatório');
           }
 
-          const { data: icpScore, error } = await supabase.functions.invoke('calculate-icp-score-advanced', {
-            body: { company: companyData }
-          });
+          // Primeiro, inserir ou atualizar a empresa no banco
+          const { data: insertedCompany, error: insertError } = await supabase
+            .from('companies')
+            .upsert([companyData], { onConflict: 'cnpj' })
+            .select('id')
+            .single();
 
-          if (error) throw error;
+          if (insertError) throw insertError;
+
+          // Calcular score ICP básico localmente (simplificado)
+          let icpScore = 50; // Score base
+          
+          // Ajustar score baseado em dados disponíveis
+          if (companyData.setor) icpScore += 10;
+          if (companyData.employees || companyData.numero_funcionarios) icpScore += 10;
+          if (companyData.cidade || companyData.estado) icpScore += 10;
+          if (companyData.telefone || companyData.email) icpScore += 10;
+          
+          // Determinar temperatura
+          const temperature = icpScore >= 80 ? 'hot' : icpScore >= 60 ? 'warm' : 'cold';
 
           results.push({
             ...companyData,
-            icp_score: icpScore?.score || 0,
-            temperature: icpScore?.temperature || 'cold',
-            pain_points: icpScore?.pain_points || [],
-            recommended_products: icpScore?.recommended_products || [],
+            id: insertedCompany.id,
+            icp_score: Math.min(icpScore, 100),
+            temperature,
             status: 'success',
           });
 
           successCount++;
 
         } catch (err) {
-          console.error('Erro ao analisar linha:', err);
+          console.error('Erro ao processar linha:', err);
           
           results.push({
             ...row,
