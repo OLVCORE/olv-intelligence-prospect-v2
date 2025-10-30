@@ -105,6 +105,7 @@ export function useApproveQuarantineBatch() {
         temperatura: q.temperatura,
         status: 'active',
         source: 'icp_batch_analysis',
+        origem: 'batch_icp_analysis',
         raw_data: q.raw_analysis,
       }));
 
@@ -245,6 +246,7 @@ export function useAutoApprove() {
         temperatura: q.temperatura,
         status: 'active',
         source: 'icp_auto_approval',
+        origem: 'auto_approval',
         raw_data: q.raw_analysis,
       }));
 

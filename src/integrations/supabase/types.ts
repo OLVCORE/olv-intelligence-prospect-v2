@@ -1562,8 +1562,12 @@ export type Database = {
           headquarters_city: string | null
           headquarters_country: string | null
           headquarters_state: string | null
+          icp_analyzed_at: string | null
+          icp_breakdown: Json | null
+          icp_motivos: Json | null
           icp_score: number | null
           icp_score_breakdown: Json | null
+          icp_temperature: string | null
           id: string
           industry: string | null
           investors: Json | null
@@ -1618,6 +1622,8 @@ export type Database = {
           total_emails: number | null
           total_meetings: number | null
           total_whatsapp: number | null
+          totvs_detection_date: string | null
+          totvs_detection_details: Json | null
           totvs_detection_score: number | null
           totvs_detection_sources: Json | null
           totvs_last_checked_at: string | null
@@ -1672,8 +1678,12 @@ export type Database = {
           headquarters_city?: string | null
           headquarters_country?: string | null
           headquarters_state?: string | null
+          icp_analyzed_at?: string | null
+          icp_breakdown?: Json | null
+          icp_motivos?: Json | null
           icp_score?: number | null
           icp_score_breakdown?: Json | null
+          icp_temperature?: string | null
           id?: string
           industry?: string | null
           investors?: Json | null
@@ -1728,6 +1738,8 @@ export type Database = {
           total_emails?: number | null
           total_meetings?: number | null
           total_whatsapp?: number | null
+          totvs_detection_date?: string | null
+          totvs_detection_details?: Json | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
@@ -1782,8 +1794,12 @@ export type Database = {
           headquarters_city?: string | null
           headquarters_country?: string | null
           headquarters_state?: string | null
+          icp_analyzed_at?: string | null
+          icp_breakdown?: Json | null
+          icp_motivos?: Json | null
           icp_score?: number | null
           icp_score_breakdown?: Json | null
+          icp_temperature?: string | null
           id?: string
           industry?: string | null
           investors?: Json | null
@@ -1838,6 +1854,8 @@ export type Database = {
           total_emails?: number | null
           total_meetings?: number | null
           total_whatsapp?: number | null
+          totvs_detection_date?: string | null
+          totvs_detection_details?: Json | null
           totvs_detection_score?: number | null
           totvs_detection_sources?: Json | null
           totvs_last_checked_at?: string | null
@@ -4023,22 +4041,28 @@ export type Database = {
         Row: {
           analysis_data: Json | null
           analyzed_at: string | null
+          breakdown: Json | null
           cnae_principal: string | null
           cnpj: string
+          company_id: string | null
           created_at: string | null
           email: string | null
+          evidencias_totvs: Json | null
           icp_score: number | null
           id: string
           is_cliente_totvs: boolean | null
           motivo_descarte: string | null
+          motivos: Json | null
           moved_to_pool: boolean | null
           municipio: string | null
           nome_fantasia: string | null
           origem: string | null
           porte: string | null
+          raw_analysis: Json | null
           raw_data: Json | null
           razao_social: string
           reviewed: boolean | null
+          status: string | null
           telefone: string | null
           temperatura: string | null
           totvs_check_date: string | null
@@ -4050,22 +4074,28 @@ export type Database = {
         Insert: {
           analysis_data?: Json | null
           analyzed_at?: string | null
+          breakdown?: Json | null
           cnae_principal?: string | null
           cnpj: string
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
+          evidencias_totvs?: Json | null
           icp_score?: number | null
           id?: string
           is_cliente_totvs?: boolean | null
           motivo_descarte?: string | null
+          motivos?: Json | null
           moved_to_pool?: boolean | null
           municipio?: string | null
           nome_fantasia?: string | null
           origem?: string | null
           porte?: string | null
+          raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social: string
           reviewed?: boolean | null
+          status?: string | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_date?: string | null
@@ -4077,22 +4107,28 @@ export type Database = {
         Update: {
           analysis_data?: Json | null
           analyzed_at?: string | null
+          breakdown?: Json | null
           cnae_principal?: string | null
           cnpj?: string
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
+          evidencias_totvs?: Json | null
           icp_score?: number | null
           id?: string
           is_cliente_totvs?: boolean | null
           motivo_descarte?: string | null
+          motivos?: Json | null
           moved_to_pool?: boolean | null
           municipio?: string | null
           nome_fantasia?: string | null
           origem?: string | null
           porte?: string | null
+          raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social?: string
           reviewed?: boolean | null
+          status?: string | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_date?: string | null
@@ -4101,7 +4137,15 @@ export type Database = {
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "icp_analysis_results_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       icp_audit_log: {
         Row: {
@@ -4721,6 +4765,7 @@ export type Database = {
         Row: {
           cnae_principal: string | null
           cnpj: string
+          company_id: string | null
           created_at: string | null
           email: string | null
           icp_score: number | null
@@ -4732,6 +4777,7 @@ export type Database = {
           porte: string | null
           raw_data: Json | null
           razao_social: string
+          source: string | null
           status: string | null
           telefone: string | null
           temperatura: string | null
@@ -4743,6 +4789,7 @@ export type Database = {
         Insert: {
           cnae_principal?: string | null
           cnpj: string
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           icp_score?: number | null
@@ -4754,6 +4801,7 @@ export type Database = {
           porte?: string | null
           raw_data?: Json | null
           razao_social: string
+          source?: string | null
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
@@ -4765,6 +4813,7 @@ export type Database = {
         Update: {
           cnae_principal?: string | null
           cnpj?: string
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           icp_score?: number | null
@@ -4776,6 +4825,7 @@ export type Database = {
           porte?: string | null
           raw_data?: Json | null
           razao_social?: string
+          source?: string | null
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
@@ -4784,7 +4834,15 @@ export type Database = {
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_pool_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads_qualified: {
         Row: {
