@@ -69,8 +69,8 @@ export default function CSVUploadWithMapping() {
 
   const handleMappingChange = (index: number, newField: string) => {
     const updated = [...mappings];
-    updated[index].systemField = newField || null;
-    updated[index].status = newField ? 'mapped' : 'unmapped';
+    updated[index].systemField = newField === '__SKIP__' ? null : newField;
+    updated[index].status = newField && newField !== '__SKIP__' ? 'mapped' : 'unmapped';
     setMappings(updated);
   };
 
@@ -95,7 +95,7 @@ export default function CSVUploadWithMapping() {
           
           Object.entries(row).forEach(([csvCol, value]) => {
             const systemField = fieldMap[csvCol];
-            if (systemField && value) {
+            if (systemField && systemField !== '__SKIP__' && value) {
               companyData[systemField] = value;
             }
           });
@@ -233,15 +233,15 @@ export default function CSVUploadWithMapping() {
                     </TableCell>
                     <TableCell>
                       <Select
-                        value={mapping.systemField || ""}
+                        value={mapping.systemField || "__SKIP__"}
                         onValueChange={(value) => handleMappingChange(index, value)}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione um campo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">❌ Não mapear</SelectItem>
-                          {mapping.systemField && (
+                          <SelectItem value="__SKIP__">❌ Não mapear</SelectItem>
+                          {mapping.systemField && mapping.systemField !== '__SKIP__' && (
                             <SelectItem value={mapping.systemField}>
                               ⭐ {getFieldLabel(mapping.systemField)} (Sugerido)
                             </SelectItem>

@@ -73,9 +73,9 @@ export default function SalesIntelligenceFeed() {
   const [showNewMonitoring, setShowNewMonitoring] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'new' | 'in_progress' | 'contacted' | 'ignored' | 'closed'>('new');
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
-  const [selectedState, setSelectedState] = useState<string>('');
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('__ALL__');
+  const [selectedState, setSelectedState] = useState<string>('__ALL__');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('__ALL__');
   const companyIdFromUrl = searchParams.get('company');
 
   const { data: regionsData } = useBrazilRegions();
@@ -148,15 +148,15 @@ export default function SalesIntelligenceFeed() {
       }
 
       // Filtro por estado/região
-      if (selectedState) {
+      if (selectedState && selectedState !== '__ALL__') {
         if (company.headquarters_state !== selectedState) return false;
-      } else if (selectedRegion) {
+      } else if (selectedRegion && selectedRegion !== '__ALL__') {
         const statesInRegion = regionStateMap[selectedRegion] || [];
         if (!statesInRegion.includes(company.headquarters_state)) return false;
       }
 
       // Filtro por setor/indústria
-      if (selectedIndustry) {
+      if (selectedIndustry && selectedIndustry !== '__ALL__') {
         if (company.industry !== selectedIndustry) return false;
       }
 
@@ -333,12 +333,12 @@ export default function SalesIntelligenceFeed() {
 
                   <div>
                     <label className="text-xs text-muted-foreground">Região</label>
-                    <Select value={selectedRegion} onValueChange={(v) => { setSelectedRegion(v); setSelectedState(''); }}>
+                    <Select value={selectedRegion} onValueChange={(v) => { setSelectedRegion(v); setSelectedState('__ALL__'); }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Todas" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todas</SelectItem>
+                        <SelectItem value="__ALL__">Todas</SelectItem>
                         {regions.map((r) => (
                           <SelectItem key={r} value={r}>{r}</SelectItem>
                         ))}
@@ -353,7 +353,7 @@ export default function SalesIntelligenceFeed() {
                         <SelectValue placeholder="Todos" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="__ALL__">Todos</SelectItem>
                         {(selectedRegion ? brazilStates.filter(s => (regionStateMap[selectedRegion]||[]).includes(s.state_code)) : brazilStates)
                           .map((s) => (
                             <SelectItem key={s.state_code} value={s.state_code}>{s.state_code}</SelectItem>
@@ -369,7 +369,7 @@ export default function SalesIntelligenceFeed() {
                         <SelectValue placeholder="Todos" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="__ALL__">Todos</SelectItem>
                         {industryOptions.map((i) => (
                           <SelectItem key={i} value={i}>{i}</SelectItem>
                         ))}
@@ -378,13 +378,13 @@ export default function SalesIntelligenceFeed() {
                   </div>
                 </div>
 
-                {(selectedRegion || selectedState || selectedIndustry || selectedStatus !== 'new' || searchTerm) && (
+                {(selectedRegion || selectedState !== '__ALL__' || selectedIndustry !== '__ALL__' || selectedStatus !== 'new' || searchTerm) && (
                   <div className="flex justify-end">
                     <Button variant="ghost" size="sm" onClick={() => {
                       setSelectedStatus('new');
-                      setSelectedRegion('');
-                      setSelectedState('');
-                      setSelectedIndustry('');
+                      setSelectedRegion('__ALL__');
+                      setSelectedState('__ALL__');
+                      setSelectedIndustry('__ALL__');
                       setSearchTerm('');
                     }}>
                       Limpar filtros
