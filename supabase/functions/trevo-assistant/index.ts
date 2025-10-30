@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,19 +11,22 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  console.log('[TREVO] Iniciando processamento...');
+  console.log('[TREVO] 🚀 Iniciando processamento...');
 
   try {
-    // 1. VERIFICAR API KEY
+    // 1. VERIFICAR API KEY DA OPENAI
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    console.log('[TREVO] API Key presente?', !!OPENAI_API_KEY);
+    console.log('[TREVO] 🔑 API Key presente?', !!OPENAI_API_KEY);
 
     if (!OPENAI_API_KEY) {
       console.error('[TREVO] ❌ OPENAI_API_KEY não encontrada nos Secrets');
       return new Response(
         JSON.stringify({
-          error: 'API Key não configurada',
-          message: 'OPENAI_API_KEY não encontrada. Configure nos Secrets.'
+          error: 'Configuração inválida',
+          message: 'OPENAI_API_KEY não configurada. Configure nos Secrets do Supabase.',
+          debug: {
+            timestamp: new Date().toISOString()
+          }
         }),
         {
           status: 500,
@@ -33,11 +35,14 @@ serve(async (req) => {
       );
     }
 
-    // 2. PARSEAR BODY
+    // 2. PARSEAR BODY DA REQUISIÇÃO
     let body;
     try {
       body = await req.json();
-      console.log('[TREVO] Body recebido:', JSON.stringify(body, null, 2));
+      console.log('[TREVO] 📥 Body recebido:', {
+        has_message: !!body.message,
+        has_context: !!body.context,
+      });
     } catch (parseError) {
       console.error('[TREVO] ❌ Erro ao parsear JSON:', parseError);
       return new Response(
@@ -53,14 +58,15 @@ serve(async (req) => {
       );
     }
 
-    const { messages, context } = body;
+    const { message, context } = body;
 
-    if (!messages || messages.length === 0) {
-      console.error('[TREVO] ❌ Mensagens não fornecidas');
+    // 3. VALIDAR MENSAGEM
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      console.error('[TREVO] ❌ Mensagem inválida ou vazia');
       return new Response(
         JSON.stringify({
-          error: 'Mensagens obrigatórias',
-          message: 'Por favor, envie mensagens'
+          error: 'Mensagem obrigatória',
+          message: 'Por favor, envie uma mensagem válida'
         }),
         {
           status: 400,
@@ -69,111 +75,38 @@ serve(async (req) => {
       );
     }
 
-    console.log('[TREVO] ✓ Mensagens recebidas:', messages.length);
+    console.log('[TREVO] ✅ Mensagem válida recebida:', message.substring(0, 100) + '...');
 
-    // 3. BUSCAR CONTEXTO ADICIONAL
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    let additionalContext = '';
-
-    if (context?.userId) {
-      // Buscar dados do usuário
-      const { data: profile } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', context.userId)
-        .single();
-
-      if (profile) {
-        additionalContext += `\n\nPerfil do usuário: ${profile.full_name || 'Usuário'}, Papel: ${profile.role || 'SDR'}`;
-      }
-
-      // Buscar estatísticas do usuário
-      if (context.currentPage?.includes('/sdr/workspace')) {
-        const { data: deals } = await supabaseClient
-          .from('sdr_deals')
-          .select('stage, value, probability')
-          .eq('owner_id', context.userId);
-
-        if (deals && deals.length > 0) {
-          const totalValue = deals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
-          const avgProbability = deals.reduce((sum, d) => sum + (Number(d.probability) || 0), 0) / deals.length;
-          let formattedTotal = String(totalValue);
-          try {
-            formattedTotal = totalValue.toLocaleString('pt-BR');
-          } catch (_) {
-            formattedTotal = totalValue.toLocaleString();
-          }
-          additionalContext += `\n\nDeals ativos: ${deals.length}, Valor total: R$ ${formattedTotal}, Probabilidade média: ${avgProbability.toFixed(0)}%`;
-        }
-
-        const { data: tasks } = await supabaseClient
-          .from('sdr_tasks')
-          .select('status, priority')
-          .eq('assigned_to', context.userId)
-          .eq('status', 'pending');
-
-        if (tasks && tasks.length > 0) {
-          const urgentTasks = tasks.filter(t => t.priority === 'urgent').length;
-          additionalContext += `\n\nTarefas pendentes: ${tasks.length}${urgentTasks > 0 ? ` (${urgentTasks} urgentes)` : ''}`;
-        }
-      }
-
-      if (context.currentPage?.includes('/companies') && context.companyId) {
-        const { data: company } = await supabaseClient
-          .from('enriched_companies')
-          .select('*, tech_stack')
-          .eq('id', context.companyId)
-          .single();
-
-        if (company) {
-          additionalContext += `\n\nEmpresa em visualização: ${company.name}, Segmento: ${company.segment || 'N/A'}, Fit Score: ${company.fit_score || 'N/A'}`;
-          if (company.tech_stack) {
-            const techStackStr = Array.isArray(company.tech_stack)
-              ? company.tech_stack.join(', ')
-              : (typeof company.tech_stack === 'string' ? company.tech_stack : '');
-            if (techStackStr) {
-              additionalContext += `\n\nTech Stack: ${techStackStr}`;
-            }
-          }
-        }
-      }
-    }
-
-    // 4. PREPARAR SYSTEM PROMPT
+    // 4. PREPARAR PROMPT DO SISTEMA
     const systemPrompt = `Você é o TREVO, assistente inteligente de vendas da plataforma STRATEVO.
 
-Seu papel:
+**Seu papel:**
 - Ajudar usuários a navegar pela plataforma
 - Explicar funcionalidades e fluxos de trabalho
 - Fornecer insights sobre vendas e ICP
 - Ser proativo, claro e objetivo
+- Responder SEMPRE em português brasileiro
 
-Fluxo oficial da plataforma:
-1. CAPTURA - Upload CSV, scraping ou API pública
-2. VALIDAÇÃO - CNPJ, website, LinkedIn, email (automática)
-3. QUARENTENA - Revisão e aprovação manual
-4. QUALIFICAÇÃO ICP - Score 0-100 + Proposta IA
-5. SALES WORKSPACE - Centro de comando (11 abas)
-6. FECHAMENTO - Deal fechado
+**Fluxo oficial da plataforma STRATEVO:**
+1. **CAPTURA** - Upload CSV, scraping ou API pública
+2. **VALIDAÇÃO** - CNPJ, website, LinkedIn, email (automática)
+3. **QUARENTENA** - Revisão e aprovação manual
+4. **QUALIFICAÇÃO ICP** - Score 0-100 + Proposta IA
+5. **SALES WORKSPACE** - Centro de comando (11 abas)
+6. **FECHAMENTO** - Deal fechado!
 
-Contexto adicional:
-${additionalContext || 'Nenhum contexto adicional fornecido'}
+**Contexto adicional:**
+${context ? JSON.stringify(context, null, 2) : 'Nenhum contexto adicional'}
 
-Responda de forma clara, objetiva e profissional em português.`;
+**Instruções:**
+- Seja direto e objetivo
+- Use emojis quando apropriado
+- Forneça exemplos práticos
+- Sugira próximos passos`;
 
-    // 5. CHAMAR OPENAI
+    // 5. CONFIGURAR CHAMADA OPENAI
     const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
     const OPENAI_MODEL = 'gpt-4o-mini';
-
-    console.log('[TREVO] Chamando OpenAI:', {
-      endpoint: OPENAI_ENDPOINT,
-      model: OPENAI_MODEL,
-      messages_count: messages.length
-    });
 
     const requestBody = {
       model: OPENAI_MODEL,
@@ -182,15 +115,24 @@ Responda de forma clara, objetiva e profissional em português.`;
           role: 'system',
           content: systemPrompt
         },
-        ...messages
+        {
+          role: 'user',
+          content: message
+        }
       ],
       temperature: 0.7,
       max_tokens: 1500,
     };
 
-    // Timeout de 25 segundos
+    console.log('[TREVO] 🤖 Chamando OpenAI...', {
+      endpoint: OPENAI_ENDPOINT,
+      model: OPENAI_MODEL,
+      message_length: message.length
+    });
+
+    // 6. CHAMAR OPENAI COM TIMEOUT
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
     let openaiResponse;
     try {
@@ -205,8 +147,9 @@ Responda de forma clara, objetiva e profissional em português.`;
       });
     } catch (fetchError) {
       clearTimeout(timeoutId);
+      
       if (fetchError.name === 'AbortError') {
-        console.error('[TREVO] ❌ Timeout na chamada OpenAI');
+        console.error('[TREVO] ⏱️ Timeout na chamada OpenAI');
         return new Response(
           JSON.stringify({
             error: 'Timeout',
@@ -218,7 +161,8 @@ Responda de forma clara, objetiva e profissional em português.`;
           }
         );
       }
-      console.error('[TREVO] ❌ Erro ao chamar OpenAI:', fetchError);
+      
+      console.error('[TREVO] ❌ Erro ao conectar OpenAI:', fetchError);
       return new Response(
         JSON.stringify({
           error: 'Erro de conexão',
@@ -234,12 +178,12 @@ Responda de forma clara, objetiva e profissional em português.`;
 
     clearTimeout(timeoutId);
 
-    console.log('[TREVO] OpenAI respondeu:', {
+    console.log('[TREVO] 📡 OpenAI respondeu:', {
       status: openaiResponse.status,
       statusText: openaiResponse.statusText
     });
 
-    // 6. TRATAR RESPOSTA OPENAI
+    // 7. TRATAR ERROS DA OPENAI
     if (!openaiResponse.ok) {
       let errorData;
       try {
@@ -254,18 +198,18 @@ Responda de forma clara, objetiva e profissional em português.`;
       });
 
       let errorMessage = 'Erro ao processar sua mensagem';
-
+      
       switch (openaiResponse.status) {
         case 401:
-          errorMessage = 'API Key da OpenAI inválida. Verifique a configuração.';
+          errorMessage = '🔑 API Key da OpenAI inválida ou expirada. Verifique a configuração nos Secrets.';
           break;
         case 429:
-          errorMessage = 'Limite de requisições atingido. Aguarde alguns segundos.';
+          errorMessage = '⏳ Limite de requisições atingido. Aguarde alguns segundos e tente novamente.';
           break;
         case 500:
         case 502:
         case 503:
-          errorMessage = 'Serviço da OpenAI temporariamente indisponível.';
+          errorMessage = '🔧 Serviço da OpenAI temporariamente indisponível. Tente novamente em alguns instantes.';
           break;
         default:
       }
@@ -275,7 +219,8 @@ Responda de forma clara, objetiva e profissional em português.`;
           error: errorMessage,
           details: errorData,
           status: openaiResponse.status,
-          provider: 'OpenAI'
+          provider: 'OpenAI',
+          model: OPENAI_MODEL
         }),
         {
           status: openaiResponse.status,
@@ -284,7 +229,7 @@ Responda de forma clara, objetiva e profissional em português.`;
       );
     }
 
-    // 7. PROCESSAR RESPOSTA
+    // 8. PROCESSAR RESPOSTA DA OPENAI
     let data;
     try {
       data = await openaiResponse.json();
@@ -305,17 +250,20 @@ Responda de forma clara, objetiva e profissional em português.`;
 
     const aiResponse = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
 
-    console.log('[TREVO] ✓ Resposta gerada:', {
+    console.log('[TREVO] ✅ Resposta gerada com sucesso:', {
       response_length: aiResponse.length,
+      model: OPENAI_MODEL,
       tokens_used: data.usage
     });
 
+    // 9. RETORNAR RESPOSTA
     return new Response(
       JSON.stringify({
-        message: aiResponse,
+        response: aiResponse,
         provider: 'OpenAI',
         model: OPENAI_MODEL,
-        usage: data.usage
+        usage: data.usage,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 200,
@@ -330,8 +278,9 @@ Responda de forma clara, objetiva e profissional em português.`;
     return new Response(
       JSON.stringify({
         error: 'Erro interno do servidor',
-        message: 'Ocorreu um erro inesperado',
+        message: 'Ocorreu um erro inesperado ao processar sua mensagem',
         details: error.message,
+        stack: error.stack,
         timestamp: new Date().toISOString()
       }),
       {
