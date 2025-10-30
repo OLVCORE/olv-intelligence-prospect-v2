@@ -63,21 +63,24 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
     if (empresasProcessamento.length === 0 && !processamentoIniciado) {
       setProcessamentoIniciado(true);
       setEmpresasProcessamento(
-        empresas.map((emp, index) => ({
-          id: `${emp.cnpj || 'sem-cnpj'}-${index}`,
-          cnpj: emp.cnpj,
-          razao_social: emp.razao_social || emp.nome_da_empresa || 'Empresa sem nome',
-          progresso: 0,
-          status: 'aguardando',
-          etapa_atual: 'Aguardando processamento',
-          checkpoints: [
-            { nome: 'Validação de Dados', status: 'pendente', tempo: 0 },
-            { nome: 'Verificação TOTVS', status: 'pendente', tempo: 0 },
-            { nome: 'Enriquecimento de Dados', status: 'pendente', tempo: 0 },
-            { nome: 'Análise Financeira', status: 'pendente', tempo: 0 },
-            { nome: 'Cálculo ICP Score', status: 'pendente', tempo: 0 },
-          ],
-        }))
+        empresas.map((emp, index) => {
+          const cnpjLimpo = (emp.cnpj || '').toString().replace(/\D/g, '');
+          return ({
+            id: `${cnpjLimpo || 'sem-cnpj'}-${index}`,
+            cnpj: cnpjLimpo,
+            razao_social: emp.razao_social || emp.nome_da_empresa || 'Empresa sem nome',
+            progresso: 0,
+            status: 'aguardando',
+            etapa_atual: 'Aguardando processamento',
+            checkpoints: [
+              { nome: 'Validação de Dados', status: 'pendente', tempo: 0 },
+              { nome: 'Verificação TOTVS', status: 'pendente', tempo: 0 },
+              { nome: 'Enriquecimento de Dados', status: 'pendente', tempo: 0 },
+              { nome: 'Análise Financeira', status: 'pendente', tempo: 0 },
+              { nome: 'Cálculo ICP Score', status: 'pendente', tempo: 0 },
+            ],
+          });
+        })
       );
     }
   }, [empresas, empresasProcessamento.length, processamentoIniciado]);

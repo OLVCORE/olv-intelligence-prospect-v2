@@ -46,52 +46,97 @@ export default function ICPBulkAnalysisWithMapping() {
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
     setFile(uploadedFile);
 
-    Papa.parse(uploadedFile, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const data = results.data as any[];
-        
-        if (!data || data.length === 0) {
-          toast({
-            title: "Erro",
-            description: "Arquivo CSV vazio ou inválido.",
-            variant: "destructive",
-          });
-          return;
-        }
+    // Validação básica de arquivo
+    const isCSV = uploadedFile.name.toLowerCase().endsWith('.csv') || /csv|excel|text/.test(uploadedFile.type);
+    if (!isCSV) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Selecione um arquivo CSV válido (.csv)',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (uploadedFile.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-        const headers = Object.keys(data[0]);
-        
-        setAllData(data);
-        setPreviewData(data.slice(0, 3));
+    try {
+      // Ler texto para validações iniciais
+      let text = await uploadedFile.text();
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.substring(1); // Remove BOM
+      }
 
-        const autoMappings = mapAllColumns(headers);
-        setMappings(autoMappings);
-
-        setStep('mapping');
-
-        const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
+      const headSample = text.slice(0, 400).toLowerCase();
+      if (headSample.includes('<html') || headSample.includes('<head') || headSample.includes('<meta') || headSample.includes('<table')) {
         toast({
-          title: "Arquivo carregado!",
-          description: `${mappedCount} de ${headers.length} colunas mapeadas automaticamente (${Math.round((mappedCount/headers.length)*100)}%)`,
+          title: 'Arquivo inválido',
+          description: 'O arquivo parece ser HTML (XLS disfarçado). Exporte como CSV puro.',
+          variant: 'destructive',
         });
-      },
-      error: (error) => {
-        console.error('Erro ao ler CSV:', error);
+        return;
+      }
+
+      // Detectar separador
+      const firstLine = text.split(/\r?\n/)[0] || '';
+      const delimiter = firstLine.includes(';') ? ';' : firstLine.includes('\t') ? '\t' : ',';
+
+      // Parse com configurações robustas
+      const results = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: 'greedy',
+        delimiter,
+        transformHeader: (h) => h.trim().replace(/^["']|["']$/g, ''),
+      });
+
+      if (results.errors && results.errors.length > 0) {
+        console.warn('Avisos do CSV:', results.errors);
+      }
+
+      const data = (results.data as any[]).filter(Boolean);
+      if (!data || data.length === 0) {
         toast({
-          title: "Erro ao ler arquivo",
-          description: "Verifique se o arquivo está no formato CSV correto.",
-          variant: "destructive",
+          title: 'Erro',
+          description: 'Arquivo CSV vazio ou inválido.',
+          variant: 'destructive',
         });
-      },
-    });
+        return;
+      }
+
+      const headers = Object.keys(data[0] || {});
+
+      setAllData(data);
+      setPreviewData(data.slice(0, 3));
+
+      const autoMappings = mapAllColumns(headers);
+      setMappings(autoMappings);
+
+      setStep('mapping');
+
+      const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
+      toast({
+        title: 'Arquivo carregado!',
+        description: `${mappedCount} de ${headers.length} colunas mapeadas automaticamente (${Math.round((mappedCount/headers.length)*100)}%)`,
+      });
+    } catch (error) {
+      console.error('Erro ao ler CSV:', error);
+      toast({
+        title: 'Erro ao ler arquivo',
+        description: 'Verifique se o arquivo está no formato CSV correto.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleMappingChange = (index: number, newField: string) => {
@@ -322,6 +367,11 @@ export default function ICPBulkAnalysisWithMapping() {
       // Se não tem nome, usar CNPJ como nome temporário
       if (!name && cnpj) {
         name = `Empresa ${cnpj}`;
+      }
+
+      // Validar CNPJ antes de qualquer persistência
+      if (!cnpj || cnpj.length !== 14) {
+        throw new Error('CNPJ inválido');
       }
 
       updateCompanyStatus({ 
@@ -773,16 +823,40 @@ export default function ICPBulkAnalysisWithMapping() {
       }
     });
 
-    const mappedData = allData.map(row => {
+    const mappedAll = allData.map(row => {
       const company: any = {};
       Object.entries(row).forEach(([csvCol, value]) => {
         const systemField = fieldMap[csvCol];
-        if (systemField && value) {
+        if (!systemField || value == null) return;
+        const strVal = String(value).trim();
+        if (systemField === 'cnpj') {
+          const cleaned = strVal.replace(/\D/g, '');
+          if (cleaned) company.cnpj = cleaned;
+        } else if (systemField === 'razao_social' || systemField === 'nome_da_empresa') {
+          const trivial = ['sim', 'não', 'nao', 'n/a', 'na'];
+          if (strVal && strVal.length >= 3 && !trivial.includes(strVal.toLowerCase())) {
+            company[systemField] = strVal;
+          }
+        } else {
           company[systemField] = value;
         }
       });
       return company;
     });
+
+    const mappedData = mappedAll.filter((c) => {
+      const cnpj = String(c?.cnpj || '').replace(/\D/g, '');
+      const hasName = Boolean(c?.razao_social || c?.nome_da_empresa);
+      return cnpj.length === 14 && hasName;
+    });
+
+    const dropped = mappedAll.length - mappedData.length;
+    if (dropped > 0) {
+      toast({
+        title: 'Linhas ignoradas',
+        description: `${dropped} linha(s) foram ignoradas por CNPJ ou Razão Social inválidos`,
+      });
+    }
 
     const tempoInicio = Date.now();
 
