@@ -711,13 +711,13 @@ export default function ICPBulkAnalysisWithMapping() {
               Revise o mapeamento automático. Ajuste se necessário.
             </p>
             <div className="flex gap-4">
-              <Badge variant="outline" className="bg-green-50">
+              <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300 dark:border-green-700">
                 {mappedCount} Mapeados
               </Badge>
-              <Badge variant="outline" className="bg-yellow-50">
+              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700">
                 {reviewCount} Revisar
               </Badge>
-              <Badge variant="outline" className="bg-red-50">
+              <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300 dark:border-red-700">
                 {unmappedCount} Não mapeados
               </Badge>
             </div>
