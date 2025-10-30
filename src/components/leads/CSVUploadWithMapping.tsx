@@ -7,30 +7,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Upload, CheckCircle, AlertCircle, XCircle, ArrowLeft, FileSpreadsheet } from 'lucide-react';
-import Papa from 'papaparse';
-import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import Papa from 'papaparse';
+import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 
 type Step = 'upload' | 'mapping' | 'importing' | 'complete';
 
 export default function CSVUploadWithMapping() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState<Step>('upload');
-  const [file, setFile] = useState<File | null>(null);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [allData, setAllData] = useState<any[]>([]);
   const [importStats, setImportStats] = useState({ success: 0, errors: 0, total: 0 });
-  const { toast } = useToast();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
-    setFile(uploadedFile);
-
-    // Parse CSV
     Papa.parse(uploadedFile, {
       header: true,
       skipEmptyLines: true,
@@ -47,14 +43,11 @@ export default function CSVUploadWithMapping() {
         }
 
         const headers = Object.keys(data[0]);
-        
         setAllData(data);
         setPreviewData(data.slice(0, 3));
 
-        // Mapear automaticamente
         const autoMappings = mapAllColumns(headers);
         setMappings(autoMappings);
-
         setStep('mapping');
 
         const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
@@ -89,7 +82,6 @@ export default function CSVUploadWithMapping() {
     const total = allData.length;
 
     try {
-      // Criar mapa de conversão (coluna CSV -> campo sistema)
       const fieldMap: Record<string, string> = {};
       mappings.forEach(m => {
         if (m.systemField) {
@@ -97,10 +89,8 @@ export default function CSVUploadWithMapping() {
         }
       });
 
-      // Processar cada linha
       for (const row of allData) {
         try {
-          // Converter dados usando o mapeamento
           const companyData: any = {};
           
           Object.entries(row).forEach(([csvCol, value]) => {
@@ -110,7 +100,6 @@ export default function CSVUploadWithMapping() {
             }
           });
 
-          // Inserir no banco
           const { error } = await supabase
             .from('companies')
             .insert([companyData]);
@@ -122,7 +111,6 @@ export default function CSVUploadWithMapping() {
           errorCount++;
         }
 
-        // Atualizar progresso
         setImportStats({ success: successCount, errors: errorCount, total });
       }
 
@@ -171,7 +159,6 @@ export default function CSVUploadWithMapping() {
 
   const resetImport = () => {
     setStep('upload');
-    setFile(null);
     setMappings([]);
     setPreviewData([]);
     setAllData([]);
@@ -222,15 +209,9 @@ export default function CSVUploadWithMapping() {
               </p>
             </div>
             <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-green-100 text-green-800">{mappedCount} Mapeados</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-yellow-100 text-yellow-800">{reviewCount} Revisar</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-red-100 text-red-800">{unmappedCount} Não mapeados</Badge>
-              </div>
+              <Badge className="bg-green-100 text-green-800">{mappedCount} Mapeados</Badge>
+              <Badge className="bg-yellow-100 text-yellow-800">{reviewCount} Revisar</Badge>
+              <Badge className="bg-red-100 text-red-800">{unmappedCount} Não mapeados</Badge>
             </div>
           </div>
 
@@ -345,45 +326,41 @@ export default function CSVUploadWithMapping() {
     );
   }
 
-  if (step === 'complete') {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <Card className="p-8">
-          <div className="text-center">
-            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
-            <h2 className="text-2xl font-bold mb-2">🎉 Importação Concluída!</h2>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 my-6">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-green-600">{importStats.total}</div>
-                  <div className="text-sm text-muted-foreground">Total</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-600">{importStats.success}</div>
-                  <div className="text-sm text-muted-foreground">Sucesso</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-red-600">{importStats.errors}</div>
-                  <div className="text-sm text-muted-foreground">Erros</div>
-                </div>
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card className="p-8">
+        <div className="text-center">
+          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+          <h2 className="text-2xl font-bold mb-2">🎉 Importação Concluída!</h2>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 my-6">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-3xl font-bold text-green-600">{importStats.total}</div>
+                <div className="text-sm text-muted-foreground">Total</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-green-600">{importStats.success}</div>
+                <div className="text-sm text-muted-foreground">Sucesso</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-red-600">{importStats.errors}</div>
+                <div className="text-sm text-muted-foreground">Erros</div>
               </div>
             </div>
-            <p className="text-muted-foreground mb-6">
-              Taxa de sucesso: {Math.round((importStats.success / importStats.total) * 100)}%
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button onClick={resetImport} variant="outline">
-                Importar outra planilha
-              </Button>
-              <Button onClick={() => navigate('/search')}>
-                Ver empresas importadas
-              </Button>
-            </div>
           </div>
-        </Card>
-      </div>
-    );
-  }
-
-  return null;
+          <p className="text-muted-foreground mb-6">
+            Taxa de sucesso: {Math.round((importStats.success / importStats.total) * 100)}%
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={resetImport} variant="outline">
+              Importar outra planilha
+            </Button>
+            <Button onClick={() => navigate('/search')}>
+              Ver empresas importadas
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
 }
