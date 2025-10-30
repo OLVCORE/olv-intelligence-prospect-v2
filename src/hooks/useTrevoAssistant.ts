@@ -80,36 +80,51 @@ export function useTrevoAssistant(context: TrevoContext) {
     } catch (error: any) {
       console.error('Error calling TREVO:', error);
       
+      // Extrair mensagem de erro do backend
+      let errorMsg = error?.message || '';
+      
+      // Se for um FunctionsHttpError, tentar pegar a mensagem do contexto
+      if (error?.context?.error) {
+        errorMsg = error.context.error;
+      }
+      
       // Classificar erros comuns
-      const raw = error?.message || '';
-      const isAuthError = /autentic|unauthorized|401|api key|invalid/i.test(raw);
-      const isRateLimit = /limite|rate|429/i.test(raw);
+      const isCreditsError = /crédito|credit|402|payment/i.test(errorMsg);
+      const isAuthError = /autentic|unauthorized|401|api key|invalid/i.test(errorMsg);
+      const isRateLimit = /limite|rate|429/i.test(errorMsg);
       
       // Mensagem de erro amigável
       const errorMessage: TrevoMessage = {
         role: 'assistant',
-        content: isAuthError
-          ? '🔐 Erro de autenticação com o provedor de IA (OpenAI). Verifique a chave configurada nos Secrets.'
+        content: isCreditsError
+          ? '💳 Os créditos da IA se esgotaram. Entre em contato com o administrador da plataforma para recarregar.'
+          : isAuthError
+          ? '🔐 Erro de autenticação. Entre em contato com o suporte.'
           : isRateLimit
           ? '⏳ Muitas solicitações em pouco tempo. Aguarde alguns instantes e tente novamente.'
-          : `😔 Desculpe, encontrei um problema: ${raw || 'Erro ao processar sua mensagem'}. Tente novamente em alguns instantes.`,
+          : `😔 Desculpe, encontrei um problema. Tente novamente em alguns instantes.`,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
       
-      if (isAuthError) {
-        toast.error('Falha de autenticação (OpenAI)', {
-          description: 'Verifique a configuração da OPENAI_API_KEY nos Secrets',
+      if (isCreditsError) {
+        toast.error('Créditos esgotados', {
+          description: 'Os créditos da IA se esgotaram. Entre em contato com o administrador.',
+          duration: 10000
+        });
+      } else if (isAuthError) {
+        toast.error('Falha de autenticação', {
+          description: 'Erro de autenticação com o serviço de IA',
           duration: 10000
         });
       } else if (isRateLimit) {
-        toast.error('Limite de requisições (OpenAI)', {
+        toast.error('Limite de requisições', {
           description: 'Aguarde alguns instantes e tente novamente',
         });
       } else {
         toast.error('Erro ao comunicar com o TREVO', {
-          description: raw
+          description: errorMsg || 'Tente novamente em alguns instantes'
         });
       }
     } finally {

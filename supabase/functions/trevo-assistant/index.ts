@@ -15,9 +15,9 @@ serve(async (req) => {
     const { messages, context } = await req.json();
     console.log('TREVO Assistant request:', { messagesCount: messages?.length, context });
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY não configurado');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY não configurado');
     }
 
     const supabaseClient = createClient(
@@ -254,14 +254,14 @@ Responda sempre em português, seja direto e focado em ações práticas.
       content: knowledgeBase
     };
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.lovable.app/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'openai/gpt-5-mini',
         messages: [systemMessage, ...messages],
         temperature: 0.7,
         max_tokens: 2000,
@@ -270,15 +270,18 @@ Responda sempre em português, seja direto e focado em ações práticas.
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI error:', response.status, errorText);
+      console.error('Lovable AI error:', response.status, errorText);
       
       if (response.status === 429) {
-        throw new Error('Limite de requisições da OpenAI atingido. Tente novamente em alguns instantes.');
+        throw new Error('Limite de requisições atingido. Tente novamente em alguns instantes.');
       }
       if (response.status === 401) {
-        throw new Error('Falha de autenticação na OpenAI. Verifique a chave de API.');
+        throw new Error('Falha de autenticação. Verifique a configuração.');
       }
-      throw new Error(`Erro na OpenAI: ${response.status}`);
+      if (response.status === 402) {
+        throw new Error('Créditos do Lovable AI esgotados. Entre em contato com o administrador.');
+      }
+      throw new Error(`Erro na IA: ${response.status}`);
     }
 
     const data = await response.json();
