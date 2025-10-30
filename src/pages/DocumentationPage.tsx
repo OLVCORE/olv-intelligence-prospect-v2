@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DocumentationQualificacaoTab } from './DocumentationQualificacaoTab';
+import { DocumentationSalesWorkspaceTab } from './DocumentationSalesWorkspaceTab';
 
 declare global {
   namespace JSX {
@@ -78,7 +79,7 @@ export default function DocumentationPage() {
             </TabsTrigger>
             <TabsTrigger value="pipeline" className="gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              Pipeline
+              Sales Workspace
             </TabsTrigger>
           </TabsList>
 
@@ -1455,19 +1456,8 @@ export default function DocumentationPage() {
                   <DocumentationQualificacaoTab />
                 </TabsContent>
 
-                <TabsContent value="pipeline" className="mt-0 space-y-6">
-                  <h2 className="text-3xl font-bold text-primary border-b pb-3 flex items-center gap-3">
-                    <Workflow className="h-8 w-8" />
-                    Módulo 4: Pipeline Visual
-                  </h2>
-                  
-                  <Card className="p-6 bg-gradient-to-br from-pink-500/10 to-purple-500/5">
-                    <h3 className="text-xl font-bold mb-4">Em breve: Documentação completa deste módulo</h3>
-                    <p className="text-muted-foreground">
-                      Gerencie todos os seus deals visualmente com Kanban interativo, arraste e solte, 
-                      e acompanhe o progresso em tempo real.
-                    </p>
-                  </Card>
+                <TabsContent value="pipeline" className="mt-0">
+                  <DocumentationSalesWorkspaceTab />
                 </TabsContent>
 
               </ScrollArea>
