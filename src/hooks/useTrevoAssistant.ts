@@ -18,226 +18,355 @@ export interface TrevoContext {
 
 // Contexto estático com todo o conhecimento da plataforma para o RAG do TREVO
 const PLATFORM_KNOWLEDGE = `
-# CONHECIMENTO DA PLATAFORMA OLV INTELLIGENCE PROSPECT
+# CONHECIMENTO COMPLETO DA PLATAFORMA OLV INTELLIGENCE PROSPECT
+
+## VISÃO GERAL DO SISTEMA
+
+**O QUE É A MÁQUINA DE VENDAS?**
+Sistema completo e automatizado para gerenciar todo o ciclo de vendas B2B com 6 módulos principais:
+
+### MÓDULOS DO SISTEMA
+1. **Captura Inteligente** - Capture leads de múltiplas fontes (CSV, web scraping, API pública)
+2. **Validação Automática** - CNPJ, website, LinkedIn, email validados automaticamente
+3. **Qualificação com IA** - Score ICP 0-100 com 7 dimensões de análise
+4. **Proposta Personalizada** - IA gera propostas de valor e scripts únicos
+5. **Sales Workspace** - Centro de comando com 11 abas especializadas
+6. **Analytics Avançado** - Funil de conversão, KPIs e insights acionáveis
+
+### FLUXO COMPLETO DO SISTEMA
+📥 CAPTURA → 🔍 VALIDAÇÃO → ⏳ QUARENTENA → 🎯 QUALIFICAÇÃO ICP → 🎛️ SALES WORKSPACE → 💰 FECHAMENTO
+
+---
+
+## MÓDULO 1: CAPTURA DE LEADS
+
+### OPÇÃO 1: Upload Manual (CSV/Excel)
+**Como funciona:**
+1. Prepare arquivo com colunas: name (obrigatório), cnpj, website, email, phone, sector, state, city, employees
+2. Clique em "Upload Manual" em /leads/capture
+3. Sistema detecta duplicados, insere em quarentena, dispara validação automática
+
+**Colunas aceitas:** name/empresa, cnpj, website/site, email, phone/telefone, sector/setor, state/estado, city/cidade, employees/funcionarios
+
+**Após upload:**
+- Sistema normaliza dados
+- Ignora duplicados (por CNPJ)
+- Insere leads com status 'pending'
+- Validação automática iniciada
+- Toast de confirmação
+
+### OPÇÃO 2: Empresas Aqui (Web Scraping)
+**Como funciona:**
+1. Clique "Buscar Empresas" em /leads/capture
+2. Redireciona para /central-icp/discovery
+3. Configure filtros (setor, estado, porte)
+4. Sistema faz scraping automático
+5. Leads inseridos na quarentena
+
+**Vantagens:** Dados públicos atualizados, filtragem precisa por ICP, 100% automatizado
+
+### OPÇÃO 3: API Pública (Integração Web)
+**Endpoint:** POST https://[SEU-PROJETO].supabase.co/functions/v1/capture-lead-api
+
+**Campos aceitos:** name (obrigatório), email, phone, sector, state, city, message, source
+
+---
+
+## MÓDULO 2: QUARENTENA INTELIGENTE
+
+### ACESSO
+URL: /leads/quarantine
+Menu: Sidebar → Quarentena
+
+### FILTROS DISPONÍVEIS
+**Por Status:**
+- Todos
+- Pendentes (aguardando revisão)
+- Validando (em processo)
+- Aprovados (prontos para ICP)
+- Rejeitados (não qualificados)
+- Duplicados (CNPJ existente)
+
+**Por Fonte:**
+- Upload Manual
+- Empresas Aqui
+- API Web
+- Indicação
+
+**Busca:** Busca instantânea por nome, CNPJ ou email (debounce 300ms, case-insensitive)
+
+### ESTRUTURA DO CARD DE LEAD
+1. **Cabeçalho:** Nome empresa + badges (status, fonte)
+2. **Dados Principais:** CNPJ, setor, local, funcionários
+3. **Validações:** Badges de CNPJ válido, site ativo, LinkedIn, email
+4. **Scores:** Score de validação (0-100) e qualidade de dados (%)
+
+### AÇÕES DISPONÍVEIS
+
+**1. VALIDAR Lead**
+- Quando: Status pending, score 30-69
+- O que faz: Valida CNPJ/website/LinkedIn/email via APIs
+- Tempo: 5-30 segundos
+- Resultado: approved (≥70), pending (30-69) ou rejected (<30)
+
+**2. APROVAR Lead**
+- Quando: Revisão manual, decidiu que é válido
+- O que faz: Muda status para approved manualmente
+- Habilita botão "Qualificar ICP →"
+
+**3. REJEITAR Lead**
+- Quando: Dados ruins, empresa fora do ICP, duplicado
+- O que faz: Remove do fluxo de vendas, status rejected
+
+**4. QUALIFICAR ICP →**
+- Quando: Lead approved
+- O que faz: Redireciona para /leads/icp-analysis, inicia análise automática
+- Próximo: Lead vai para Sales Workspace após qualificação
+
+### SISTEMA DE SCORING (0-100)
+**70-100 pontos:** ✅ Aprovado automaticamente (dados completos e validados)
+**30-69 pontos:** ⚠️ Revisão manual necessária (operador decide)
+**0-29 pontos:** ❌ Rejeitado automaticamente (dados insuficientes)
+
+**Critérios:**
+- CNPJ Válido: +25pts
+- Website Ativo: +25pts
+- LinkedIn Encontrado: +20pts
+- Email Válido: +15pts
+- Telefone: +10pts
+- Dados Completos: +5pts
+
+---
 
 ## MÓDULO 3: QUALIFICAÇÃO ICP + IA
 
 ### O QUE É QUALIFICAÇÃO ICP?
-ICP (Ideal Customer Profile) é o perfil do cliente ideal. A Máquina de Vendas OLV usa IA para:
-- Calcular automaticamente o score ICP (0-100 pontos)
-- Classificar leads por temperatura (🔥 HOT 70-100pts, 🟡 WARM 40-69pts, 🔵 COLD 0-39pts)
-- Detectar pain points (dores do cliente)
-- Recomendar produtos TOTVS específicos
-- Gerar proposta de valor personalizada com IA
-- Criar script de abordagem comercial pronto
-- Estimar ROI (retorno sobre investimento)
+ICP (Ideal Customer Profile) é o perfil do cliente ideal. A IA calcula score 0-100 com 7 dimensões, classifica por temperatura e gera proposta personalizada.
 
 ### BENEFÍCIOS
 - Economiza 2-3 horas de pesquisa por lead
-- Aumenta conversão em 35% focando em leads quentes
+- Aumenta conversão em 35%
 - Padroniza abordagem entre SDRs
-- Melhora qualidade das conversas comerciais
+- Melhora qualidade das conversas
 
 ### TEMPO DO PROCESSO
-- Análise ICP automática: 15-30 segundos
-- Leitura de proposta: 5-7 minutos
-- Prática de script: 15-20 minutos
-- TOTAL: ~25-30 minutos por lead
+- Análise ICP automática: 15-30s
+- Leitura proposta: 5-7min
+- Prática script: 15-20min
+- **TOTAL: ~25-30 minutos por lead**
 
-### PASSO A PASSO PARA USAR
+### PASSO A PASSO
 
-**PASSO 1: Acessar Qualificação ICP**
-- CAMINHO A (Mais Comum): Menu → Quarentena → Localizar lead Aprovado → Clicar "Qualificar ICP →"
-- CAMINHO B: Menu → Análise ICP → Selecionar lead da lista
+**PASSO 1: Acessar**
+- Via Quarentena: Lead aprovado → "Qualificar ICP →"
+- Via Direto: Menu → Análise ICP → Selecionar lead
 - URL: /leads/icp-analysis
 
 **PASSO 2: Aguardar Análise (15-30s)**
 - Edge Function 'calculate-icp-score-advanced' calcula score
-- 7 dimensões analisadas: Setor (30pts), Porte (25pts), Região (20pts), Status TOTVS (20pts), Concorrente (15pts), Qualidade (10pts), Sinais (10pts)
-- Edge Function 'generate-value-proposition' gera proposta com OpenAI GPT-4
+- Edge Function 'generate-value-proposition' gera proposta (GPT-4)
 - Resultado salvo em icp_analysis_history
 
-**PASSO 3: Analisar Score ICP**
-Score mostrado com 7 dimensões detalhadas:
-- Setor (0-30pts): Prioriza Agro, Indústria, Varejo, Saúde
-- Porte (0-25pts): Médias (51-200) e Grandes (200+) empresas
-- Região (0-20pts): Foco em SP, RJ, MG, RS, PR, SC
-- Status TOTVS (0-20pts): Bônus se usa TOTVS, penalidade se concorrente
-- Concorrente (0-15pts): Identifica SAP, Oracle, SENIOR
-- Qualidade de Dados (0-10pts): Completude dos dados
-- Sinais de Intenção (0-10pts): Busca no Google, visitas ao site
+**PASSO 3: Analisar Score ICP (7 Dimensões)**
+1. **Setor (0-30pts):** Prioriza Agro, Indústria, Varejo, Saúde
+2. **Porte (0-25pts):** Médias (51-200) e Grandes (200+) empresas
+3. **Região (0-20pts):** Foco SP, RJ, MG, RS, PR, SC
+4. **Status TOTVS (0-20pts):** Bônus se usa TOTVS, penalidade se concorrente
+5. **Concorrente (0-15pts):** Identifica SAP, Oracle, SENIOR
+6. **Qualidade Dados (0-10pts):** Completude dos dados
+7. **Sinais Intenção (0-10pts):** Busca Google, visitas site
 
 **PASSO 4: Entender Temperatura**
-- 🔥 HOT (70-100pts): Ligar IMEDIATAMENTE - perfil ideal
-- 🟡 WARM (40-69pts): Agendar ligação em 24-48h - bom potencial
-- 🔵 COLD (0-39pts): Nutrir com email marketing - baixa prioridade
+- 🔥 **HOT (70-100pts):** Ligar IMEDIATAMENTE - perfil ideal, alta prioridade
+- 🟡 **WARM (40-69pts):** Agendar ligação 24-48h - bom potencial
+- 🔵 **COLD (0-39pts):** Nutrir com email marketing - baixa prioridade
 
-**PASSO 5-9: Usar Proposta e Script**
-- Analisar pain points detectados
-- Ver produtos TOTVS recomendados
-- Ler proposta de valor (~500 palavras)
-- Copiar script de abordagem (~200 palavras)
-- Ver ROI estimado e próximas ações
+**PASSOS 5-9:** Analisar pain points, ver produtos recomendados, ler proposta (~500 palavras), copiar script (~200 palavras), ver ROI estimado
 
 ### ERROS COMUNS
-- Timeout: Recarregar página (F5)
-- API key inválida: Sistema usa template estático (fallback)
-- Lead não encontrado: Verificar se lead existe em Quarentena
+- **Timeout:** Recarregar página (F5)
+- **API key inválida:** Sistema usa template estático (fallback)
+- **Lead não encontrado:** Verificar em Quarentena
 
 ---
 
-## MÓDULO 4: SALES WORKSPACE
+## MÓDULO 4: SALES WORKSPACE (Centro de Comando)
 
-### O QUE É O SALES WORKSPACE?
-Centro de comando unificado de vendas com 11 abas especializadas. URL: /sdr/workspace
+### O QUE É?
+Centro de comando unificado de vendas com 11 abas especializadas.
+**URL:** /sdr/workspace | **Menu:** SDR → Sales Workspace
 
-### ESTRUTURA COMPLETA
+### ESTRUTURA COMPLETA - 11 ABAS
 
 **ABA 1: EXECUTIVO (NOVA!)**
-- KPIs principais: Pipeline Total, Taxa Conversão, Ticket Médio, Velocidade Vendas, MRR
-- Alertas prioritários: Deals estagnados +7 dias, follow-ups atrasados, oportunidades sem contato
-- Atividades recentes: Feed unificado de tarefas/mensagens/contatos
-- Filtro por período: 7, 30, 90 dias ou customizado
-- Mostra últimas 5 atividades (expansível)
+Dashboard executivo minimalista com indicadores críticos:
+- **KPIs:** Pipeline Total (R$), Taxa Conversão (%), Ticket Médio (R$), Velocidade Vendas (dias), MRR
+- **Alertas:** Deals estagnados +7 dias, follow-ups atrasados, oportunidades sem contato
+- **Atividades:** Feed unificado de tarefas/mensagens/contatos com filtro de período (7, 30, 90 dias)
 
 **ABA 2: PIPELINE**
-Kanban visual interativo com 5 estágios padrão:
-1. Qualificação
-2. Proposta
-3. Negociação
-4. Fechamento
-5. Ganho
+Kanban visual interativo com 5 estágios: Qualificação → Proposta → Negociação → Fechamento → Ganho
 
 Funcionalidades:
 - Arrastar e soltar deals entre estágios
-- Editar deal direto no card (clique duplo)
+- Editar deal direto (clique duplo)
 - Filtros: prioridade, valor, probabilidade, dono
-- Busca instantânea por empresa/deal
+- Busca instantânea
 - Estatísticas por estágio
-
-Informações no card:
-- Nome empresa e título deal
-- Valor (R$) e probabilidade (%)
-- Badge de prioridade (alta/média/baixa)
-- Temperatura (🔥 hot, 🟡 warm, 🔵 cold)
-- Dono responsável (avatar)
-- Data última interação
 
 **ABA 3: HEALTH MONITOR (IA)**
 Monitora deals em risco com IA. Sinais detectados:
 - Sem interação há +14 dias
-- Probabilidade caiu -20% no último mês
-- Cliente não responde emails/ligações
-- Deal estagnado +30 dias no mesmo estágio
-- Múltiplas reuniões canceladas
+- Probabilidade caiu -20% no mês
+- Cliente não responde
+- Deal estagnado +30 dias
+- Reuniões canceladas
 
-Recomendações IA:
-- Ligar imediatamente (com script)
-- Enviar email reengajamento (template)
-- Agendar reunião alinhamento
-- Escalar para gerente
-- Oferecer desconto estratégico
+Recomendações IA: Ligar (com script), email reengajamento (template), reunião alinhamento, escalar gerente, desconto estratégico
 
 **ABA 4: ANALYTICS**
-Dashboard completo com métricas:
-- Performance de Vendas: Receita, conversão, ticket médio, ciclo vendas
-- Performance SDRs: Ranking, atividades, conversão individual, quota
-- Pipeline Health: Distribuição estágios, velocidade, estagnados, valor ponderado
-- Análise Temporal: Evolução semanal/mensal, comparativos, tendências, previsão 90 dias
+Dashboard completo:
+- Performance Vendas: receita, conversão, ticket médio, ciclo vendas
+- Performance SDRs: ranking, atividades, conversão individual, quota
+- Pipeline Health: distribuição estágios, velocidade, estagnados, valor ponderado
+- Análise Temporal: evolução semanal/mensal, comparativos, tendências, previsão 90 dias
 
 **ABA 5: FORECAST (IA)**
-Previsão de receita com IA:
+Previsão de receita:
 - 30 dias (90% confiança)
 - 60 dias (80% confiança)
 - 90 dias (70% confiança)
 - Cenários: otimista/realista/pessimista
-- Identificação de riscos e oportunidades
+- Riscos e oportunidades
 
-**ABA 6: FUNIL AI**
-Análise de conversão em cada estágio com recomendações de otimização por IA
-
-**ABA 7: PREDIÇÃO (IA)**
-Scoring preditivo que indica probabilidade de fechamento baseado em ML
-
-**ABA 8: AUTOMAÇÕES**
-Central de alertas inteligentes e ações automatizadas (follow-ups, tarefas, emails)
-
-**ABA 9: INBOX**
-Centraliza todas as mensagens (emails, WhatsApp, LinkedIn) em um só lugar
-
-**ABA 10: SMART TASKS (IA)**
-Lista inteligente de tarefas com priorização automática por IA e sugestões de próximas ações
-
-**ABA 11: EMAIL SEQUENCES**
-Criador visual de cadências de email automáticas com templates prontos e A/B testing
+**ABAS 6-11 (RESUMO)**
+6. **Funil AI:** Análise conversão com otimizações IA
+7. **Predição:** Scoring preditivo ML
+8. **Automações:** Alertas inteligentes e ações automáticas
+9. **Inbox:** Mensagens centralizadas (emails, WhatsApp, LinkedIn)
+10. **Smart Tasks:** Tarefas com priorização IA
+11. **Email Sequences:** Cadências automáticas com templates
 
 ### FLUXO DE TRABALHO DIÁRIO RECOMENDADO
-- 08:00-08:30: Revisar Executivo (KPIs, alertas)
-- 08:30-10:00: Pipeline (atualizar status, mover cards)
-- 10:00-10:30: Health (revisar deals em risco)
-- 10:30-12:00: Smart Tasks (calls, emails, follow-ups)
+- 08:00-08:30: Executivo (KPIs, alertas)
+- 08:30-10:00: Pipeline (atualizar status)
+- 10:00-10:30: Health (deals em risco)
+- 10:30-12:00: Smart Tasks (calls, emails)
 - 13:00-15:00: Inbox e Sequences
 - 15:00-16:00: Analytics e Forecast
-- 16:00-17:00: Automações e registro atividades
+- 16:00-17:00: Automações e registro
 
 ### DICAS DE PRODUTIVIDADE
-- Atualize pipeline DIARIAMENTE (manhã e fim do dia)
-- Use prioridades: Alta (hoje), Média (semana), Baixa (mês)
+- Atualize pipeline DIARIAMENTE (manhã e fim de dia)
+- Prioridades: Alta (hoje), Média (semana), Baixa (mês)
 - Deals sem atualização +7 dias → Revisar urgente
-- Mantenha máximo 5-7 deals em "Qualificação" simultaneamente
+- Máximo 5-7 deals em "Qualificação" simultaneamente
 
-### BENEFÍCIOS DO WORKSPACE
-- Economia de 4-5 horas/dia em gerenciamento
-- Aumento de 40-60% na taxa de conversão
-- Redução de 50% em deals perdidos por falta de follow-up
-- Previsibilidade de receita com 85-90% de precisão
-- Visibilidade total do pipeline em tempo real
-
----
-
-## FLUXO COMPLETO: DA CAPTURA AO FECHAMENTO
-
-1. CAPTURA → Leads entram via Upload CSV, API, ou Empresas Aqui
-2. VALIDAÇÃO → Edge function valida CNPJ, site, LinkedIn, email (70-100pts = aprovado)
-3. QUARENTENA → Leads pendentes (30-69pts) revisados manualmente
-4. QUALIFICAÇÃO ICP → IA calcula score, temperatura, gera proposta e script
-5. SALES WORKSPACE → Deal entra no Pipeline Kanban, estágio "Qualificação"
-6. GESTÃO → SDR move deal pelos estágios até "Ganho"
-7. MONITORAMENTO → Health Monitor e Analytics acompanham performance
+### BENEFÍCIOS
+- Economia de 4-5 horas/dia
+- Aumento 40-60% conversão
+- Redução 50% deals perdidos
+- Previsibilidade 85-90% receita
+- Visibilidade total real-time
 
 ---
 
-## PERGUNTAS FREQUENTES DOS USUÁRIOS
+## PERGUNTAS FREQUENTES (FAQ)
 
 **P: Como qualificar um lead rapidamente?**
-R: Menu → Quarentena → Selecionar lead Aprovado → "Qualificar ICP →". Aguarde 15-30s para análise completa.
+R: Menu → Quarentena → Lead Aprovado → "Qualificar ICP →". Aguarde 15-30s.
 
 **P: O que fazer com leads COLD?**
-R: Leads COLD (0-39pts) devem ir para nutrição por email marketing. Não priorize ligações. Foque em HOT (70-100pts) e WARM (40-69pts).
+R: Leads COLD (0-39pts) vão para nutrição por email. Não priorize. Foque em HOT (70-100pts) e WARM (40-69pts).
 
-**P: Como saber se um deal está em risco?**
-R: Acesse Sales Workspace → Aba "Health". A IA mostra deals em risco com recomendações específicas.
+**P: Como saber se deal está em risco?**
+R: Sales Workspace → Aba "Health". IA mostra deals em risco com recomendações.
 
-**P: Quanto tempo leva para dominar o Sales Workspace?**
-R: Semana 1: Navegação básica | Semana 2: 5-6 abas regularmente | Semana 3: Fluxo otimizado | Semana 4: Expert
+**P: Quanto tempo para dominar Sales Workspace?**
+R: Semana 1: Navegação básica | Semana 2: 5-6 abas | Semana 3: Fluxo otimizado | Semana 4: Expert
 
-**P: Como criar um novo deal?**
-R: Sales Workspace → Pipeline → Botão "Novo Deal" no topo ou clique em "+" em qualquer estágio
+**P: Como criar novo deal?**
+R: Sales Workspace → Pipeline → "Novo Deal" ou "+" em qualquer estágio
 
 **P: Como ver previsão de receita?**
-R: Sales Workspace → Aba "Forecast" → A IA mostra previsão 30/60/90 dias com níveis de confiança
+R: Sales Workspace → Aba "Forecast" → IA mostra 30/60/90 dias
 
-**P: Qual a diferença entre Pipeline e Workspace?**
-R: Não há diferença! "Pipeline" era o nome antigo. Agora chamamos de "Sales Workspace" - é o mesmo lugar com mais funcionalidades.
+**P: Diferença entre Pipeline e Workspace?**
+R: Não há! "Pipeline" era nome antigo. Agora "Sales Workspace" - mesmo lugar, mais funcionalidades.
 
-**P: Como copiar o script de abordagem?**
-R: Na página de Qualificação ICP, role até "Script de Abordagem" e clique em "Copiar Script"
+**P: Como copiar script de abordagem?**
+R: Página Qualificação ICP → Role até "Script de Abordagem" → "Copiar Script"
 
-**P: Onde vejo minhas tarefas do dia?**
-R: Sales Workspace → Aba "Smart Tasks" ou Aba "Executivo" (feed de atividades)
+**P: Onde vejo tarefas do dia?**
+R: Sales Workspace → Aba "Smart Tasks" ou Aba "Executivo" (feed atividades)
 
 **P: Como configurar email automático?**
-R: Sales Workspace → Aba "Email Sequences" → Tab "Builder" → Criar nova sequência
+R: Sales Workspace → Aba "Email Sequences" → Tab "Builder" → Criar sequência
+
+---
+
+## ROTAS E NAVEGAÇÃO
+
+**Principais URLs:**
+- /leads/capture - Captura de leads
+- /leads/quarantine - Quarentena inteligente
+- /leads/icp-analysis - Qualificação ICP + IA
+- /sdr/workspace - Sales Workspace (centro de comando)
+- /central-icp/discovery - Busca empresas (scraping)
+- /documentation - Este manual completo
+
+**Atalhos importantes:**
+- Botão "Manual do SDR" sempre visível no topo do Sales Workspace
+- Redirecionamento automático: /sdr/dashboard → /sdr/workspace
+
+---
+
+## TECNOLOGIAS E APIs
+
+**Validações usadas:**
+- CNPJ: ReceitaWS API
+- Website: HTTP Status Check
+- LinkedIn: Web Scraping
+- Email: DNS MX Records
+
+**IA Generativa:**
+- Proposta de valor: OpenAI GPT-4
+- Score ICP: Algoritmo proprietário 7 dimensões
+- Previsão receita: ML preditivo
+- Health Monitor: Padrões comportamentais ML
+
+**Edge Functions:**
+- validate-lead-comprehensive
+- upload-csv
+- capture-api
+- calculate-icp-score-advanced
+- generate-value-proposition
+- trevo-assistant (este assistente!)
+
+---
+
+## BOAS PRÁTICAS
+
+### Para SDRs:
+1. Sempre qualifique leads HOT primeiro (70-100pts)
+2. Atualize pipeline 2x ao dia (manhã e tarde)
+3. Leads +7 dias sem atualização = prioridade máxima
+4. Pratique script 15-20min antes de ligar
+5. Use proposta IA como roteiro, não leia textualmente
+
+### Para Gestores:
+1. Monitore aba Executivo diariamente
+2. Revise Health Monitor semanalmente
+3. Use Forecast para planejamento trimestral
+4. Analytics para identificar gargalos no funil
+5. Valide dados de quarentena regularmente
+
+### Para Administradores:
+1. Mantenha fontes de captura ativas
+2. Configure automações no Workspace
+3. Monitore performance das validações
+4. Ajuste critérios de ICP conforme mercado
+5. Treine equipe em todas as 11 abas do Workspace
 `;
 
 export function useTrevoAssistant(context: TrevoContext) {

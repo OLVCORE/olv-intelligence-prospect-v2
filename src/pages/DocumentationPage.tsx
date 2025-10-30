@@ -20,7 +20,7 @@ import {
   ThumbsUp, ThumbsDown, Ban, RefreshCw, Send, Copy, FileCode, Package,
   Layers, ServerCog, CloudCog, Cpu, HardDrive, CircleDot, ArrowRight,
   CircleCheck, AlertTriangle, Info, XCircle, Flame, Snowflake, Thermometer,
-  Lightbulb
+  Lightbulb, Inbox, CheckSquare
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DocumentationQualificacaoTab } from './DocumentationQualificacaoTab';
@@ -168,12 +168,12 @@ export default function DocumentationPage() {
                             <Card className="p-4 bg-pink-500/10 border-pink-500/20">
                               <div className="flex items-start gap-3">
                                 <div className="p-2 rounded-lg bg-pink-500/20">
-                                  <Workflow className="h-6 w-6 text-pink-400" />
+                                  <Activity className="h-6 w-6 text-pink-400" />
                                 </div>
                                 <div>
-                                  <h4 className="font-semibold text-pink-400">Pipeline Visual</h4>
+                                  <h4 className="font-semibold text-pink-400">Sales Workspace</h4>
                                   <p className="text-sm text-muted-foreground">
-                                    Kanban interativo para gerenciar deals em tempo real
+                                    Centro de comando com 11 abas: Pipeline Kanban, Analytics, Forecast IA, Health Monitor, e mais
                                   </p>
                                 </div>
                               </div>
@@ -259,7 +259,7 @@ export default function DocumentationPage() {
     C4 --> C5
     C5 --> B3
     
-    B3 --> D4
+    B3 --> D4["Sales Workspace<br/>(11 abas)"]
     B3 --> D5
     
     D1 --> A1
@@ -306,13 +306,13 @@ export default function DocumentationPage() {
     A[📥 CAPTURA] --> B[🔍 VALIDAÇÃO]
     B --> C[⏳ QUARENTENA]
     C --> D[🎯 QUALIFICAÇÃO ICP]
-    D --> E[📊 PIPELINE]
+    D --> E[🎛️ SALES WORKSPACE]
     E --> F[💰 FECHAMENTO]
     
     B -.->|APIs Externas| B1[ReceitaWS<br/>LinkedIn<br/>Website<br/>Email]
     C -.->|Humano| C1[Aprovação<br/>Manual<br/>Revisão]
     D -.->|IA| D1[Score ICP<br/>Proposta IA<br/>Script<br/>ROI]
-    E -.->|Visual| E1[Kanban<br/>Drag & Drop<br/>Real-time]
+    E -.->|11 Abas| E1[Pipeline Kanban<br/>Health Monitor IA<br/>Analytics<br/>Forecast IA<br/>Smart Tasks]
     F -.->|Sucesso| F1[🎉 VENDA<br/>FECHADA!]
     
     style A fill:#10b981,stroke:#059669,stroke-width:4px,color:#fff,font-size:16px
@@ -541,49 +541,69 @@ export default function DocumentationPage() {
                       <AccordionTrigger className="text-lg">
                         <div className="flex items-center gap-3">
                           <Badge className="bg-pink-500">ETAPA 5</Badge>
-                          <span>PIPELINE VISUAL</span>
+                          <span>SALES WORKSPACE - Centro de Comando</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4">
                         <div className="bg-pink-500/10 p-4 rounded-lg space-y-3">
                           <div>
                             <span className="font-semibold text-pink-400">Página:</span>
-                            <code className="ml-2 bg-muted px-2 py-1 rounded">/leads/pipeline</code>
+                            <code className="ml-2 bg-muted px-2 py-1 rounded">/sdr/workspace</code>
                           </div>
                           <div>
                             <span className="font-semibold text-pink-400">Objetivo:</span>
-                            <span className="ml-2">Gerenciar deals visualmente usando Kanban interativo</span>
+                            <span className="ml-2">Centro de comando unificado com 11 abas especializadas para gerenciar todo ciclo de vendas</span>
                           </div>
                           <div>
                             <span className="font-semibold text-pink-400">Resultado:</span>
-                            <span className="ml-2">Deal movendo entre estágios até fechamento</span>
+                            <span className="ml-2">Visibilidade total do pipeline, deals movendo entre estágios, monitoramento de riscos, previsão de receita</span>
                           </div>
                           <div className="mt-4">
-                            <h4 className="font-semibold mb-2">Estágios do Pipeline:</h4>
-                            <div className="flex flex-col gap-2">
+                            <h4 className="font-semibold mb-2">11 Abas do Sales Workspace:</h4>
+                            <div className="grid md:grid-cols-2 gap-2">
                               <Badge variant="outline" className="justify-start">
-                                <Search className="h-4 w-4 mr-2" />
-                                Discovery → Prospecção inicial
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                1. Executivo → KPIs e alertas
                               </Badge>
                               <Badge variant="outline" className="justify-start">
-                                <Phone className="h-4 w-4 mr-2" />
-                                Contact Made → Primeiro contato
+                                <Activity className="h-4 w-4 mr-2" />
+                                2. Pipeline → Kanban visual
                               </Badge>
                               <Badge variant="outline" className="justify-start">
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Meeting → Reunião agendada
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                3. Health → Deals em risco (IA)
                               </Badge>
                               <Badge variant="outline" className="justify-start">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Proposal → Proposta apresentada
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                4. Analytics → Dashboard completo
                               </Badge>
                               <Badge variant="outline" className="justify-start">
-                                <DollarSign className="h-4 w-4 mr-2" />
-                                Negotiation → Negociação
+                                <TrendingUp className="h-4 w-4 mr-2" />
+                                5. Forecast → Previsão IA
                               </Badge>
-                              <Badge variant="outline" className="justify-start bg-green-500/20">
-                                <Trophy className="h-4 w-4 mr-2" />
-                                Closed Won → VENDA!
+                              <Badge variant="outline" className="justify-start">
+                                <TrendingUp className="h-4 w-4 mr-2" />
+                                6. Funil AI → Conversão
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                7. Predição → Scoring ML
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <Zap className="h-4 w-4 mr-2" />
+                                8. Automações → Alertas
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <Inbox className="h-4 w-4 mr-2" />
+                                9. Inbox → Mensagens
+                              </Badge>
+                              <Badge variant="outline" className="justify-start">
+                                <CheckSquare className="h-4 w-4 mr-2" />
+                                10. Smart Tasks → IA
+                              </Badge>
+                              <Badge variant="outline" className="justify-start bg-purple-500/20">
+                                <Mail className="h-4 w-4 mr-2" />
+                                11. Email Sequences
                               </Badge>
                             </div>
                           </div>
@@ -602,15 +622,15 @@ export default function DocumentationPage() {
                         <div className="bg-cyan-500/10 p-4 rounded-lg space-y-3">
                           <div>
                             <span className="font-semibold text-cyan-400">Página:</span>
-                            <code className="ml-2 bg-muted px-2 py-1 rounded">/leads/analytics</code>
+                            <code className="ml-2 bg-muted px-2 py-1 rounded">/sdr/workspace</code> <Badge className="ml-2 bg-cyan-500">Aba Analytics</Badge>
                           </div>
                           <div>
                             <span className="font-semibold text-cyan-400">Objetivo:</span>
-                            <span className="ml-2">Analisar conversões, funil de vendas e performance do time</span>
+                            <span className="ml-2">Analisar conversões, funil de vendas, performance do time, previsão de receita e muito mais</span>
                           </div>
                           <div>
                             <span className="font-semibold text-cyan-400">Resultado:</span>
-                            <span className="ml-2">Insights acionáveis para otimização contínua</span>
+                            <span className="ml-2">Insights acionáveis e previsibilidade de 85-90% na receita futura</span>
                           </div>
                           <div className="mt-4">
                             <h4 className="font-semibold mb-2">Métricas Disponíveis:</h4>
@@ -1167,9 +1187,9 @@ export default function DocumentationPage() {
     REJECTED --> [*]: Lead Descartado
     DUPLICATE --> [*]: Lead Ignorado
     
-    ICP_ANALYSIS --> PIPELINE: Score ICP calculado
-    PIPELINE --> CLOSED_WON: Deal Fechado ✅
-    PIPELINE --> CLOSED_LOST: Deal Perdido ❌
+    ICP_ANALYSIS --> SALES_WORKSPACE: Score ICP calculado
+    SALES_WORKSPACE --> CLOSED_WON: Deal Fechado ✅
+    SALES_WORKSPACE --> CLOSED_LOST: Deal Perdido ❌
     
     CLOSED_WON --> [*]: Venda Realizada! 🎉
     CLOSED_LOST --> [*]: Oportunidade Perdida
@@ -1355,10 +1375,11 @@ export default function DocumentationPage() {
                                   <ol className="text-sm space-y-1 list-decimal list-inside">
                                     <li>Redireciona para <code className="bg-muted px-1 rounded">/leads/icp-analysis</code></li>
                                     <li>Lead é selecionado automaticamente</li>
-                                    <li>Análise ICP é executada</li>
+                                    <li>Análise ICP é executada (15-30s)</li>
                                     <li>IA gera proposta de valor personalizada</li>
                                     <li>Score ICP é calculado (0-100)</li>
                                     <li>Temperatura é definida (HOT/WARM/COLD)</li>
+                                    <li>Deal qualificado vai para <strong>Sales Workspace</strong> → Pipeline Kanban</li>
                                   </ol>
                                 </div>
 
