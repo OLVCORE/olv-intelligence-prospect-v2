@@ -504,24 +504,43 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
     <DraggableDialog 
       open={open} 
       onOpenChange={onOpenChange}
-      title="Criar Novo Deal"
-      description="Selecione uma empresa existente ou crie um deal manual"
+      title="🎯 Criar Novo Deal no Pipeline"
+      description="Escolha entre leads ICP aprovados, empresas existentes ou criação manual"
       className="max-w-2xl"
     >
+      <div className="space-y-4">
+        {/* Header com instruções */}
+        <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+          <p className="text-sm text-muted-foreground">
+            💡 <strong>Recomendado:</strong> Comece pelos <strong>Leads Aprovados ICP</strong> que já foram qualificados e analisados.
+          </p>
+        </div>
 
         <Tabs value={mode} onValueChange={(v) => setMode(v as 'select' | 'manual' | 'icp')} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="icp" className="bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-              <Check className="h-4 w-4 mr-2" />
-              Leads Aprovados ICP
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger 
+              value="icp" 
+              className="flex flex-col gap-1 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-emerald-500/20"
+            >
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4" />
+                <span className="font-medium">Leads ICP</span>
+              </div>
+              <span className="text-xs opacity-75">Aprovados & Qualificados</span>
             </TabsTrigger>
-            <TabsTrigger value="select">
-              <Building2 className="h-4 w-4 mr-2" />
-              Empresa Existente
+            <TabsTrigger value="select" className="flex flex-col gap-1 py-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                <span className="font-medium">Empresa Existente</span>
+              </div>
+              <span className="text-xs opacity-75">Base de Dados</span>
             </TabsTrigger>
-            <TabsTrigger value="manual">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Criar Manual
+            <TabsTrigger value="manual" className="flex flex-col gap-1 py-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="font-medium">Criar Manual</span>
+              </div>
+              <span className="text-xs opacity-75">Nova Empresa</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1316,6 +1335,7 @@ export function DealFormDialog({ open, onOpenChange, onSuccess }: DealFormDialog
             </form>
           </TabsContent>
         </Tabs>
+      </div>
     </DraggableDialog>
   );
 }
