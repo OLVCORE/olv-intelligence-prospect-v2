@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings, Building2, AlertTriangle } from 'lucide-react';
+import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings, Building2, AlertTriangle, GraduationCap, Play } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -131,6 +132,34 @@ export default function CentralICPHome() {
           </div>
         </div>
       </div>
+
+      {/* Tutorial Onboarding - Destaque para novos usuários */}
+      <Card className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white border-0 shadow-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                <GraduationCap className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Primeira vez aqui?</h3>
+                <p className="text-white/90 max-w-xl">
+                  Aprenda em 5 minutos como transformar uma lista de empresas em vendas reais. 
+                  Tutorial visual super simples!
+                </p>
+              </div>
+            </div>
+            <Button 
+              size="lg" 
+              onClick={() => navigate('/onboarding')}
+              className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Ver Tutorial
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

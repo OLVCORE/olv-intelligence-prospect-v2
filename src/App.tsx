@@ -15,6 +15,7 @@ import { TrevoAssistant } from "./components/trevo/TrevoAssistant";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Onboarding from "./pages/Onboarding";
 
 // Lazy load auth pages
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -79,7 +80,7 @@ const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
 const Analytics = lazy(() => import("./pages/Leads/Analytics"));
 const LeadsPoolPage = lazy(() => import("./pages/LeadsPoolPage"));
 const LeadsQualifiedPage = lazy(() => import("./pages/LeadsQualifiedPage"));
-const ICPQuarantineNewPage = lazy(() => import("./pages/Leads/ICPQuarantine"));
+const ICPQuarantinePage = lazy(() => import("./pages/Leads/ICPQuarantine"));
 const SystemHealthPage = lazy(() => import("./pages/Leads/SystemHealth"));
 const EmailSequencesPage = lazy(() => import("./pages/EmailSequencesPage"));
 const SmartTasksPage = lazy(() => import("./pages/SmartTasksPage"));
@@ -198,6 +199,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route
               path="/search"
               element={
