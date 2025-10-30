@@ -77,6 +77,8 @@ const LeadsQuarantine = lazy(() => import("./pages/Leads/Quarantine"));
 const ICPAnalysis = lazy(() => import("./pages/Leads/ICPAnalysis"));
 const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
 const Analytics = lazy(() => import("./pages/Leads/Analytics"));
+const LeadsPoolPage = lazy(() => import("./pages/LeadsPoolPage"));
+const LeadsQualifiedPage = lazy(() => import("./pages/LeadsQualifiedPage"));
 const CSVUploadWithMapping = lazy(() => import("./components/leads/CSVUploadWithMapping"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
@@ -687,6 +689,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CSVUploadWithMapping />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/pool"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LeadsPoolPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/qualified"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LeadsQualifiedPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
