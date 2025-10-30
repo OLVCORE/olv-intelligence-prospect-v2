@@ -45,8 +45,6 @@ export default function LeadsQualifiedPage() {
 
       if (error) throw error;
       setEmpresas(data || []);
-      
-      console.log('[QUALIFICADAS] Carregadas:', data?.length || 0, 'empresas');
     } catch (error: any) {
       console.error('[QUALIFICADAS] Erro ao carregar:', error);
       toast({
@@ -74,7 +72,6 @@ export default function LeadsQualifiedPage() {
     try {
       const empresasSelecionadas = empresas.filter(e => selecionadas.has(e.id));
 
-      // 1. INSERIR NO NÍVEL 3 (PIPELINE - tabela companies)
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .insert(
@@ -83,7 +80,6 @@ export default function LeadsQualifiedPage() {
             cnpj: e.cnpj,
             domain: e.website,
             icp_score: e.icp_score,
-            temperature: e.temperatura,
             lead_qualified_id: e.id,
             approved_at: new Date().toISOString(),
             pipeline_status: 'ativo',
@@ -94,7 +90,6 @@ export default function LeadsQualifiedPage() {
 
       if (companiesError) throw companiesError;
 
-      // 2. ATUALIZAR STATUS DAS QUALIFICADAS
       const { error: updateError } = await supabase
         .from('leads_qualified')
         .update({ 
@@ -255,7 +250,7 @@ export default function LeadsQualifiedPage() {
 
         {empresas.length === 0 && (
           <div className="text-center py-12">
-            <CheckCircle className="w-16 h-16 text-muted mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground">Nenhuma empresa qualificada no momento</p>
           </div>
         )}

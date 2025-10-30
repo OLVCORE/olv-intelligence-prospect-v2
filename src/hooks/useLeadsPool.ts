@@ -2,235 +2,96 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export interface LeadPool {
-  id: string;
-  cnpj: string;
-  razao_social: string;
-  nome_fantasia?: string;
-  uf?: string;
-  municipio?: string;
-  porte?: string;
-  cnae_principal?: string;
-  website?: string;
-  email?: string;
-  telefone?: string;
-  origem: 'icp_individual' | 'icp_massa' | 'empresas_aqui' | 'manual';
-  icp_score?: number;
-  temperatura?: 'hot' | 'warm' | 'cold';
-  is_cliente_totvs: boolean;
-  totvs_check_date?: string;
-  status: 'pool';
-  raw_data?: any;
-  created_at: string;
-  updated_at: string;
-}
+export const LEADS_POOL_QUERY_KEY = ['leads-pool'];
 
-export interface LeadQualified {
-  id: string;
-  lead_pool_id?: string;
-  cnpj: string;
-  razao_social: string;
-  nome_fantasia?: string;
-  uf?: string;
-  municipio?: string;
-  porte?: string;
-  website?: string;
-  email?: string;
-  telefone?: string;
-  icp_score?: number;
-  temperatura?: 'hot' | 'warm' | 'cold';
-  status: 'qualificada' | 'em_analise' | 'aprovada';
-  motivo_qualificacao?: string;
-  selected_by?: string;
-  selected_at: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Hook para buscar leads do pool
-export function useLeadsPool(filters?: {
-  origem?: string;
+export function useLeadsPool(options?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
   temperatura?: string;
-  limit?: number;
 }) {
+  const { page = 0, pageSize = 50, search = '', temperatura } = options || {};
+  
   return useQuery({
-    queryKey: ['leads-pool', filters],
+    queryKey: [...LEADS_POOL_QUERY_KEY, page, pageSize, search, temperatura],
     queryFn: async () => {
       let query = supabase
         .from('leads_pool')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
 
-      if (filters?.origem) {
-        query = query.eq('origem', filters.origem);
+      if (search) {
+        query = query.or(`razao_social.ilike.%${search}%,cnpj.ilike.%${search}%`);
       }
 
-      if (filters?.temperatura) {
-        query = query.eq('temperatura', filters.temperatura);
+      if (temperatura) {
+        query = query.eq('temperatura', temperatura);
       }
 
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
+      query = query.order('icp_score', { ascending: false });
 
-      const { data, error } = await query;
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
 
+      const { data, error, count } = await query;
+      
       if (error) throw error;
-      return data as LeadPool[];
+      return { 
+        data: data || [], 
+        count: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize)
+      };
     },
+    staleTime: 30 * 1000,
   });
 }
 
-// Hook para buscar leads qualificadas
-export function useLeadsQualified(status?: string) {
-  return useQuery({
-    queryKey: ['leads-qualified', status],
-    queryFn: async () => {
-      let query = supabase
-        .from('leads_qualified')
-        .select('*')
-        .order('icp_score', { ascending: false });
-
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as LeadQualified[];
-    },
-  });
-}
-
-// Hook para adicionar lead ao pool
-export function useAddToPool() {
+export function useAddToQualified() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async (lead: Partial<LeadPool>) => {
-      const { data, error } = await supabase
-        .from('leads_pool')
-        .insert(lead)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
-    },
-  });
-}
-
-// Hook para qualificar lead (mover do pool para qualificadas)
-export function useQualifyLead() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ poolId, motivo }: { poolId: string; motivo?: string }) => {
-      // 1. Buscar lead do pool
-      const { data: poolLead, error: poolError } = await supabase
+    mutationFn: async (leadPoolId: string) => {
+      const { data: poolData, error: poolError } = await supabase
         .from('leads_pool')
         .select('*')
-        .eq('id', poolId)
+        .eq('id', leadPoolId)
         .single();
 
       if (poolError) throw poolError;
 
-      // 2. Inserir em qualificadas
-      const { data: qualified, error: qualifiedError } = await supabase
+      const { data, error } = await supabase
         .from('leads_qualified')
         .insert({
-          lead_pool_id: poolLead.id,
-          cnpj: poolLead.cnpj,
-          razao_social: poolLead.razao_social,
-          nome_fantasia: poolLead.nome_fantasia,
-          uf: poolLead.uf,
-          municipio: poolLead.municipio,
-          porte: poolLead.porte,
-          website: poolLead.website,
-          email: poolLead.email,
-          telefone: poolLead.telefone,
-          icp_score: poolLead.icp_score,
-          temperatura: poolLead.temperatura,
+          lead_pool_id: poolData.id,
+          cnpj: poolData.cnpj,
+          razao_social: poolData.razao_social,
+          nome_fantasia: poolData.nome_fantasia,
+          uf: poolData.uf,
+          municipio: poolData.municipio,
+          porte: poolData.porte,
+          website: poolData.website,
+          email: poolData.email,
+          telefone: poolData.telefone,
+          icp_score: poolData.icp_score,
+          temperatura: poolData.temperatura,
           status: 'qualificada',
-          motivo_qualificacao: motivo || 'Qualificação manual',
+          motivo_qualificacao: 'Seleção manual do usuário',
         })
         .select()
         .single();
-
-      if (qualifiedError) throw qualifiedError;
-      return qualified;
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
+      queryClient.invalidateQueries({ queryKey: LEADS_POOL_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['leads-qualified'] });
-      toast.success('Lead qualificada com sucesso');
+      toast.success('Empresa movida para qualificadas');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao qualificar lead', {
-        description: error.message,
-      });
-    },
-  });
-}
-
-// Hook para mover para pipeline (aprovar qualificadas)
-export function useApproveQualified() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (qualifiedIds: string[]) => {
-      // 1. Buscar leads qualificadas
-      const { data: qualified, error: fetchError } = await supabase
-        .from('leads_qualified')
-        .select('*')
-        .in('id', qualifiedIds);
-
-      if (fetchError) throw fetchError;
-
-      // 2. Inserir em companies (pipeline)
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .insert(
-          qualified.map(q => ({
-            name: q.razao_social,
-            cnpj: q.cnpj,
-            domain: q.website,
-            icp_score: q.icp_score,
-            temperature: q.temperatura,
-            lead_qualified_id: q.id,
-            approved_at: new Date().toISOString(),
-            pipeline_status: 'ativo',
-            raw_data: { origem: 'leads_qualified' },
-          }))
-        )
-        .select();
-
-      if (companiesError) throw companiesError;
-
-      // 3. Atualizar status das qualificadas
-      const { error: updateError } = await supabase
-        .from('leads_qualified')
-        .update({ 
-          status: 'aprovada',
-          updated_at: new Date().toISOString()
-        })
-        .in('id', qualifiedIds);
-
-      if (updateError) throw updateError;
-
-      return companies;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['leads-qualified'] });
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success(`${data.length} empresas adicionadas ao pipeline`);
-    },
-    onError: (error: Error) => {
-      toast.error('Erro ao aprovar leads', {
+      toast.error('Erro ao mover empresa', {
         description: error.message,
       });
     },
