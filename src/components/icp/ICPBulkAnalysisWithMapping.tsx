@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
+import { calculateICPScore } from '@/lib/icpCalculator';
 
 type Step = 'upload' | 'mapping' | 'analyzing' | 'complete';
 
@@ -90,10 +91,13 @@ export default function ICPBulkAnalysisWithMapping() {
     try {
       const fieldMap: Record<string, string> = {};
       mappings.forEach(m => {
-        if (m.systemField) {
+        if (m.systemField && m.systemField !== '__SKIP__') {
           fieldMap[m.csvColumn] = m.systemField;
         }
       });
+
+      console.log('[ICP Analysis] Iniciando análise de', total, 'empresas');
+      console.log('[ICP Analysis] Mapeamento:', fieldMap);
 
       for (let i = 0; i < allData.length; i++) {
         const row = allData[i];
@@ -103,52 +107,64 @@ export default function ICPBulkAnalysisWithMapping() {
           
           Object.entries(row).forEach(([csvCol, value]) => {
             const systemField = fieldMap[csvCol];
-            if (systemField && systemField !== '__SKIP__' && value) {
+            if (systemField && value) {
               companyData[systemField] = value;
             }
           });
 
-          if (!companyData.cnpj && !companyData.nome_da_empresa) {
-            throw new Error('CNPJ ou Nome da Empresa é obrigatório');
+          console.log(`[ICP Analysis] Empresa ${i + 1}:`, companyData);
+
+          if (!companyData.cnpj && !companyData.razao_social && !companyData.nome_da_empresa) {
+            throw new Error('Dados insuficientes (falta CNPJ ou nome)');
           }
 
-          // Primeiro, inserir ou atualizar a empresa no banco
+          // Calcular ICP Score
+          const icpResult = calculateICPScore(companyData);
+          
+          console.log(`[ICP Analysis] Score calculado:`, icpResult);
+
+          // Inserir ou atualizar empresa no banco
           const { data: insertedCompany, error: insertError } = await supabase
             .from('companies')
             .upsert([companyData], { onConflict: 'cnpj' })
             .select('id')
             .single();
 
-          if (insertError) throw insertError;
-
-          // Calcular score ICP básico localmente (simplificado)
-          let icpScore = 50; // Score base
-          
-          // Ajustar score baseado em dados disponíveis
-          if (companyData.setor) icpScore += 10;
-          if (companyData.employees || companyData.numero_funcionarios) icpScore += 10;
-          if (companyData.cidade || companyData.estado) icpScore += 10;
-          if (companyData.telefone || companyData.email) icpScore += 10;
-          
-          // Determinar temperatura
-          const temperature = icpScore >= 80 ? 'hot' : icpScore >= 60 ? 'warm' : 'cold';
+          if (insertError) {
+            console.error('[ICP Analysis] Erro ao inserir empresa:', insertError);
+          }
 
           results.push({
-            ...companyData,
-            id: insertedCompany.id,
-            icp_score: Math.min(icpScore, 100),
-            temperature,
+            cnpj: companyData.cnpj,
+            razao_social: companyData.razao_social || companyData.nome_da_empresa,
+            nome_fantasia: companyData.nome_fantasia,
+            uf: companyData.uf,
+            municipio: companyData.municipio,
+            porte: companyData.porte,
+            cnae_principal_codigo: companyData.cnae_principal_codigo,
+            situacao_cadastral: companyData.situacao_cadastral,
+            faturamento_estimado: companyData.faturamento_estimado,
+            funcionarios: companyData.funcionarios,
+            icp_score: icpResult.score,
+            temperatura: icpResult.temperatura,
             status: 'success',
+            breakdown_localizacao: icpResult.breakdown.localizacao,
+            breakdown_porte: icpResult.breakdown.porte,
+            breakdown_cnae: icpResult.breakdown.cnae,
+            breakdown_situacao: icpResult.breakdown.situacao,
+            breakdown_tecnologia: icpResult.breakdown.tecnologia,
+            motivos: icpResult.motivos.join(' | '),
           });
 
           successCount++;
 
         } catch (err) {
-          console.error('Erro ao processar linha:', err);
+          console.error(`[ICP Analysis] Erro na linha ${i + 1}:`, err);
           
           results.push({
             ...row,
             icp_score: 0,
+            temperatura: 'cold',
             status: 'error',
             error: err instanceof Error ? err.message : 'Erro desconhecido',
           });
@@ -159,6 +175,9 @@ export default function ICPBulkAnalysisWithMapping() {
         setAnalysisStats({ success: successCount, errors: errorCount, total });
       }
 
+      console.log('[ICP Analysis] Análise concluída:', { successCount, errorCount, total });
+      console.log('[ICP Analysis] Resultados:', results);
+
       setAnalysisResults(results);
       setStep('complete');
       
@@ -168,7 +187,7 @@ export default function ICPBulkAnalysisWithMapping() {
       });
 
     } catch (err) {
-      console.error('Erro na análise:', err);
+      console.error('[ICP Analysis] Erro geral na análise:', err);
       toast({
         title: "Erro na análise",
         description: "Ocorreu um erro ao analisar os dados.",
@@ -380,7 +399,14 @@ export default function ICPBulkAnalysisWithMapping() {
   }
 
   if (step === 'complete') {
-    const avgScore = analysisResults.reduce((sum, r) => sum + (r.icp_score || 0), 0) / analysisResults.length;
+    const avgScore = analysisResults
+      .filter(r => r.status === 'success')
+      .reduce((sum, r) => sum + (r.icp_score || 0), 0) / 
+      Math.max(analysisResults.filter(r => r.status === 'success').length, 1);
+
+    const hotCount = analysisResults.filter(r => r.temperatura === 'hot').length;
+    const warmCount = analysisResults.filter(r => r.temperatura === 'warm').length;
+    const coldCount = analysisResults.filter(r => r.temperatura === 'cold').length;
 
     return (
       <div className="space-y-6">
@@ -389,6 +415,7 @@ export default function ICPBulkAnalysisWithMapping() {
             <CheckCircle className="w-16 h-16 mx-auto text-green-500" />
             <div>
               <h2 className="text-2xl font-bold mb-4">🎉 Análise Concluída!</h2>
+              
               <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
                 <div className="bg-muted p-4 rounded-lg">
                   <div className="text-3xl font-bold">{analysisStats.total}</div>
@@ -403,10 +430,19 @@ export default function ICPBulkAnalysisWithMapping() {
                   <div className="text-sm text-muted-foreground">Erros</div>
                 </div>
               </div>
-              <p className="text-muted-foreground mb-4">
-                Score ICP médio: <span className="font-bold text-primary">{avgScore.toFixed(1)}</span>
-              </p>
+              
+              <div className="mb-6">
+                <p className="text-muted-foreground mb-2">
+                  Score ICP médio: <span className="font-bold text-primary text-2xl">{avgScore.toFixed(1)}</span>
+                </p>
+                <div className="flex justify-center gap-4 text-sm">
+                  <span className="text-red-600">🔥 {hotCount} Hot</span>
+                  <span className="text-yellow-600">🌡️ {warmCount} Warm</span>
+                  <span className="text-blue-600">❄️ {coldCount} Cold</span>
+                </div>
+              </div>
             </div>
+            
             <div className="flex justify-center gap-4">
               <Button variant="outline" onClick={resetAnalysis}>
                 Analisar outra planilha
@@ -444,30 +480,34 @@ export default function ICPBulkAnalysisWithMapping() {
                     <TableCell>
                       <Badge 
                         className={
-                          result.icp_score >= 80 ? 'bg-green-100 text-green-800' :
-                          result.icp_score >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                          result.icp_score >= 70 ? 'bg-red-100 text-red-800' :
+                          result.icp_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
                         }
                       >
                         {result.icp_score?.toFixed(1) || 0}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         className={
-                          result.temperature === 'hot' ? 'bg-red-100 text-red-800' :
-                          result.temperature === 'warm' ? 'bg-yellow-100 text-yellow-800' :
+                          result.temperatura === 'hot' ? 'bg-red-100 text-red-800' :
+                          result.temperatura === 'warm' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-blue-100 text-blue-800'
                         }
                       >
-                        {result.temperature || 'cold'}
+                        {result.temperatura === 'hot' ? '🔥 Hot' :
+                         result.temperatura === 'warm' ? '🌡️ Warm' :
+                         '❄️ Cold'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {result.status === 'success' ? (
                         <Badge className="bg-green-100 text-green-800">✓ Sucesso</Badge>
                       ) : (
-                        <Badge className="bg-red-100 text-red-800">✗ Erro</Badge>
+                        <Badge className="bg-red-100 text-red-800" title={result.error}>
+                          ✗ Erro
+                        </Badge>
                       )}
                     </TableCell>
                   </TableRow>
