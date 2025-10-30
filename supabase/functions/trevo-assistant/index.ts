@@ -48,9 +48,16 @@ serve(async (req) => {
           .eq('owner_id', context.userId);
 
         if (deals && deals.length > 0) {
-          const totalValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
-          const avgProbability = deals.reduce((sum, d) => sum + (d.probability || 0), 0) / deals.length;
-          additionalContext += `\n\nDeals ativos: ${deals.length}, Valor total: R$ ${totalValue.toLocaleString('pt-BR')}, Probabilidade média: ${avgProbability.toFixed(0)}%`;
+          const totalValue = deals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+          const avgProbability = deals.reduce((sum, d) => sum + (Number(d.probability) || 0), 0) / deals.length;
+          let formattedTotal = String(totalValue);
+          try {
+            formattedTotal = totalValue.toLocaleString('pt-BR');
+          } catch (_) {
+            // Fallback sem locale caso ambiente não suporte ICU completo
+            formattedTotal = totalValue.toLocaleString();
+          }
+          additionalContext += `\n\nDeals ativos: ${deals.length}, Valor total: R$ ${formattedTotal}, Probabilidade média: ${avgProbability.toFixed(0)}%`;
         }
 
         const { data: tasks } = await supabaseClient
@@ -75,7 +82,12 @@ serve(async (req) => {
         if (company) {
           additionalContext += `\n\nEmpresa em visualização: ${company.name}, Segmento: ${company.segment || 'N/A'}, Fit Score: ${company.fit_score || 'N/A'}`;
           if (company.tech_stack) {
-            additionalContext += `\n\nTech Stack: ${company.tech_stack.join(', ')}`;
+            const techStackStr = Array.isArray(company.tech_stack)
+              ? company.tech_stack.join(', ')
+              : (typeof company.tech_stack === 'string' ? company.tech_stack : '');
+            if (techStackStr) {
+              additionalContext += `\n\nTech Stack: ${techStackStr}`;
+            }
           }
         }
       }
