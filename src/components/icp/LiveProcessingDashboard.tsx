@@ -63,8 +63,8 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
     if (empresasProcessamento.length === 0 && !processamentoIniciado) {
       setProcessamentoIniciado(true);
       setEmpresasProcessamento(
-        empresas.map(emp => ({
-          id: emp.cnpj || String(Math.random()),
+        empresas.map((emp, index) => ({
+          id: `${emp.cnpj || 'sem-cnpj'}-${index}`,
           cnpj: emp.cnpj,
           razao_social: emp.razao_social || emp.nome_da_empresa || 'Empresa sem nome',
           progresso: 0,

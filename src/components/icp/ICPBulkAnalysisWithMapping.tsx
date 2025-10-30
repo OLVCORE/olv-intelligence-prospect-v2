@@ -384,7 +384,7 @@ export default function ICPBulkAnalysisWithMapping() {
           cnpj: cnpj || null,
           razao_social: name,
           origem: 'icp_massa',
-          status: 'em_analise',
+          status: 'pendente',
           raw_data: rawData,
         })
         .select('id')
