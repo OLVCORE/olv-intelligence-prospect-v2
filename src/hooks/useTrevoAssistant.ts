@@ -666,13 +666,13 @@ A **Captura** é o ponto de entrada de leads no sistema. Existem 3 formas de cap
 
 ### FORMA 1: UPLOAD MANUAL (CSV/EXCEL)
 
-**URL:** `/leads/capture`  
+**URL:** '/leads/capture'  
 **Menu:** Captura de Leads → Upload Manual
 
 #### PASSO A PASSO:
 
 1. **Prepare sua planilha:**
-   - Formato aceito: `.csv` ou `.xlsx`
+   - Formato aceito: CSV ou XLSX
    - Tamanho máximo: **10.000 linhas** por arquivo
    - Encoding: UTF-8 (padrão Excel/Google Sheets)
 
@@ -734,7 +734,7 @@ Sistema detecta duplicados por:
 
 ### FORMA 2: BUSCA EMPRESAS (WEB SCRAPING)
 
-**URL:** `/central-icp/discovery`  
+**URL:** '/central-icp/discovery'  
 **Menu:** Central ICP → Buscar Empresas
 
 #### FUNCIONALIDADES:
@@ -797,7 +797,7 @@ Sistema detecta duplicados por:
 
 A **Quarentena** é o centro de triagem de leads, onde todos os leads capturados passam por validações automáticas antes de serem aprovados para o pool de vendas.
 
-**URL:** `/leads/quarantine`  
+**URL:** '/leads/quarantine'  
 **Menu:** Quarentena Inteligente
 
 ### OBJETIVOS DA QUARENTENA:
@@ -930,10 +930,10 @@ O **Score de Validação** mede a **qualidade e completude dos dados** do lead, 
 - DDD válido (lista oficial Anatel) → +2pts
 
 **Formatos Aceitos:**
-- `(11) 98765-4321` - Celular com DDD
-- `(21) 3456-7890` - Fixo com DDD
-- `11987654321` - Apenas números
-- `+55 11 98765-4321` - Internacional
+- (11) 98765-4321 - Celular com DDD
+- (21) 3456-7890 - Fixo com DDD
+- 11987654321 - Apenas números
+- +55 11 98765-4321 - Internacional
 
 #### 6. COMPLETUDE DE DADOS (+5pts)
 
@@ -1089,7 +1089,7 @@ O **Score de Validação** mede a **qualidade e completude dos dados** do lead, 
 
 A **Qualificação ICP** (Ideal Customer Profile) é onde a IA analisa profundamente cada lead aprovado e determina o **fit estratégico** com o perfil de cliente ideal da TOTVS.
 
-**URL:** `/leads/icp-analysis/{company_id}`  
+**URL:** '/leads/icp-analysis/{company_id}'  
 **Acesso:** Quarentena → Lead Aprovado → Botão "Qualificar ICP →"
 
 ### O QUE É O SCORE ICP?
