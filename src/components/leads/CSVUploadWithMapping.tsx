@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 type Step = 'upload' | 'mapping' | 'importing' | 'complete';
 
 export default function CSVUploadWithMapping() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
@@ -373,7 +375,7 @@ export default function CSVUploadWithMapping() {
               <Button onClick={resetImport} variant="outline">
                 Importar outra planilha
               </Button>
-              <Button onClick={() => window.location.href = '/search'}>
+              <Button onClick={() => navigate('/search')}>
                 Ver empresas importadas
               </Button>
             </div>
