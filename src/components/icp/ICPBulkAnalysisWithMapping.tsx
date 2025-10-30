@@ -3,15 +3,17 @@ import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
+import { cn } from '@/lib/utils';
 import { calculateICPScore } from '@/lib/icpCalculator';
 import { useSaveToQuarantine } from '@/hooks/useICPQuarantine';
 import PreAnalysisReport from './PreAnalysisReport';
@@ -43,6 +45,8 @@ export default function ICPBulkAnalysisWithMapping() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [preAnalysisData, setPreAnalysisData] = useState<any>(null);
+  const [customFields, setCustomFields] = useState<string[]>([]);
+  const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
 
@@ -740,41 +744,178 @@ export default function ICPBulkAnalysisWithMapping() {
                       {mapping.csvColumn}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={mapping.systemField || '__SKIP__'}
-                        onValueChange={(value) => handleMappingChange(index, value)}
+                      <Popover 
+                        open={openComboboxIndex === index} 
+                        onOpenChange={(open) => setOpenComboboxIndex(open ? index : null)}
                       >
-                        <SelectTrigger className="w-64">
-                          <SelectValue placeholder="Selecione um campo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__SKIP__">
-                            <span className="flex items-center gap-1">
-                              <Ban className="w-3 h-3" /> Não mapear
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openComboboxIndex === index}
+                            className="w-64 justify-between"
+                          >
+                            <span className="truncate">
+                              {mapping.systemField === '__SKIP__' ? (
+                                <span className="flex items-center gap-1">
+                                  <Ban className="w-3 h-3" /> Não mapear
+                                </span>
+                              ) : mapping.systemField ? (
+                                <span className="flex items-center gap-1">
+                                  <Star className="w-3 h-3 text-yellow-500" /> 
+                                  {getFieldLabel(mapping.systemField)}
+                                </span>
+                              ) : (
+                                "Selecione um campo"
+                              )}
                             </span>
-                          </SelectItem>
-                          {mapping.systemField && mapping.systemField !== '__SKIP__' && (
-                            <SelectItem value={mapping.systemField}>
-                              <span className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-yellow-500" /> {getFieldLabel(mapping.systemField)} (Sugerido)
-                              </span>
-                            </SelectItem>
-                          )}
-                          {mapping.alternatives.map((alt) => (
-                            <SelectItem key={alt.field} value={alt.field}>
-                              {getFieldLabel(alt.field)} ({alt.confidence}%)
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="separator" disabled>
-                            ──────────────
-                          </SelectItem>
-                          {getSystemFields().map((field) => (
-                            <SelectItem key={field} value={field}>
-                              {getFieldLabel(field)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar campo..." />
+                            <CommandList>
+                              <CommandEmpty>
+                                <div className="p-2 text-center">
+                                  <p className="text-sm text-muted-foreground mb-2">Nenhum campo encontrado</p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => {
+                                      const newField = prompt('Digite o nome do novo campo:');
+                                      if (newField && newField.trim()) {
+                                        const fieldKey = newField.trim().toLowerCase().replace(/\s+/g, '_');
+                                        setCustomFields(prev => [...prev, fieldKey]);
+                                        handleMappingChange(index, fieldKey);
+                                        setOpenComboboxIndex(null);
+                                        toast({
+                                          title: 'Campo adicionado',
+                                          description: `Campo "${newField}" foi adicionado com sucesso.`,
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Adicionar novo campo
+                                  </Button>
+                                </div>
+                              </CommandEmpty>
+                              
+                              <CommandGroup heading="Opções">
+                                <CommandItem
+                                  value="__SKIP__"
+                                  onSelect={() => {
+                                    handleMappingChange(index, '__SKIP__');
+                                    setOpenComboboxIndex(null);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      mapping.systemField === '__SKIP__' ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <Ban className="w-3 h-3 mr-2" />
+                                  Não mapear
+                                </CommandItem>
+                              </CommandGroup>
+
+                              {mapping.systemField && mapping.systemField !== '__SKIP__' && (
+                                <CommandGroup heading="Sugestão">
+                                  <CommandItem
+                                    value={mapping.systemField}
+                                    onSelect={() => {
+                                      handleMappingChange(index, mapping.systemField!);
+                                      setOpenComboboxIndex(null);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        mapping.systemField === mapping.systemField ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <Star className="w-3 h-3 mr-2 text-yellow-500" />
+                                    {getFieldLabel(mapping.systemField)} (Sugerido)
+                                  </CommandItem>
+                                </CommandGroup>
+                              )}
+
+                              {mapping.alternatives.length > 0 && (
+                                <CommandGroup heading="Alternativas">
+                                  {mapping.alternatives.map((alt) => (
+                                    <CommandItem
+                                      key={alt.field}
+                                      value={`${alt.field}-${getFieldLabel(alt.field)}`}
+                                      onSelect={() => {
+                                        handleMappingChange(index, alt.field);
+                                        setOpenComboboxIndex(null);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          mapping.systemField === alt.field ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {getFieldLabel(alt.field)} ({alt.confidence}%)
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+
+                              <CommandSeparator />
+
+                              <CommandGroup heading="Todos os campos">
+                                {[...getSystemFields(), ...customFields].map((field) => (
+                                  <CommandItem
+                                    key={field}
+                                    value={`${field}-${getFieldLabel(field)}`}
+                                    onSelect={() => {
+                                      handleMappingChange(index, field);
+                                      setOpenComboboxIndex(null);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        mapping.systemField === field ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {getFieldLabel(field)}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+
+                              <CommandSeparator />
+                              
+                              <CommandGroup>
+                                <CommandItem
+                                  onSelect={() => {
+                                    const newField = prompt('Digite o nome do novo campo:');
+                                    if (newField && newField.trim()) {
+                                      const fieldKey = newField.trim().toLowerCase().replace(/\s+/g, '_');
+                                      setCustomFields(prev => [...prev, fieldKey]);
+                                      handleMappingChange(index, fieldKey);
+                                      setOpenComboboxIndex(null);
+                                      toast({
+                                        title: 'Campo adicionado',
+                                        description: `Campo "${newField}" foi adicionado com sucesso.`,
+                                      });
+                                    }
+                                  }}
+                                  className="text-primary"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Adicionar campo customizado
+                                </CommandItem>
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(mapping.status, mapping.confidence)}
