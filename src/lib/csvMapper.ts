@@ -1,3 +1,22 @@
+// Mapeamento direto com prioridade ABSOLUTA
+const DIRECT_MAPPING: Record<string, string> = {
+  // CNPJ (PRIORIDADE MÁXIMA)
+  'cnpj': 'cnpj',
+  'cpf cnpj': 'cnpj',
+  'cpf/cnpj': 'cnpj',
+  'documento': 'cnpj',
+  
+  // Razão Social (PRIORIDADE MÁXIMA)
+  'razao social': 'razao_social',
+  'razao': 'razao_social',
+  'nome da empresa': 'razao_social',
+  
+  // SKIP - Campos que NÃO devem ser mapeados
+  'regime tributario': '__SKIP__',
+  'identificador': '__SKIP__',
+  'simples nacional': '__SKIP__',
+};
+
 // Dicionário completo de sinônimos para os 87 campos do sistema
 const fieldSynonyms: Record<string, string[]> = {
   // Dados Básicos
@@ -175,6 +194,23 @@ export function mapColumnToField(columnName: string): {
   confidence: number;
   alternatives: Array<{ field: string; confidence: number }>;
 } {
+  const normalizedColumn = normalizeString(columnName);
+  
+  // VERIFICAR MAPEAMENTO DIRETO PRIMEIRO (100% confiança)
+  if (DIRECT_MAPPING[normalizedColumn]) {
+    const field = DIRECT_MAPPING[normalizedColumn];
+    
+    if (field === '__SKIP__') {
+      return { field: null, confidence: 0, alternatives: [] };
+    }
+    
+    return {
+      field,
+      confidence: 100,
+      alternatives: [],
+    };
+  }
+  
   let bestMatch: { field: string | null; confidence: number } = {
     field: null,
     confidence: 0,

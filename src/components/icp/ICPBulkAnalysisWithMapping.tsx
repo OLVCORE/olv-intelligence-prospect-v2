@@ -96,6 +96,40 @@ export default function ICPBulkAnalysisWithMapping() {
   };
 
   const handleAnalyze = async () => {
+    // VALIDAÇÃO CRÍTICA ANTES DE INICIAR
+    const fieldMap: Record<string, string> = {};
+    mappings.forEach(m => {
+      if (m.systemField && m.systemField !== 'skip') {
+        fieldMap[m.csvColumn] = m.systemField;
+      }
+    });
+    
+    // Verificar se CNPJ está mapeado
+    const cnpjMapeado = Object.values(fieldMap).includes('cnpj');
+    if (!cnpjMapeado) {
+      toast({
+        title: "Erro de Mapeamento",
+        description: "Campo CNPJ não foi mapeado. Verifique o mapeamento antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Testar primeira linha
+    const primeiraLinha = allData[0];
+    const cnpjColuna = Object.keys(fieldMap).find(k => fieldMap[k] === 'cnpj');
+    const cnpjValor = primeiraLinha[cnpjColuna!];
+    const cnpjLimpo = cnpjValor?.toString().replace(/\D/g, '');
+    
+    if (!cnpjLimpo || cnpjLimpo.length !== 14) {
+      toast({
+        title: "CNPJ Inválido",
+        description: `CNPJ da primeira linha está inválido: "${cnpjValor}". Verifique o mapeamento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setStep('analyzing');
     setStartTime(new Date());
     setTotalProcessed(0);
@@ -103,16 +137,16 @@ export default function ICPBulkAnalysisWithMapping() {
     
     const analysisResults: any[] = [];
     const companiesQueue: ProcessingCompany[] = allData.map((row, index) => {
-      const fieldMap: Record<string, string> = {};
+      const companyFieldMap: Record<string, string> = {};
       mappings.forEach(m => {
         if (m.systemField && m.systemField !== '__SKIP__') {
-          fieldMap[m.csvColumn] = m.systemField;
+          companyFieldMap[m.csvColumn] = m.systemField;
         }
       });
       
       const companyData: any = {};
       Object.entries(row).forEach(([csvCol, value]) => {
-        const systemField = fieldMap[csvCol];
+        const systemField = companyFieldMap[csvCol];
         if (systemField && value) {
           companyData[systemField] = value;
         }
@@ -184,6 +218,8 @@ export default function ICPBulkAnalysisWithMapping() {
       }
     });
 
+    let companyData: any = {};
+
     try {
       updateCompanyStatus({ 
         status: 'processing', 
@@ -191,7 +227,6 @@ export default function ICPBulkAnalysisWithMapping() {
         progress: 10 
       });
 
-      let companyData: any = {};
       Object.entries(row).forEach(([csvCol, value]) => {
         const systemField = fieldMap[csvCol];
         if (systemField && value) {

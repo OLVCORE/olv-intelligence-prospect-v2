@@ -1,10 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const TIMEOUT_POR_PORTAL = 3000; // 3 segundos por portal
 
 // Portais de vagas para verificar
 const PORTAIS_VAGAS = [
@@ -123,15 +124,19 @@ serve(async (req) => {
     if (domain) searchTerms.push(domain);
     if (cnpj) searchTerms.push(cnpj.replace(/[^\d]/g, ''));
 
-    // Varrer cada categoria de portal
-    for (const produto of PRODUTOS_TOTVS) {
+    // Varrer cada produto TOTVS usando Google Search API
+    for (const produto of PRODUTOS_TOTVS.slice(0, 5)) { // Limitar a 5 produtos principais
       try {
         // Buscar por empresa + produto TOTVS
         const query = `${searchTerms.join(' OR ')} ${produto}`;
         
         const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&num=10`;
         
-        const response = await fetch(searchUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_POR_PORTAL);
+        
+        const response = await fetch(searchUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           console.error(`Google Search API error: ${response.status}`);
