@@ -80,28 +80,36 @@ export function useTrevoAssistant(context: TrevoContext) {
     } catch (error: any) {
       console.error('Error calling TREVO:', error);
       
-      // Verificar se é erro de créditos esgotados
-      const isCreditsError = error.message?.includes('Créditos') || error.message?.includes('esgotados');
+      // Classificar erros comuns
+      const raw = error?.message || '';
+      const isAuthError = /autentic|unauthorized|401|api key|invalid/i.test(raw);
+      const isRateLimit = /limite|rate|429/i.test(raw);
       
       // Mensagem de erro amigável
       const errorMessage: TrevoMessage = {
         role: 'assistant',
-        content: isCreditsError 
-          ? `💳 **Créditos do Lovable AI Esgotados**\n\nPara continuar usando o TREVO, você precisa adicionar créditos ao workspace:\n\n1. Acesse **Settings → Workspace → Usage**\n2. Adicione créditos para continuar usando funcionalidades de IA\n\nEnquanto isso, você ainda pode usar todas as outras funcionalidades da plataforma!`
-          : `😔 Desculpe, encontrei um problema: ${error.message || 'Erro ao processar sua mensagem'}. Tente novamente em alguns instantes.`,
+        content: isAuthError
+          ? '🔐 Erro de autenticação com o provedor de IA (OpenAI). Verifique a chave configurada nos Secrets.'
+          : isRateLimit
+          ? '⏳ Muitas solicitações em pouco tempo. Aguarde alguns instantes e tente novamente.'
+          : `😔 Desculpe, encontrei um problema: ${raw || 'Erro ao processar sua mensagem'}. Tente novamente em alguns instantes.`,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
       
-      if (isCreditsError) {
-        toast.error('Créditos do Lovable AI Esgotados', {
-          description: 'Adicione créditos em Settings → Workspace → Usage para continuar',
+      if (isAuthError) {
+        toast.error('Falha de autenticação (OpenAI)', {
+          description: 'Verifique a configuração da OPENAI_API_KEY nos Secrets',
           duration: 10000
+        });
+      } else if (isRateLimit) {
+        toast.error('Limite de requisições (OpenAI)', {
+          description: 'Aguarde alguns instantes e tente novamente',
         });
       } else {
         toast.error('Erro ao comunicar com o TREVO', {
-          description: error.message
+          description: raw
         });
       }
     } finally {
