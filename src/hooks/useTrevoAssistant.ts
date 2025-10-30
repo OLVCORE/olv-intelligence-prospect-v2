@@ -80,18 +80,30 @@ export function useTrevoAssistant(context: TrevoContext) {
     } catch (error: any) {
       console.error('Error calling TREVO:', error);
       
+      // Verificar se é erro de créditos esgotados
+      const isCreditsError = error.message?.includes('Créditos') || error.message?.includes('esgotados');
+      
       // Mensagem de erro amigável
       const errorMessage: TrevoMessage = {
         role: 'assistant',
-        content: `😔 Desculpe, encontrei um problema: ${error.message || 'Erro ao processar sua mensagem'}. Tente novamente em alguns instantes.`,
+        content: isCreditsError 
+          ? `💳 **Créditos do Lovable AI Esgotados**\n\nPara continuar usando o TREVO, você precisa adicionar créditos ao workspace:\n\n1. Acesse **Settings → Workspace → Usage**\n2. Adicione créditos para continuar usando funcionalidades de IA\n\nEnquanto isso, você ainda pode usar todas as outras funcionalidades da plataforma!`
+          : `😔 Desculpe, encontrei um problema: ${error.message || 'Erro ao processar sua mensagem'}. Tente novamente em alguns instantes.`,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
       
-      toast.error('Erro ao comunicar com o TREVO', {
-        description: error.message
-      });
+      if (isCreditsError) {
+        toast.error('Créditos do Lovable AI Esgotados', {
+          description: 'Adicione créditos em Settings → Workspace → Usage para continuar',
+          duration: 10000
+        });
+      } else {
+        toast.error('Erro ao comunicar com o TREVO', {
+          description: error.message
+        });
+      }
     } finally {
       setIsLoading(false);
     }
