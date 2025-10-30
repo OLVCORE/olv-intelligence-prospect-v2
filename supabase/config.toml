@@ -245,3 +245,6 @@ verify_jwt = false
 
   [functions.trevo-assistant]
   verify_jwt = false
+
+  [functions.icp-scraper-real]
+  verify_jwt = false

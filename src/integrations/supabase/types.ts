@@ -4342,6 +4342,150 @@ export type Database = {
         }
         Relationships: []
       }
+      icp_criteria_scores: {
+        Row: {
+          analysis_id: string | null
+          atendido: boolean
+          categoria: string | null
+          cnpj: string
+          created_at: string | null
+          criterio_descricao: string | null
+          criterio_nome: string
+          evidencias_ids: string[] | null
+          id: string
+          numero_evidencias: number | null
+          peso: number
+          pontos_maximos: number
+          pontos_obtidos: number
+        }
+        Insert: {
+          analysis_id?: string | null
+          atendido: boolean
+          categoria?: string | null
+          cnpj: string
+          created_at?: string | null
+          criterio_descricao?: string | null
+          criterio_nome: string
+          evidencias_ids?: string[] | null
+          id?: string
+          numero_evidencias?: number | null
+          peso: number
+          pontos_maximos: number
+          pontos_obtidos: number
+        }
+        Update: {
+          analysis_id?: string | null
+          atendido?: boolean
+          categoria?: string | null
+          cnpj?: string
+          created_at?: string | null
+          criterio_descricao?: string | null
+          criterio_nome?: string
+          evidencias_ids?: string[] | null
+          id?: string
+          numero_evidencias?: number | null
+          peso?: number
+          pontos_maximos?: number
+          pontos_obtidos?: number
+        }
+        Relationships: []
+      }
+      icp_evidence: {
+        Row: {
+          analysis_id: string | null
+          categoria: string | null
+          cnpj: string
+          confiabilidade: string | null
+          created_at: string | null
+          criterio: string
+          dados_extraidos: Json | null
+          evidencia: string
+          fonte_nome: string
+          fonte_url: string
+          id: string
+          peso_criterio: number | null
+          pontos_atribuidos: number | null
+          scraped_at: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          categoria?: string | null
+          cnpj: string
+          confiabilidade?: string | null
+          created_at?: string | null
+          criterio: string
+          dados_extraidos?: Json | null
+          evidencia: string
+          fonte_nome: string
+          fonte_url: string
+          id?: string
+          peso_criterio?: number | null
+          pontos_atribuidos?: number | null
+          scraped_at?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          categoria?: string | null
+          cnpj?: string
+          confiabilidade?: string | null
+          created_at?: string | null
+          criterio?: string
+          dados_extraidos?: Json | null
+          evidencia?: string
+          fonte_nome?: string
+          fonte_url?: string
+          id?: string
+          peso_criterio?: number | null
+          pontos_atribuidos?: number | null
+          scraped_at?: string | null
+        }
+        Relationships: []
+      }
+      icp_scraping_log: {
+        Row: {
+          analysis_id: string | null
+          cnpj: string
+          dados_encontrados: boolean | null
+          erro_mensagem: string | null
+          html_content: string | null
+          id: string
+          json_response: Json | null
+          plataforma: string
+          scraped_at: string | null
+          status: string
+          tempo_resposta_ms: number | null
+          url_buscada: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          cnpj: string
+          dados_encontrados?: boolean | null
+          erro_mensagem?: string | null
+          html_content?: string | null
+          id?: string
+          json_response?: Json | null
+          plataforma: string
+          scraped_at?: string | null
+          status: string
+          tempo_resposta_ms?: number | null
+          url_buscada: string
+        }
+        Update: {
+          analysis_id?: string | null
+          cnpj?: string
+          dados_encontrados?: boolean | null
+          erro_mensagem?: string | null
+          html_content?: string | null
+          id?: string
+          json_response?: Json | null
+          plataforma?: string
+          scraped_at?: string | null
+          status?: string
+          tempo_resposta_ms?: number | null
+          url_buscada?: string
+        }
+        Relationships: []
+      }
       insights: {
         Row: {
           company_id: string

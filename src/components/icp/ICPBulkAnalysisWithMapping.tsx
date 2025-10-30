@@ -372,43 +372,83 @@ export default function ICPBulkAnalysisWithMapping() {
       }
 
       updateCompanyStatus({ 
-        currentStep: 'Verificando portais de vagas (40+ fontes)', 
+        currentStep: '🔍 Iniciando análise REAL em 40+ plataformas...', 
         progress: 30 
       });
 
-      // Chamar edge function para verificar TOTVS
+      // ===== SCRAPING REAL COM 40+ PLATAFORMAS =====
+      // Criar registro de análise
+      const { data: analysisRecord, error: analysisError } = await supabase
+        .from('icp_analysis_results')
+        .insert({
+          cnpj: cnpj || null,
+          razao_social: name,
+          origem: 'icp_massa',
+          status: 'em_analise',
+          raw_data: rawData,
+        })
+        .select('id')
+        .single();
+
+      if (analysisError) {
+        console.error('Erro ao criar registro de análise:', analysisError);
+      }
+
+      const analysisId = analysisRecord?.id;
+
       let encontrouTotvs = false;
       let evidenciasTotvs: any[] = [];
       let portaisVerificados = 0;
 
       try {
+        updateCompanyStatus({ 
+          currentStep: '⏳ Consultando 40+ fontes (aguarde 3-5 minutos)...', 
+          progress: 35 
+        });
+
+        // CHAMAR SCRAPER REAL (DEMORA 3-5 MINUTOS)
         const { data: scraperData, error: scraperError } = await supabase.functions.invoke(
-          'web-scraper-totvs',
+          'icp-scraper-real',
           {
             body: {
+              empresa: name,
               cnpj: cnpj,
-              razao_social: name,
               domain: domain,
+              analysis_id: analysisId,
             },
           }
         );
 
         if (scraperError) {
-          console.error('Erro no scraper TOTVS:', scraperError);
-        } else if (scraperData) {
-          encontrouTotvs = scraperData.encontrou_totvs;
-          evidenciasTotvs = scraperData.evidencias || [];
-          portaisVerificados = scraperData.portais_verificados || 0;
-        }
+          console.error('[ICP] Erro no scraper real:', scraperError);
+          updateCompanyStatus({ 
+            currentStep: `❌ Erro ao consultar plataformas: ${scraperError.message}`, 
+            progress: 40 
+          });
+        } else if (scraperData && scraperData.success) {
+          portaisVerificados = scraperData.plataformas_consultadas || 0;
+          const evidenciasEncontradas = scraperData.evidencias_encontradas || 0;
+          const tempoTotal = scraperData.tempo_total_segundos || 0;
 
+          updateCompanyStatus({ 
+            currentStep: `✅ Análise concluída: ${evidenciasEncontradas} evidências em ${tempoTotal}s`, 
+            progress: 60 
+          });
+
+          // Verificar se encontrou TOTVS (score alto de TOTVS = cliente existente)
+          encontrouTotvs = scraperData.score >= 70; // Se score >= 70, pode ser cliente TOTVS
+          if (encontrouTotvs) {
+            evidenciasTotvs = [
+              { fonte: 'Análise Multicanal', descricao: `Score ICP alto detectado: ${scraperData.score}` }
+            ];
+          }
+        }
+      } catch (error: any) {
+        console.error('[ICP] Erro ao executar scraper real:', error);
         updateCompanyStatus({ 
-          currentStep: encontrouTotvs 
-            ? `Cliente TOTVS detectado (${evidenciasTotvs.length} evidências)` 
-            : `Sem vínculo TOTVS (${portaisVerificados} portais verificados)`, 
-          progress: 60 
+          currentStep: `⚠️ Erro na análise: ${error.message}`, 
+          progress: 40 
         });
-      } catch (error) {
-        console.error('Erro ao verificar TOTVS:', error);
       }
 
       // Se encontrou TOTVS, marcar como descartado
