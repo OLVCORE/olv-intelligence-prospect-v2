@@ -111,13 +111,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "account_strategies_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "account_strategies_persona_id_fkey"
             columns: ["persona_id"]
             isOneToOne: false
@@ -268,20 +261,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "account_touchpoints_completed_by_fkey"
-            columns: ["completed_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "account_touchpoints_next_action_owner_fkey"
-            columns: ["next_action_owner"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       activities: {
@@ -371,13 +350,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contacts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -632,13 +604,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "apollo_credit_usage_requested_by_fkey"
-            columns: ["requested_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       app_features: {
@@ -752,15 +717,7 @@ export type Database = {
           user_id?: string
           webhook_url?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "bitrix_sync_config_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       bitrix_sync_log: {
         Row: {
@@ -1042,13 +999,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "business_cases_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       buyer_personas: {
@@ -1182,13 +1132,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buying_signals_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1876,25 +1819,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "companies_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "companies_lead_source_id_fkey"
             columns: ["lead_source_id"]
             isOneToOne: false
             referencedRelation: "leads_sources"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "companies_next_action_owner_fkey"
-            columns: ["next_action_owner"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "companies_quarantine_id_fkey"
@@ -2157,13 +2086,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_monitoring_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2794,6 +2716,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_onboarding_assigned_csm_fkey"
+            columns: ["assigned_csm"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "customer_onboarding_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
@@ -2861,6 +2790,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deal_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "deal_approvals_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
@@ -2880,6 +2816,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_approvals_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -3216,13 +3159,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "discovery_batches_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       displacement_opportunities: {
@@ -3281,13 +3217,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "displacement_opportunities_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "displacement_opportunities_company_id_fkey"
             columns: ["company_id"]
@@ -3458,13 +3387,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "executive_reports_versions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "executive_reports_versions_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
@@ -3600,15 +3522,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "google_sheets_sync_config_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       governance_signals: {
         Row: {
@@ -3737,13 +3651,6 @@ export type Database = {
           value_proposition?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "icp_analysis_history_analyzed_by_fkey"
-            columns: ["analyzed_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "icp_analysis_history_company_id_fkey"
             columns: ["company_id"]
@@ -3946,15 +3853,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "icp_batch_jobs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       insights: {
         Row: {
@@ -4032,15 +3931,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "integration_configs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       intelligence_monitoring_config: {
         Row: {
@@ -4148,15 +4039,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "intelligence_monitoring_config_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       intent_signals: {
         Row: {
@@ -4335,13 +4218,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "interactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4542,25 +4418,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "leads_quarantine_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "leads_quarantine_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "leads_sources"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_quarantine_validated_by_fkey"
-            columns: ["validated_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4607,15 +4469,7 @@ export type Database = {
           total_captured?: number | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "leads_sources_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       legal_data: {
         Row: {
@@ -4699,15 +4553,7 @@ export type Database = {
           updated_at?: string | null
           variables?: Json | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
@@ -5147,15 +4993,7 @@ export type Database = {
           updated_at?: string
           whatsapp?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       quote_history: {
         Row: {
@@ -5257,25 +5095,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "quote_history_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "quote_history_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quote_history_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "quote_history_deal_id_fkey"
@@ -5425,15 +5249,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sales_goals_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       scenario_analysis: {
         Row: {
@@ -5515,13 +5331,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "scenario_analysis_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "scenario_analysis_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
@@ -5561,15 +5370,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sdr_api_keys_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       sdr_audit: {
         Row: {
@@ -5745,6 +5546,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sdr_deals_assigned_sales_rep_fkey"
+            columns: ["assigned_sales_rep"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sdr_deals_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
@@ -5880,11 +5688,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sdr_handoffs_from_sdr_fkey"
+            columns: ["from_sdr"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sdr_handoffs_to_sales_rep_fkey"
             columns: ["to_sales_rep"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_handoffs_to_sales_rep_fkey"
+            columns: ["to_sales_rep"]
+            isOneToOne: false
+            referencedRelation: "sdr_performance"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -5922,15 +5744,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sdr_integrations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       sdr_notifications: {
         Row: {
@@ -5963,15 +5777,7 @@ export type Database = {
           type?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sdr_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       sdr_opportunities: {
         Row: {
@@ -6035,13 +5841,6 @@ export type Database = {
           won_date?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "sdr_opportunities_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "sdr_opportunities_canvas_id_fkey"
             columns: ["canvas_id"]
@@ -6470,15 +6269,7 @@ export type Database = {
           url?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sdr_webhooks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       sdr_workflows: {
         Row: {
@@ -6523,15 +6314,7 @@ export type Database = {
           trigger_type?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sdr_workflows_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       search_history: {
         Row: {
@@ -6733,13 +6516,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "suggested_companies_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       totvs_products: {
@@ -6901,15 +6677,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       value_milestones: {
         Row: {
@@ -6964,13 +6732,6 @@ export type Database = {
           value_tracking_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "value_milestones_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "value_milestones_value_tracking_id_fkey"
             columns: ["value_tracking_id"]
@@ -7076,13 +6837,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "value_tracking_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -7194,13 +6948,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "visual_proposals_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "visual_proposals_quote_id_fkey"
@@ -7337,13 +7084,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "win_loss_analysis_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sdr_performance"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "win_loss_analysis_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
@@ -7399,6 +7139,7 @@ export type Database = {
           total_won: number | null
           user_email: string | null
           user_id: string | null
+          user_name: string | null
         }
         Relationships: []
       }
