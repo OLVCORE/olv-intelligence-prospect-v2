@@ -13,10 +13,10 @@ serve(async (req) => {
 
   try {
     const { deals } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY não configurado");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY não configurado");
     }
 
     const systemPrompt = `Você é um especialista em análise preditiva de vendas B2B. 
@@ -42,14 +42,14 @@ Para cada deal, analise:
 3. Fatores de risco identificados
 4. Recomendações específicas para aumentar conversão`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -95,26 +95,28 @@ Para cada deal, analise:
             }
           }
         ],
-        tool_choice: { type: "function", function: { name: "return_predictions" } }
+        tool_choice: { type: "function", function: { name: "return_predictions" } },
+        temperature: 0.7,
+        max_tokens: 2000
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit excedido. Tente novamente em alguns minutos." }),
+          JSON.stringify({ error: "Limite atingido na OpenAI. Aguarde alguns segundos e tente novamente." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos no workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Falha de autenticação na OpenAI. Verifique o OPENAI_API_KEY." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errorText = await response.text();
-      console.error("Erro AI Gateway:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("OpenAI error:", response.status, errorText);
+      throw new Error(`Erro da OpenAI: ${response.status}`);
     }
 
     const aiResponse = await response.json();
