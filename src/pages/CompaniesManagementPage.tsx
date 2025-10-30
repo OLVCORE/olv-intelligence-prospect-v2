@@ -997,7 +997,7 @@ export default function CompaniesManagementPage() {
                               onClick={() => navigate(`/company/${company.id}`)}
                               className="font-medium hover:text-primary hover:underline text-left"
                             >
-                              {company.name}
+                              {(company as any).razao_social || company.name || (company as any).nome_fantasia || 'Sem nome'}
                             </button>
                             {company.domain && (
                               <p className="text-xs text-muted-foreground">{company.domain}</p>

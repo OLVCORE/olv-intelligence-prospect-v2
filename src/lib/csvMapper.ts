@@ -2,9 +2,16 @@
 const fieldSynonyms: Record<string, string[]> = {
   // Dados Básicos
   cnpj: ["CNPJ", "CPF/CNPJ", "Documento", "Doc", "Registro", "CNPJ/CPF"],
-  nome_da_empresa: ["Nome da Empresa", "Nome", "Empresa", "Razão Social", "Razão"],
-  nome_fantasia: ["Nome Fantasia", "Fantasia", "Nome Comercial", "Nome de Fantasia"],
-  razao_social: ["Razão Social", "Razão", "Nome Empresa", "Empresa", "Nome"],
+  nome_da_empresa: ["Nome da Empresa", "Nome Empresa", "Nome", "Empresa", "Company Name", "Business Name", "Corporate Name"],
+  nome_fantasia: ["Nome Fantasia", "Fantasia", "Nome Comercial", "Nome de Fantasia", "Trade Name", "Trading Name"],
+  razao_social: [
+    "Razão Social", "Razão", "Razao Social", "Razao",
+    "Nome da Empresa", "Nome Empresa", "Nome", "Empresa",
+    "Razão Social da Empresa", "Nome Fantasia",
+    "Denominação Social", "Denominacao Social",
+    "Corporate Name", "Company Name", "Business Name",
+    "Legal Name", "Firma", "Denominação", "Denominacao"
+  ],
   email: ["E-mail", "Email", "Correio Eletrônico", "Mail", "Contato Email", "E mail"],
   telefone: ["Telefone", "Telefone 1", "Fone", "Tel", "Celular", "Contato", "Phone"],
   website: ["Website", "Site", "URL", "Homepage", "Web", "Página"],
@@ -94,10 +101,21 @@ const fieldSynonyms: Record<string, string[]> = {
 // Campos do sistema
 const systemFields = Object.keys(fieldSynonyms);
 
+// Normalizar string para comparação (remove acentos e caracteres especiais)
+function normalizeString(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD') // Remove acentos
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
+    .replace(/[^a-z0-9\s]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, ' '); // Normaliza espaços
+}
+
 // Função de similaridade usando Levenshtein Distance
 function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-  const s2 = str2.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  const s1 = normalizeString(str1);
+  const s2 = normalizeString(str2);
   
   // Correspondência exata
   if (s1 === s2) return 100;

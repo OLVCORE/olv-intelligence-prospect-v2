@@ -91,12 +91,18 @@ export function CompanyRowActions({
         <DropdownMenuSeparator />
         
         {/* Visualizar */}
-        <DropdownMenuItem onClick={() => navigate(`/company/${company.id}`)}>
+        <DropdownMenuItem 
+          onClick={() => navigate(`/company/${company.id}`)}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
           <Eye className="h-4 w-4 mr-2" />
           Ver Detalhes
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={() => navigate(`/search?companyId=${company.id}`)}>
+        <DropdownMenuItem 
+          onClick={() => navigate(`/search?companyId=${company.id}`)}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
           <Edit className="h-4 w-4 mr-2" />
           Editar/Salvar Dados
         </DropdownMenuItem>
@@ -107,6 +113,7 @@ export function CompanyRowActions({
         <DropdownMenuItem 
           onClick={() => navigate(`/account-strategy?company=${company.id}`)}
           disabled={!company.cnpj}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           <Target className="h-4 w-4 mr-2" />
           {company.cnpj ? 'Criar Estratégia' : 'Criar Estratégia (requer CNPJ)'}
@@ -117,7 +124,10 @@ export function CompanyRowActions({
 
         {/* Descobrir CNPJ */}
         {!company.cnpj && onDiscoverCNPJ && (
-          <DropdownMenuItem onClick={onDiscoverCNPJ}>
+          <DropdownMenuItem 
+            onClick={onDiscoverCNPJ}
+            className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+          >
             <Search className="h-4 w-4 mr-2" />
             Descobrir CNPJ
           </DropdownMenuItem>
@@ -127,6 +137,7 @@ export function CompanyRowActions({
         <DropdownMenuItem
           onClick={() => handleEnrich('Receita Federal', onEnrichReceita)}
           disabled={isDisabled('receita') || isEnriching}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           {enrichingAction === 'receita' ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -141,6 +152,7 @@ export function CompanyRowActions({
         <DropdownMenuItem
           onClick={() => handleEnrich('Apollo', onEnrichApollo)}
           disabled={isEnriching}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           {enrichingAction === 'Apollo' ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -154,6 +166,7 @@ export function CompanyRowActions({
         <DropdownMenuItem
           onClick={() => handleEnrich('Eco-Booster', onEnrichEconodata)}
           disabled={isDisabled('econodata') || isEnriching}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           {enrichingAction === 'Eco-Booster' ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -168,6 +181,7 @@ export function CompanyRowActions({
         <DropdownMenuItem
           onClick={() => handleEnrich('360°', onEnrich360)}
           disabled={isEnriching}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           {enrichingAction === '360°' ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -186,7 +200,7 @@ export function CompanyRowActions({
               href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="cursor-pointer"
+              className="cursor-pointer hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Abrir Website
@@ -197,7 +211,10 @@ export function CompanyRowActions({
         <DropdownMenuSeparator />
 
         {/* Deletar */}
-        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem 
+          onClick={onDelete} 
+          className="text-destructive focus:text-destructive hover:bg-destructive/10 hover:border-l-4 hover:border-destructive transition-all cursor-pointer"
+        >
           <Trash2 className="h-4 w-4 mr-2" />
           Excluir
         </DropdownMenuItem>
