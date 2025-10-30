@@ -1508,6 +1508,8 @@ export type Database = {
           apollo_score: Json | null
           apollo_signals: Json | null
           apollo_url: string | null
+          approved_at: string | null
+          approved_by: string | null
           assigned_at: string | null
           assigned_to: string | null
           buying_intent_score: number | null
@@ -1556,6 +1558,7 @@ export type Database = {
           last_contact_at: string | null
           last_funding_round_amount: number | null
           last_funding_round_date: string | null
+          lead_qualified_id: string | null
           lead_score: number | null
           lead_score_updated_at: string | null
           lead_source_id: string | null
@@ -1576,6 +1579,7 @@ export type Database = {
           next_follow_up_date: string | null
           payment_terms: string | null
           phone_numbers: string[] | null
+          pipeline_status: string | null
           proposal_sent_at: string | null
           proposed_products: Json | null
           quarantine_id: string | null
@@ -1614,6 +1618,8 @@ export type Database = {
           apollo_score?: Json | null
           apollo_signals?: Json | null
           apollo_url?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           buying_intent_score?: number | null
@@ -1662,6 +1668,7 @@ export type Database = {
           last_contact_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
+          lead_qualified_id?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
           lead_source_id?: string | null
@@ -1682,6 +1689,7 @@ export type Database = {
           next_follow_up_date?: string | null
           payment_terms?: string | null
           phone_numbers?: string[] | null
+          pipeline_status?: string | null
           proposal_sent_at?: string | null
           proposed_products?: Json | null
           quarantine_id?: string | null
@@ -1720,6 +1728,8 @@ export type Database = {
           apollo_score?: Json | null
           apollo_signals?: Json | null
           apollo_url?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           buying_intent_score?: number | null
@@ -1768,6 +1778,7 @@ export type Database = {
           last_contact_at?: string | null
           last_funding_round_amount?: number | null
           last_funding_round_date?: string | null
+          lead_qualified_id?: string | null
           lead_score?: number | null
           lead_score_updated_at?: string | null
           lead_source_id?: string | null
@@ -1788,6 +1799,7 @@ export type Database = {
           next_follow_up_date?: string | null
           payment_terms?: string | null
           phone_numbers?: string[] | null
+          pipeline_status?: string | null
           proposal_sent_at?: string | null
           proposed_products?: Json | null
           quarantine_id?: string | null
@@ -1818,6 +1830,13 @@ export type Database = {
           website_visitors_data?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "companies_lead_qualified_id_fkey"
+            columns: ["lead_qualified_id"]
+            isOneToOne: false
+            referencedRelation: "leads_qualified"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "companies_lead_source_id_fkey"
             columns: ["lead_source_id"]
@@ -4270,6 +4289,149 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_pool: {
+        Row: {
+          cnae_principal: string | null
+          cnpj: string
+          created_at: string | null
+          email: string | null
+          icp_score: number | null
+          id: string
+          is_cliente_totvs: boolean | null
+          municipio: string | null
+          nome_fantasia: string | null
+          origem: string
+          porte: string | null
+          raw_data: Json | null
+          razao_social: string
+          status: string | null
+          telefone: string | null
+          temperatura: string | null
+          totvs_check_date: string | null
+          uf: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          cnae_principal?: string | null
+          cnpj: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          is_cliente_totvs?: boolean | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          origem: string
+          porte?: string | null
+          raw_data?: Json | null
+          razao_social: string
+          status?: string | null
+          telefone?: string | null
+          temperatura?: string | null
+          totvs_check_date?: string | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          cnae_principal?: string | null
+          cnpj?: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          is_cliente_totvs?: boolean | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          origem?: string
+          porte?: string | null
+          raw_data?: Json | null
+          razao_social?: string
+          status?: string | null
+          telefone?: string | null
+          temperatura?: string | null
+          totvs_check_date?: string | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      leads_qualified: {
+        Row: {
+          cnpj: string
+          created_at: string | null
+          email: string | null
+          icp_score: number | null
+          id: string
+          lead_pool_id: string | null
+          motivo_qualificacao: string | null
+          municipio: string | null
+          nome_fantasia: string | null
+          porte: string | null
+          razao_social: string
+          selected_at: string | null
+          selected_by: string | null
+          status: string | null
+          telefone: string | null
+          temperatura: string | null
+          uf: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          lead_pool_id?: string | null
+          motivo_qualificacao?: string | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          porte?: string | null
+          razao_social: string
+          selected_at?: string | null
+          selected_by?: string | null
+          status?: string | null
+          telefone?: string | null
+          temperatura?: string | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string | null
+          email?: string | null
+          icp_score?: number | null
+          id?: string
+          lead_pool_id?: string | null
+          motivo_qualificacao?: string | null
+          municipio?: string | null
+          nome_fantasia?: string | null
+          porte?: string | null
+          razao_social?: string
+          selected_at?: string | null
+          selected_by?: string | null
+          status?: string | null
+          telefone?: string | null
+          temperatura?: string | null
+          uf?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_qualified_lead_pool_id_fkey"
+            columns: ["lead_pool_id"]
+            isOneToOne: false
+            referencedRelation: "leads_pool"
             referencedColumns: ["id"]
           },
         ]
