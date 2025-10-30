@@ -264,7 +264,11 @@ export default function ICPBulkAnalysisWithMapping() {
       }
     });
 
-    let companyData: any = {};
+    // Coletar todos os dados do CSV
+    let rawData: any = {};
+    let name = '';
+    let cnpj = '';
+    let domain = '';
 
     try {
       updateCompanyStatus({ 
@@ -273,15 +277,38 @@ export default function ICPBulkAnalysisWithMapping() {
         progress: 10 
       });
 
+      // Mapear dados do CSV
       Object.entries(row).forEach(([csvCol, value]) => {
         const systemField = fieldMap[csvCol];
-        if (systemField && value) {
-          companyData[systemField] = value;
+        if (value) {
+          rawData[csvCol] = value;
+          
+          // Identificar campos principais
+          if (systemField === 'cnpj' || csvCol.toLowerCase().includes('cnpj')) {
+            cnpj = String(value);
+          }
+          if (systemField === 'razao_social' || systemField === 'nome_da_empresa' || 
+              csvCol.toLowerCase().includes('razão social') || csvCol.toLowerCase().includes('razao social') ||
+              csvCol.toLowerCase().includes('nome da empresa')) {
+            name = String(value);
+          }
+          if (systemField === 'website' || systemField === 'domain' || 
+              csvCol.toLowerCase().includes('website') || csvCol.toLowerCase().includes('site')) {
+            const websiteValue = String(value).replace(/^https?:\/\//, '').replace(/\/$/, '');
+            if (websiteValue && websiteValue !== 'N/A' && !websiteValue.startsWith('www.')) {
+              domain = websiteValue;
+            }
+          }
         }
       });
 
-      if (!companyData.cnpj && !companyData.razao_social && !companyData.nome_da_empresa) {
-        throw new Error('Dados insuficientes (falta CNPJ ou nome)');
+      if (!cnpj && !name) {
+        throw new Error('Dados insuficientes (falta CNPJ ou nome da empresa)');
+      }
+
+      // Se não tem nome, usar CNPJ como nome temporário
+      if (!name && cnpj) {
+        name = `Empresa ${cnpj}`;
       }
 
       updateCompanyStatus({ 
@@ -292,10 +319,19 @@ export default function ICPBulkAnalysisWithMapping() {
       const { data: existingCompany } = await supabase
         .from('companies')
         .select('id, name')
-        .eq('cnpj', companyData.cnpj)
+        .eq('cnpj', cnpj)
         .maybeSingle();
 
       let companyId: string;
+
+      // Preparar dados para insert/update usando APENAS colunas que existem na tabela
+      // UPDATED: 2025-01-30 - Fixed column mapping to match actual database schema
+      const companyData: any = {
+        name,
+        cnpj: cnpj || null,
+        domain: domain || null,
+        raw_data: rawData, // Guardar todos os dados do CSV aqui
+      };
 
       if (existingCompany) {
         companyId = existingCompany.id;
@@ -335,9 +371,9 @@ export default function ICPBulkAnalysisWithMapping() {
           'web-scraper-totvs',
           {
             body: {
-              cnpj: companyData.cnpj,
-              razao_social: companyData.razao_social || companyData.nome_da_empresa,
-              domain: companyData.domain,
+              cnpj: cnpj,
+              razao_social: name,
+              domain: domain,
             },
           }
         );
@@ -451,8 +487,8 @@ export default function ICPBulkAnalysisWithMapping() {
       console.error(`Erro ao processar empresa ${index + 1}:`, error);
       
       const result = {
-        cnpj: companyData?.cnpj || 'N/A',
-        name: companyData?.razao_social || companyData?.nome_da_empresa || `Empresa ${index + 1}`,
+        cnpj: cnpj || 'N/A',
+        name: name || `Empresa ${index + 1}`,
         status: 'error',
         error: error.message,
       };
