@@ -556,6 +556,16 @@ const App = () => (
               }
             />
             <Route
+              path="/central-icp/batch-analysis"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <BatchAnalysis />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/central-icp/dashboard"
               element={
                 <ProtectedRoute>
