@@ -5,7 +5,7 @@ import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 
 export function AdvancedFunnelChart() {
-  const { data: deals } = useDeals({ status: 'open' });
+  const { data: deals, isLoading } = useDeals({ status: 'open' });
   const { data: stages } = usePipelineStages();
 
   // Calcular métricas do funil
@@ -31,6 +31,24 @@ export function AdvancedFunnelChart() {
   }) || [];
 
   const maxCount = Math.max(...funnelData.map(s => s.count), 1);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Funil de Conversão Avançado
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-96">
+            <TrendingUp className="h-8 w-8 animate-pulse text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

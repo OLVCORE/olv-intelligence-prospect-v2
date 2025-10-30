@@ -18,7 +18,7 @@ import { addMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function RevenueForecasting() {
-  const { data: deals } = useDeals({ status: 'open' });
+  const { data: deals, isLoading } = useDeals({ status: 'open' });
 
   // Calcular forecast para próximos 6 meses
   const forecastData = Array.from({ length: 6 }, (_, i) => {
@@ -51,6 +51,16 @@ export function RevenueForecasting() {
     realistic: forecastData.reduce((sum, d) => sum + d.realistic, 0),
     pessimistic: forecastData.reduce((sum, d) => sum + d.pessimistic, 0),
   };
+
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <TrendingUp className="h-8 w-8 animate-pulse text-muted-foreground" />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -18,7 +18,7 @@ interface PredictiveScore {
 }
 
 export function PredictiveScoring() {
-  const { data: deals } = useDeals({ status: 'open' });
+  const { data: deals, isLoading: dealsLoading } = useDeals({ status: 'open' });
   const [predictions, setPredictions] = useState<PredictiveScore[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -104,6 +104,24 @@ export function PredictiveScoring() {
   }, [deals?.length]);
 
   const sortedPredictions = [...predictions].sort((a, b) => b.winProbability - a.winProbability);
+
+  if (dealsLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-600" />
+            AI Predictive Scoring
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
