@@ -15,6 +15,7 @@ import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } fro
 import { calculateICPScore } from '@/lib/icpCalculator';
 import PreAnalysisReport from './PreAnalysisReport';
 import LiveProcessingDashboard from './LiveProcessingDashboard';
+import FinalReportDashboard from './FinalReportDashboard';
 
 type Step = 'upload' | 'mapping' | 'preview' | 'analyzing' | 'complete';
 
@@ -731,13 +732,31 @@ export default function ICPBulkAnalysisWithMapping() {
       return company;
     });
 
+    const tempoInicio = Date.now();
+
     return (
       <LiveProcessingDashboard
         empresas={mappedData}
         onComplete={(results) => {
+          const tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
           setAnalysisResults(results);
+          setTotalProcessed(results.length);
           setStep('complete');
         }}
+      />
+    );
+  }
+
+  if (step === 'complete') {
+    const tempoDecorrido = startTime 
+      ? Math.floor((Date.now() - startTime.getTime()) / 1000)
+      : 0;
+
+    return (
+      <FinalReportDashboard
+        resultados={analysisResults}
+        tempoTotal={tempoDecorrido}
+        onNovaAnalise={resetAnalysis}
       />
     );
   }
@@ -881,270 +900,6 @@ export default function ICPBulkAnalysisWithMapping() {
             </div>
           </div>
         </Card>
-      </div>
-    );
-  }
-
-  if (step === 'complete') {
-    const approved = analysisResults.filter(r => r.status === 'approved');
-    const rejected = analysisResults.filter(r => r.status === 'rejected');
-    const errored = analysisResults.filter(r => r.status === 'error');
-
-    const hotCount = approved.filter(r => r.temperatura === 'hot').length;
-    const warmCount = approved.filter(r => r.temperatura === 'warm').length;
-    const coldCount = approved.filter(r => r.temperatura === 'cold').length;
-
-    const avgScore = approved.length > 0
-      ? approved.reduce((sum, r) => sum + (r.icp_score || 0), 0) / approved.length
-      : 0;
-
-    const endTime = new Date();
-    const totalTime = startTime 
-      ? Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60)
-      : 0;
-
-    return (
-      <div className="space-y-6">
-        <Card className="p-8">
-          <div className="text-center space-y-6">
-            <CheckCircle className="w-16 h-16 mx-auto text-green-500" />
-            <div>
-              <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
-                <CheckCircle className="w-6 h-6" />
-                ANÁLISE ICP EM MASSA - CONCLUÍDA
-              </h2>
-              
-              <div className="bg-muted p-6 rounded-lg max-w-3xl mx-auto mb-6">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  RESUMO GERAL
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Total analisadas:</div>
-                    <div className="text-2xl font-bold">{analysisResults.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      Aprovadas:
-                    </div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {approved.length} ({Math.round((approved.length / analysisResults.length) * 100)}%)
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <XCircle className="w-4 h-4 text-red-600" />
-                      Descartadas:
-                    </div>
-                    <div className="text-2xl font-bold text-red-600">
-                      {rejected.length} ({Math.round((rejected.length / analysisResults.length) * 100)}%)
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Tempo total:</div>
-                    <div className="text-2xl font-bold">{totalTime}min</div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-6 border-t">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Flame className="w-4 h-4 text-red-500" />
-                        HOT (70-100):
-                      </div>
-                      <div className="text-xl font-bold text-red-600">{hotCount}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Thermometer className="w-4 h-4 text-yellow-500" />
-                        WARM (40-69):
-                      </div>
-                      <div className="text-xl font-bold text-yellow-600">{warmCount}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Snowflake className="w-4 h-4 text-blue-500" />
-                        COLD (0-39):
-                      </div>
-                      <div className="text-xl font-bold text-blue-600">{coldCount}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <div className="text-sm text-muted-foreground">Score ICP médio (aprovadas):</div>
-                  <div className="text-3xl font-bold text-primary">{avgScore.toFixed(1)}</div>
-                </div>
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <Button onClick={handleDownloadResults}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Baixar Relatório Completo (CSV)
-                </Button>
-                <Button variant="outline" onClick={resetAnalysis}>
-                  Nova Análise
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Empresas Aprovadas */}
-        {approved.length > 0 && (
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-green-500" />
-              EMPRESAS APROVADAS ({approved.length})
-            </h3>
-            
-            {/* HOT */}
-            {hotCount > 0 && (
-              <div className="mb-6">
-                <h4 className="font-bold text-red-600 mb-2 flex items-center gap-2">
-                  <Flame className="w-4 h-4" />
-                  HOT ({hotCount} empresas)
-                </h4>
-                <div className="space-y-2">
-                  {approved.filter(r => r.temperatura === 'hot').map((result, idx) => (
-                    <div key={idx} className="border rounded-lg p-4 bg-red-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-bold">{result.name}</div>
-                          <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                          <div className="text-sm mt-2">
-                            <span className="font-bold">Score: {result.icp_score}</span>
-                            {result.portais_verificados > 0 && (
-                              <span className="text-muted-foreground ml-2">
-                                | {result.portais_verificados} portais verificados
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {getTemperatureBadge(result.temperatura)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* WARM */}
-            {warmCount > 0 && (
-              <div className="mb-6">
-                <h4 className="font-bold text-yellow-600 mb-2 flex items-center gap-2">
-                  <Thermometer className="w-4 h-4" />
-                  WARM ({warmCount} empresas)
-                </h4>
-                <div className="space-y-2">
-                  {approved.filter(r => r.temperatura === 'warm').slice(0, 5).map((result, idx) => (
-                    <div key={idx} className="border rounded-lg p-4 bg-yellow-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-bold">{result.name}</div>
-                          <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                          <div className="text-sm mt-2">
-                            <span className="font-bold">Score: {result.icp_score}</span>
-                          </div>
-                        </div>
-                        {getTemperatureBadge(result.temperatura)}
-                      </div>
-                    </div>
-                  ))}
-                  {warmCount > 5 && (
-                    <div className="text-center text-sm text-muted-foreground">
-                      ... e mais {warmCount - 5} empresas WARM
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* COLD */}
-            {coldCount > 0 && (
-              <div>
-                <h4 className="font-bold text-blue-600 mb-2 flex items-center gap-2">
-                  <Snowflake className="w-4 h-4" />
-                  COLD ({coldCount} empresas)
-                </h4>
-                <div className="text-sm text-muted-foreground">
-                  Baixe o relatório completo para ver todas as empresas COLD
-                </div>
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* Empresas Descartadas */}
-        {rejected.length > 0 && (
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-red-500" />
-              EMPRESAS DESCARTADAS ({rejected.length})
-            </h3>
-            <div className="mb-4">
-              <h4 className="font-bold text-red-600 mb-2 flex items-center gap-2">
-                <Ban className="w-4 h-4" />
-                Cliente TOTVS ({rejected.length} empresas)
-              </h4>
-              <div className="space-y-2">
-                {rejected.slice(0, 10).map((result, idx) => (
-                  <div key={idx} className="border rounded-lg p-4 bg-red-50">
-                    <div className="font-bold">{result.name}</div>
-                    <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                    <div className="text-sm text-red-700 mt-2 flex items-start gap-2">
-                      <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <div>
-                        Motivo: {result.motivo}
-                        {result.evidencias && result.evidencias.length > 0 && (
-                          <div className="mt-1 flex items-center gap-1">
-                            <ClipboardList className="w-3 h-3" />
-                            {result.evidencias.length} evidência(s) encontrada(s)
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {rejected.length > 10 && (
-                  <div className="text-center text-sm text-muted-foreground">
-                    ... e mais {rejected.length - 10} empresas descartadas
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Erros */}
-        {errored.length > 0 && (
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500" />
-              ERROS NO PROCESSAMENTO ({errored.length})
-            </h3>
-            <div className="space-y-2">
-              {errored.slice(0, 5).map((result, idx) => (
-                <div key={idx} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="font-bold">{result.name}</div>
-                  <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
-                  <div className="text-sm text-red-600 mt-2 flex items-center gap-2">
-                    <XCircle className="w-4 h-4 flex-shrink-0" />
-                    Erro: {result.error}
-                  </div>
-                </div>
-              ))}
-              {errored.length > 5 && (
-                <div className="text-center text-sm text-muted-foreground">
-                  ... e mais {errored.length - 5} erros
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
       </div>
     );
   }
