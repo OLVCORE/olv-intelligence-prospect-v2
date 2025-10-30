@@ -99,7 +99,7 @@ export default function DocumentationPage() {
                       Um sistema completo e automatizado para gerenciar todo o ciclo de vendas B2B:
                     </p>
 
-                    <Accordion type="multiple" className="w-full">
+                    <Accordion type="multiple" defaultValue={["funcionalidades", "arquitetura", "fluxo-dados"]} className="w-full">
                       <AccordionItem value="funcionalidades">
                         <AccordionTrigger className="text-lg font-semibold">
                           <div className="flex items-center gap-2">
@@ -204,7 +204,10 @@ export default function DocumentationPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20 overflow-x-auto">
+                            <p className="text-sm text-muted-foreground mb-4 text-center">
+                              📊 Diagrama mostrando a arquitetura completa do sistema
+                            </p>
                             <lov-mermaid>
 {`graph TB
     subgraph CAPTURA["📥 CAMADA DE CAPTURA"]
@@ -300,7 +303,10 @@ export default function DocumentationPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20">
+                          <div className="bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 rounded-lg border border-primary/20 overflow-x-auto">
+                            <p className="text-sm text-muted-foreground mb-4 text-center">
+                              📊 Fluxo sequencial de dados desde a captura até o fechamento
+                            </p>
                             <lov-mermaid>
 {`flowchart LR
     A[📥 CAPTURA] --> B[🔍 VALIDAÇÃO]
