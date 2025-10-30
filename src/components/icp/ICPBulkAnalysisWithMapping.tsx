@@ -247,6 +247,7 @@ export default function ICPBulkAnalysisWithMapping() {
       });
     }
     
+    
     setStep('complete');
 
     const successCount = analysisResults.filter(r => !r.error && !r.encontrou_totvs).length;
@@ -254,8 +255,8 @@ export default function ICPBulkAnalysisWithMapping() {
     const errorCount = analysisResults.filter(r => r.error).length;
 
     toast({
-      title: "Análise concluída e salva na quarentena!",
-      description: `${successCount} pendentes aprovação | ${rejectedCount} descartadas (TOTVS) | ${errorCount} erros`,
+      title: "✅ Análise ICP concluída!",
+      description: `${successCount} na quarentena | ${rejectedCount} descartadas (TOTVS) | ${errorCount} erros. Acesse Quarentena ICP para aprovar.`,
       duration: 10000,
     });
   };
@@ -331,45 +332,8 @@ export default function ICPBulkAnalysisWithMapping() {
         progress: 20 
       });
 
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id, name')
-        .eq('cnpj', cnpj)
-        .maybeSingle();
-
-      let companyId: string;
-
-      // Preparar dados para insert/update usando APENAS colunas que existem na tabela
-      // UPDATED: 2025-01-30 - Fixed column mapping to match actual database schema
-      const companyData: any = {
-        name,
-        cnpj: cnpj || null,
-        domain: domain || null,
-        raw_data: rawData, // Guardar todos os dados do CSV aqui
-      };
-
-      if (existingCompany) {
-        companyId = existingCompany.id;
-        await supabase
-          .from('companies')
-          .update({
-            ...companyData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', companyId);
-      } else {
-        const { data: newCompany, error: insertError } = await supabase
-          .from('companies')
-          .insert(companyData)
-          .select('id')
-          .single();
-
-        if (insertError || !newCompany) {
-          throw new Error(`Erro ao criar empresa: ${insertError?.message}`);
-        }
-
-        companyId = newCompany.id;
-      }
+      // NÃO CRIAR EM COMPANIES - Seguir fluxo: Quarentena → Pool → Qualified → Companies
+      // A análise vai APENAS para icp_analysis_results
 
       updateCompanyStatus({ 
         currentStep: '🔍 Iniciando análise REAL em 40+ plataformas...', 
@@ -451,23 +415,23 @@ export default function ICPBulkAnalysisWithMapping() {
         });
       }
 
-      // Se encontrou TOTVS, marcar como descartado
+      // Se encontrou TOTVS, marcar como descartado NA QUARENTENA
       if (encontrouTotvs) {
         await supabase
-          .from('companies')
+          .from('icp_analysis_results')
           .update({
-            is_disqualified: true,
-            disqualification_reason: 'Cliente TOTVS detectado',
-            totvs_detection_score: 100,
-            totvs_detection_details: evidenciasTotvs,
-            totvs_detection_date: new Date().toISOString(),
+            status: 'descartada',
+            motivo_descarte: 'Cliente TOTVS detectado',
+            is_cliente_totvs: true,
+            totvs_check_date: new Date().toISOString(),
+            totvs_evidences: evidenciasTotvs,
           })
-          .eq('id', companyId);
+          .eq('id', analysisId);
 
         const result = {
-          company_id: companyId,
-          cnpj: companyData.cnpj,
-          name: companyData.razao_social || companyData.nome_da_empresa || `Empresa ${companyData.cnpj}`,
+          analysis_id: analysisId,
+          cnpj: cnpj,
+          name: name,
           status: 'rejected',
           motivo: 'Cliente TOTVS',
           encontrou_totvs: true,
@@ -495,30 +459,30 @@ export default function ICPBulkAnalysisWithMapping() {
         progress: 70 
       });
 
-      const icpResult = calculateICPScore(companyData);
+      const icpResult = calculateICPScore(rawData);
 
       updateCompanyStatus({ 
-        currentStep: 'Salvando resultados', 
+        currentStep: 'Salvando na Quarentena ICP', 
         progress: 90 
       });
 
+      // ATUALIZAR APENAS icp_analysis_results (NÃO companies)
       await supabase
-        .from('companies')
+        .from('icp_analysis_results')
         .update({
           icp_score: icpResult.score,
-          icp_temperature: icpResult.temperatura,
-          icp_breakdown: icpResult.breakdown,
-          icp_motivos: icpResult.motivos,
-          icp_analyzed_at: new Date().toISOString(),
-          totvs_detection_score: 0,
-          totvs_detection_date: new Date().toISOString(),
+          temperatura: icpResult.temperatura,
+          breakdown: icpResult.breakdown,
+          motivos: icpResult.motivos,
+          analyzed_at: new Date().toISOString(),
+          status: 'pendente',
         })
-        .eq('id', companyId);
+        .eq('id', analysisId);
 
       const result = {
-        company_id: companyId,
-        cnpj: companyData.cnpj,
-        name: companyData.razao_social || companyData.nome_da_empresa || `Empresa ${companyData.cnpj}`,
+        analysis_id: analysisId,
+        cnpj: cnpj,
+        name: name,
         status: 'approved',
         icp_score: icpResult.score,
         temperatura: icpResult.temperatura,
@@ -533,7 +497,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
       updateCompanyStatus({ 
         status: 'completed', 
-        currentStep: `APROVADO - Score: ${icpResult.score} (${icpResult.temperatura.toUpperCase()})`, 
+        currentStep: `CONCLUÍDO - Score: ${icpResult.score} (${icpResult.temperatura.toUpperCase()})`, 
         progress: 100,
         result
       });

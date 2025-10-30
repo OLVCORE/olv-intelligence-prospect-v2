@@ -290,6 +290,10 @@ export default function FinalReportDashboard({
               <Download className="w-4 h-4 mr-2" />
               Exportar Excel
             </Button>
+            <Button variant="default" onClick={() => window.location.href = '/leads/icp-quarantine'}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Ir para Quarentena ICP
+            </Button>
             <Button onClick={onNovaAnalise}>
               Nova Análise
             </Button>

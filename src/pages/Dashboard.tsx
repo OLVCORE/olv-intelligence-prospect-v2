@@ -1,4 +1,5 @@
 import { useDashboardExecutive } from "@/hooks/useDashboardExecutive";
+import { useICPFlowMetrics } from "@/hooks/useICPFlowMetrics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -50,6 +51,7 @@ import {
   Layers,
   Info,
   Lock,
+  CheckCircle,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -89,6 +91,7 @@ const CHART_COLORS = {
 
 export default function Dashboard() {
   const { data, isLoading } = useDashboardExecutive();
+  const { data: flowMetrics } = useICPFlowMetrics();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -328,6 +331,95 @@ export default function Dashboard() {
               tooltip="Total de conversações ativas com empresas e decisores. Inclui e-mails, mensagens e interações diversas. Clique para acessar a caixa de entrada."
             />
           </div>
+
+          {/* ICP Flow Metrics - NOVO */}
+          {flowMetrics && (
+            <Card className="mb-8 glass-card border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Fluxo ICP - 3 Níveis de Qualificação
+                </CardTitle>
+                <CardDescription>
+                  Empresas passando pelo funil de qualificação: Quarentena → Pool → Ativas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card 
+                    className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate('/leads/icp-quarantine')}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                        🔍 Quarentena ICP
+                      </h3>
+                      <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">
+                      {flowMetrics.quarentena}
+                    </div>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                      Aguardando análise e aprovação
+                    </p>
+                  </Card>
+
+                  <Card 
+                    className="p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate('/leads/pool')}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                        📦 Pool (Estoque)
+                      </h3>
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                      {flowMetrics.pool}
+                    </div>
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                      Prontas para ativação
+                    </p>
+                  </Card>
+
+                  <Card 
+                    className="p-4 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate('/companies')}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-green-800 dark:text-green-300">
+                        🎯 Empresas Ativas
+                      </h3>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      {flowMetrics.ativas}
+                    </div>
+                    <p className="text-xs text-green-700 dark:text-green-400 mt-1">
+                      No pipeline de vendas
+                    </p>
+                  </Card>
+                </div>
+
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                    Quarentena
+                  </div>
+                  <span>→</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-blue-400" />
+                    Pool
+                  </div>
+                  <span>→</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-green-400" />
+                    Ativas
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* AI Prediction Banner - NEW */}
