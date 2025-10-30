@@ -1,3 +1,19 @@
+/**
+ * @deprecated Este arquivo foi deprecado em 2025-10-30.
+ * 
+ * IMPORTANTE: Este componente foi integrado ao Sales Workspace (SDRWorkspacePage.tsx)
+ * na aba "Executivo" através do componente ExecutiveView.
+ * 
+ * Funcionalidades migradas:
+ * - Alertas prioritários
+ * - Feed de atividades recentes (últimas 5, expansível com calendário)
+ * - KPIs executivos minimalistas
+ * 
+ * Redirecionamento: /sdr/dashboard agora redireciona automaticamente para /sdr/workspace
+ * 
+ * Este arquivo será removido em versões futuras.
+ */
+
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

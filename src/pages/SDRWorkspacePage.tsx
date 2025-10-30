@@ -23,6 +23,7 @@ import { VisualSequenceBuilder } from '@/components/sdr/sequences/VisualSequence
 import { SequenceTemplateLibrary } from '@/components/sdr/sequences/SequenceTemplateLibrary';
 import { SmartTasksList } from '@/components/sdr/SmartTasksList';
 import { DealHealthScoreCard } from '@/components/sdr/DealHealthScoreCard';
+import { ExecutiveView } from '@/components/sdr/ExecutiveView';
 import { useCompaniesAtRisk } from '@/hooks/useDealHealthScore';
 import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
@@ -166,7 +167,11 @@ export default function SDRWorkspacePage() {
 
         {/* Main Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-10 max-w-full">
+          <TabsList className="grid w-full grid-cols-11 max-w-full">
+            <TabsTrigger value="executive" className="gap-2 bg-gradient-to-r from-primary/10 to-blue-500/10">
+              <BarChart3 className="h-4 w-4" />
+              Executivo
+            </TabsTrigger>
             <TabsTrigger value="pipeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Pipeline
@@ -213,6 +218,10 @@ export default function SDRWorkspacePage() {
               Email Sequences
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="executive" className="flex-1 mt-4 overflow-auto">
+            <ExecutiveView />
+          </TabsContent>
 
           <TabsContent value="pipeline" className="flex-1 mt-4">
             <EnhancedKanbanBoard />
