@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
@@ -18,7 +19,7 @@ export default function ICPQuarantine() {
   const [tempFilter, setTempFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: companies = [], isLoading } = useQuarantineCompanies({
+  const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
     temperatura: tempFilter === 'all' ? undefined : (tempFilter as any),
   });
@@ -34,17 +35,17 @@ export default function ICPQuarantine() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(filteredCompanies.map(c => c.company_id));
+      setSelectedIds(filteredCompanies.map(c => c.id));
     } else {
       setSelectedIds([]);
     }
   };
 
-  const handleSelectOne = (companyId: string, checked: boolean) => {
+  const handleSelectOne = (analysisId: string, checked: boolean) => {
     if (checked) {
-      setSelectedIds([...selectedIds, companyId]);
+      setSelectedIds([...selectedIds, analysisId]);
     } else {
-      setSelectedIds(selectedIds.filter(id => id !== companyId));
+      setSelectedIds(selectedIds.filter(id => id !== analysisId));
     }
   };
 
@@ -147,21 +148,46 @@ export default function ICPQuarantine() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={handleAutoApprove}
-                disabled={isAutoApproving}
-                variant="outline"
-              >
-                {isAutoApproving ? 'Aprovando...' : 'Auto-aprovar Hot Leads (70+)'}
-              </Button>
-              <Button
-                onClick={handleApproveBatch}
-                disabled={selectedIds.length === 0 || isApproving}
-                variant="default"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                {isApproving ? 'Aprovando...' : `Aprovar ${selectedIds.length || ''}`}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleAutoApprove}
+                      disabled={isAutoApproving}
+                      variant="outline"
+                    >
+                      {isAutoApproving ? 'Aprovando...' : 'Auto-aprovar Hot Leads (70+)'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Detecta hot leads e aprova automaticamente</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleApproveBatch}
+                      disabled={selectedIds.length === 0 || isApproving}
+                      variant="default"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isApproving ? 'Aprovando...' : `Aprovar ${selectedIds.length || ''}`}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Aprovar selecionadas e mover para o Pool</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => refetch()}
+                      aria-label="Atualizar"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Atualizar</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>
@@ -245,9 +271,9 @@ export default function ICPQuarantine() {
                   <TableRow key={company.id}>
                     <TableCell>
                       <Checkbox
-                        checked={selectedIds.includes(company.company_id)}
+                        checked={selectedIds.includes(company.id)}
                         onCheckedChange={(checked) => 
-                          handleSelectOne(company.company_id, checked as boolean)
+                          handleSelectOne(company.id, checked as boolean)
                         }
                         disabled={company.status !== 'pendente'}
                       />
@@ -282,27 +308,41 @@ export default function ICPQuarantine() {
                     <TableCell>
                       <div className="flex gap-2">
                         {company.status === 'pendente' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => approveBatch([company.company_id])}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => 
-                                rejectCompany({ 
-                                  companyId: company.company_id, 
-                                  motivo: 'Descartado manualmente' 
-                                })
-                              }
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => approveBatch([company.id])}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Aprovar e mover para Pool
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => 
+                                    rejectCompany({ 
+                                      analysisId: company.id, 
+                                      motivo: 'Descartado manualmente' 
+                                    })
+                                  }
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Descartar e remover
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                     </TableCell>

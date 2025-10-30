@@ -78,6 +78,9 @@ export function useQuarantineCompanies(filters?: {
       if (error) throw error;
       return data || [];
     },
+    staleTime: 5 * 1000,
+    refetchInterval: 10 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -86,19 +89,22 @@ export function useApproveQuarantineBatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (companyIds: string[]) => {
-      // 1. Buscar dados das empresas
+    mutationFn: async (analysisIds: string[]) => {
+      const ids = (analysisIds || []).filter((id): id is string => Boolean(id));
+      if (ids.length === 0) throw new Error('Nenhuma empresa selecionada');
+
+      // 1. Buscar dados das empresas por ID da análise (evita company_id null)
       const { data: quarantineData, error: fetchError } = await supabase
         .from('icp_analysis_results')
         .select('*')
-        .in('company_id', companyIds);
+        .in('id', ids);
 
       if (fetchError) throw fetchError;
-      if (!quarantineData) throw new Error('Nenhuma empresa encontrada');
+      if (!quarantineData || quarantineData.length === 0) throw new Error('Nenhuma empresa encontrada');
 
       // 2. Inserir no leads_pool
       const leadsToInsert = quarantineData.map(q => ({
-        company_id: q.company_id,
+        company_id: q.company_id || null,
         cnpj: q.cnpj,
         razao_social: q.razao_social,
         icp_score: q.icp_score,
@@ -115,11 +121,11 @@ export function useApproveQuarantineBatch() {
 
       if (insertError) throw insertError;
 
-      // 3. Atualizar status na quarentena
+      // 3. Atualizar status na quarentena pelos IDs de análise
       const { error: updateError } = await supabase
         .from('icp_analysis_results')
         .update({ status: 'aprovada' })
-        .in('company_id', companyIds);
+        .in('id', ids);
 
       if (updateError) throw updateError;
 
@@ -128,7 +134,7 @@ export function useApproveQuarantineBatch() {
       
       if (hotLeads.length > 0) {
         const dealsToCreate = hotLeads.map(lead => ({
-          company_id: lead.company_id,
+          company_id: lead.company_id || null,
           title: `Oportunidade - ${lead.razao_social}`,
           stage: 'discovery',
           priority: 'high',
@@ -147,7 +153,7 @@ export function useApproveQuarantineBatch() {
       }
 
       return {
-        approved: companyIds.length,
+        approved: ids.length,
         hotLeads: hotLeads.length,
       };
     },
@@ -175,25 +181,34 @@ export function useRejectQuarantine() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ companyId, motivo }: { companyId: string; motivo: string }) => {
+    mutationFn: async ({ analysisId, motivo }: { analysisId: string; motivo: string }) => {
+      // Atualiza o registro da análise por ID
       const { error } = await supabase
         .from('icp_analysis_results')
         .update({ 
           status: 'descartada',
           motivo_descarte: motivo,
         })
-        .eq('company_id', companyId);
+        .eq('id', analysisId);
 
       if (error) throw error;
 
-      // Marcar empresa como desqualificada
-      await supabase
-        .from('companies')
-        .update({
-          is_disqualified: true,
-          disqualification_reason: motivo,
-        })
-        .eq('id', companyId);
+      // Buscar company_id (se existir) para marcar empresa como desqualificada
+      const { data: record } = await supabase
+        .from('icp_analysis_results')
+        .select('company_id')
+        .eq('id', analysisId)
+        .single();
+
+      if (record?.company_id) {
+        await supabase
+          .from('companies')
+          .update({
+            is_disqualified: true,
+            disqualification_reason: motivo,
+          })
+          .eq('id', record.company_id);
+      }
     },
     onSuccess: () => {
       toast.success('Empresa descartada');
@@ -235,7 +250,7 @@ export function useAutoApprove() {
         return { approved: 0, deals: 0 };
       }
 
-      const companyIds = data.map(d => d.company_id);
+      const analysisIds = data.map(d => d.id);
 
       // Aprovar usando o batch
       const leadsToInsert = data.map(q => ({
@@ -254,7 +269,7 @@ export function useAutoApprove() {
       await supabase
         .from('icp_analysis_results')
         .update({ status: 'aprovada' })
-        .in('company_id', companyIds);
+        .in('id', analysisIds);
 
       let dealsCreated = 0;
       if (rules.autoCreateDeals) {
