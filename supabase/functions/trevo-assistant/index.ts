@@ -60,16 +60,18 @@ serve(async (req) => {
 
     const { message, messages: incomingMessages, context } = body;
 
-    // 3. VALIDAR MENSAGEM (aceita 'message' ou histórico 'messages')
+    // 3. VALIDAR MENSAGEM (aceita 'message' OU um histórico 'messages')
     let userMessageStr: string | null = null;
     if (typeof message === 'string' && message.trim().length > 0) {
       userMessageStr = message.trim();
     } else if (Array.isArray(incomingMessages)) {
-      const lastUser = [...incomingMessages].reverse().find((m: any) => m?.role === 'user' && typeof m.content === 'string');
+      const lastUser = [...incomingMessages].reverse().find((m: any) => m?.role === 'user' && typeof m.content === 'string' && m.content.trim().length > 0);
       userMessageStr = lastUser?.content || null;
     }
 
-    if (!userMessageStr) {
+    const hasAnyTextInMessages = Array.isArray(incomingMessages) && incomingMessages.some((m: any) => typeof m?.content === 'string' && m.content.trim().length > 0);
+
+    if (!userMessageStr && !hasAnyTextInMessages) {
       console.error('[TREVO] ❌ Mensagem inválida ou vazia');
       return new Response(
         JSON.stringify({
@@ -83,7 +85,8 @@ serve(async (req) => {
       );
     }
 
-    console.log('[TREVO] ✅ Mensagem válida recebida:', (userMessageStr || '').substring(0, 100) + '...');
+    const logPreview = (userMessageStr || (Array.isArray(incomingMessages) ? (incomingMessages[incomingMessages.length - 1]?.content ?? '') : '')).toString();
+    console.log('[TREVO] ✅ Mensagem válida recebida:', logPreview.substring(0, 100) + '...');
 
     // 4. PREPARAR PROMPT DO SISTEMA
     const systemPrompt = `Você é o TREVO, assistente inteligente de vendas da plataforma STRATEVO.
