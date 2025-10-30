@@ -1,184 +1,293 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { Database } from '@/integrations/supabase/types';
 
-type ICPAnalysisResultRow = Database['public']['Tables']['icp_analysis_results']['Row'];
+export const ICP_QUARANTINE_QUERY_KEY = ['icp-quarantine'];
 
-interface ICPAnalysisResult extends Omit<ICPAnalysisResultRow, 'temperatura'> {
-  temperatura: 'hot' | 'warm' | 'cold' | null;
-}
-
-interface QuarantineEmpresas {
-  aprovadas: ICPAnalysisResult[];
-  reprovadas: ICPAnalysisResult[];
-  totvs: ICPAnalysisResult[];
-}
-
-export function useICPQuarantine() {
-  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+// Hook para salvar resultados na quarentena
+export function useSaveToQuarantine() {
   const queryClient = useQueryClient();
 
-  const { data: empresas, isLoading, refetch } = useQuery({
-    queryKey: ['icp-quarantine'],
-    queryFn: async (): Promise<QuarantineEmpresas> => {
-      const { data, error } = await supabase
-        .from('icp_analysis_results')
-        .select('*')
-        .eq('moved_to_pool', false)
-        .order('icp_score', { ascending: false });
-
-      if (error) throw error;
-
-      const typedData = (data || []) as ICPAnalysisResult[];
-
-      const aprovadas = typedData.filter(
-        (e) => !e.is_cliente_totvs && (e.icp_score ?? 0) >= 40
-      );
-
-      const reprovadas = typedData.filter(
-        (e) => !e.is_cliente_totvs && (e.icp_score ?? 0) < 40
-      );
-
-      const totvs = typedData.filter((e) => e.is_cliente_totvs);
-
-      return { aprovadas, reprovadas, totvs };
-    },
-    staleTime: 30 * 1000, // 30 seconds
-  });
-
-  const moverParaPoolMutation = useMutation({
-    mutationFn: async (empresaIds: string[]) => {
-      if (empresaIds.length === 0) {
-        throw new Error('Nenhuma empresa selecionada');
-      }
-
-      const empresasSelecionadas = empresas?.aprovadas.filter((e) =>
-        empresaIds.includes(e.id)
-      ) || [];
-
-      if (empresasSelecionadas.length === 0) {
-        throw new Error('Empresas não encontradas');
-      }
-
-      // 1. Inserir no leads_pool
-      const { error: poolError } = await supabase.from('leads_pool').insert(
-        empresasSelecionadas.map((e) => ({
-          cnpj: e.cnpj,
-          razao_social: e.razao_social,
-          nome_fantasia: e.nome_fantasia,
-          uf: e.uf,
-          municipio: e.municipio,
-          porte: e.porte,
-          website: e.website,
-          email: e.email,
-          telefone: e.telefone,
-          origem: e.origem || 'upload_massa',
-          icp_score: e.icp_score || 0,
-          temperatura: e.temperatura || 'cold',
-          is_cliente_totvs: false,
-          totvs_check_date: new Date().toISOString(),
-          raw_data: e.raw_data,
-        }))
-      );
-
-      if (poolError) throw poolError;
-
-      // 2. Marcar como movidas
-      const { error: updateError } = await supabase
-        .from('icp_analysis_results')
-        .update({ moved_to_pool: true })
-        .in('id', empresaIds);
-
-      if (updateError) throw updateError;
-
-      return empresasSelecionadas.length;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
-      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
-      toast.success(`✅ ${count} empresa(s) movida(s) para o Leads Pool`, {
-        description: 'As empresas aprovadas estão agora disponíveis no pool',
-      });
-      setSelecionadas(new Set());
-    },
-    onError: (error: Error) => {
-      toast.error('Erro ao mover empresas', {
-        description: error.message,
-      });
-    },
-  });
-
-  const descartarMutation = useMutation({
-    mutationFn: async (empresaIds: string[]) => {
-      if (empresaIds.length === 0) {
-        throw new Error('Nenhuma empresa selecionada');
-      }
+  return useMutation({
+    mutationFn: async (results: any[]) => {
+      const records = results.map(r => ({
+        company_id: r.company_id,
+        cnpj: r.cnpj,
+        razao_social: r.name,
+        icp_score: r.icp_score || 0,
+        temperatura: r.temperatura || 'cold',
+        status: r.encontrou_totvs ? 'descartada' : 'pendente',
+        motivo_descarte: r.encontrou_totvs ? 'Cliente TOTVS detectado' : null,
+        evidencias_totvs: r.evidencias || [],
+        breakdown: r.breakdown || {},
+        motivos: r.motivos || [],
+        raw_analysis: r,
+      }));
 
       const { error } = await supabase
         .from('icp_analysis_results')
-        .delete()
-        .in('id', empresaIds);
+        .insert(records);
 
       if (error) throw error;
-
-      return empresaIds.length;
+      return records;
     },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
-      toast.success(`✅ ${count} empresa(s) descartada(s)`, {
-        description: 'As empresas foram removidas da quarentena',
+    onSuccess: (data) => {
+      const aprovadas = data.filter(d => d.status === 'pendente').length;
+      const descartadas = data.filter(d => d.status === 'descartada').length;
+      
+      toast.success('Análise salva na quarentena', {
+        description: `${aprovadas} pendentes | ${descartadas} descartadas`,
       });
-      setSelecionadas(new Set());
+      
+      queryClient.invalidateQueries({ queryKey: ICP_QUARANTINE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['icp-stats'] });
     },
-    onError: (error: Error) => {
-      toast.error('Erro ao descartar empresas', {
+    onError: (error: any) => {
+      toast.error('Erro ao salvar na quarentena', {
         description: error.message,
       });
     },
   });
+}
 
-  const toggleSelection = (id: string) => {
-    setSelecionadas((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
+// Hook para buscar empresas na quarentena
+export function useQuarantineCompanies(filters?: {
+  status?: string;
+  temperatura?: string;
+  minScore?: number;
+}) {
+  return useQuery({
+    queryKey: [...ICP_QUARANTINE_QUERY_KEY, filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .order('icp_score', { ascending: false });
+
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
       }
-      return newSet;
-    });
-  };
+      if (filters?.temperatura) {
+        query = query.eq('temperatura', filters.temperatura);
+      }
+      if (filters?.minScore) {
+        query = query.gte('icp_score', filters.minScore);
+      }
 
-  const toggleAllSelection = () => {
-    if (selecionadas.size === empresas?.aprovadas.length) {
-      setSelecionadas(new Set());
-    } else {
-      setSelecionadas(new Set(empresas?.aprovadas.map((e) => e.id)));
-    }
-  };
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
 
-  const moverParaPool = () => {
-    moverParaPoolMutation.mutate(Array.from(selecionadas));
-  };
+// Hook para aprovar empresas em batch
+export function useApproveQuarantineBatch() {
+  const queryClient = useQueryClient();
 
-  const descartarSelecionadas = () => {
-    descartarMutation.mutate(Array.from(selecionadas));
-  };
+  return useMutation({
+    mutationFn: async (companyIds: string[]) => {
+      // 1. Buscar dados das empresas
+      const { data: quarantineData, error: fetchError } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .in('company_id', companyIds);
 
-  const recarregar = () => {
-    refetch();
-  };
+      if (fetchError) throw fetchError;
+      if (!quarantineData) throw new Error('Nenhuma empresa encontrada');
 
-  return {
-    empresas: empresas || { aprovadas: [], reprovadas: [], totvs: [] },
-    selecionadas,
-    isLoading,
-    toggleSelection,
-    toggleAllSelection,
-    moverParaPool,
-    descartarSelecionadas,
-    recarregar,
-  };
+      // 2. Inserir no leads_pool
+      const leadsToInsert = quarantineData.map(q => ({
+        company_id: q.company_id,
+        cnpj: q.cnpj,
+        razao_social: q.razao_social,
+        icp_score: q.icp_score,
+        temperatura: q.temperatura,
+        status: 'active',
+        source: 'icp_batch_analysis',
+        raw_data: q.raw_analysis,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('leads_pool')
+        .insert(leadsToInsert);
+
+      if (insertError) throw insertError;
+
+      // 3. Atualizar status na quarentena
+      const { error: updateError } = await supabase
+        .from('icp_analysis_results')
+        .update({ status: 'aprovada' })
+        .in('company_id', companyIds);
+
+      if (updateError) throw updateError;
+
+      // 4. Para hot leads (score >= 75), criar deals automaticamente
+      const hotLeads = quarantineData.filter(q => q.icp_score >= 75);
+      
+      if (hotLeads.length > 0) {
+        const dealsToCreate = hotLeads.map(lead => ({
+          company_id: lead.company_id,
+          title: `Oportunidade - ${lead.razao_social}`,
+          stage: 'discovery',
+          priority: 'high',
+          status: 'open',
+          value: lead.icp_score >= 85 ? 100000 : 50000,
+          probability: Math.round(lead.icp_score * 0.8),
+          source: 'icp_hot_lead_auto',
+          lead_score: lead.icp_score,
+        }));
+
+        const { error: dealsError } = await supabase
+          .from('sdr_deals')
+          .insert(dealsToCreate);
+
+        if (dealsError) console.error('Erro ao criar deals:', dealsError);
+      }
+
+      return {
+        approved: companyIds.length,
+        hotLeads: hotLeads.length,
+      };
+    },
+    onSuccess: (data) => {
+      toast.success('Empresas aprovadas com sucesso!', {
+        description: data.hotLeads > 0 
+          ? `${data.approved} aprovadas | ${data.hotLeads} hot leads com deals criados automaticamente`
+          : `${data.approved} empresas movidas para o pool de leads`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ICP_QUARANTINE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
+      queryClient.invalidateQueries({ queryKey: ['sdr-deals'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao aprovar empresas', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+// Hook para descartar empresa
+export function useRejectQuarantine() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ companyId, motivo }: { companyId: string; motivo: string }) => {
+      const { error } = await supabase
+        .from('icp_analysis_results')
+        .update({ 
+          status: 'descartada',
+          motivo_descarte: motivo,
+        })
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      // Marcar empresa como desqualificada
+      await supabase
+        .from('companies')
+        .update({
+          is_disqualified: true,
+          disqualification_reason: motivo,
+        })
+        .eq('id', companyId);
+    },
+    onSuccess: () => {
+      toast.success('Empresa descartada');
+      queryClient.invalidateQueries({ queryKey: ICP_QUARANTINE_QUERY_KEY });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao descartar', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+// Hook para aprovação automática baseada em regras
+export function useAutoApprove() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (rules: {
+      minScore?: number;
+      temperatura?: 'hot' | 'warm' | 'cold';
+      autoCreateDeals?: boolean;
+    }) => {
+      let query = supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('status', 'pendente');
+
+      if (rules.minScore) {
+        query = query.gte('icp_score', rules.minScore);
+      }
+      if (rules.temperatura) {
+        query = query.eq('temperatura', rules.temperatura);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return { approved: 0, deals: 0 };
+      }
+
+      const companyIds = data.map(d => d.company_id);
+
+      // Aprovar usando o batch
+      const leadsToInsert = data.map(q => ({
+        company_id: q.company_id,
+        cnpj: q.cnpj,
+        razao_social: q.razao_social,
+        icp_score: q.icp_score,
+        temperatura: q.temperatura,
+        status: 'active',
+        source: 'icp_auto_approval',
+        raw_data: q.raw_analysis,
+      }));
+
+      await supabase.from('leads_pool').insert(leadsToInsert);
+      await supabase
+        .from('icp_analysis_results')
+        .update({ status: 'aprovada' })
+        .in('company_id', companyIds);
+
+      let dealsCreated = 0;
+      if (rules.autoCreateDeals) {
+        const dealsToCreate = data.map(lead => ({
+          company_id: lead.company_id,
+          title: `Auto - ${lead.razao_social}`,
+          stage: 'discovery',
+          priority: lead.icp_score >= 75 ? 'high' : 'medium',
+          status: 'open',
+          value: lead.icp_score >= 85 ? 100000 : 50000,
+          probability: Math.round(lead.icp_score * 0.8),
+          source: 'icp_auto_approval',
+          lead_score: lead.icp_score,
+        }));
+
+        const { data: dealsData } = await supabase
+          .from('sdr_deals')
+          .insert(dealsToCreate)
+          .select('id');
+
+        dealsCreated = dealsData?.length || 0;
+      }
+
+      return { approved: data.length, deals: dealsCreated };
+    },
+    onSuccess: (data) => {
+      toast.success('Aprovação automática concluída', {
+        description: data.deals > 0
+          ? `${data.approved} aprovadas | ${data.deals} deals criados`
+          : `${data.approved} empresas aprovadas`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ICP_QUARANTINE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
+      queryClient.invalidateQueries({ queryKey: ['sdr-deals'] });
+    },
+  });
 }

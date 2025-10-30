@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 import { calculateICPScore } from '@/lib/icpCalculator';
+import { useSaveToQuarantine } from '@/hooks/useICPQuarantine';
 import PreAnalysisReport from './PreAnalysisReport';
 import LiveProcessingDashboard from './LiveProcessingDashboard';
 import FinalReportDashboard from './FinalReportDashboard';
@@ -43,6 +44,7 @@ export default function ICPBulkAnalysisWithMapping() {
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [preAnalysisData, setPreAnalysisData] = useState<any>(null);
   const { toast } = useToast();
+  const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
@@ -232,6 +234,19 @@ export default function ICPBulkAnalysisWithMapping() {
     }
 
     setAnalysisResults(analysisResults);
+    
+    // CRÍTICO: Salvar resultados na quarentena (icp_analysis_results)
+    try {
+      await saveToQuarantine(analysisResults);
+    } catch (error) {
+      console.error('Erro ao salvar na quarentena:', error);
+      toast({
+        title: "Atenção",
+        description: "Análise concluída mas houve erro ao salvar na quarentena. Verifique os logs.",
+        variant: "destructive",
+      });
+    }
+    
     setStep('complete');
 
     const successCount = analysisResults.filter(r => !r.error && !r.encontrou_totvs).length;
@@ -239,8 +254,8 @@ export default function ICPBulkAnalysisWithMapping() {
     const errorCount = analysisResults.filter(r => r.error).length;
 
     toast({
-      title: "Análise concluída!",
-      description: `${successCount} aprovadas | ${rejectedCount} descartadas (TOTVS) | ${errorCount} erros`,
+      title: "Análise concluída e salva na quarentena!",
+      description: `${successCount} pendentes aprovação | ${rejectedCount} descartadas (TOTVS) | ${errorCount} erros`,
       duration: 10000,
     });
   };
