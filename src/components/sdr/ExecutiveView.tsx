@@ -24,7 +24,7 @@ export function ExecutiveView() {
     to: new Date(),
   });
   
-  const { activities } = useSDRActivities(showAllActivities ? 50 : 5);
+  const { activities } = useSDRActivities(showAllActivities ? 50 : 5, dateRange);
 
   const displayedActivities = showAllActivities ? activities : activities.slice(0, 5);
 

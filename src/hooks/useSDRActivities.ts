@@ -15,7 +15,7 @@ export interface Activity {
   };
 }
 
-export function useSDRActivities(limit: number = 20) {
+export function useSDRActivities(limit: number = 20, dateRange?: { from: Date; to: Date }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export function useSDRActivities(limit: number = 20) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [limit]);
+  }, [limit, dateRange]);
 
   const loadActivities = async () => {
     setLoading(true);
@@ -42,9 +42,12 @@ export function useSDRActivities(limit: number = 20) {
 
     try {
       const activitiesList: Activity[] = [];
+      
+      const fromDate = dateRange?.from.toISOString();
+      const toDate = dateRange?.to.toISOString();
 
       // Recent tasks
-      const { data: tasks } = await supabase
+      let tasksQuery = supabase
         .from('sdr_tasks')
         .select(`
           id,
@@ -54,8 +57,15 @@ export function useSDRActivities(limit: number = 20) {
           company:companies(id, name),
           contact:contacts(id, name)
         `)
-        .order('created_at', { ascending: false })
-        .limit(limit / 2);
+        .order('created_at', { ascending: false });
+      
+      if (fromDate && toDate) {
+        tasksQuery = tasksQuery
+          .gte('created_at', fromDate)
+          .lte('created_at', toDate);
+      }
+      
+      const { data: tasks } = await tasksQuery.limit(limit / 2);
 
       if (tasks) {
         tasks.forEach(task => {
@@ -75,7 +85,7 @@ export function useSDRActivities(limit: number = 20) {
       }
 
       // Recent messages
-      const { data: messages } = await supabase
+      let messagesQuery = supabase
         .from('messages')
         .select(`
           id,
@@ -88,8 +98,15 @@ export function useSDRActivities(limit: number = 20) {
             contact:contacts(id, name)
           )
         `)
-        .order('created_at', { ascending: false })
-        .limit(limit / 2);
+        .order('created_at', { ascending: false });
+      
+      if (fromDate && toDate) {
+        messagesQuery = messagesQuery
+          .gte('created_at', fromDate)
+          .lte('created_at', toDate);
+      }
+      
+      const { data: messages } = await messagesQuery.limit(limit / 2);
 
       if (messages) {
         messages.forEach(msg => {
@@ -112,7 +129,7 @@ export function useSDRActivities(limit: number = 20) {
       }
 
       // Recent contacts
-      const { data: contacts } = await supabase
+      let contactsQuery = supabase
         .from('contacts')
         .select(`
           id,
@@ -120,8 +137,15 @@ export function useSDRActivities(limit: number = 20) {
           created_at,
           company:companies(id, name)
         `)
-        .order('created_at', { ascending: false })
-        .limit(limit / 4);
+        .order('created_at', { ascending: false });
+      
+      if (fromDate && toDate) {
+        contactsQuery = contactsQuery
+          .gte('created_at', fromDate)
+          .lte('created_at', toDate);
+      }
+      
+      const { data: contacts } = await contactsQuery.limit(limit / 4);
 
       if (contacts) {
         contacts.forEach(contact => {
