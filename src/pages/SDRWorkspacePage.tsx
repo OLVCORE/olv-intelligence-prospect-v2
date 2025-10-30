@@ -21,6 +21,9 @@ import { PredictiveScoring } from '@/components/sdr/analytics/PredictiveScoring'
 import { RevenueForecasting } from '@/components/sdr/analytics/RevenueForecasting';
 import { VisualSequenceBuilder } from '@/components/sdr/sequences/VisualSequenceBuilder';
 import { SequenceTemplateLibrary } from '@/components/sdr/sequences/SequenceTemplateLibrary';
+import { SmartTasksList } from '@/components/sdr/SmartTasksList';
+import { DealHealthScoreCard } from '@/components/sdr/DealHealthScoreCard';
+import { useCompaniesAtRisk } from '@/hooks/useDealHealthScore';
 import { useDeals } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSDRAutomations } from '@/hooks/useSDRAutomations';
@@ -32,6 +35,7 @@ export default function SDRWorkspacePage() {
   const { data: deals } = useDeals({ status: 'open' });
   const { data: stages } = usePipelineStages();
   const { data: automations, isLoading: automationsLoading } = useSDRAutomations();
+  const { data: companiesAtRisk } = useCompaniesAtRisk();
 
   // Stats
   const stats = {
@@ -41,6 +45,7 @@ export default function SDRWorkspacePage() {
       ? deals.reduce((sum, d) => sum + d.probability, 0) / deals.length 
       : 0,
     hotDeals: deals?.filter(d => d.priority === 'urgent' || d.priority === 'high').length || 0,
+    atRisk: companiesAtRisk?.length || 0,
   };
 
   const urgentAutomations = automations?.filter(a => a.priority === 'urgent' || a.priority === 'high') || [];
@@ -105,14 +110,14 @@ export default function SDRWorkspacePage() {
           </Alert>
         )}
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Deals Ativos</p>
                 <p className="text-2xl font-bold">{stats.totalDeals}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+              <TrendingUp className="h-8 w-8 text-blue-600 opacity-20" />
             </div>
           </Card>
 
@@ -124,7 +129,7 @@ export default function SDRWorkspacePage() {
                   R$ {(stats.totalValue / 1000).toFixed(0)}k
                 </p>
               </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
+              <TrendingUp className="h-8 w-8 text-green-600 opacity-20" />
             </div>
           </Card>
 
@@ -134,7 +139,7 @@ export default function SDRWorkspacePage() {
                 <p className="text-sm text-muted-foreground">Prob. Média</p>
                 <p className="text-2xl font-bold">{stats.avgProbability.toFixed(0)}%</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <TrendingUp className="h-8 w-8 text-purple-600 opacity-20" />
             </div>
           </Card>
 
@@ -144,17 +149,36 @@ export default function SDRWorkspacePage() {
                 <p className="text-sm text-muted-foreground">Prioridade Alta</p>
                 <p className="text-2xl font-bold">{stats.hotDeals}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-red-600" />
+              <AlertCircle className="h-8 w-8 text-orange-600 opacity-20" />
+            </div>
+          </Card>
+
+          <Card className="p-4 border-red-200 dark:border-red-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Deals em Risco</p>
+                <p className="text-2xl font-bold text-red-600">{stats.atRisk}</p>
+              </div>
+              <AlertCircle className="h-8 w-8 text-red-600 opacity-20" />
             </div>
           </Card>
         </div>
 
         {/* Main Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-9 max-w-7xl">
+          <TabsList className="grid w-full grid-cols-10 max-w-full">
             <TabsTrigger value="pipeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="health" className="gap-2 border-l-2 border-l-red-500/20">
+              <AlertCircle className="h-4 w-4" />
+              Health
+              {stats.atRisk > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1 text-xs">
+                  {stats.atRisk}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -180,18 +204,53 @@ export default function SDRWorkspacePage() {
               <Inbox className="h-4 w-4" />
               Inbox
             </TabsTrigger>
-            <TabsTrigger value="tasks" className="gap-2">
+            <TabsTrigger value="tasks" className="gap-2 bg-gradient-to-r from-green-500/10 to-blue-500/10">
               <CheckSquare className="h-4 w-4" />
-              Tarefas
+              Smart Tasks
             </TabsTrigger>
-            <TabsTrigger value="sequences" className="gap-2">
-              <Zap className="h-4 w-4" />
-              Sequências
+            <TabsTrigger value="sequences" className="gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+              <Mail className="h-4 w-4" />
+              Email Sequences
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pipeline" className="flex-1 mt-4">
             <EnhancedKanbanBoard />
+          </TabsContent>
+
+          <TabsContent value="health" className="flex-1 mt-4 overflow-auto">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <AlertCircle className="h-6 w-6 text-red-500" />
+                    Deal Health Monitor
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Monitore deals em risco e receba recomendações inteligentes
+                  </p>
+                </div>
+              </div>
+
+              {companiesAtRisk && companiesAtRisk.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {companiesAtRisk.map((item: any) => (
+                    <DealHealthScoreCard 
+                      key={item.company_id} 
+                      companyId={item.company_id} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <CheckSquare className="w-16 h-16 text-green-500 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-semibold mb-2">Todos os deals estão saudáveis! 🎉</h3>
+                  <p className="text-muted-foreground">
+                    Nenhum deal em risco detectado no momento
+                  </p>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" className="flex-1 mt-4">
@@ -221,27 +280,46 @@ export default function SDRWorkspacePage() {
             <WorkspaceInboxMini />
           </TabsContent>
 
-          <TabsContent value="tasks" className="flex-1 mt-4">
-            <WorkspaceTasksMini />
+          <TabsContent value="tasks" className="flex-1 mt-4 overflow-auto">
+            <SmartTasksList />
           </TabsContent>
 
-          <TabsContent value="sequences" className="flex-1 mt-4">
-            <Tabs defaultValue="builder" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="builder">Sequence Builder</TabsTrigger>
-                <TabsTrigger value="templates">Templates</TabsTrigger>
-                <TabsTrigger value="active">Ativas</TabsTrigger>
-              </TabsList>
-              <TabsContent value="builder">
-                <VisualSequenceBuilder />
-              </TabsContent>
-              <TabsContent value="templates">
-                <SequenceTemplateLibrary />
-              </TabsContent>
-              <TabsContent value="active">
-                <WorkspaceSequencesMini />
-              </TabsContent>
-            </Tabs>
+          <TabsContent value="sequences" className="flex-1 mt-4 overflow-auto">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Mail className="h-6 w-6 text-primary" />
+                    Email Sequences
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Crie e gerencie sequências de email automáticas
+                  </p>
+                </div>
+                <Button asChild>
+                  <Link to="/sdr/sequences">
+                    Ver Todas as Sequências
+                  </Link>
+                </Button>
+              </div>
+
+              <Tabs defaultValue="builder" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="builder">Sequence Builder</TabsTrigger>
+                  <TabsTrigger value="templates">Templates</TabsTrigger>
+                  <TabsTrigger value="active">Ativas</TabsTrigger>
+                </TabsList>
+                <TabsContent value="builder">
+                  <VisualSequenceBuilder />
+                </TabsContent>
+                <TabsContent value="templates">
+                  <SequenceTemplateLibrary />
+                </TabsContent>
+                <TabsContent value="active">
+                  <WorkspaceSequencesMini />
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
