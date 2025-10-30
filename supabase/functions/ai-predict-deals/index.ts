@@ -19,7 +19,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY não configurado");
     }
 
-    // Preparar prompt para AI
     const systemPrompt = `Você é um especialista em análise preditiva de vendas B2B. 
 Analise os deals fornecidos e retorne predições sobre probabilidade de fechamento, fatores de risco e recomendações.
 Responda APENAS com JSON válido no formato especificado.`;
@@ -43,7 +42,6 @@ Para cada deal, analise:
 3. Fatores de risco identificados
 4. Recomendações específicas para aumentar conversão`;
 
-    // Chamar Lovable AI com tool calling para estruturar output
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -122,7 +120,6 @@ Para cada deal, analise:
     const aiResponse = await response.json();
     console.log("AI Response:", JSON.stringify(aiResponse));
 
-    // Extrair predições do tool call
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       throw new Error("AI não retornou predições estruturadas");
