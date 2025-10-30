@@ -634,6 +634,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/leads" element={<Navigate to="/leads/capture" replace />} />
             <Route
               path="/leads/capture"
               element={
