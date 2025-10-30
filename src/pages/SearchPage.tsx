@@ -51,6 +51,82 @@ export default function SearchPage() {
   const [newContact, setNewContact] = useState<{name:string; title:string; phone?:string; whatsapp?:string; email?:string}>({name:"", title:"", phone:"", whatsapp:"", email:""});
   
   const { toast } = useToast();
+
+  const downloadTemplateCSV = () => {
+    const BOM = '\uFEFF';
+    const headers = [
+      'CNPJ', 'Nome da Empresa', 'Nome Fantasia', 'Razão Social', 'Website', 'Domínio',
+      'Instagram', 'LinkedIn', 'Facebook', 'Twitter', 'YouTube',
+      'Setor', 'Porte', 'Natureza Jurídica', 'Funcionários', 'Faturamento Estimado',
+      'Capital Social', 'Data de Abertura', 'Situação Cadastral', 'Data Situação',
+      'Motivo Situação', 'Situação Especial', 'Data Situação Especial',
+      'CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro', 
+      'Município', 'UF', 'País', 'Latitude', 'Longitude',
+      'Telefone', 'Email', 'Email Verificado',
+      'CNAE Principal Código', 'CNAE Principal Descrição',
+      'CNAEs Secundários Quantidade', 'CNAEs Secundários',
+      'Quadro Societário Quantidade', 'Sócios',
+      'Score Maturidade Digital', 'Score Fit TOTVS', 'Score Análise',
+      'Tech Stack', 'ERP Atual', 'CRM Atual',
+      'Produto Principal', 'Marca', 'Link Produto/Marketplace', 'Categoria',
+      'Decisores Quantidade', 'Decisor 1 Nome', 'Decisor 1 Cargo', 'Decisor 1 Email', 
+      'Decisor 1 Telefone', 'Decisor 1 LinkedIn',
+      'Decisor 2 Nome', 'Decisor 2 Cargo', 'Decisor 2 Email', 
+      'Decisor 2 Telefone', 'Decisor 2 LinkedIn',
+      'Decisor 3 Nome', 'Decisor 3 Cargo', 'Decisor 3 Email', 
+      'Decisor 3 Telefone', 'Decisor 3 LinkedIn',
+      'Enriquecido Receita', 'Enriquecido 360', 'Enriquecido Apollo', 'Enriquecido Phantom',
+      'Data Criação', 'Data Última Atualização', 'Data Último Enriquecimento',
+      'Status Enriquecimento', 'Fonte Enriquecimento',
+      'Observações', 'Tags', 'Prioridade',
+      'Último Contato', 'Próximo Contato', 'Status Pipeline',
+      'Valor Oportunidade', 'Probabilidade Fechamento', 'Data Fechamento Esperada'
+    ];
+    
+    const exampleRow = [
+      '00.000.000/0000-00', 'Empresa Exemplo LTDA', 'Nome Fantasia Exemplo', 'Empresa Exemplo LTDA', 
+      'https://exemplo.com.br', 'exemplo.com.br',
+      '@exemploempresa', 'linkedin.com/company/exemplo', 'facebook.com/exemplo', 'twitter.com/exemplo', 'youtube.com/exemplo',
+      'Tecnologia', 'MÉDIA', 'Sociedade Limitada', '50', 'R$ 5M - R$ 10M',
+      '100000.00', '01/01/2010', 'ATIVA', '01/01/2010',
+      '', '', '',
+      '01310-100', 'Avenida Paulista', '1578', 'Sala 10', 'Bela Vista',
+      'São Paulo', 'SP', 'Brasil', '-23.561684', '-46.655981',
+      '(11) 3000-0000', 'contato@exemplo.com.br', 'Sim',
+      '6201-5/00', 'Desenvolvimento de programas de computador sob encomenda',
+      '3', '6202-3/00 - Desenvolvimento web; 6209-1/00 - Suporte técnico',
+      '2', 'João Silva (Administrador); Maria Santos (Sócia)',
+      '75.5', '85', '90',
+      'ERP Proprietário, CRM Salesforce', 'SAP', 'Salesforce',
+      'Software ERP', 'Marca Exemplo', 'mercadolivre.com.br/produto', 'Software',
+      '2', 'João Silva', 'CEO', 'joao.silva@exemplo.com.br', 
+      '(11) 99999-0000', 'linkedin.com/in/joaosilva',
+      'Maria Santos', 'CTO', 'maria.santos@exemplo.com.br',
+      '(11) 99999-0001', 'linkedin.com/in/mariasantos',
+      '', '', '', '', '',
+      'Sim', 'Sim', 'Não', 'Não',
+      '01/01/2024', '15/10/2024', '15/10/2024',
+      'Completo', 'Receita Federal + Enriquecimento 360',
+      'Cliente potencial de alto valor', 'ERP, Cloud, Enterprise', 'Alta',
+      '10/10/2024', '20/10/2024', 'Qualificação',
+      'R$ 500.000', '75%', '31/12/2024'
+    ];
+    
+    const csvContent = headers.join(',') + '\n' + 
+                      exampleRow.map(cell => `"${cell}"`).join(',') + '\n' +
+                      '53.113.791/0001-22,TOTVS SA,TOTVS,TOTVS S.A.,https://www.totvs.com,totvs.com,@totvs,linkedin.com/company/totvs,,,,Software ERP,GRANDE,Sociedade Anônima,10000,R$ 1B+,,,ATIVA,,,,,04711-904,Avenida Braz Leme,1000,,Brooklin,São Paulo,SP,Brasil,,,,,,,,,0,,,,,80,,,,,,,,,0,,,,,,,,,,,,Sim,Sim,,,,,,,,,,,,,,,';
+    
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template-importacao-empresas.csv';
+    link.click();
+    
+    toast({
+      title: "Sucesso",
+      description: "Planilha exemplo baixada com sucesso!",
+    });
+  };
   
   // Detecção automática de tipo de busca
   const detectSearchType = (query: string): "cnpj" | "query" => {
@@ -643,80 +719,7 @@ export default function SearchPage() {
           <Button
             variant="outline"
             size="default"
-            onClick={() => {
-              const BOM = '\uFEFF';
-              const headers = [
-                'CNPJ', 'Nome da Empresa', 'Nome Fantasia', 'Razão Social', 'Website', 'Domínio',
-                'Instagram', 'LinkedIn', 'Facebook', 'Twitter', 'YouTube',
-                'Setor', 'Porte', 'Natureza Jurídica', 'Funcionários', 'Faturamento Estimado',
-                'Capital Social', 'Data de Abertura', 'Situação Cadastral', 'Data Situação',
-                'Motivo Situação', 'Situação Especial', 'Data Situação Especial',
-                'CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro', 
-                'Município', 'UF', 'País', 'Latitude', 'Longitude',
-                'Telefone', 'Email', 'Email Verificado',
-                'CNAE Principal Código', 'CNAE Principal Descrição',
-                'CNAEs Secundários Quantidade', 'CNAEs Secundários',
-                'Quadro Societário Quantidade', 'Sócios',
-                'Score Maturidade Digital', 'Score Fit TOTVS', 'Score Análise',
-                'Tech Stack', 'ERP Atual', 'CRM Atual',
-                'Produto Principal', 'Marca', 'Link Produto/Marketplace', 'Categoria',
-                'Decisores Quantidade', 'Decisor 1 Nome', 'Decisor 1 Cargo', 'Decisor 1 Email', 
-                'Decisor 1 Telefone', 'Decisor 1 LinkedIn',
-                'Decisor 2 Nome', 'Decisor 2 Cargo', 'Decisor 2 Email', 
-                'Decisor 2 Telefone', 'Decisor 2 LinkedIn',
-                'Decisor 3 Nome', 'Decisor 3 Cargo', 'Decisor 3 Email', 
-                'Decisor 3 Telefone', 'Decisor 3 LinkedIn',
-                'Enriquecido Receita', 'Enriquecido 360', 'Enriquecido Apollo', 'Enriquecido Phantom',
-                'Data Criação', 'Data Última Atualização', 'Data Último Enriquecimento',
-                'Status Enriquecimento', 'Fonte Enriquecimento',
-                'Observações', 'Tags', 'Prioridade',
-                'Último Contato', 'Próximo Contato', 'Status Pipeline',
-                'Valor Oportunidade', 'Probabilidade Fechamento', 'Data Fechamento Esperada'
-              ];
-              
-              const exampleRow = [
-                '00.000.000/0000-00', 'Empresa Exemplo LTDA', 'Nome Fantasia Exemplo', 'Empresa Exemplo LTDA', 
-                'https://exemplo.com.br', 'exemplo.com.br',
-                '@exemploempresa', 'linkedin.com/company/exemplo', 'facebook.com/exemplo', 'twitter.com/exemplo', 'youtube.com/exemplo',
-                'Tecnologia', 'MÉDIA', 'Sociedade Limitada', '50', 'R$ 5M - R$ 10M',
-                '100000.00', '01/01/2010', 'ATIVA', '01/01/2010',
-                '', '', '',
-                '01310-100', 'Avenida Paulista', '1578', 'Sala 10', 'Bela Vista',
-                'São Paulo', 'SP', 'Brasil', '-23.561684', '-46.655981',
-                '(11) 3000-0000', 'contato@exemplo.com.br', 'Sim',
-                '6201-5/00', 'Desenvolvimento de programas de computador sob encomenda',
-                '3', '6202-3/00 - Desenvolvimento web; 6209-1/00 - Suporte técnico',
-                '2', 'João Silva (Administrador); Maria Santos (Sócia)',
-                '75.5', '85', '90',
-                'ERP Proprietário, CRM Salesforce', 'SAP', 'Salesforce',
-                'Software ERP', 'Marca Exemplo', 'mercadolivre.com.br/produto', 'Software',
-                '2', 'João Silva', 'CEO', 'joao.silva@exemplo.com.br', 
-                '(11) 99999-0000', 'linkedin.com/in/joaosilva',
-                'Maria Santos', 'CTO', 'maria.santos@exemplo.com.br',
-                '(11) 99999-0001', 'linkedin.com/in/mariasantos',
-                '', '', '', '', '',
-                'Sim', 'Sim', 'Não', 'Não',
-                '01/01/2024', '15/10/2024', '15/10/2024',
-                'Completo', 'Receita Federal + Enriquecimento 360',
-                'Cliente potencial de alto valor', 'ERP, Cloud, Enterprise', 'Alta',
-                '10/10/2024', '20/10/2024', 'Qualificação',
-                'R$ 500.000', '75%', '31/12/2024'
-              ];
-              
-              const csvContent = headers.join(',') + '\n' + 
-                                exampleRow.map(cell => `"${cell}"`).join(',') + '\n' +
-                                '53.113.791/0001-22,TOTVS SA,TOTVS,TOTVS S.A.,https://www.totvs.com,totvs.com,@totvs,linkedin.com/company/totvs,,,,Software ERP,GRANDE,Sociedade Anônima,10000,R$ 1B+,,,ATIVA,,,,,04711-904,Avenida Braz Leme,1000,,Brooklin,São Paulo,SP,Brasil,,,,,,,,,0,,,,,80,,,,,,,,,0,,,,,,,,,,,,Sim,Sim,,,,,,,,,,,,,,,';
-              
-              const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = 'template-importacao-empresas.csv';
-              link.click();
-              toast({
-                title: "Sucesso",
-                description: "Planilha exemplo baixada com sucesso!",
-              });
-            }}
+            onClick={downloadTemplateCSV}
             className="gap-2"
           >
             <Download className="h-4 w-4" />
