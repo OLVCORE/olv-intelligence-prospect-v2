@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings, Building2 } from 'lucide-react';
+import { Search, FileText, Zap, BarChart3, Shield, TrendingUp, Target, Activity, Settings, Building2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,13 +17,20 @@ export default function CentralICPHome() {
       
       if (error) throw error;
 
+      // Buscar empresas na quarentena
+      const { data: quarantineData } = await supabase
+        .from('icp_analysis_results')
+        .select('id, moved_to_pool')
+        .eq('moved_to_pool', false);
+
       const total = companies?.length || 0;
+      const quarantine = quarantineData?.length || 0;
       // TODO: Implementar contagem de qualificadas/desqualificadas quando colunas existirem
       const qualified = 0;
       const disqualified = 0;
       const discovered = 0; // TODO: Buscar da tabela suggested_companies
 
-      return { total, qualified, disqualified, discovered };
+      return { total, qualified, disqualified, discovered, quarantine };
     },
   });
 
@@ -58,6 +65,14 @@ export default function CentralICPHome() {
       description: 'Visualize empresas qualificadas e desqualificadas',
       path: '/central-icp/dashboard',
       color: 'bg-orange-500',
+      status: 'Ativo'
+    },
+    {
+      icon: AlertTriangle,
+      title: 'Empresas em Quarentena',
+      description: 'Revise empresas analisadas aguardando aprovação para o pool',
+      path: '/leads/icp-quarantine',
+      color: 'bg-yellow-500',
       status: 'Ativo'
     },
     {
@@ -118,7 +133,7 @@ export default function CentralICPHome() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -170,6 +185,22 @@ export default function CentralICPHome() {
           <CardContent>
             <div className="text-3xl font-bold text-purple-600">{stats?.discovered || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">Últimos 30 dias</p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border-yellow-500/20 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/leads/icp-quarantine')}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              Em Quarentena
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-yellow-600">{stats?.quarantine || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Aguardando aprovação</p>
           </CardContent>
         </Card>
       </div>

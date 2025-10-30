@@ -8033,6 +8033,7 @@ export type Database = {
       }
       calculate_lead_score: { Args: { p_company_id: string }; Returns: number }
       calculate_size_score: { Args: { p_company_id: string }; Returns: number }
+      cleanup_orphaned_deals: { Args: never; Returns: number }
       create_canvas_version: {
         Args: { p_canvas_id: string; p_description?: string; p_tag?: string }
         Returns: string
