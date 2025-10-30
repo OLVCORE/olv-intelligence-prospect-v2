@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { Clover, X, Minimize2, Maximize2, Trash2, Send, Loader2, Sparkles } from 'lucide-react';
+import { Clover, X, Minimize2, Maximize2, Trash2, Send, Loader2, Sparkles, ArrowRight, ExternalLink } from 'lucide-react';
 import { useTrevoAssistant, TrevoContext } from '@/hooks/useTrevoAssistant';
 import ReactMarkdown from 'react-markdown';
 
@@ -17,8 +18,32 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
 
   const { messages, isLoading, sendMessage, clearMessages } = useTrevoAssistant(context);
+
+  // Função para extrair links sugeridos das mensagens
+  const extractSuggestedLinks = (content: string): Array<{ label: string; url: string }> => {
+    const links: Array<{ label: string; url: string }> = [];
+    // Regex para capturar padrão: ➡️ **Label:** /rota
+    const linkRegex = /➡️\s*\*\*([^:]+):\*\*\s*(\/[^\s\n]+)/g;
+    let match;
+    
+    while ((match = linkRegex.exec(content)) !== null) {
+      links.push({
+        label: match[1].trim(),
+        url: match[2].trim()
+      });
+    }
+    
+    return links;
+  };
+
+  // Função para navegar para uma rota
+  const handleNavigate = (url: string) => {
+    navigate(url);
+    setIsOpen(false); // Fecha o assistente após navegação
+  };
 
   // Auto-scroll para última mensagem
   useEffect(() => {
@@ -142,30 +167,80 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} transition-opacity duration-300`}
-                  >
+                {messages.map((message, index) => {
+                  const suggestedLinks = message.role === 'assistant' 
+                    ? extractSuggestedLinks(message.content)
+                    : [];
+                  
+                  return (
                     <div
-                      className={`max-w-[85%] rounded-lg p-3 ${
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} transition-opacity duration-300`}
                     >
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <div
+                        className={`max-w-[85%] rounded-lg p-3 ${
+                          message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            components={{
+                              // Customizar links para abrir em nova aba se forem externos
+                              a: ({ node, href, children, ...props }) => {
+                                const isExternal = href?.startsWith('http');
+                                return (
+                                  <a
+                                    href={href}
+                                    target={isExternal ? '_blank' : undefined}
+                                    rel={isExternal ? 'noopener noreferrer' : undefined}
+                                    className="text-primary hover:underline font-medium"
+                                    {...props}
+                                  >
+                                    {children}
+                                    {isExternal && <ExternalLink className="inline h-3 w-3 ml-1" />}
+                                  </a>
+                                );
+                              },
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                        
+                        {/* Links sugeridos como botões clicáveis */}
+                        {suggestedLinks.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-2">
+                              <Sparkles className="h-3 w-3" />
+                              Ir para:
+                            </p>
+                            {suggestedLinks.map((link, linkIndex) => (
+                              <Button
+                                key={linkIndex}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleNavigate(link.url)}
+                                className="w-full justify-between text-xs hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
+                              >
+                                <span className="font-medium">{link.label}</span>
+                                <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <p className="text-[10px] mt-2 opacity-60">
+                          {message.timestamp.toLocaleTimeString('pt-BR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
                       </div>
-                      <p className="text-[10px] mt-2 opacity-60">
-                        {message.timestamp.toLocaleTimeString('pt-BR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {isLoading && (
                   <div className="flex justify-start transition-opacity duration-300">
@@ -207,18 +282,20 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
               {messages.length === 1 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {[
-                    '💡 Como qualificar um lead?',
-                    '🎯 Mostrar meus deals prioritários',
-                    '🤝 Dicas para negociação'
+                    { icon: '💡', text: 'Como qualificar um lead?' },
+                    { icon: '📊', text: 'Onde faço upload de empresas?' },
+                    { icon: '🎯', text: 'Como ver meus leads Hot?' },
+                    { icon: '💼', text: 'Onde está o Sales Workspace?' }
                   ].map((suggestion) => (
                     <Button
-                      key={suggestion}
+                      key={suggestion.text}
                       variant="outline"
                       size="sm"
-                      onClick={() => setInput(suggestion.replace(/^[^\s]+\s/, ''))}
+                      onClick={() => setInput(suggestion.text)}
                       className="text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-200 hover:scale-105"
                     >
-                      {suggestion}
+                      <span className="mr-1">{suggestion.icon}</span>
+                      {suggestion.text}
                     </Button>
                   ))}
                 </div>

@@ -7,6 +7,7 @@ export interface TrevoMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  suggestedLinks?: Array<{ label: string; url: string }>;
 }
 
 export interface TrevoContext {
@@ -1483,7 +1484,117 @@ R: 1) Deixar recado curto e profissional | 2) Mandar email de acompanhamento | 3
 3. Monitore performance das validações
 4. Ajuste critérios de ICP conforme mercado
 5. Treine equipe em todas as 11 abas do Workspace
+
+---
+
+## 🗺️ MAPA COMPLETO DE ROTAS DA PLATAFORMA
+
+### ROTAS PRINCIPAIS (Navegação)
+
+**CAPTURA E QUARENTENA:**
+- /leads/capture - Captura de Leads (Upload CSV)
+- /leads/quarantine - Quarentena Inteligente (validação de leads)
+- /leads/icp-analysis/:id - Análise ICP detalhada de empresa
+
+**CENTRAL ICP:**
+- /central-icp/home - Pool de Leads (visão geral)
+- /central-icp/discovery - Buscar Empresas (web scraping)
+
+**SALES WORKSPACE (Centro de Comando):**
+- /sdr/workspace - Sales Workspace com 11 abas (principal)
+- /sdr/dashboard - Redireciona para /sdr/workspace
+
+**DOCUMENTAÇÃO:**
+- /documentation - Manual completo da plataforma
+
+**ADMINISTRAÇÃO:**
+- /admin/settings - Configurações gerais
+
+### QUANDO USAR CADA ROTA:
+
+**Use /leads/capture quando:**
+- Usuário quer fazer upload de CSV
+- Precisa importar lista de empresas
+- Quer adicionar leads manualmente
+
+**Use /leads/quarantine quando:**
+- Usuário quer revisar leads capturados
+- Precisa aprovar/rejeitar leads
+- Quer validar dados de empresas
+- Precisa qualificar ICP
+
+**Use /leads/icp-analysis/:id quando:**
+- Usuário quer ver análise detalhada de empresa específica
+- Precisa ver proposta de valor IA
+- Quer copiar script de abordagem
+
+**Use /central-icp/home quando:**
+- Usuário quer ver todos os leads aprovados
+- Precisa filtrar por temperatura (Hot/Warm/Cold)
+- Quer organizar leads por score
+
+**Use /central-icp/discovery quando:**
+- Usuário quer buscar empresas automaticamente
+- Precisa de leads com filtros específicos (setor, estado)
+- Quer fazer web scraping
+
+**Use /sdr/workspace quando:**
+- Usuário quer gerenciar pipeline de vendas
+- Precisa ver KPIs e métricas
+- Quer criar/editar deals
+- Precisa ver previsão de receita
+- Quer configurar automações
+- Precisa ver Health Monitor
+
+**Use /documentation quando:**
+- Usuário tem dúvidas sobre como usar a plataforma
+- Precisa de manual detalhado
+- Quer aprender sobre funcionalidades
+
+---
+
+## 📍 INSTRUÇÕES PARA NAVEGAÇÃO ASSISTIDA
+
+**Sempre que o usuário perguntar algo, você deve:**
+
+1. **Responder a pergunta claramente**
+2. **Sugerir a página mais relevante** com link direto
+3. **Explicar o que ele encontrará lá**
+
+**FORMATO DE RESPOSTA IDEAL:**
+
+Exemplo 1 - Usuário pergunta: "Como faço upload de empresas?"
+
+R: "Para fazer upload, você vai em **Captura de Leads** e clica em 'Upload Manual'. Lá você seleciona seu arquivo CSV e o sistema importa automaticamente.
+
+➡️ **Ir para Captura:** /leads/capture
+
+Nessa página você pode arrastar o arquivo ou clicar para selecionar. O sistema aceita CSV e Excel!"
+
+Exemplo 2 - Usuário pergunta: "Onde vejo meus leads quentes?"
+
+R: "Seus leads Hot (70-100 pontos) ficam no **Pool de Leads**. Lá você pode filtrar por temperatura e ver só os mais quentes.
+
+➡️ **Ver Pool de Leads:** /central-icp/home
+
+Use o filtro 'Temperatura: Hot' no canto superior direito para ver só os leads prioritários!"
+
+Exemplo 3 - Usuário pergunta: "Como crio um deal?"
+
+R: "Você cria deals no **Sales Workspace**, na aba Pipeline. Clique no botão '+' em qualquer estágio do funil.
+
+➡️ **Ir para Sales Workspace:** /sdr/workspace
+
+Alternativamente, leads com score ICP ≥75 viram deals automaticamente!"
+
+**REGRAS IMPORTANTES:**
+- Sempre mencione a URL após explicar
+- Use formato "➡️ **Nome da Página:** /rota"
+- Explique o que o usuário encontrará lá
+- Dê dicas práticas de como usar a página
+- Se a pergunta envolver múltiplas páginas, mencione todas em ordem lógica
 `;
+
 
 export function useTrevoAssistant(context: TrevoContext) {
   const [messages, setMessages] = useState<TrevoMessage[]>([
@@ -1527,16 +1638,24 @@ export function useTrevoAssistant(context: TrevoContext) {
       // Adicionar conhecimento da plataforma como contexto do sistema
       const systemMessage = {
         role: 'system' as const,
-        content: `Você é o TREVO, assistente inteligente de vendas da plataforma OLV Intelligence Prospect. Seu objetivo é ajudar os usuários SDRs a usar a plataforma com máxima eficiência.
+        content: `Você é o TREVO, assistente inteligente de vendas da plataforma OLV Intelligence Prospect. Seu objetivo é ajudar os usuários SDRs a usar a plataforma com máxima eficiência e guiá-los pelas páginas corretas.
 
-INSTRUÇÕES:
+INSTRUÇÕES CRÍTICAS:
 - Seja direto, claro e objetivo em suas respostas
 - Use emojis moderadamente para tornar as respostas mais amigáveis
-- Sempre mencione URLs específicas quando relevante (ex: /leads/icp-analysis, /sdr/workspace)
-- Se o usuário perguntar "como fazer X", dê passo a passo numerado
+- **SEMPRE sugira a rota/URL relevante** quando o usuário fizer uma pergunta
+- Use formato: "➡️ **Nome da Página:** /rota" para sugerir navegação
+- Se o usuário perguntar "como fazer X", dê passo a passo numerado + link para a página
 - Priorize ações práticas sobre teoria
 - Quando mencionar funcionalidades com IA, destaque com badge/emoji 🤖
 - Se não souber algo específico fora do conhecimento da plataforma, seja honesto
+- **GUIE O USUÁRIO PELAS MÃOS** - mostre exatamente onde clicar e o que fazer
+- Sempre explique o que o usuário encontrará na página sugerida
+
+FORMATO DE RESPOSTA MODELO:
+1. Responda a pergunta diretamente
+2. Sugira a página relevante com ➡️ **Nome:** /rota
+3. Dê dica prática de como usar a página
 
 Use o conhecimento abaixo para responder perguntas sobre a plataforma:
 
@@ -1547,6 +1666,7 @@ Contexto atual do usuário:
 - Empresa em foco: ${context.companyId || 'nenhuma'}
 - Deal em foco: ${context.dealId || 'nenhum'}
 `
+
       };
 
       // Chamar edge function
