@@ -1,5 +1,4 @@
 import React, { lazy, Suspense } from "react";
-import * as Sentry from "@sentry/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -79,7 +78,6 @@ const ICPAnalysis = lazy(() => import("./pages/Leads/ICPAnalysis"));
 const Pipeline = lazy(() => import("./pages/Leads/Pipeline"));
 const Analytics = lazy(() => import("./pages/Leads/Analytics"));
 const CSVUploadWithMapping = lazy(() => import("./components/leads/CSVUploadWithMapping"));
-const SentryTest = lazy(() => import("./pages/SentryTest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Error500 = lazy(() => import("./pages/Error500"));
 const OfflinePage = lazy(() => import("./pages/OfflinePage"));
@@ -170,8 +168,7 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError: () => 
 }
 
 const App = () => (
-  <Sentry.ErrorBoundary fallback={ErrorFallback} showDialog>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
           <Toaster />
@@ -752,7 +749,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/sentry-test" element={<SentryTest />} />
             <Route path="/error-500" element={<Error500 />} />
             <Route path="/offline" element={<OfflinePage />} />
             <Route path="*" element={<NotFound />} />
@@ -766,7 +762,6 @@ const App = () => (
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
-  </Sentry.ErrorBoundary>
 );
 
 export default App;
