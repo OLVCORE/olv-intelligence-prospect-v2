@@ -293,23 +293,20 @@ export default function ICPBulkAnalysisWithMapping() {
         progress: 10 
       });
 
-      // Mapear dados do CSV
+      // Mapear dados do CSV - USAR APENAS MAPEAMENTO EXPLÍCITO
       Object.entries(row).forEach(([csvCol, value]) => {
         const systemField = fieldMap[csvCol];
         if (value) {
           rawData[csvCol] = value;
           
-          // Identificar campos principais
-          if (systemField === 'cnpj' || csvCol.toLowerCase().includes('cnpj')) {
-            cnpj = String(value);
+          // CRÍTICO: Usar APENAS o mapeamento explícito (não tentar adivinhar)
+          if (systemField === 'cnpj') {
+            cnpj = String(value).replace(/\D/g, ''); // Limpar CNPJ (apenas números)
           }
-          if (systemField === 'razao_social' || systemField === 'nome_da_empresa' || 
-              csvCol.toLowerCase().includes('razão social') || csvCol.toLowerCase().includes('razao social') ||
-              csvCol.toLowerCase().includes('nome da empresa')) {
+          if (systemField === 'razao_social' || systemField === 'nome_da_empresa') {
             name = String(value);
           }
-          if (systemField === 'website' || systemField === 'domain' || 
-              csvCol.toLowerCase().includes('website') || csvCol.toLowerCase().includes('site')) {
+          if (systemField === 'website' || systemField === 'domain') {
             const websiteValue = String(value).replace(/^https?:\/\//, '').replace(/\/$/, '');
             if (websiteValue && websiteValue !== 'N/A' && !websiteValue.startsWith('www.')) {
               domain = websiteValue;
