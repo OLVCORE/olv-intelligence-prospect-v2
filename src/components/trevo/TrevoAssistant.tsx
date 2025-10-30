@@ -47,7 +47,7 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-20 right-6 z-50 group">
+      <div className="fixed bottom-6 right-6 z-50 group">
         {/* Botão principal com design neutro e profissional */}
         <Button
           onClick={() => setIsOpen(true)}
@@ -90,7 +90,7 @@ export function TrevoAssistant({ context }: TrevoAssistantProps) {
 
   return (
     <div 
-      className={`fixed bottom-6 right-24 z-50 w-[440px] transition-all duration-300 ${isMinimized ? 'h-[70px]' : 'h-[650px]'}`}
+      className={`fixed bottom-6 right-6 z-50 w-[440px] transition-all duration-300 ${isMinimized ? 'h-[70px]' : 'h-[650px]'}`}
     >
       <Card className="flex flex-col h-full shadow-2xl border border-border overflow-hidden bg-background/95">
         {/* Header neutro */}
