@@ -1,5 +1,8 @@
 project_id = "ioaxzpwlurpduanzkfrt"
  
+[functions.web-scraper-totvs]
+verify_jwt = true
+
 [functions.detect-totvs-usage-v3]
 verify_jwt = false
 

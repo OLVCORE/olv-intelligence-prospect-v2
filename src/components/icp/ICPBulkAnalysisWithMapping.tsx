@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,14 +7,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 import { calculateICPScore } from '@/lib/icpCalculator';
 
 type Step = 'upload' | 'mapping' | 'analyzing' | 'complete';
+
+interface ProcessingCompany {
+  index: number;
+  name: string;
+  cnpj: string;
+  status: 'waiting' | 'processing' | 'completed' | 'error';
+  currentStep: string;
+  progress: number;
+  result?: any;
+  error?: string;
+}
 
 export default function ICPBulkAnalysisWithMapping() {
   const [step, setStep] = useState<Step>('upload');
@@ -21,8 +33,11 @@ export default function ICPBulkAnalysisWithMapping() {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [allData, setAllData] = useState<any[]>([]);
-  const [analysisStats, setAnalysisStats] = useState({ success: 0, errors: 0, total: 0 });
+  const [processingCompanies, setProcessingCompanies] = useState<ProcessingCompany[]>([]);
   const [analysisResults, setAnalysisResults] = useState<any[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [totalProcessed, setTotalProcessed] = useState(0);
   const { toast } = useToast();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,123 +97,310 @@ export default function ICPBulkAnalysisWithMapping() {
 
   const handleAnalyze = async () => {
     setStep('analyzing');
+    setStartTime(new Date());
+    setTotalProcessed(0);
+    setIsPaused(false);
     
-    let successCount = 0;
-    let errorCount = 0;
-    const total = allData.length;
-    const results: any[] = [];
-
-    try {
+    const analysisResults: any[] = [];
+    const companiesQueue: ProcessingCompany[] = allData.map((row, index) => {
       const fieldMap: Record<string, string> = {};
       mappings.forEach(m => {
         if (m.systemField && m.systemField !== '__SKIP__') {
           fieldMap[m.csvColumn] = m.systemField;
         }
       });
-
-      console.log('[ICP Analysis] Iniciando análise de', total, 'empresas');
-      console.log('[ICP Analysis] Mapeamento:', fieldMap);
-
-      for (let i = 0; i < allData.length; i++) {
-        const row = allData[i];
-        
-        try {
-          const companyData: any = {};
-          
-          Object.entries(row).forEach(([csvCol, value]) => {
-            const systemField = fieldMap[csvCol];
-            if (systemField && value) {
-              companyData[systemField] = value;
-            }
-          });
-
-          console.log(`[ICP Analysis] Empresa ${i + 1}:`, companyData);
-
-          if (!companyData.cnpj && !companyData.razao_social && !companyData.nome_da_empresa) {
-            throw new Error('Dados insuficientes (falta CNPJ ou nome)');
-          }
-
-          // Calcular ICP Score
-          const icpResult = calculateICPScore(companyData);
-          
-          console.log(`[ICP Analysis] Score calculado:`, icpResult);
-
-          // Inserir ou atualizar empresa no banco
-          const { data: insertedCompany, error: insertError } = await supabase
-            .from('companies')
-            .upsert([companyData], { onConflict: 'cnpj' })
-            .select('id')
-            .single();
-
-          if (insertError) {
-            console.error('[ICP Analysis] Erro ao inserir empresa:', insertError);
-          }
-
-          results.push({
-            cnpj: companyData.cnpj,
-            razao_social: companyData.razao_social || companyData.nome_da_empresa,
-            nome_fantasia: companyData.nome_fantasia,
-            uf: companyData.uf,
-            municipio: companyData.municipio,
-            porte: companyData.porte,
-            cnae_principal_codigo: companyData.cnae_principal_codigo,
-            situacao_cadastral: companyData.situacao_cadastral,
-            faturamento_estimado: companyData.faturamento_estimado,
-            funcionarios: companyData.funcionarios,
-            icp_score: icpResult.score,
-            temperatura: icpResult.temperatura,
-            status: 'success',
-            breakdown_localizacao: icpResult.breakdown.localizacao,
-            breakdown_porte: icpResult.breakdown.porte,
-            breakdown_cnae: icpResult.breakdown.cnae,
-            breakdown_situacao: icpResult.breakdown.situacao,
-            breakdown_tecnologia: icpResult.breakdown.tecnologia,
-            motivos: icpResult.motivos.join(' | '),
-          });
-
-          successCount++;
-
-        } catch (err) {
-          console.error(`[ICP Analysis] Erro na linha ${i + 1}:`, err);
-          
-          results.push({
-            ...row,
-            icp_score: 0,
-            temperatura: 'cold',
-            status: 'error',
-            error: err instanceof Error ? err.message : 'Erro desconhecido',
-          });
-          
-          errorCount++;
+      
+      const companyData: any = {};
+      Object.entries(row).forEach(([csvCol, value]) => {
+        const systemField = fieldMap[csvCol];
+        if (systemField && value) {
+          companyData[systemField] = value;
         }
+      });
 
-        setAnalysisStats({ success: successCount, errors: errorCount, total });
+      return {
+        index,
+        name: companyData.razao_social || companyData.nome_da_empresa || `Empresa ${index + 1}`,
+        cnpj: companyData.cnpj || '',
+        status: 'waiting',
+        currentStep: 'Aguardando',
+        progress: 0,
+      };
+    });
+
+    setProcessingCompanies(companiesQueue);
+    setAnalysisResults([]);
+
+    // Processar 3 empresas simultaneamente
+    const BATCH_SIZE = 3;
+    
+    for (let batchStart = 0; batchStart < allData.length; batchStart += BATCH_SIZE) {
+      // Verificar se está pausado
+      while (isPaused) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      console.log('[ICP Analysis] Análise concluída:', { successCount, errorCount, total });
-      console.log('[ICP Analysis] Resultados:', results);
+      const batchEnd = Math.min(batchStart + BATCH_SIZE, allData.length);
+      const batchPromises = [];
 
-      setAnalysisResults(results);
-      setStep('complete');
+      for (let i = batchStart; i < batchEnd; i++) {
+        batchPromises.push(processCompany(i, allData[i], analysisResults, companiesQueue));
+      }
+
+      await Promise.all(batchPromises);
+      setTotalProcessed(batchEnd);
+    }
+
+    setAnalysisResults(analysisResults);
+    setStep('complete');
+
+    const successCount = analysisResults.filter(r => !r.error && !r.encontrou_totvs).length;
+    const rejectedCount = analysisResults.filter(r => r.encontrou_totvs).length;
+    const errorCount = analysisResults.filter(r => r.error).length;
+
+    toast({
+      title: "✅ Análise concluída!",
+      description: `✅ ${successCount} aprovadas | ❌ ${rejectedCount} descartadas (TOTVS) | ⚠️ ${errorCount} erros`,
+      duration: 10000,
+    });
+  };
+
+  const processCompany = async (
+    index: number,
+    row: any,
+    analysisResults: any[],
+    companiesQueue: ProcessingCompany[]
+  ) => {
+    const updateCompanyStatus = (updates: Partial<ProcessingCompany>) => {
+      setProcessingCompanies(prev => 
+        prev.map((c, idx) => idx === index ? { ...c, ...updates } : c)
+      );
+    };
+
+    const fieldMap: Record<string, string> = {};
+    mappings.forEach(m => {
+      if (m.systemField && m.systemField !== '__SKIP__') {
+        fieldMap[m.csvColumn] = m.systemField;
+      }
+    });
+
+    try {
+      updateCompanyStatus({ 
+        status: 'processing', 
+        currentStep: '📋 Coletando dados básicos', 
+        progress: 10 
+      });
+
+      let companyData: any = {};
+      Object.entries(row).forEach(([csvCol, value]) => {
+        const systemField = fieldMap[csvCol];
+        if (systemField && value) {
+          companyData[systemField] = value;
+        }
+      });
+
+      if (!companyData.cnpj && !companyData.razao_social && !companyData.nome_da_empresa) {
+        throw new Error('Dados insuficientes (falta CNPJ ou nome)');
+      }
+
+      updateCompanyStatus({ 
+        currentStep: '🔍 Verificando base de dados', 
+        progress: 20 
+      });
+
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('cnpj', companyData.cnpj)
+        .maybeSingle();
+
+      let companyId: string;
+
+      if (existingCompany) {
+        companyId = existingCompany.id;
+        await supabase
+          .from('companies')
+          .update({
+            ...companyData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', companyId);
+      } else {
+        const { data: newCompany, error: insertError } = await supabase
+          .from('companies')
+          .insert(companyData)
+          .select('id')
+          .single();
+
+        if (insertError || !newCompany) {
+          throw new Error(`Erro ao criar empresa: ${insertError?.message}`);
+        }
+
+        companyId = newCompany.id;
+      }
+
+      updateCompanyStatus({ 
+        currentStep: '🌐 Verificando portais de vagas (40+ fontes)', 
+        progress: 30 
+      });
+
+      // Chamar edge function para verificar TOTVS
+      let encontrouTotvs = false;
+      let evidenciasTotvs: any[] = [];
+      let portaisVerificados = 0;
+
+      try {
+        const { data: scraperData, error: scraperError } = await supabase.functions.invoke(
+          'web-scraper-totvs',
+          {
+            body: {
+              cnpj: companyData.cnpj,
+              razao_social: companyData.razao_social || companyData.nome_da_empresa,
+              domain: companyData.domain,
+            },
+          }
+        );
+
+        if (scraperError) {
+          console.error('Erro no scraper TOTVS:', scraperError);
+        } else if (scraperData) {
+          encontrouTotvs = scraperData.encontrou_totvs;
+          evidenciasTotvs = scraperData.evidencias || [];
+          portaisVerificados = scraperData.portais_verificados || 0;
+        }
+
+        updateCompanyStatus({ 
+          currentStep: encontrouTotvs 
+            ? `❌ Cliente TOTVS detectado (${evidenciasTotvs.length} evidências)` 
+            : `✅ Sem vínculo TOTVS (${portaisVerificados} portais verificados)`, 
+          progress: 60 
+        });
+      } catch (error) {
+        console.error('Erro ao verificar TOTVS:', error);
+      }
+
+      // Se encontrou TOTVS, marcar como descartado
+      if (encontrouTotvs) {
+        await supabase
+          .from('companies')
+          .update({
+            is_disqualified: true,
+            disqualification_reason: 'Cliente TOTVS detectado',
+            totvs_detection_score: 100,
+            totvs_detection_details: evidenciasTotvs,
+            totvs_detection_date: new Date().toISOString(),
+          })
+          .eq('id', companyId);
+
+        const result = {
+          company_id: companyId,
+          cnpj: companyData.cnpj,
+          name: companyData.razao_social || companyData.nome_da_empresa || `Empresa ${companyData.cnpj}`,
+          status: 'rejected',
+          motivo: 'Cliente TOTVS',
+          encontrou_totvs: true,
+          evidencias: evidenciasTotvs,
+          portais_verificados: portaisVerificados,
+          icp_score: 0,
+          temperatura: 'cold',
+        };
+
+        analysisResults.push(result);
+        setAnalysisResults([...analysisResults]);
+
+        updateCompanyStatus({ 
+          status: 'completed', 
+          currentStep: '❌ DESCARTADO - Cliente TOTVS', 
+          progress: 100,
+          result
+        });
+
+        return;
+      }
+
+      updateCompanyStatus({ 
+        currentStep: '📊 Calculando Score ICP', 
+        progress: 70 
+      });
+
+      const icpResult = calculateICPScore(companyData);
+
+      updateCompanyStatus({ 
+        currentStep: '💾 Salvando resultados', 
+        progress: 90 
+      });
+
+      await supabase
+        .from('companies')
+        .update({
+          icp_score: icpResult.score,
+          icp_temperature: icpResult.temperatura,
+          icp_breakdown: icpResult.breakdown,
+          icp_motivos: icpResult.motivos,
+          icp_analyzed_at: new Date().toISOString(),
+          totvs_detection_score: 0,
+          totvs_detection_date: new Date().toISOString(),
+        })
+        .eq('id', companyId);
+
+      const result = {
+        company_id: companyId,
+        cnpj: companyData.cnpj,
+        name: companyData.razao_social || companyData.nome_da_empresa || `Empresa ${companyData.cnpj}`,
+        status: 'approved',
+        icp_score: icpResult.score,
+        temperatura: icpResult.temperatura,
+        breakdown: icpResult.breakdown,
+        motivos: icpResult.motivos,
+        encontrou_totvs: false,
+        portais_verificados: portaisVerificados,
+      };
+
+      analysisResults.push(result);
+      setAnalysisResults([...analysisResults]);
+
+      updateCompanyStatus({ 
+        status: 'completed', 
+        currentStep: `✅ APROVADO - Score: ${icpResult.score} (${icpResult.temperatura.toUpperCase()})`, 
+        progress: 100,
+        result
+      });
+
+    } catch (error: any) {
+      console.error(`Erro ao processar empresa ${index + 1}:`, error);
       
-      toast({
-        title: "🎉 Análise concluída!",
-        description: `${successCount} empresas analisadas com sucesso. ${errorCount > 0 ? `${errorCount} erros.` : ''}`,
-      });
+      const result = {
+        cnpj: companyData?.cnpj || 'N/A',
+        name: companyData?.razao_social || companyData?.nome_da_empresa || `Empresa ${index + 1}`,
+        status: 'error',
+        error: error.message,
+      };
 
-    } catch (err) {
-      console.error('[ICP Analysis] Erro geral na análise:', err);
-      toast({
-        title: "Erro na análise",
-        description: "Ocorreu um erro ao analisar os dados.",
-        variant: "destructive",
+      analysisResults.push(result);
+      setAnalysisResults([...analysisResults]);
+
+      updateCompanyStatus({ 
+        status: 'error', 
+        currentStep: `❌ ERRO: ${error.message}`, 
+        progress: 0,
+        error: error.message
       });
-      setStep('mapping');
     }
   };
 
   const handleDownloadResults = () => {
-    const csv = Papa.unparse(analysisResults);
+    const csv = Papa.unparse(analysisResults.map(r => ({
+      CNPJ: r.cnpj,
+      'Razão Social': r.name,
+      Status: r.status === 'approved' ? 'Aprovado' : r.status === 'rejected' ? 'Descartado' : 'Erro',
+      Motivo: r.motivo || (r.error ? `Erro: ${r.error}` : '-'),
+      'Score ICP': r.icp_score || 0,
+      Temperatura: r.temperatura || '-',
+      'Encontrou TOTVS': r.encontrou_totvs ? 'Sim' : 'Não',
+      'Evidências TOTVS': r.evidencias ? r.evidencias.length : 0,
+      'Portais Verificados': r.portais_verificados || 0,
+    })));
+    
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -237,8 +439,33 @@ export default function ICPBulkAnalysisWithMapping() {
     setMappings([]);
     setPreviewData([]);
     setAllData([]);
-    setAnalysisStats({ success: 0, errors: 0, total: 0 });
+    setProcessingCompanies([]);
     setAnalysisResults([]);
+    setTotalProcessed(0);
+    setStartTime(null);
+  };
+
+  const getTemperatureBadge = (temp: string) => {
+    if (temp === 'hot') return <Badge className="bg-red-500 text-white">🔥 HOT</Badge>;
+    if (temp === 'warm') return <Badge className="bg-yellow-500 text-white">🌡️ WARM</Badge>;
+    return <Badge className="bg-blue-500 text-white">❄️ COLD</Badge>;
+  };
+
+  const getElapsedTime = () => {
+    if (!startTime) return '0s';
+    const elapsed = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    return `${minutes}m ${seconds}s`;
+  };
+
+  const getEstimatedTimeRemaining = () => {
+    if (!startTime || totalProcessed === 0) return 'Calculando...';
+    const elapsed = (new Date().getTime() - startTime.getTime()) / 1000;
+    const avgTimePerCompany = elapsed / totalProcessed;
+    const remaining = (allData.length - totalProcessed) * avgTimePerCompany;
+    const minutes = Math.floor(remaining / 60);
+    return `~${minutes} minutos`;
   };
 
   if (step === 'upload') {
@@ -247,10 +474,13 @@ export default function ICPBulkAnalysisWithMapping() {
         <div className="text-center space-y-6">
           <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
           <div>
-            <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa</h2>
+            <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
             <p className="text-muted-foreground mb-6">
-              Faça upload de qualquer planilha CSV. O sistema vai reconhecer os campos automaticamente 
-              e calcular o score ICP para cada empresa.
+              Sistema robusto de análise que:<br/>
+              ✅ Verifica 40+ portais de vagas para detectar clientes TOTVS<br/>
+              ✅ Calcula score ICP detalhado para cada empresa<br/>
+              ✅ Processa até 3 empresas simultaneamente<br/>
+              ✅ Gera relatório completo com evidências
             </p>
           </div>
           <div>
@@ -372,41 +602,144 @@ export default function ICPBulkAnalysisWithMapping() {
   }
 
   if (step === 'analyzing') {
-    const progress = analysisStats.total > 0 
-      ? ((analysisStats.success + analysisStats.errors) / analysisStats.total) * 100 
+    const progress = allData.length > 0 
+      ? (totalProcessed / allData.length) * 100 
       : 0;
 
+    const processing = processingCompanies.filter(c => c.status === 'processing');
+    const completed = processingCompanies.filter(c => c.status === 'completed');
+    const waiting = processingCompanies.filter(c => c.status === 'waiting');
+    const errors = processingCompanies.filter(c => c.status === 'error');
+
     return (
-      <Card className="p-8">
-        <div className="text-center space-y-6">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Analisando empresas...</h2>
-            <Progress value={progress} className="w-full max-w-md mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              {analysisStats.success + analysisStats.errors} de {analysisStats.total} empresas processadas
-            </p>
-            <div className="flex justify-center gap-4 mt-4 text-sm">
-              <span className="text-green-600">✓ {analysisStats.success} sucesso</span>
-              {analysisStats.errors > 0 && (
-                <span className="text-red-600">✗ {analysisStats.errors} erros</span>
-              )}
+      <div className="space-y-6">
+        <Card className="p-8">
+          <div className="space-y-6">
+            <div className="text-center">
+              <Loader2 className="w-16 h-16 mx-auto text-primary animate-spin mb-4" />
+              <h2 className="text-2xl font-bold mb-2">🔄 ANÁLISE ICP EM MASSA - PROCESSANDO</h2>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
+              <div className="bg-muted p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold">{allData.length}</div>
+                <div className="text-sm text-muted-foreground">Total</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-green-600">{completed.length}</div>
+                <div className="text-sm text-muted-foreground">✅ Concluídas</div>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-blue-600">{processing.length}</div>
+                <div className="text-sm text-muted-foreground">🔄 Em andamento</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-gray-600">{waiting.length}</div>
+                <div className="text-sm text-muted-foreground">⏳ Aguardando</div>
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto">
+              <Progress value={progress} className="w-full mb-2" />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{Math.round(progress)}% concluído</span>
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Tempo decorrido: {getElapsedTime()} | Estimado restante: {getEstimatedTimeRemaining()}
+                </span>
+              </div>
+            </div>
+
+            <ScrollArea className="h-96 w-full max-w-4xl mx-auto border rounded-lg p-4">
+              <div className="space-y-4">
+                {processing.map((company) => (
+                  <div key={company.index} className="border rounded-lg p-4 bg-blue-50">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="font-bold text-blue-900">
+                          🔄 {company.name}
+                        </div>
+                        <div className="text-sm text-blue-700">CNPJ: {company.cnpj}</div>
+                      </div>
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="text-blue-800">{company.currentStep}</div>
+                      <Progress value={company.progress} className="h-2" />
+                    </div>
+                  </div>
+                ))}
+
+                {completed.slice(-5).reverse().map((company) => (
+                  <div key={company.index} className="border rounded-lg p-4 bg-green-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-bold text-green-900">
+                          {company.result?.encontrou_totvs ? '❌' : '✅'} {company.name}
+                        </div>
+                        <div className="text-sm text-green-700">CNPJ: {company.cnpj}</div>
+                        <div className="text-sm text-green-800 mt-1">{company.currentStep}</div>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                  </div>
+                ))}
+
+                {errors.map((company) => (
+                  <div key={company.index} className="border rounded-lg p-4 bg-red-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-bold text-red-900">
+                          ❌ {company.name}
+                        </div>
+                        <div className="text-sm text-red-700">CNPJ: {company.cnpj}</div>
+                        <div className="text-sm text-red-800 mt-1">{company.currentStep}</div>
+                      </div>
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={() => setIsPaused(!isPaused)}>
+                {isPaused ? (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Continuar
+                  </>
+                ) : (
+                  <>
+                    <Pause className="w-4 h-4 mr-2" />
+                    Pausar
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   if (step === 'complete') {
-    const avgScore = analysisResults
-      .filter(r => r.status === 'success')
-      .reduce((sum, r) => sum + (r.icp_score || 0), 0) / 
-      Math.max(analysisResults.filter(r => r.status === 'success').length, 1);
+    const approved = analysisResults.filter(r => r.status === 'approved');
+    const rejected = analysisResults.filter(r => r.status === 'rejected');
+    const errored = analysisResults.filter(r => r.status === 'error');
 
-    const hotCount = analysisResults.filter(r => r.temperatura === 'hot').length;
-    const warmCount = analysisResults.filter(r => r.temperatura === 'warm').length;
-    const coldCount = analysisResults.filter(r => r.temperatura === 'cold').length;
+    const hotCount = approved.filter(r => r.temperatura === 'hot').length;
+    const warmCount = approved.filter(r => r.temperatura === 'warm').length;
+    const coldCount = approved.filter(r => r.temperatura === 'cold').length;
+
+    const avgScore = approved.length > 0
+      ? approved.reduce((sum, r) => sum + (r.icp_score || 0), 0) / approved.length
+      : 0;
+
+    const endTime = new Date();
+    const totalTime = startTime 
+      ? Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60)
+      : 0;
 
     return (
       <div className="space-y-6">
@@ -414,113 +747,195 @@ export default function ICPBulkAnalysisWithMapping() {
           <div className="text-center space-y-6">
             <CheckCircle className="w-16 h-16 mx-auto text-green-500" />
             <div>
-              <h2 className="text-2xl font-bold mb-4">🎉 Análise Concluída!</h2>
+              <h2 className="text-2xl font-bold mb-4">✅ ANÁLISE ICP EM MASSA - CONCLUÍDA</h2>
               
-              <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
-                <div className="bg-muted p-4 rounded-lg">
-                  <div className="text-3xl font-bold">{analysisStats.total}</div>
-                  <div className="text-sm text-muted-foreground">Total</div>
+              <div className="bg-muted p-6 rounded-lg max-w-3xl mx-auto mb-6">
+                <h3 className="font-bold text-lg mb-4">📊 RESUMO GERAL</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Total analisadas:</div>
+                    <div className="text-2xl font-bold">{analysisResults.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">✅ Aprovadas:</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {approved.length} ({Math.round((approved.length / analysisResults.length) * 100)}%)
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">❌ Descartadas:</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {rejected.length} ({Math.round((rejected.length / analysisResults.length) * 100)}%)
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Tempo total:</div>
+                    <div className="text-2xl font-bold">{totalTime}min</div>
+                  </div>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600">{analysisStats.success}</div>
-                  <div className="text-sm text-muted-foreground">Sucesso</div>
+
+                <div className="mt-6 pt-6 border-t">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">🔥 HOT (70-100):</div>
+                      <div className="text-xl font-bold text-red-600">{hotCount}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">🌡️ WARM (40-69):</div>
+                      <div className="text-xl font-bold text-yellow-600">{warmCount}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">❄️ COLD (0-39):</div>
+                      <div className="text-xl font-bold text-blue-600">{coldCount}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-red-600">{analysisStats.errors}</div>
-                  <div className="text-sm text-muted-foreground">Erros</div>
+
+                <div className="mt-4">
+                  <div className="text-sm text-muted-foreground">Score ICP médio (aprovadas):</div>
+                  <div className="text-3xl font-bold text-primary">{avgScore.toFixed(1)}</div>
                 </div>
               </div>
-              
-              <div className="mb-6">
-                <p className="text-muted-foreground mb-2">
-                  Score ICP médio: <span className="font-bold text-primary text-2xl">{avgScore.toFixed(1)}</span>
-                </p>
-                <div className="flex justify-center gap-4 text-sm">
-                  <span className="text-red-600">🔥 {hotCount} Hot</span>
-                  <span className="text-yellow-600">🌡️ {warmCount} Warm</span>
-                  <span className="text-blue-600">❄️ {coldCount} Cold</span>
-                </div>
+
+              <div className="flex justify-center gap-4">
+                <Button onClick={handleDownloadResults}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar Relatório Completo (CSV)
+                </Button>
+                <Button variant="outline" onClick={resetAnalysis}>
+                  Nova Análise
+                </Button>
               </div>
-            </div>
-            
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={resetAnalysis}>
-                Analisar outra planilha
-              </Button>
-              <Button onClick={handleDownloadResults}>
-                <Download className="w-4 h-4 mr-2" />
-                Baixar Resultados (CSV)
-              </Button>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-xl font-bold mb-4">Resultados da Análise</h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>CNPJ</TableHead>
-                  <TableHead>Razão Social</TableHead>
-                  <TableHead>Score ICP</TableHead>
-                  <TableHead>Temperatura</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analysisResults.slice(0, 10).map((result, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-mono text-sm">
-                      {result.cnpj}
-                    </TableCell>
-                    <TableCell>
-                      {result.razao_social || result.nome_da_empresa || result.nome_fantasia}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={
-                          result.icp_score >= 70 ? 'bg-red-100 text-red-800' :
-                          result.icp_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }
-                      >
-                        {result.icp_score?.toFixed(1) || 0}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          result.temperatura === 'hot' ? 'bg-red-100 text-red-800' :
-                          result.temperatura === 'warm' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }
-                      >
-                        {result.temperatura === 'hot' ? '🔥 Hot' :
-                         result.temperatura === 'warm' ? '🌡️ Warm' :
-                         '❄️ Cold'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {result.status === 'success' ? (
-                        <Badge className="bg-green-100 text-green-800">✓ Sucesso</Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-800" title={result.error}>
-                          ✗ Erro
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {analysisResults.length > 10 && (
-              <p className="text-sm text-muted-foreground text-center mt-4">
-                Mostrando 10 de {analysisResults.length} resultados. Baixe o CSV para ver todos.
-              </p>
+        {/* Empresas Aprovadas */}
+        {approved.length > 0 && (
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-4">📋 EMPRESAS APROVADAS ({approved.length})</h3>
+            
+            {/* HOT */}
+            {hotCount > 0 && (
+              <div className="mb-6">
+                <h4 className="font-bold text-red-600 mb-2">🔥 HOT ({hotCount} empresas)</h4>
+                <div className="space-y-2">
+                  {approved.filter(r => r.temperatura === 'hot').map((result, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 bg-red-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold">{result.name}</div>
+                          <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
+                          <div className="text-sm mt-2">
+                            <span className="font-bold">Score: {result.icp_score}</span>
+                            {result.portais_verificados > 0 && (
+                              <span className="text-muted-foreground ml-2">
+                                | {result.portais_verificados} portais verificados
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {getTemperatureBadge(result.temperatura)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        </Card>
+
+            {/* WARM */}
+            {warmCount > 0 && (
+              <div className="mb-6">
+                <h4 className="font-bold text-yellow-600 mb-2">🌡️ WARM ({warmCount} empresas)</h4>
+                <div className="space-y-2">
+                  {approved.filter(r => r.temperatura === 'warm').slice(0, 5).map((result, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 bg-yellow-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold">{result.name}</div>
+                          <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
+                          <div className="text-sm mt-2">
+                            <span className="font-bold">Score: {result.icp_score}</span>
+                          </div>
+                        </div>
+                        {getTemperatureBadge(result.temperatura)}
+                      </div>
+                    </div>
+                  ))}
+                  {warmCount > 5 && (
+                    <div className="text-center text-sm text-muted-foreground">
+                      ... e mais {warmCount - 5} empresas WARM
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* COLD */}
+            {coldCount > 0 && (
+              <div>
+                <h4 className="font-bold text-blue-600 mb-2">❄️ COLD ({coldCount} empresas)</h4>
+                <div className="text-sm text-muted-foreground">
+                  Baixe o relatório completo para ver todas as empresas COLD
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* Empresas Descartadas */}
+        {rejected.length > 0 && (
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-4">❌ EMPRESAS DESCARTADAS ({rejected.length})</h3>
+            <div className="mb-4">
+              <h4 className="font-bold text-red-600 mb-2">🚫 Cliente TOTVS ({rejected.length} empresas)</h4>
+              <div className="space-y-2">
+                {rejected.slice(0, 10).map((result, idx) => (
+                  <div key={idx} className="border rounded-lg p-4 bg-red-50">
+                    <div className="font-bold">{result.name}</div>
+                    <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
+                    <div className="text-sm text-red-700 mt-2">
+                      ❌ Motivo: {result.motivo}
+                      {result.evidencias && result.evidencias.length > 0 && (
+                        <div className="mt-1">
+                          📋 {result.evidencias.length} evidência(s) encontrada(s)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {rejected.length > 10 && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    ... e mais {rejected.length - 10} empresas descartadas
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Erros */}
+        {errored.length > 0 && (
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-4">⚠️ ERROS NO PROCESSAMENTO ({errored.length})</h3>
+            <div className="space-y-2">
+              {errored.slice(0, 5).map((result, idx) => (
+                <div key={idx} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="font-bold">{result.name}</div>
+                  <div className="text-sm text-muted-foreground">CNPJ: {result.cnpj}</div>
+                  <div className="text-sm text-red-600 mt-2">
+                    ❌ Erro: {result.error}
+                  </div>
+                </div>
+              ))}
+              {errored.length > 5 && (
+                <div className="text-center text-sm text-muted-foreground">
+                  ... e mais {errored.length - 5} erros
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
     );
   }
