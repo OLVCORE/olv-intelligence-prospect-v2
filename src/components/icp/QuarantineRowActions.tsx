@@ -1,4 +1,4 @@
-import { Settings, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ interface QuarantineRowActionsProps {
   onReject: (id: string, motivo: string) => void;
   onDelete: (id: string) => void;
   onPreview: (company: any) => void;
+  onRefresh?: (id: string) => void;
 }
 
 export function QuarantineRowActions({
@@ -25,6 +26,7 @@ export function QuarantineRowActions({
   onReject,
   onDelete,
   onPreview,
+  onRefresh,
 }: QuarantineRowActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -82,6 +84,17 @@ export function QuarantineRowActions({
         >
           <Eye className="h-4 w-4 mr-2" />
           Ver Preview
+        </DropdownMenuItem>
+
+        {/* Atualizar relatório */}
+        <DropdownMenuItem 
+          onClick={() => {
+            if (onRefresh) onRefresh(company.id);
+          }}
+          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Atualizar relatório
         </DropdownMenuItem>
 
         {company.status === 'pendente' && (

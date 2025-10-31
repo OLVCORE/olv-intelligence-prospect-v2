@@ -14,7 +14,8 @@ import {
   FileText,
   Loader2,
   MoreHorizontal,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,6 +24,7 @@ interface QuarantineActionsMenuProps {
   onDeleteSelected: () => Promise<void>;
   onExportSelected: () => void;
   onPreviewSelected: () => void;
+  onRefreshSelected?: () => void;
   isProcessing?: boolean;
 }
 
@@ -31,6 +33,7 @@ export function QuarantineActionsMenu({
   onDeleteSelected,
   onExportSelected,
   onPreviewSelected,
+  onRefreshSelected,
   isProcessing = false
 }: QuarantineActionsMenuProps) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,7 +55,7 @@ export function QuarantineActionsMenu({
           <Button
             variant="default"
             size="default"
-            disabled={selectedCount === 0 || isProcessing || isDeleting}
+            disabled={isProcessing || isDeleting}
             data-testid="quarantine-actions-menu"
             aria-label="Ações em Massa"
             className="gap-2"
@@ -119,6 +122,21 @@ export function QuarantineActionsMenu({
           >
             <FileText className="h-4 w-4 mr-2" />
             Exportar PDF
+          </DropdownMenuItem>
+
+          <DropdownMenuItem 
+            onClick={() => {
+              if (selectedCount === 0 || !onRefreshSelected) {
+                return;
+              }
+              onRefreshSelected();
+            }}
+            disabled={selectedCount === 0 || isDeleting}
+            data-testid="action-refresh"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar Relatórios
           </DropdownMenuItem>
         </DropdownMenuGroup>
 

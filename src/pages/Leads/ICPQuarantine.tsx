@@ -12,6 +12,7 @@ import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
 import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
+import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ export default function ICPQuarantine() {
   const { mutate: rejectCompany } = useRejectQuarantine();
   const { mutate: autoApprove, isPending: isAutoApproving } = useAutoApprove();
   const { mutate: deleteBatch, isPending: isDeleting } = useDeleteQuarantineBatch();
+  const { mutate: refreshBatch, isPending: isRefreshing } = useRefreshQuarantineBatch();
 
   const filteredCompanies = companies.filter(c => 
     c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,6 +135,17 @@ export default function ICPQuarantine() {
     setPreviewOpen(true);
   };
 
+  const handleRefreshSelected = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    const items = filteredCompanies
+      .filter(c => selectedIds.includes(c.id))
+      .map(c => ({ id: c.id, razao_social: c.razao_social, cnpj: c.cnpj }));
+    refreshBatch(items);
+  };
+
   const handlePreviewSingle = (company: any) => {
     setPreviewCompany(company);
     setPreviewOpen(true);
@@ -150,6 +163,11 @@ export default function ICPQuarantine() {
     deleteBatch([id]);
   };
 
+  const handleRefreshSingle = (id: string) => {
+    const company = filteredCompanies.find(c => c.id === id);
+    if (!company) return;
+    refreshBatch([{ id, razao_social: company.razao_social, cnpj: company.cnpj }]);
+  };
   const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
   const displayCompanies = previewCompany ? [previewCompany] : selectedCompanies;
 
@@ -239,7 +257,8 @@ export default function ICPQuarantine() {
                 onDeleteSelected={handleDeleteSelected}
                 onExportSelected={handleExportSelected}
                 onPreviewSelected={handlePreviewSelected}
-                isProcessing={isApproving || isDeleting}
+                onRefreshSelected={handleRefreshSelected}
+                isProcessing={isApproving || isDeleting || isRefreshing}
               />
               
               <TooltipProvider>
@@ -406,6 +425,7 @@ export default function ICPQuarantine() {
                         onReject={handleRejectSingle}
                         onDelete={handleDeleteSingle}
                         onPreview={handlePreviewSingle}
+                        onRefresh={handleRefreshSingle}
                       />
                     </TableCell>
                   </TableRow>
