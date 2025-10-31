@@ -75,6 +75,7 @@ export default function ICPBulkAnalysisWithMapping() {
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isParsingFile, setIsParsingFile] = useState(false);
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
   const { templates, saveTemplate, deleteTemplate, markAsUsed } = useICPMappingTemplates();
@@ -120,6 +121,12 @@ export default function ICPBulkAnalysisWithMapping() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
+
+    // Feedback visual imediato
+    toast({
+      title: '📂 Carregando arquivo...',
+      description: `Processando ${uploadedFile.name}`,
+    });
 
     setFile(uploadedFile);
 
@@ -187,8 +194,45 @@ export default function ICPBulkAnalysisWithMapping() {
 
       const headers = Object.keys(data[0] || {});
 
-      setAllData(data);
-      setPreviewData(data.slice(0, 3));
+      // DEDUPLICAÇÃO POR CNPJ
+      const cnpjField = headers.find(h => 
+        h.toLowerCase().includes('cnpj') || 
+        h.toLowerCase().includes('documento')
+      );
+      
+      let processedData = data;
+      let duplicatesRemoved = 0;
+      
+      if (cnpjField) {
+        const seen = new Set();
+        const deduplicated = [];
+        
+        for (const row of data) {
+          const cnpj = row[cnpjField]?.toString().replace(/\D/g, '');
+          if (cnpj && cnpj.length === 14) {
+            if (!seen.has(cnpj)) {
+              seen.add(cnpj);
+              deduplicated.push(row);
+            } else {
+              duplicatesRemoved++;
+            }
+          } else {
+            deduplicated.push(row); // Manter registros sem CNPJ válido para análise
+          }
+        }
+        
+        processedData = deduplicated;
+        
+        if (duplicatesRemoved > 0) {
+          toast({
+            title: '🔄 CNPJs duplicados removidos',
+            description: `${duplicatesRemoved} linha(s) duplicada(s) foram removidas automaticamente`,
+          });
+        }
+      }
+
+      setAllData(processedData);
+      setPreviewData(processedData.slice(0, 3));
 
       const autoMappings = mapAllColumns(headers);
       setMappings(autoMappings);
@@ -196,9 +240,13 @@ export default function ICPBulkAnalysisWithMapping() {
       setStep('mapping');
 
       const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
+      
+      const baseDescription = `${processedData.length} empresas carregadas | ${mappedCount}/${headers.length} colunas mapeadas (${Math.round((mappedCount/headers.length)*100)}%)`;
+      const duplicateInfo = duplicatesRemoved > 0 ? ` | ${duplicatesRemoved} duplicadas removidas` : '';
+      
       toast({
-        title: 'Arquivo carregado!',
-        description: `${mappedCount} de ${headers.length} colunas mapeadas automaticamente (${Math.round((mappedCount/headers.length)*100)}%)`,
+        title: '✅ Arquivo carregado com sucesso!',
+        description: baseDescription + duplicateInfo,
       });
     } catch (error) {
       console.error('Erro ao ler CSV:', error);
@@ -1274,6 +1322,66 @@ export default function ICPBulkAnalysisWithMapping() {
                       Salvar Template
                     </Button>
                   </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Dialog compartilhado (TAMBÉM disponível nesta etapa) */}
+              <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
+                    <DialogDescription>
+                      Selecione um template salvo para aplicar o mapeamento automaticamente
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {templates.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum template salvo ainda</p>
+                    ) : (
+                      <ScrollArea className="h-[300px] pr-4">
+                        <div className="space-y-2">
+                          {templates.map((template) => (
+                            <Card
+                              key={template.id}
+                              className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                              onClick={() => handleLoadTemplate(template.id)}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{template.nome_template}</h4>
+                                  {template.descricao && (
+                                    <p className="text-sm text-muted-foreground mt-1">{template.descricao}</p>
+                                  )}
+                                  <div className="flex gap-2 mt-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {template.mappings?.length || 0} mapeamentos
+                                    </Badge>
+                                    {template.custom_fields && template.custom_fields.length > 0 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {template.custom_fields.length} campos customizados
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Deletar template "${template.nome_template}"?`)) {
+                                      deleteTemplate(template.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>

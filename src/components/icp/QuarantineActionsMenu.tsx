@@ -52,7 +52,7 @@ export function QuarantineActionsMenu({
         <Button
           variant="default"
           size="default"
-          disabled={selectedCount === 0 || isProcessing || isDeleting}
+          disabled={isProcessing || isDeleting}
           data-testid="quarantine-actions-menu"
           aria-label="Ações em Massa"
           className="gap-2"
@@ -77,7 +77,12 @@ export function QuarantineActionsMenu({
         
         <DropdownMenuGroup>
           <DropdownMenuItem 
-            onClick={onPreviewSelected}
+            onClick={() => {
+              if (selectedCount === 0) {
+                return; // Componente visual está desabilitado, mas prevenção extra
+              }
+              onPreviewSelected();
+            }}
             disabled={selectedCount === 0 || isDeleting}
             data-testid="action-preview"
             className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
@@ -87,7 +92,12 @@ export function QuarantineActionsMenu({
           </DropdownMenuItem>
 
           <DropdownMenuItem 
-            onClick={onExportSelected}
+            onClick={() => {
+              if (selectedCount === 0) {
+                return;
+              }
+              onExportSelected();
+            }}
             disabled={selectedCount === 0 || isDeleting}
             data-testid="action-export"
             className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
@@ -97,7 +107,12 @@ export function QuarantineActionsMenu({
           </DropdownMenuItem>
 
           <DropdownMenuItem 
-            onClick={onExportSelected}
+            onClick={() => {
+              if (selectedCount === 0) {
+                return;
+              }
+              onExportSelected();
+            }}
             disabled={selectedCount === 0 || isDeleting}
             data-testid="action-export-pdf"
             className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
@@ -112,7 +127,12 @@ export function QuarantineActionsMenu({
         
         <DropdownMenuGroup>
           <DropdownMenuItem 
-            onClick={handleDelete}
+            onClick={() => {
+              if (selectedCount === 0) {
+                return;
+              }
+              handleDelete();
+            }}
             disabled={selectedCount === 0 || isDeleting}
             data-testid="action-delete"
             className="text-destructive transition-all duration-200 cursor-pointer hover:bg-destructive/10 hover:shadow-md hover:border-l-2 hover:border-destructive"
