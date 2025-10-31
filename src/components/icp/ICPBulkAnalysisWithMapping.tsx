@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
@@ -47,6 +47,8 @@ export default function ICPBulkAnalysisWithMapping() {
   const [preAnalysisData, setPreAnalysisData] = useState<any>(null);
   const [customFields, setCustomFields] = useState<string[]>([]);
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
 
@@ -148,6 +150,49 @@ export default function ICPBulkAnalysisWithMapping() {
     updated[index].systemField = newField === '__SKIP__' ? null : newField;
     updated[index].status = newField && newField !== '__SKIP__' ? 'mapped' : 'unmapped';
     setMappings(updated);
+  };
+
+  const handleEditField = (oldName: string, newName: string) => {
+    if (!newName.trim() || newName === oldName) {
+      setEditingField(null);
+      return;
+    }
+
+    // Update custom fields list
+    const updatedCustomFields = customFields.map(f => f === oldName ? newName : f);
+    setCustomFields(updatedCustomFields);
+
+    // Update all mappings that use this field
+    const updatedMappings = mappings.map(mapping => 
+      mapping.systemField === oldName 
+        ? { ...mapping, systemField: newName }
+        : mapping
+    );
+    setMappings(updatedMappings);
+    
+    setEditingField(null);
+    toast({
+      title: 'Campo renomeado',
+      description: `Campo "${oldName}" renomeado para "${newName}"`,
+    });
+  };
+
+  const handleDeleteCustomField = (fieldName: string) => {
+    // Remove from custom fields
+    setCustomFields(customFields.filter(f => f !== fieldName));
+
+    // Update mappings that use this field to unmapped
+    const updatedMappings = mappings.map(mapping => 
+      mapping.systemField === fieldName 
+        ? { ...mapping, systemField: null, status: 'unmapped' as const }
+        : mapping
+    );
+    setMappings(updatedMappings);
+    
+    toast({
+      title: 'Campo removido',
+      description: `Campo "${fieldName}" foi removido`,
+    });
   };
 
   const handleConfirmAnalysis = () => {
@@ -869,7 +914,7 @@ export default function ICPBulkAnalysisWithMapping() {
                               <CommandSeparator />
 
                               <CommandGroup heading="Todos os campos">
-                                {[...getSystemFields(), ...customFields].map((field) => (
+                                {getSystemFields().map((field) => (
                                   <CommandItem
                                     key={field}
                                     value={`${field}-${getFieldLabel(field)}`}
@@ -887,6 +932,81 @@ export default function ICPBulkAnalysisWithMapping() {
                                     {getFieldLabel(field)}
                                   </CommandItem>
                                 ))}
+                                
+                                {customFields.length > 0 && (
+                                  <>
+                                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                                      Campos Customizados
+                                    </div>
+                                    {customFields.map((field) => (
+                                      <CommandItem
+                                        key={field}
+                                        value={`${field}-${getFieldLabel(field)}`}
+                                        onSelect={() => {
+                                          if (editingField !== field) {
+                                            handleMappingChange(index, field);
+                                            setOpenComboboxIndex(null);
+                                          }
+                                        }}
+                                        className="group"
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4 shrink-0",
+                                            mapping.systemField === field ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {editingField === field ? (
+                                          <input
+                                            type="text"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(e.target.value)}
+                                            onBlur={() => handleEditField(field, editingValue)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') {
+                                                handleEditField(field, editingValue);
+                                              } else if (e.key === 'Escape') {
+                                                setEditingField(null);
+                                              }
+                                            }}
+                                            className="flex-1 px-2 py-1 text-sm border rounded"
+                                            autoFocus
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                        ) : (
+                                          <>
+                                            <span className="flex-1">{getFieldLabel(field)}</span>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setEditingField(field);
+                                                  setEditingValue(field);
+                                                }}
+                                              >
+                                                <Pencil className="h-3 w-3" />
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 text-destructive"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteCustomField(field);
+                                                }}
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </>
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </>
+                                )}
                               </CommandGroup>
 
                               <CommandSeparator />
