@@ -6,8 +6,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, BarChart3, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useTOTVSDetectionV5, useLatestTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
+import { useTOTVSDetectionReports } from "@/hooks/useTOTVSDetectionReports";
+import { EvidenceDialog } from "@/components/intelligence/EvidenceDialog";
 import { toast } from "sonner";
 import { useState } from "react";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Clock, Database } from "lucide-react";
 
 interface TOTVSDetectionCardV3Props {
   company?: {
@@ -25,8 +30,11 @@ interface TOTVSDetectionCardV3Props {
 export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
   const detectMutation = useTOTVSDetectionV5();
   const { data: latestDetection } = useLatestTOTVSDetectionV5(company?.id);
+  const { data: reports } = useTOTVSDetectionReports(company?.id);
   const [showMethodology, setShowMethodology] = useState(false);
   const [showEvidences, setShowEvidences] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleDetect = () => {
     if (!company) {
@@ -73,29 +81,61 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
   const methodology = latestDetection?.methodology as any;
   const evidences = latestDetection?.evidences as any[] || [];
 
+  // Agrupar evidências por portal para UX hierárquica
+  const evidencesByPlatform = evidences.reduce((acc: any, ev: any) => {
+    if (!acc[ev.platform]) acc[ev.platform] = [];
+    acc[ev.platform].push(ev);
+    return acc;
+  }, {});
+
+  const handleCategoryClick = (category: string, categoryEvidences: any[]) => {
+    if (categoryEvidences.length > 0) {
+      setSelectedCategory(category);
+      setDialogOpen(true);
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Detecção de Uso de TOTVS v5.0
-            </CardTitle>
-            <CardDescription>
-              Análise cirúrgica por nicho com governança completa
-            </CardDescription>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Detecção de Uso de TOTVS v5.0
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                Análise cirúrgica por nicho com governança completa
+                {latestDetection?.created_at && (
+                  <>
+                    <span>•</span>
+                    <Clock className="h-3 w-3" />
+                    <span className="text-xs">
+                      {format(new Date(latestDetection.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </span>
+                  </>
+                )}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {reports && reports.length > 1 && (
+                <Badge variant="outline" className="gap-1">
+                  <Database className="h-3 w-3" />
+                  {reports.length} análise(s)
+                </Badge>
+              )}
+              <Button
+                onClick={handleDetect}
+                disabled={detectMutation.isPending || !company}
+                size="sm"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${detectMutation.isPending ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
           </div>
-          <Button
-            onClick={handleDetect}
-            disabled={detectMutation.isPending || !company}
-            size="sm"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${detectMutation.isPending ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent className="space-y-4">
         {!company && (
@@ -331,5 +371,16 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
         )}
       </CardContent>
     </Card>
+
+    {/* Evidence Dialog */}
+    {selectedCategory && (
+      <EvidenceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        category={selectedCategory}
+        evidences={evidencesByPlatform[selectedCategory] || []}
+      />
+    )}
+    </>
   );
 }
