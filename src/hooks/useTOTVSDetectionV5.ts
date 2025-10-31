@@ -88,20 +88,15 @@ export function useTOTVSDetectionV5() {
           region: params.state,
           sector: params.sectorCode,
           score: data.score,
-          confidence: data.score >= 70 ? 'high' : data.score >= 40 ? 'medium' : 'low',
+          confidence: (data as any).confidence || (data.score >= 70 ? 'high' : data.score >= 40 ? 'medium' : 'low'),
           status: data.status,
           evidences: data.evidences as any,
-          platforms_scanned: ['LinkedIn Jobs'],
-          methodology: {
-            niche_applied: data.niche,
-            audit_stats: data.audit,
-            version: 'v5.0',
-            query_type: 'surgical'
-          } as any,
+          platforms_scanned: (data as any).platforms_scanned as any,
+          methodology: (data as any).methodology as any,
           disqualification_reason: data.status === 'disqualified' 
-            ? `Uso de TOTVS detectado em ${data.niche} (${data.evidences.length} evidências)` 
+            ? `Uso de TOTVS detectado em ${data.niche} (${data.evidences?.length || 0} evidências)` 
             : null,
-          sources_checked: 1,
+          sources_checked: (data as any).total_portals ?? (Array.isArray((data as any).platforms_scanned) ? (data as any).platforms_scanned.length : 0),
         }]);
 
       if (insertError) {
