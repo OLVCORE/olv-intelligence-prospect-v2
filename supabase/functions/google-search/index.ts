@@ -1,4 +1,4 @@
-// ✅ Edge Function para busca com Google Custom Search Engine
+// ✅ Edge Function de busca agora usa Serper como motor primário (mantendo o nome "google-search")
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -22,86 +22,104 @@ serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get('GOOGLE_API_KEY');
-    const cseId = Deno.env.get('GOOGLE_CSE_ID');
-
-    if (!apiKey || !cseId) {
-      throw new Error('GOOGLE_API_KEY ou GOOGLE_CSE_ID não configurados');
+    const apiKey = Deno.env.get('SERPER_API_KEY');
+    if (!apiKey) {
+      console.error('GOOGLE_SEARCH_SERPER', 'SERPER_API_KEY não configurado');
+      return new Response(
+        JSON.stringify({ error: 'SERPER_API_KEY não configurado' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('GOOGLE_SEARCH', 'Processing search', { query, type });
-
-    const baseUrl = 'https://www.googleapis.com/customsearch/v1';
-    
-    // Construir query baseado no tipo
-    let searchQuery = query;
-    let siteSearch = '';
+    // Construir query efetiva (compatível com comportamento anterior)
+    let effectiveQuery = String(query);
 
     if (type === 'news') {
-      // Buscar em sites de notícias
-      const newsSites = [
-        'g1.globo.com',
-        'folha.uol.com.br',
-        'estadao.com.br',
-        'valor.com.br',
-        'exame.com',
-        'infomoney.com.br'
-      ];
-      siteSearch = newsSites.map(site => `site:${site}`).join(' OR ');
-      searchQuery = `${query} (${siteSearch})`;
+      // Sem filtros adicionais aqui para preservar recall
     } else if (type === 'social') {
-      // Buscar redes sociais
       const platform = options.platform;
       if (platform) {
-        const platformDomains: Record<string, string> = {
-          linkedin: 'linkedin.com',
-          facebook: 'facebook.com',
-          instagram: 'instagram.com',
-          twitter: 'twitter.com',
-          youtube: 'youtube.com'
+        const platformDomains = {
+          linkedin: 'site:linkedin.com',
+          facebook: 'site:facebook.com',
+          instagram: 'site:instagram.com',
+          twitter: '(site:twitter.com OR site:x.com)',
+          youtube: 'site:youtube.com',
         };
-        siteSearch = `site:${platformDomains[platform]}`;
+        const filter = platformDomains[String(platform)] || '';
+        effectiveQuery = `"${query}" ${filter}`.trim();
       } else {
-        siteSearch = 'site:linkedin.com OR site:facebook.com OR site:instagram.com OR site:twitter.com OR site:youtube.com';
+        effectiveQuery = `"${query}" (site:linkedin.com OR site:facebook.com OR site:instagram.com OR site:twitter.com OR site:x.com OR site:youtube.com)`;
       }
-      searchQuery = `"${query}" ${siteSearch}`;
     }
 
-    const params = new URLSearchParams({
-      key: apiKey,
-      cx: cseId,
-      q: searchQuery,
-      num: (options.numResults || 10).toString(),
-      ...(options.language && { lr: `lang_${options.language}` }),
-      ...(options.dateRestrict && { dateRestrict: options.dateRestrict }),
-      ...(options.exactTerms && { exactTerms: options.exactTerms }),
-    });
+    const num = Number(options.numResults || 10);
 
-    const response = await fetch(`${baseUrl}?${params}`);
+    const endpoint = type === 'news' ? 'news' : 'search';
+    const body = { q: effectiveQuery, num };
+
+    console.log('GOOGLE_SEARCH_SERPER', 'Request', { endpoint, q: effectiveQuery, num, type });
+
+    const response = await fetch(`https://google.serper.dev/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('GOOGLE_SEARCH', 'API error', { status: response.status, error: errorText });
-      throw new Error(`Google CSE API error: ${response.status}`);
+      console.error('GOOGLE_SEARCH_SERPER', 'API error', { status: response.status, error: errorText });
+      return new Response(
+        JSON.stringify({ error: `Serper API error: ${response.status}`, details: errorText }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();
-    
-    console.log('GOOGLE_SEARCH', 'Search completed', {
-      totalResults: data.searchInformation?.totalResults,
-      itemsCount: data.items?.length || 0
-    });
 
-    return new Response(
-      JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Normalização para um formato semelhante ao Google CSE
+    let items = [];
+
+    if (endpoint === 'news') {
+      const news = Array.isArray(data?.news) ? data.news : [];
+      items = news.map((n) => ({
+        title: n?.title,
+        link: n?.link,
+        snippet: n?.snippet ?? n?.source ?? '',
+        source: n?.source,
+        date: n?.date,
+      })).filter((i) => i.link && i.title);
+    } else {
+      const organic = Array.isArray(data?.organic) ? data.organic : [];
+      items = organic.map((o) => ({
+        title: o?.title,
+        link: o?.link,
+        snippet: o?.snippet ?? '',
+      })).filter((i) => i.link && i.title);
+    }
+
+    const payload = {
+      items,
+      searchInformation: {
+        totalResults: String(items.length),
+        queryDisplayed: effectiveQuery,
+      },
+    };
+
+    console.log('GOOGLE_SEARCH_SERPER', 'Success', { items: items.length, type });
+
+    return new Response(JSON.stringify(payload), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error('GOOGLE_SEARCH', 'Error:', error);
+    console.error('GOOGLE_SEARCH_SERPER', 'Error:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Erro desconhecido',
-        data: null
+        data: null,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
