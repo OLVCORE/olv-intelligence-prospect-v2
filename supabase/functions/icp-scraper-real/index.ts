@@ -158,14 +158,24 @@ serve(async (req) => {
       );
     }
 
-    console.log('[ICP SCRAPER] 📊 Analisando:', empresa, cnpj, domain);
+    // Garantir que empresa é string (use CNPJ se empresa não fornecida)
+    const empresaNome = empresa || cnpj || '';
+    
+    if (!empresaNome) {
+      return new Response(
+        JSON.stringify({ error: 'Nome da empresa ou CNPJ são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[ICP SCRAPER] 📊 Analisando:', empresaNome, cnpj, domain);
 
     const evidencias: any[] = [];
     const logs: any[] = [];
     const scoreBreakdown: any[] = [];
     let totalPontos = 0;
     const startTimeTotal = Date.now();
-    const variants = tokenVariants(empresa);
+    const variants = tokenVariants(empresaNome);
     const platformsScanned: string[] = [];
 
     // ========================================
@@ -204,8 +214,8 @@ serve(async (req) => {
             console.log(`[ICP SCRAPER] 🔍 Analisando: ${title.substring(0, 80)}...`);
             
             // VALIDAÇÃO 1: Verifica se menciona a empresa
-            if (!validateMention(fullText, empresa)) {
-              const reason = `⚠️ Resultado ignorado: NÃO menciona "${empresa}" (encontrado: "${title.substring(0, 50)}...")`;
+            if (!validateMention(fullText, empresaNome)) {
+              const reason = `⚠️ Resultado ignorado: NÃO menciona "${empresaNome}" (encontrado: "${title.substring(0, 50)}...")`;
               console.log(`[ICP SCRAPER] ${reason}`);
               discardReasons.push(reason);
               continue;
@@ -221,7 +231,7 @@ serve(async (req) => {
             }
             
             // 🚨 EVIDÊNCIA DE DESCARTE! Empresa JÁ USA TOTVS
-            console.log(`[ICP SCRAPER] 🚨 EVIDÊNCIA ENCONTRADA: "${empresa}" JÁ USA ${products.join(', ')} | Link: ${link}`);
+            console.log(`[ICP SCRAPER] 🚨 EVIDÊNCIA ENCONTRADA: "${empresaNome}" JÁ USA ${products.join(', ')} | Link: ${link}`);
             
             evidencias.push({
               criterio: `Vaga de Emprego - ${platform.name}`,
@@ -239,7 +249,7 @@ serve(async (req) => {
               pontos_atribuidos: platform.weight,
               peso_criterio: platform.weight / 100,
               confiabilidade: 'alta',
-              motivo: `🚨 EVIDÊNCIA DE DESCARTE: Vaga em ${platform.name} exige expertise em ${products.join(', ')} - Empresa "${empresa}" JÁ É CLIENTE TOTVS (período: últimos 5 anos)`,
+              motivo: `🚨 EVIDÊNCIA DE DESCARTE: Vaga em ${platform.name} exige expertise em ${products.join(', ')} - Empresa "${empresaNome}" JÁ É CLIENTE TOTVS (período: últimos 5 anos)`,
             });
             
             pointsAwarded = platform.weight;
@@ -340,8 +350,8 @@ serve(async (req) => {
           console.log(`[ICP SCRAPER] 🔍 Analisando documento: ${title.substring(0, 60)}...`);
           
           // VALIDAÇÃO: Verifica se menciona a empresa
-          if (!validateMention(fullText, empresa)) {
-            const reason = `⚠️ Documento ignorado: NÃO menciona "${empresa}"`;
+          if (!validateMention(fullText, empresaNome)) {
+            const reason = `⚠️ Documento ignorado: NÃO menciona "${empresaNome}"`;
             console.log(`[ICP SCRAPER] ${reason}`);
             discardReasons.push(reason);
             continue;
