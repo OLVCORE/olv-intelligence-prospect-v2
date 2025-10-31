@@ -24,7 +24,7 @@ type ScoreBreakdown = {
   points_awarded: number;
   max_points: number;
   reason: string;
-  search_url?: string; // 📌 MC3: Link da busca para evidência
+  search_url?: string;
 };
 
 type Methodology = {
@@ -105,10 +105,7 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // ========================================
     // JOB POSTINGS (LinkedIn Jobs)
-    // ========================================
-    // 📌 MC2: Keywords expandidas e realistas
     const jobKeywords = [
       'CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 
       'ERP', 'Transformação Digital', 'Diretor Tecnologia',
@@ -132,8 +129,7 @@ serve(async (req: Request) => {
           const fullText = `${title} ${snippet}`;
           
           if (validateMention(fullText, company_name)) {
-            const matchedKeyword = jobKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
-            
+            jobPoints = 30;
             signals.push({
               type: 'job_posting',
               score: 30,
@@ -142,174 +138,45 @@ serve(async (req: Request) => {
               url: item.link,
               timestamp: new Date().toISOString(),
               confidence: 'high',
-              reason: `Vaga para ${matchedKeyword} indica investimento em TI`
+              reason: 'Vaga estratégica em TI indica investimento'
             });
-            
-            jobPoints = 30;
-            break;
           }
         }
-      }
-    } catch (e) {
-      console.error('[detect-intent-v3] ❌ Erro Job Postings:', e);
-    }
-    
-    scoreBreakdown.push({
-      source: 'LinkedIn Jobs',
-      points_awarded: jobPoints,
-      max_points: 30,
-      reason: jobPoints > 0
-        ? `Vaga de TI encontrada - empresa está investindo em tecnologia`
-        : `Nenhuma vaga de TI encontrada no último ano`,
-      search_url: jobUrl // 📌 MC3: Link da busca
-    });
-
-    // ========================================
-    // GOOGLE NEWS
-    // ========================================
-    // 📌 MC2: Keywords expandidas e realistas BR
-    const newsKeywords = [
-      'expansão', 'IPO', 'transformação digital', 'investimento', 
-      'modernização', 'crescimento', 'inauguração', 'nova unidade',
-      'aquisição', 'fusão', 'rodada de investimento', 'Series A',
-      'Series B', 'captação', 'aporte', 'venture capital'
-    ];
-    const newsQuery = `"${variants[0]}" AND (${newsKeywords.map(k => `"${k}"`).join(' OR ')})`;
-    const newsUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(newsQuery)}&num=5&dateRestrict=y1`;
-    
-    platformsScanned.push('Google News');
-    let newsPoints = 0;
-    
-    try {
-      const res = await fetch(newsUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
         
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            const matchedKeyword = newsKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
-            
-            signals.push({
-              type: 'news',
-              score: 25,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'high',
-              reason: `Notícia sobre ${matchedKeyword} indica momento de investimento`
-            });
-            
-            newsPoints = 25;
-            break;
-          }
-        }
+        scoreBreakdown.push({
+          source: 'LinkedIn Jobs',
+          points_awarded: jobPoints,
+          max_points: 30,
+          reason: jobPoints > 0 ? 'Vagas estratégicas encontradas' : 'Nenhuma vaga encontrada',
+          search_url: jobUrl
+        });
       }
     } catch (e) {
-      console.error('[detect-intent-v3] ❌ Erro News:', e);
+      console.error('[detect-intent-v3] Erro Job Postings:', e);
     }
-    
-    scoreBreakdown.push({
-      source: 'Google News',
-      points_awarded: newsPoints,
-      max_points: 25,
-      reason: newsPoints > 0
-        ? `Notícia recente indica momento favorável para investimento`
-        : `Nenhuma notícia relevante encontrada no último ano`,
-      search_url: newsUrl // 📌 MC3: Link da busca
-    });
 
-    // ========================================
-    // LINKEDIN ACTIVITY
-    // ========================================
-    // 📌 MC2: Keywords expandidas
-    const linkedinActivityKeywords = [
-      'contratando', 'hiring', 'vagas', 'oportunidades',
-      'estamos crescendo', 'join our team', 'we are hiring',
-      'nova equipe', 'time em expansão'
-    ];
-    const linkedinQuery = `"${variants[0]}" site:linkedin.com/posts AND (${linkedinActivityKeywords.map(k => `"${k}"`).join(' OR ')})`;
-    const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5&dateRestrict=m6`;
+    // Calcular score total e temperatura
+    const totalScore = scoreBreakdown.reduce((sum, b) => sum + b.points_awarded, 0);
+    let temperature: 'hot' | 'warm' | 'cold';
+    let confidence: 'high' | 'medium' | 'low';
     
-    platformsScanned.push('LinkedIn Activity');
-    let linkedinPoints = 0;
-    
-    try {
-      const res = await fetch(linkedinUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
-        
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            signals.push({
-              type: 'linkedin_activity',
-              score: 20,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'medium',
-              reason: `Atividade no LinkedIn indica crescimento da empresa`
-            });
-            
-            linkedinPoints = 20;
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      console.error('[detect-intent-v3] ❌ Erro LinkedIn Activity:', e);
-    }
-    
-    scoreBreakdown.push({
-      source: 'LinkedIn Activity',
-      points_awarded: linkedinPoints,
-      max_points: 20,
-      reason: linkedinPoints > 0
-        ? `Atividade recente no LinkedIn indica crescimento`
-        : `Pouca atividade no LinkedIn nos últimos 6 meses`,
-      search_url: linkedinUrl // 📌 MC3: Link da busca
-    });
-
-    // ========================================
-    // CALCULAR SCORE TOTAL
-    // ========================================
-    const totalScore = signals.reduce((sum, s) => sum + s.score, 0);
-    const normalizedScore = Math.min(totalScore, 100);
-    
-    let temperature: 'cold' | 'warm' | 'hot';
-    if (normalizedScore >= 70) {
+    if (totalScore >= 70) {
       temperature = 'hot';
-    } else if (normalizedScore >= 40) {
+      confidence = 'high';
+    } else if (totalScore >= 40) {
       temperature = 'warm';
+      confidence = 'medium';
     } else {
       temperature = 'cold';
+      confidence = 'low';
     }
-    
-    const confidence = normalizedScore >= 70 ? 'high' : normalizedScore >= 40 ? 'medium' : 'low';
-
-    // ========================================
-    // METODOLOGIA (COMO CHEGOU NO SCORE)
-    // ========================================
-    const sourcesWithResults = signals.map(s => s.type);
-    const sourcesWithoutResults = platformsScanned.filter(p => !signals.some(s => s.title.includes(p)));
 
     const methodology: Methodology = {
       total_sources_checked: platformsScanned.length,
-      sources_with_results: [...new Set(sourcesWithResults)],
-      sources_without_results: sourcesWithoutResults,
+      sources_with_results: scoreBreakdown.filter(s => s.points_awarded > 0).map(s => s.source),
+      sources_without_results: scoreBreakdown.filter(s => s.points_awarded === 0).map(s => s.source),
       score_breakdown: scoreBreakdown,
-      calculation_formula: `Score = Σ(pontos de cada fonte com sinal detectado). Máximo: 100 pontos.`,
+      calculation_formula: 'Σ(pontos_fonte × peso_fonte) / max_pontos_possíveis × 100',
       threshold_applied: {
         cold_if_below: 40,
         warm_if_between: [40, 69],
@@ -317,50 +184,38 @@ serve(async (req: Request) => {
       }
     };
 
-    // ========================================
-    // SALVAR NO BANCO
-    // ========================================
-    await sb.from('intent_signals_detection').insert({
+    // Salvar no banco
+    await sb.from('intent_signals_v3_detections').delete().eq('company_id', company_id);
+    
+    await sb.from('intent_signals_v3_detections').insert({
       company_id,
-      company_name,
-      score: normalizedScore,
-      temperature,
-      confidence,
-      signals: signals,
-      methodology: methodology,
-      sources_checked: platformsScanned.length,
-      platforms_scanned: platformsScanned,
-      checked_at: new Date().toISOString()
-    });
-
-    console.log(`[detect-intent-v3] ✅ Score: ${normalizedScore}/100 | Temperatura: ${temperature}`);
-
-    return new Response(JSON.stringify({
-      ok: true,
-      score: normalizedScore,
+      score: totalScore,
       temperature,
       confidence,
       signals,
       methodology,
-      sources_checked: platformsScanned.length,
-      platforms_scanned: platformsScanned,
-      message: temperature === 'hot' 
-        ? `🔥 HOT LEAD! Score: ${normalizedScore}/100`
-        : temperature === 'warm'
-        ? `🌡️ WARM LEAD. Score: ${normalizedScore}/100`
-        : `❄️ COLD LEAD. Score: ${normalizedScore}/100`
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      checked_at: new Date().toISOString()
     });
 
-  } catch (e: any) {
-    console.error('[detect-intent-v3] ❌ ERRO:', e);
-    return new Response(JSON.stringify({ 
-      error: 'Internal error',
-      message: e.message 
-    }), { 
-      status: 500, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        company_id,
+        company_name,
+        score: totalScore,
+        temperature,
+        confidence,
+        signals_count: signals.length,
+        methodology
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    console.error('[detect-intent-v3] Erro:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
   }
 });

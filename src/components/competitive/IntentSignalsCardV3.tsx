@@ -314,7 +314,7 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
             <div className="text-xs text-muted-foreground text-center pt-2 border-t">
               Última verificação: {new Date(latestDetection.checked_at).toLocaleString('pt-BR')}
             </div>
-          </>
+        </>
         )}
       </CardContent>
     </Card>
