@@ -57,40 +57,19 @@ const TOTVS_PRODUCTS = [
   'TOTVS iPaaS', 'TOTVS Atende', 'RD Station', 'Assinatura Eletrônica'
 ];
 
-// Módulos e funcionalidades específicas (para detecção mais granular)
-const TOTVS_MODULES = [
-  // IA
-  'Auditoria de Folha', 'Supervisão de Compras', 'Supervisão Financeira', 
-  'Dilligence Check', 'Contract Chat', 'Target Talk', 'RoPA Legal',
-  
-  // ERP Módulos
-  'Gestão Industrial', 'Financeiro', 'Compras e Suprimentos', 'Vendas', 
-  'Estoque e Logística', 'Fiscal',
-  
-  // Fluig
-  'BPM', 'ECM', 'Workflow', 'Portal Corporativo',
-  
-  // Analytics
-  'Dashboards Executivos', 'KPIs e Indicadores',
-  
-  // Pagamentos
-  'PIX', 'Gateway de Pagamentos', 'Conciliação Bancária',
-  
-  // RH
-  'Recrutamento e Seleção', 'Treinamento e Desenvolvimento', 
-  'Avaliação de Desempenho', 'Gestão de Benefícios',
-  
-  // SFA
-  'Roteirização', 'Pedidos Mobile', 'Catálogo de Produtos',
-  
-  // Marketing
-  'Email Marketing', 'Landing Pages', 'Marketing Automation'
+// Produtos TOTVS que PODEM aparecer isolados (não ambíguos)
+const TOTVS_SAFE_PRODUCTS = [
+  'TOTVS', 'Microsiga', 'Protheus', 'Datasul', 'Fluig', 'Winthor', 
+  'Logix', 'Backoffice', 'Carol', 'Carol AI', 'Techfin', 'TOTVS Pay',
+  'TOTVS CRM', 'TOTVS RH', 'TOTVS BI', 'TOTVS Cloud', 'TOTVS Atende'
 ];
 
-// Combina produtos e módulos para busca completa
-const ALL_TOTVS_TERMS = [...TOTVS_PRODUCTS, ...TOTVS_MODULES];
+// Produtos AMBÍGUOS que precisam de contexto TOTVS junto
+const TOTVS_AMBIGUOUS_PRODUCTS = [
+  'RM', 'SFA', 'BPM', 'ECM', 'Workflow', 'PIX', 'Gateway de Pagamentos'
+];
 
-// Termos de marca TOTVS (obrigatório para correlação)
+// Termos de marca TOTVS (obrigatório para produtos ambíguos)
 const TOTVS_BRAND_TERMS = ['TOTVS', 'Microsiga'];
 
 // Funções utilitárias para normalização e correlação (Empresa + TOTVS + Produto/Módulo)
@@ -154,31 +133,52 @@ function companyAndTotvsSameSentence(text: string, companyName: string) {
   });
 }
 
+function isValidTOTVSProduct(text: string) {
+  const t = (text || '').toLowerCase();
+  const hasBrand = TOTVS_BRAND_TERMS.some(term => t.includes(term.toLowerCase()));
+  
+  // Produtos seguros podem aparecer sozinhos
+  const hasSafeProduct = TOTVS_SAFE_PRODUCTS.some(term => t.includes(term.toLowerCase()));
+  
+  // Produtos ambíguos PRECISAM de contexto de marca TOTVS
+  const hasAmbiguous = TOTVS_AMBIGUOUS_PRODUCTS.some(term => {
+    const needle = term.toLowerCase();
+    // Para "RM", verificar se é "TOTVS RM" ou contexto próximo
+    if (needle === 'rm') {
+      return t.includes('totvs rm') || t.includes('sistema rm') || 
+             (t.includes(' rm ') && hasBrand && Math.abs(t.indexOf(' rm ') - t.indexOf('totvs')) < 50);
+    }
+    return t.includes(needle) && hasBrand;
+  });
+  
+  return hasSafeProduct || hasAmbiguous;
+}
+
 function crossMatch(text: string, companyName: string) {
   const t = (text || '').toLowerCase();
   const companyNorm = normalizeCompany(companyName);
 
   const hasCompany = companyNorm.length > 0 && (t.includes(companyNorm) || companyNorm.split(' ').some(p => p.length > 3 && t.includes(p)));
-  const brandHits = TOTVS_BRAND_TERMS.filter(term => t.includes(term.toLowerCase()));
-
-  // Produtos TOTVS (desconsidera termos de marca pura para a contagem de "produto")
-  const productHits = TOTVS_PRODUCTS.filter(term => t.includes(term.toLowerCase()))
-    .filter(term => !TOTVS_BRAND_TERMS.map(s => s.toLowerCase()).includes(term.toLowerCase()));
-
-  // Módulos somente contam se houver menção à marca/produto para evitar falsos positivos
-  const moduleHits = TOTVS_MODULES.filter(term => t.includes(term.toLowerCase()));
-
-  const hasProductOrModule = productHits.length > 0 || moduleHits.length > 0;
+  const hasValidProduct = isValidTOTVSProduct(t);
   
-  // NOVA LÓGICA FLEXÍVEL: Aceita QUALQUER combinação de 2 elementos:
-  // 1. Empresa + TOTVS (marca)
-  // 2. Empresa + Produto/Módulo TOTVS
-  // 3. TOTVS + Produto/Módulo (com menção à empresa)
-  const matched = hasCompany && (brandHits.length > 0 || hasProductOrModule);
+  const matched = hasCompany && hasValidProduct;
 
-  const detected = Array.from(new Set([...brandHits, ...productHits, ...moduleHits]));
+  // Detectar produtos mencionados
+  const detectedProducts: string[] = [];
+  if (matched) {
+    for (const term of [...TOTVS_SAFE_PRODUCTS, ...TOTVS_AMBIGUOUS_PRODUCTS]) {
+      if (term.toLowerCase() === 'rm') {
+        // Só adiciona RM se tiver contexto TOTVS próximo
+        if (t.includes('totvs rm') || t.includes('sistema totvs rm')) {
+          detectedProducts.push(term);
+        }
+      } else if (t.includes(term.toLowerCase())) {
+        detectedProducts.push(term);
+      }
+    }
+  }
 
-  return { matched, detectedProducts: detected };
+  return { matched, detectedProducts: Array.from(new Set(detectedProducts)) };
 }
 
 serve(async (req) => {
@@ -211,9 +211,8 @@ serve(async (req) => {
     };
 
     // 1. VAGAS (LinkedIn, Infojobs, Catho)
-    // Busca por principais produtos TOTVS em vagas
-    const mainProducts = ['TOTVS', 'Protheus', 'Datasul', 'RM', 'Fluig', 'Winthor', 'Logix', 'Carol'];
-    const vagasQuery = `"${company_name}" (TOTVS OR Microsiga OR Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix) (Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix OR "TOTVS CRM" OR "TOTVS RH" OR "TOTVS BI" OR Techfin) (vaga OR job OR requisito OR conhecimento OR experiência) (site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br)`;
+    // Busca focada em produtos TOTVS não-ambíguos
+    const vagasQuery = `"${company_name}" ("TOTVS Protheus" OR "TOTVS Datasul" OR "TOTVS RM" OR "TOTVS Fluig" OR "TOTVS Winthor" OR "sistema TOTVS" OR "ERP TOTVS") (vaga OR requisito OR conhecimento OR experiência) (site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br)`;
     console.log('[Vagas] Query:', vagasQuery);
     
     const vagasResponse = await fetch('https://google.serper.dev/search', {
@@ -262,8 +261,8 @@ serve(async (req) => {
     }
 
     // 2. NOTÍCIAS (InfoMoney, Valor, Exame)
-    // Busca ampliada com produtos específicos
-    const noticiasQuery = `"${company_name}" (TOTVS OR Microsiga OR Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix OR "TOTVS CRM" OR "TOTVS RH" OR "TOTVS BI" OR Techfin) (site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br)`;
+    // Busca com produtos TOTVS específicos e contexto
+    const noticiasQuery = `"${company_name}" ("adota TOTVS" OR "implementa TOTVS" OR "cliente TOTVS" OR "parceiro TOTVS" OR "sistema TOTVS" OR "ERP TOTVS" OR "Protheus" OR "Datasul" OR "Fluig") (site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br)`;
     console.log('[Notícias] Query:', noticiasQuery);
     
     const noticiasResponse = await fetch('https://google.serper.dev/search', {
@@ -307,8 +306,8 @@ serve(async (req) => {
     }
 
     // 3. DOCS OFICIAIS (CVM, B3, site da empresa)
-    // Busca ampliada em documentos oficiais
-    const docsQuery = `"${company_name}" (TOTVS OR Protheus OR Datasul OR "sistema de gestão" OR ERP) site:rad.cvm.gov.br OR site:bovespa.com.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''}`;
+    // Busca em documentos oficiais com produtos específicos
+    const docsQuery = `"${company_name}" ("fornecedor TOTVS" OR "cliente TOTVS" OR "sistema TOTVS" OR "Protheus" OR "Datasul" OR "software de gestão") site:rad.cvm.gov.br OR site:bovespa.com.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''}`;
     console.log('[Docs Oficiais] Query:', docsQuery);
     
     const docsResponse = await fetch('https://google.serper.dev/search', {
