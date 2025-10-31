@@ -202,12 +202,12 @@ serve(async (req: Request) => {
     const confidence = normalizedScore >= 70 ? 'high' : normalizedScore >= 40 ? 'medium' : 'low';
 
     // 📌 MC1+MC3: Metodologia completa com multi-fonte
-    const portalsWithResults = [...new Set(evidences.map(e => e.platform))];
+    const evidencePortalsSet = [...new Set(evidences.map(e => e.platform))];
     
     const methodology = {
       total_sources_checked: jobPortals.length,
-      sources_with_results: portalsWithResults,
-      sources_without_results: jobPortals.filter(p => !portalsWithResults.includes(p)),
+      sources_with_results: evidencePortalsSet,
+      sources_without_results: jobPortals.filter(p => !evidencePortalsSet.includes(p)),
       score_breakdown: scoreBreakdown,
       calculation_formula: `Score = Σ(pontos das evidências). Cada vaga TOTVS = 30pts. Máximo: 100 pontos.`,
       threshold_applied: {
