@@ -282,7 +282,7 @@ export default function IndividualAnalysis() {
                 </div>
               )}
 
-              {(!company.headquarters_state || !company.headquarters_city) && (
+              {(displayState && displayCity) ? null : (
                 <div className="mt-3 text-xs text-amber-600">
                   ⚠️ Dados de localização ausentes. Use o botão "Enriquecer Dados" para completar.
                 </div>
@@ -332,7 +332,6 @@ export default function IndividualAnalysis() {
             </AlertDescription>
           </Alert>
 
-          {/* Análise Cards */}
           <div className="grid gap-6 md:grid-cols-2">
             <TOTVSDetectionCardV3 
               company={{
@@ -340,8 +339,8 @@ export default function IndividualAnalysis() {
                 name: company.name,
                 cnpj: company.cnpj,
                 domain: company.domain,
-                state: company.headquarters_state,
-                city: company.headquarters_city,
+                state: displayState,
+                city: displayCity,
                 sector_code: company.sector_code,
                 niche_code: company.niche_code,
               }}
@@ -351,7 +350,7 @@ export default function IndividualAnalysis() {
               name: company.name,
               cnpj: company.cnpj,
               domain: company.domain || company.website,
-              region: company.headquarters_state,
+              region: displayState,
               sector: company.sector_code,
               niche: company.niche_code,
             }} />
