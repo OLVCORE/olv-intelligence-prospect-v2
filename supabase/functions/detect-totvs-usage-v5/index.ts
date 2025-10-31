@@ -218,6 +218,36 @@ serve(async (req: Request) => {
 
     console.log(`[detect-totvs-v5] ✅ Score: ${normalizedScore}/100 | Aceitos: ${evidences.length} | Portais com dados: ${portalsWithResults.length}/${jobPortals.length}`);
 
+    // 📌 FASE 1: Persistir relatório no banco
+    const reportData = {
+      company_id,
+      score: normalizedScore,
+      confidence,
+      detection_status: status,
+      evidences,
+      methodology,
+      score_breakdown: scoreBreakdown,
+      execution_time_ms: Date.now() - Date.now(), // Will be calculated by edge function
+      sources_checked: jobPortals.length,
+      sources_with_results: portalsWithResults.length
+    };
+
+    try {
+      const { data: savedReport, error: saveError } = await sb
+        .from('totvs_detection_reports')
+        .insert(reportData)
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('[detect-totvs-v5] Erro ao salvar relatório:', saveError);
+      } else {
+        console.log(`[detect-totvs-v5] ✅ Relatório salvo: ${savedReport.id}`);
+      }
+    } catch (saveErr) {
+      console.error('[detect-totvs-v5] Exceção ao salvar:', saveErr);
+    }
+
     return new Response(JSON.stringify({
       ok: true,
       score: normalizedScore,

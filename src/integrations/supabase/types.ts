@@ -7622,6 +7622,72 @@ export type Database = {
           },
         ]
       }
+      totvs_detection_reports: {
+        Row: {
+          company_id: string
+          confidence: string
+          created_at: string
+          created_by: string | null
+          detection_status: string
+          evidences: Json
+          execution_time_ms: number | null
+          id: string
+          methodology: Json
+          score: number
+          score_breakdown: Json
+          sdr_deal_id: string | null
+          sources_checked: number | null
+          sources_with_results: number | null
+        }
+        Insert: {
+          company_id: string
+          confidence: string
+          created_at?: string
+          created_by?: string | null
+          detection_status?: string
+          evidences?: Json
+          execution_time_ms?: number | null
+          id?: string
+          methodology?: Json
+          score?: number
+          score_breakdown?: Json
+          sdr_deal_id?: string | null
+          sources_checked?: number | null
+          sources_with_results?: number | null
+        }
+        Update: {
+          company_id?: string
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          detection_status?: string
+          evidences?: Json
+          execution_time_ms?: number | null
+          id?: string
+          methodology?: Json
+          score?: number
+          score_breakdown?: Json
+          sdr_deal_id?: string | null
+          sources_checked?: number | null
+          sources_with_results?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totvs_detection_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "totvs_detection_reports_sdr_deal_id_fkey"
+            columns: ["sdr_deal_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       totvs_products: {
         Row: {
           active: boolean | null
