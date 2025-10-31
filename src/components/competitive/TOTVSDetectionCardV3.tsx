@@ -216,9 +216,21 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
                             )}
                             {item.source}
                           </span>
-                          <Badge variant={item.points_awarded > 0 ? "destructive" : "outline"}>
-                            {item.points_awarded}/{item.max_points} pts
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={item.points_awarded > 0 ? "destructive" : "outline"}>
+                              {item.points_awarded}/{item.max_points} pts
+                            </Badge>
+                            {item.search_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(item.search_url, '_blank')}
+                                className="h-6 px-2"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground">{item.reason}</p>
                       </div>

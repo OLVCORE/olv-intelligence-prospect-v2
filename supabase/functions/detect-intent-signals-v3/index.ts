@@ -24,6 +24,7 @@ type ScoreBreakdown = {
   points_awarded: number;
   max_points: number;
   reason: string;
+  search_url?: string; // 📌 MC3: Link da busca para evidência
 };
 
 type Methodology = {
@@ -154,7 +155,8 @@ serve(async (req: Request) => {
       max_points: 30,
       reason: jobPoints > 0
         ? `Vaga de TI encontrada - empresa está investindo em tecnologia`
-        : `Nenhuma vaga de TI encontrada nos últimos 3 meses`
+        : `Nenhuma vaga de TI encontrada nos últimos 3 meses`,
+      search_url: jobUrl // 📌 MC3: Link da busca
     });
 
     // ========================================
@@ -207,7 +209,8 @@ serve(async (req: Request) => {
       max_points: 25,
       reason: newsPoints > 0
         ? `Notícia recente indica momento favorável para investimento`
-        : `Nenhuma notícia relevante encontrada nos últimos 6 meses`
+        : `Nenhuma notícia relevante encontrada nos últimos 6 meses`,
+      search_url: newsUrl // 📌 MC3: Link da busca
     });
 
     // ========================================
@@ -257,7 +260,8 @@ serve(async (req: Request) => {
       max_points: 20,
       reason: linkedinPoints > 0
         ? `Atividade recente no LinkedIn indica crescimento`
-        : `Pouca atividade no LinkedIn nos últimos 3 meses`
+        : `Pouca atividade no LinkedIn nos últimos 3 meses`,
+      search_url: linkedinUrl // 📌 MC3: Link da busca
     });
 
     // ========================================

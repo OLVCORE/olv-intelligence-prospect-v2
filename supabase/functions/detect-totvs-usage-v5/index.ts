@@ -63,6 +63,7 @@ serve(async (req: Request) => {
 
     const evidences: any[] = [];
     const auditLogs: any[] = [];
+    const scoreBreakdown: any[] = []; // 📌 MC3: Metodologia detalhada
 
     // ========================================
     // QUERY CIRÚRGICA (nicho + estado + produtos TOTVS)
@@ -72,12 +73,18 @@ serve(async (req: Request) => {
       ? niche.keywords.slice(0, 3).map((k: string) => `"${k}"`).join(' OR ')
       : '"ERP" OR "sistema de gestão" OR "automação"';
       
-    const totvsProducts = ['Protheus', 'RM TOTVS', 'Datasul', 'Fluig'].map((p: string) => `"${p}"`).join(' OR ');
+    // 📌 MC4: Produtos TOTVS expandidos (10 produtos principais)
+    const totvsProducts = [
+      'Protheus', 'RM TOTVS', 'Datasul', 'Fluig',
+      'Logix', 'Microsiga', 'Backoffice', 'Winthor', 'Line', 'Magnus'
+    ].map((p: string) => `"${p}"`).join(' OR ');
     
     const linkedinQuery = `"${company_name}" AND (${nicheKeywords}) AND (${totvsProducts}) AND "${state}" site:linkedin.com/jobs`;
     const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5`;
 
     console.log(`[detect-totvs-v5] Query: ${linkedinQuery}`);
+
+    let linkedinPoints = 0;
 
     try {
       const res = await fetch(linkedinUrl);
@@ -103,8 +110,11 @@ serve(async (req: Request) => {
             ? niche.keywords.some((k: string) => fullText.includes(k.toLowerCase()))
             : true; // Se não tem nicho, não valida
 
-          // Validar produto TOTVS
-          const mentionsTOTVS = ['protheus', 'rm totvs', 'datasul', 'fluig'].some((p: string) => fullText.includes(p));
+          // 📌 MC4: Validar produto TOTVS (lista expandida)
+          const mentionsTOTVS = [
+            'protheus', 'rm totvs', 'datasul', 'fluig',
+            'logix', 'microsiga', 'backoffice', 'winthor', 'line', 'magnus'
+          ].some((p: string) => fullText.includes(p));
 
           if (mentionsCompany && mentionsState && mentionsNiche && mentionsTOTVS) {
             console.log(`[detect-totvs-v5] ✅ ACEITO: ${title}`);
@@ -118,8 +128,12 @@ serve(async (req: Request) => {
               url: item.link,
               timestamp: new Date().toISOString(),
               confidence: 'high',
+              totvs_products_mentioned: ['protheus', 'rm totvs', 'datasul', 'fluig', 'logix', 'microsiga', 'backoffice', 'winthor', 'line', 'magnus']
+                .filter((p: string) => fullText.includes(p)),
               reason: `Vaga menciona ${company_name} + ${niche?.niche_name || 'critérios gerais'} + produtos TOTVS em ${state}`
             });
+
+            linkedinPoints += 30; // Adiciona pontos
 
             auditLogs.push({
               batch_company_id: company_id,
@@ -158,6 +172,17 @@ serve(async (req: Request) => {
       console.error('[detect-totvs-v5] Erro LinkedIn:', e);
     }
 
+    // 📌 MC3: Adicionar ao score breakdown
+    scoreBreakdown.push({
+      source: 'LinkedIn Jobs',
+      points_awarded: linkedinPoints,
+      max_points: 30,
+      reason: linkedinPoints > 0
+        ? `${linkedinPoints / 30} vaga(s) de TOTVS encontrada(s) - empresa já usa TOTVS`
+        : `Nenhuma vaga mencionando TOTVS encontrada em ${state}`,
+      search_url: linkedinUrl
+    });
+
     // Salvar auditoria
     if (auditLogs.length > 0) {
       await sb.from('icp_audit_log').insert(auditLogs);
@@ -167,6 +192,20 @@ serve(async (req: Request) => {
     const totalScore = evidences.reduce((sum, e) => sum + e.score, 0);
     const normalizedScore = Math.min(totalScore, 100);
     const status = normalizedScore >= 70 ? 'disqualified' : 'qualified';
+    const confidence = normalizedScore >= 70 ? 'high' : normalizedScore >= 40 ? 'medium' : 'low';
+
+    // 📌 MC3: Metodologia completa
+    const methodology = {
+      total_sources_checked: 1,
+      sources_with_results: evidences.length > 0 ? ['LinkedIn Jobs'] : [],
+      sources_without_results: evidences.length === 0 ? ['LinkedIn Jobs'] : [],
+      score_breakdown: scoreBreakdown,
+      calculation_formula: 'Score = Σ(pontos das evidências encontradas). Máximo: 100 pontos.',
+      threshold_applied: {
+        disqualified_if_above: 70,
+        qualified_if_below: 70
+      }
+    };
 
     console.log(`[detect-totvs-v5] ✅ Score: ${normalizedScore}/100 | Aceitos: ${evidences.length} | Rejeitados: ${auditLogs.filter(l => l.action === 'rejected_evidence').length}`);
 
@@ -174,7 +213,10 @@ serve(async (req: Request) => {
       ok: true,
       score: normalizedScore,
       status,
+      confidence,
       evidences,
+      methodology, // 📌 MC3: Retornar metodologia
+      platforms_scanned: ['LinkedIn Jobs'],
       niche: niche?.niche_name || 'Análise Genérica',
       audit: {
         accepted: auditLogs.filter(l => l.action === 'accepted_evidence').length,
