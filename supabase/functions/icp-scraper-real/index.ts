@@ -6,22 +6,73 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Categorias de busca para análise ICP com TOTVS usando Google Custom Search API
-const CATEGORIAS_BUSCA = [
-  { nome: 'LinkedIn Jobs TOTVS', query: (empresa: string) => `site:linkedin.com/jobs "${empresa}" TOTVS`, peso: 0.25, categoria: 'vagas_totvs' },
-  { nome: 'LinkedIn Profile TOTVS', query: (empresa: string) => `site:linkedin.com "${empresa}" "TOTVS" OR "Protheus" OR "RM" OR "Datasul"`, peso: 0.20, categoria: 'presenca_digital' },
-  { nome: 'Vagas TOTVS Geral', query: (empresa: string) => `"${empresa}" vagas TOTVS OR Protheus OR RM OR Datasul`, peso: 0.15, categoria: 'vagas_totvs' },
-  { nome: 'Notícias TOTVS', query: (empresa: string) => `"${empresa}" TOTVS implantação OR implementação OR cliente`, peso: 0.12, categoria: 'noticias' },
-  { nome: 'Site Próprio TOTVS', query: (empresa: string, domain?: string) => domain ? `site:${domain} TOTVS OR Protheus OR RM OR Datasul` : `"${empresa}" TOTVS`, peso: 0.18, categoria: 'site_proprio' },
-  { nome: 'Reclame Aqui TOTVS', query: (empresa: string) => `site:reclameaqui.com.br "${empresa}" TOTVS`, peso: 0.10, categoria: 'reputacao' },
+// Plataformas de vagas com seus pesos
+const JOB_PLATFORMS = [
+  { name: 'LinkedIn', domain: 'linkedin.com/jobs', weight: 30 },
+  { name: 'Indeed', domain: 'indeed.com.br', weight: 25 },
+  { name: 'Catho', domain: 'catho.com.br', weight: 20 },
+  { name: 'Vagas.com', domain: 'vagas.com.br', weight: 20 },
+  { name: 'InfoJobs', domain: 'infojobs.com.br', weight: 15 }
 ];
+
+// Produtos TOTVS para detectar
+const TOTVS_PRODUCTS = [
+  'Protheus', 'RM TOTVS', 'Datasul', 'Fluig', 'TOTVS Backoffice',
+  'TOTVS Manufatura', 'TOTVS Gestão', 'TOTVS ERP', 'Linha Protheus',
+  'Linha RM', 'Microsiga'
+];
+
+const TOTVS_KEYWORDS = [
+  'TOTVS', 'Protheus', 'Datasul', 'RM TOTVS', 'Fluig', 'Microsiga'
+];
+
+// Normalizar nome para comparação
+function normalizeName(raw: string): string {
+  return raw
+    .replace(/[^\w\s]/g, " ")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Gerar variantes do nome da empresa
+function tokenVariants(name: string): string[] {
+  const tokens = normalizeName(name).split(" ").filter(w => w.length > 2);
+  const variants: string[] = [];
+  if (tokens.length >= 1) variants.push(tokens[0]);
+  if (tokens.length >= 2) variants.push(tokens.slice(0, 2).join(" "));
+  if (tokens.length >= 3) variants.push(tokens.slice(0, 3).join(" "));
+  return variants;
+}
+
+// Validar se o texto menciona a empresa
+function validateMention(text: string, companyName: string): boolean {
+  const normalized = normalizeName(text);
+  const variants = tokenVariants(companyName);
+  return variants.some(v => normalized.includes(v));
+}
+
+// Detectar produtos TOTVS mencionados
+function detectTotvsProducts(text: string): string[] {
+  const detected: string[] = [];
+  const normalized = text.toLowerCase();
+  
+  for (const product of TOTVS_PRODUCTS) {
+    if (normalized.includes(product.toLowerCase())) {
+      detected.push(product);
+    }
+  }
+  
+  return [...new Set(detected)];
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  console.log('[ICP SCRAPER] 🚀 Iniciando análise ICP com Google Custom Search API...');
+  console.log('[ICP SCRAPER] 🚀 Iniciando análise ICP com validação de evidências...');
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -55,121 +106,242 @@ serve(async (req) => {
 
     const evidencias: any[] = [];
     const logs: any[] = [];
+    const scoreBreakdown: any[] = [];
     let totalPontos = 0;
     const startTimeTotal = Date.now();
+    const variants = tokenVariants(empresa);
+    const platformsScanned: string[] = [];
 
-    // BUSCAR COM GOOGLE CUSTOM SEARCH API
-    for (const categoria of CATEGORIAS_BUSCA) {
+    // ========================================
+    // 1. BUSCAR VAGAS DE EMPREGO
+    // ========================================
+    for (const platform of JOB_PLATFORMS) {
       const startTime = Date.now();
       
       try {
-        const searchQuery = categoria.nome.includes('Site Próprio') && domain
-          ? categoria.query(empresa, domain)
-          : categoria.query(empresa);
-          
-        console.log(`[ICP SCRAPER] 🔍 ${categoria.nome}: ${searchQuery}`);
+        // Query: empresa + produtos TOTVS + site específico
+        const query = `"${variants[0]}" AND (${TOTVS_KEYWORDS.map(k => `"${k}"`).join(' OR ')}) site:${platform.domain}`;
+        console.log(`[ICP SCRAPER] 🔍 ${platform.name}: ${query}`);
         
-        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(searchQuery)}&num=10`;
+        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5`;
         
         const response = await fetch(googleUrl);
         const tempo = Date.now() - startTime;
+        platformsScanned.push(platform.name);
+        let pointsAwarded = 0;
 
         if (response.ok) {
           const data = await response.json();
+          const items = data.items || [];
           
-          if (data.items && data.items.length > 0) {
-            const pontos = Math.round(categoria.peso * 100);
+          // Validar cada resultado
+          for (const item of items) {
+            const title = item.title || '';
+            const snippet = item.snippet || '';
+            const fullText = `${title} ${snippet}`;
             
-            // Processar cada resultado encontrado
-            for (const item of data.items) {
-              evidencias.push({
-                criterio: categoria.nome,
-                categoria: categoria.categoria,
-                evidencia: `${item.title} - ${item.snippet || 'Sem descrição'}`,
-                fonte_url: item.link,
-                fonte_nome: new URL(item.link).hostname,
-                dados_extraidos: {
-                  titulo: item.title,
-                  snippet: item.snippet,
-                  link: item.link,
-                  displayLink: item.displayLink,
-                },
-                pontos_atribuidos: pontos / data.items.length, // Distribuir pontos
-                peso_criterio: categoria.peso,
-                confiabilidade: 'alta',
-              });
+            // VALIDAÇÃO CRÍTICA: Verifica se menciona a empresa E produtos TOTVS
+            if (validateMention(fullText, empresa)) {
+              const products = detectTotvsProducts(fullText);
+              
+              if (products.length > 0) {
+                // EVIDÊNCIA VÁLIDA! Empresa + TOTVS encontrados
+                evidencias.push({
+                  criterio: `Vaga de Emprego - ${platform.name}`,
+                  categoria: 'vagas_totvs',
+                  evidencia: `${title} - ${snippet}`,
+                  fonte_url: item.link,
+                  fonte_nome: platform.name,
+                  dados_extraidos: {
+                    titulo: title,
+                    snippet: snippet,
+                    link: item.link,
+                    produtos_totvs: products,
+                    displayLink: item.displayLink,
+                  },
+                  pontos_atribuidos: platform.weight,
+                  peso_criterio: platform.weight / 100,
+                  confiabilidade: 'alta',
+                  motivo: `Vaga em ${platform.name} menciona ${empresa} + ${products.join(', ')}`,
+                });
+                
+                pointsAwarded = platform.weight;
+                totalPontos += platform.weight;
+                
+                console.log(`[ICP SCRAPER] ✅ ${platform.name}: Evidência válida! ${products.join(', ')}`);
+                break; // Já encontrou evidência nesta plataforma
+              }
             }
-
-            totalPontos += pontos;
-            
-            logs.push({
-              plataforma: categoria.nome,
-              url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
-              status: 'sucesso',
-              dados_encontrados: true,
-              tempo_resposta_ms: tempo,
-              resultados_encontrados: data.items.length,
-            });
-
-            console.log(`[ICP SCRAPER] ✅ ${categoria.nome}: ${data.items.length} resultados (${tempo}ms)`);
-          } else {
-            logs.push({
-              plataforma: categoria.nome,
-              url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
-              status: 'sem_resultados',
-              dados_encontrados: false,
-              tempo_resposta_ms: tempo,
-            });
-            
-            console.log(`[ICP SCRAPER] ⚠️ ${categoria.nome}: Nenhum resultado encontrado`);
           }
+          
+          logs.push({
+            plataforma: platform.name,
+            url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
+            status: pointsAwarded > 0 ? 'evidencia_valida' : 'sem_evidencia',
+            dados_encontrados: pointsAwarded > 0,
+            tempo_resposta_ms: tempo,
+            resultados_encontrados: items.length,
+            resultados_validos: pointsAwarded > 0 ? 1 : 0,
+          });
+          
         } else {
           const errorText = await response.text();
           logs.push({
-            plataforma: categoria.nome,
+            plataforma: platform.name,
             url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
             status: 'erro',
             dados_encontrados: false,
             tempo_resposta_ms: tempo,
             erro_mensagem: `HTTP ${response.status}: ${errorText}`,
           });
-
-          console.log(`[ICP SCRAPER] ❌ ${categoria.nome}: Erro ${response.status}`);
         }
+        
+        scoreBreakdown.push({
+          source: platform.name,
+          points_awarded: pointsAwarded,
+          max_points: platform.weight,
+          reason: pointsAwarded > 0 
+            ? `Vaga encontrada mencionando ${empresa} + produtos TOTVS`
+            : `Nenhuma vaga válida encontrada mencionando ${empresa} + TOTVS`
+        });
 
       } catch (error: any) {
         const tempo = Date.now() - startTime;
-        
         logs.push({
-          plataforma: categoria.nome,
+          plataforma: platform.name,
           url_buscada: 'Google Custom Search API',
           status: 'erro',
           dados_encontrados: false,
           tempo_resposta_ms: tempo,
           erro_mensagem: error.message,
         });
-
-        console.log(`[ICP SCRAPER] ⚠️ ${categoria.nome}: ${error.message}`);
+        
+        scoreBreakdown.push({
+          source: platform.name,
+          points_awarded: 0,
+          max_points: platform.weight,
+          reason: `Erro na busca: ${error.message}`
+        });
       }
 
-      // Pequeno delay entre buscas (200ms)
+      // Delay entre buscas
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // CALCULAR SCORE FINAL
-    const scoreICP = Math.min(100, Math.round(totalPontos));
-    const temperatura = scoreICP >= 70 ? 'hot' : scoreICP >= 40 ? 'warm' : 'cold';
-    const tempoTotal = Math.round((Date.now() - startTimeTotal) / 1000);
-    const buscasRealizadas = logs.length;
-    const buscasComResultados = logs.filter(l => l.dados_encontrados).length;
+    // ========================================
+    // 2. BUSCAR DOCUMENTOS FINANCEIROS
+    // ========================================
+    const startTime = Date.now();
+    try {
+      const financialQuery = `"${variants[0]}" AND (balanço OR DRE) AND (TOTVS OR Protheus OR Datasul) filetype:pdf`;
+      console.log(`[ICP SCRAPER] 🔍 Documentos Financeiros: ${financialQuery}`);
+      
+      const financialUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(financialQuery)}&num=10`;
+      
+      const response = await fetch(financialUrl);
+      const tempo = Date.now() - startTime;
+      platformsScanned.push('Financial Docs');
+      let financialPoints = 0;
 
-    console.log('[ICP SCRAPER] 📊 Score final:', scoreICP, temperatura);
-    console.log('[ICP SCRAPER] 📝 Evidências encontradas:', evidencias.length);
-    console.log('[ICP SCRAPER] 🔍 Buscas realizadas:', buscasRealizadas);
-    console.log('[ICP SCRAPER] ✅ Buscas com resultados:', buscasComResultados);
+      if (response.ok) {
+        const data = await response.json();
+        const items = data.items || [];
+        
+        for (const item of items) {
+          const title = item.title || '';
+          const snippet = item.snippet || '';
+          const fullText = `${title} ${snippet}`;
+          
+          // VALIDAÇÃO CRÍTICA: Verifica se menciona a empresa
+          if (validateMention(fullText, empresa)) {
+            // Verificar se TOTVS aparece como CREDORA (fornecedor)
+            const isTotvsCreditor = fullText.toLowerCase().includes('credora') || 
+                                   fullText.toLowerCase().includes('fornecedor');
+            
+            const points = isTotvsCreditor ? 50 : 25;
+            const confidence = isTotvsCreditor ? 'alta' : 'media';
+            
+            evidencias.push({
+              criterio: 'Documento Financeiro',
+              categoria: 'financeiro',
+              evidencia: `${title} - ${snippet}`,
+              fonte_url: item.link,
+              fonte_nome: 'Financial Docs',
+              dados_extraidos: {
+                titulo: title,
+                snippet: snippet,
+                link: item.link,
+                tipo: isTotvsCreditor ? 'TOTVS como credora' : 'Menção TOTVS',
+              },
+              pontos_atribuidos: points,
+              peso_criterio: points / 100,
+              confiabilidade: confidence,
+              motivo: isTotvsCreditor 
+                ? `⚠️ TOTVS aparece como CREDORA no balanço - empresa JÁ COMPROU software TOTVS`
+                : `Documento financeiro menciona TOTVS`,
+            });
+            
+            financialPoints = points;
+            totalPontos += points;
+            
+            console.log(`[ICP SCRAPER] ✅ Financial Docs: ${isTotvsCreditor ? 'CREDORA!' : 'Menção'}`);
+            break;
+          }
+        }
+        
+        logs.push({
+          plataforma: 'Financial Docs',
+          url_buscada: financialUrl.replace(googleApiKey, 'HIDDEN'),
+          status: financialPoints > 0 ? 'evidencia_valida' : 'sem_evidencia',
+          dados_encontrados: financialPoints > 0,
+          tempo_resposta_ms: tempo,
+          resultados_encontrados: items.length,
+        });
+      }
+      
+      scoreBreakdown.push({
+        source: 'Financial Docs',
+        points_awarded: financialPoints,
+        max_points: 50,
+        reason: financialPoints === 50 
+          ? `TOTVS como credora em balanço - empresa JÁ É CLIENTE`
+          : financialPoints === 25
+          ? `Documento menciona TOTVS mas não como credora`
+          : `Nenhum documento financeiro válido encontrado`
+      });
+      
+    } catch (error: any) {
+      console.log(`[ICP SCRAPER] ⚠️ Financial Docs: ${error.message}`);
+    }
+
+    // ========================================
+    // 3. CALCULAR SCORE FINAL E STATUS
+    // ========================================
+    const scoreICP = Math.min(totalPontos, 100);
+    
+    // Score >= 70 = DESQUALIFICAR (empresa JÁ USA TOTVS)
+    // Score < 70 = QUALIFICAR (empresa NÃO USA TOTVS)
+    const status = scoreICP >= 70 ? 'disqualified' : 'qualified';
+    const temperatura = scoreICP >= 70 ? 'cold' : scoreICP >= 40 ? 'warm' : 'hot';
+    const tempoTotal = Math.round((Date.now() - startTimeTotal) / 1000);
+
+    let disqualificationReason = null;
+    if (status === 'disqualified') {
+      const highestScoreEvidence = evidencias.reduce((max, e) => 
+        e.pontos_atribuidos > max.pontos_atribuidos ? e : max, 
+        evidencias[0]
+      );
+      disqualificationReason = highestScoreEvidence?.motivo || 'Empresa já usa TOTVS';
+    }
+
+    console.log('[ICP SCRAPER] 📊 Score final:', scoreICP);
+    console.log('[ICP SCRAPER] 📊 Status:', status);
+    console.log('[ICP SCRAPER] 📝 Evidências válidas:', evidencias.length);
     console.log('[ICP SCRAPER] ⏱️ Tempo total:', tempoTotal, 'segundos');
 
-    // SALVAR EVIDÊNCIAS NO BANCO
+    // ========================================
+    // 4. SALVAR NO BANCO
+    // ========================================
     if (evidencias.length > 0 && analysis_id) {
       const { error: evidError } = await supabase
         .from('icp_evidence')
@@ -188,7 +360,6 @@ serve(async (req) => {
       }
     }
 
-    // SALVAR LOGS NO BANCO
     if (logs.length > 0 && analysis_id) {
       const { error: logError } = await supabase
         .from('icp_scraping_log')
@@ -207,19 +378,35 @@ serve(async (req) => {
       }
     }
 
-    // ATUALIZAR ANÁLISE (se analysis_id fornecido)
     if (analysis_id) {
       const { error: updateError } = await supabase
         .from('icp_analysis_results')
         .update({
           icp_score: scoreICP,
           temperatura,
-          criterios_atendidos: evidencias.filter(e => e.pontos_atribuidos > 0).map(e => ({
+          status,
+          disqualification_reason: disqualificationReason,
+          criterios_atendidos: evidencias.map(e => ({
             criterio: e.criterio,
             pontos: e.pontos_atribuidos,
             fonte: e.fonte_nome,
             link: e.fonte_url,
+            motivo: e.motivo,
+            produtos_totvs: e.dados_extraidos?.produtos_totvs || [],
           })),
+          methodology: {
+            total_sources_checked: platformsScanned.length,
+            sources_with_results: [...new Set(evidencias.map(e => e.fonte_nome))],
+            sources_without_results: platformsScanned.filter(p => 
+              !evidencias.some(e => e.fonte_nome === p)
+            ),
+            score_breakdown: scoreBreakdown,
+            calculation_formula: 'Score = Σ(pontos de cada fonte com evidência VALIDADA). Máximo: 100 pontos.',
+            threshold_applied: {
+              qualified_if_below: 70,
+              disqualified_if_above: 70
+            }
+          },
           analyzed_at: new Date().toISOString(),
         })
         .eq('id', analysis_id);
@@ -233,14 +420,18 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         score: scoreICP,
+        status,
         temperatura,
-        evidencias_encontradas: evidencias.length,
-        categorias_consultadas: CATEGORIAS_BUSCA.length,
+        disqualification_reason: disqualificationReason,
+        evidencias_validas: evidencias.length,
+        fontes_consultadas: platformsScanned.length,
         logs_gerados: logs.length,
         tempo_total_segundos: tempoTotal,
-        buscas_sucesso: logs.filter(l => l.status === 'sucesso').length,
-        buscas_sem_resultados: logs.filter(l => l.status === 'sem_resultados').length,
-        buscas_erro: logs.filter(l => l.status === 'erro').length,
+        message: status === 'disqualified' 
+          ? `⚠️ DESQUALIFICAR: Empresa já usa TOTVS (score: ${scoreICP}/100)`
+          : `✅ QUALIFICADO: Empresa não usa TOTVS (score: ${scoreICP}/100)`,
+        evidencias,
+        score_breakdown: scoreBreakdown,
       }),
       { 
         status: 200,
