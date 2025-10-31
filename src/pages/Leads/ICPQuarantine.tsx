@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
+import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
+import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { toast } from 'sonner';
+import * as Papa from 'papaparse';
 
 export default function ICPQuarantine() {
   const navigate = useNavigate();
@@ -18,6 +22,7 @@ export default function ICPQuarantine() {
   const [statusFilter, setStatusFilter] = useState('pendente');
   const [tempFilter, setTempFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -27,6 +32,7 @@ export default function ICPQuarantine() {
   const { mutate: approveBatch, isPending: isApproving } = useApproveQuarantineBatch();
   const { mutate: rejectCompany } = useRejectQuarantine();
   const { mutate: autoApprove, isPending: isAutoApproving } = useAutoApprove();
+  const { mutate: deleteBatch, isPending: isDeleting } = useDeleteQuarantineBatch();
 
   const filteredCompanies = companies.filter(c => 
     c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,6 +72,65 @@ export default function ICPQuarantine() {
       autoCreateDeals: true,
     });
   };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    const confirmed = window.confirm(
+      `Tem certeza que deseja deletar ${selectedIds.length} empresa(s)? Esta ação não pode ser desfeita.`
+    );
+    
+    if (!confirmed) return;
+    
+    deleteBatch(selectedIds, {
+      onSuccess: () => setSelectedIds([]),
+    });
+  };
+
+  const handleExportSelected = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+
+    const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
+    
+    const csvData = selectedCompanies.map(c => ({
+      'Empresa': c.razao_social,
+      'CNPJ': c.cnpj,
+      'Score ICP': c.icp_score,
+      'Temperatura': c.temperatura,
+      'Status': c.status,
+      'Motivo Qualificação': (c as any).motivo_qualificacao || '',
+      'Motivo Descarte': (c as any).motivo_descarte || '',
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `quarentena-icp-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`${selectedIds.length} empresa(s) exportada(s)`);
+  };
+
+  const handlePreviewSelected = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    setPreviewOpen(true);
+  };
+
+  const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
 
   const getTempIcon = (temp: string) => {
     switch (temp) {
@@ -148,6 +213,14 @@ export default function ICPQuarantine() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <QuarantineActionsMenu
+                selectedCount={selectedIds.length}
+                onDeleteSelected={handleDeleteSelected}
+                onExportSelected={handleExportSelected}
+                onPreviewSelected={handlePreviewSelected}
+                isProcessing={isApproving || isDeleting}
+              />
+              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -353,6 +426,78 @@ export default function ICPQuarantine() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview das Empresas Selecionadas</DialogTitle>
+            <DialogDescription>
+              {selectedCompanies.length} empresa(s) selecionada(s)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {selectedCompanies.map((company) => (
+              <Card key={company.id}>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Empresa</p>
+                      <p className="text-lg font-semibold">{company.razao_social}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
+                      <p className="font-mono">{company.cnpj}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Score ICP</p>
+                      <Badge variant={company.icp_score >= 70 ? 'default' : 'secondary'}>
+                        {company.icp_score} pontos
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Temperatura</p>
+                      <div className="flex items-center gap-2">
+                        {getTempIcon(company.temperatura)}
+                        <Badge variant={getTempBadge(company.temperatura)}>
+                          {company.temperatura}
+                        </Badge>
+                      </div>
+                    </div>
+                    {(company as any).motivo_qualificacao && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Motivo Qualificação</p>
+                        <p className="text-sm">{(company as any).motivo_qualificacao}</p>
+                      </div>
+                    )}
+                    {(company as any).evidencias && (company as any).evidencias.length > 0 && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          Evidências ({(company as any).evidencias.length})
+                        </p>
+                        <div className="space-y-2">
+                          {(company as any).evidencias.slice(0, 3).map((ev: any, idx: number) => (
+                            <div key={idx} className="text-xs bg-muted p-2 rounded">
+                              <p className="font-medium">{ev.criterio || ev.fonte_nome}</p>
+                              <p className="text-muted-foreground">{ev.evidencia || ev.motivo}</p>
+                            </div>
+                          ))}
+                          {(company as any).evidencias.length > 3 && (
+                            <p className="text-xs text-muted-foreground">
+                              + {(company as any).evidencias.length - 3} evidências adicionais
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
