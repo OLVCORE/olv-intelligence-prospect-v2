@@ -6,13 +6,69 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Plataformas de vagas com seus pesos
+// 50 Plataformas de vagas - busca vasta e distribuída
 const JOB_PLATFORMS = [
+  // Top 10 - maior peso
   { name: 'LinkedIn', domain: 'linkedin.com/jobs', weight: 30 },
   { name: 'Indeed', domain: 'indeed.com.br', weight: 25 },
   { name: 'Catho', domain: 'catho.com.br', weight: 20 },
   { name: 'Vagas.com', domain: 'vagas.com.br', weight: 20 },
-  { name: 'InfoJobs', domain: 'infojobs.com.br', weight: 15 }
+  { name: 'InfoJobs', domain: 'infojobs.com.br', weight: 20 },
+  { name: 'Gupy', domain: 'portal.gupy.io', weight: 20 },
+  { name: 'Glassdoor', domain: 'glassdoor.com.br', weight: 18 },
+  { name: 'Sólides', domain: 'vagas.solides.com.br', weight: 15 },
+  { name: 'BNE', domain: 'bne.com.br', weight: 15 },
+  { name: 'Trabalha Brasil', domain: 'trabalhabrasil.com.br', weight: 15 },
+  
+  // Agregadores e portais - peso médio
+  { name: 'Emprega Brasil', domain: 'empregabrasil.mte.gov.br', weight: 12 },
+  { name: 'Jooble', domain: 'jooble.org', weight: 12 },
+  { name: 'Adzuna', domain: 'adzuna.com.br', weight: 12 },
+  { name: 'Talent.com', domain: 'talent.com', weight: 12 },
+  { name: 'Jora', domain: 'jora.com', weight: 10 },
+  { name: 'Jobrapido', domain: 'jobrapido.com', weight: 10 },
+  { name: 'Jobsora', domain: 'jobsora.com', weight: 10 },
+  { name: 'JobisJob', domain: 'jobisjob.com.br', weight: 10 },
+  { name: 'Jobatus', domain: 'jobatus.com.br', weight: 10 },
+  { name: 'Empregos.com.br', domain: 'empregos.com.br', weight: 10 },
+  
+  // Portais especializados
+  { name: 'Manager', domain: 'manager.com.br', weight: 8 },
+  { name: 'Curriculum', domain: 'curriculum.com.br', weight: 8 },
+  { name: 'Emprego.net', domain: 'emprego.net', weight: 8 },
+  { name: 'Recruta Simples', domain: 'recrutasimples.com.br', weight: 8 },
+  { name: 'Emprego Ligado', domain: 'empregoligado.com.br', weight: 8 },
+  { name: 'Jobbol', domain: 'jobbol.com.br', weight: 8 },
+  { name: 'Elancers', domain: 'elancers.net', weight: 8 },
+  { name: 'Abler', domain: 'jobs.abler.com.br', weight: 8 },
+  { name: 'JobConvo', domain: 'jobconvo.com', weight: 8 },
+  { name: 'Trampos.co', domain: 'trampos.co', weight: 8 },
+  
+  // Estágio/Trainee
+  { name: 'CIEE', domain: 'portal.ciee.org.br', weight: 8 },
+  { name: 'Nube', domain: 'nube.com.br', weight: 8 },
+  { name: 'IEL', domain: 'iel.org.br', weight: 8 },
+  
+  // Outros portais
+  { name: '99jobs', domain: '99jobs.com', weight: 6 },
+  { name: 'Trabalhando', domain: 'trabalhando.com.br', weight: 6 },
+  { name: 'Remotar', domain: 'remotar.com.br', weight: 6 },
+  { name: 'GeekHunter', domain: 'geekhunter.com.br', weight: 6 },
+  { name: 'EmpregosTI', domain: 'empregosti.com.br', weight: 6 },
+  { name: 'BuscoJobs', domain: 'buscojobs.com.br', weight: 6 },
+  { name: 'VagasPCD', domain: 'vagaspcd.com.br', weight: 6 },
+  
+  // Consultorias
+  { name: 'Michael Page', domain: 'michaelpage.com.br', weight: 5 },
+  { name: 'Page Personnel', domain: 'pagepersonnel.com.br', weight: 5 },
+  { name: 'Robert Half', domain: 'roberthalf.com.br', weight: 5 },
+  { name: 'Randstad', domain: 'randstad.com.br', weight: 5 },
+  { name: 'ManpowerGroup', domain: 'manpowergroup.com.br', weight: 5 },
+  { name: 'Adecco', domain: 'adecco.com.br', weight: 5 },
+  { name: 'Hays', domain: 'hays.com.br', weight: 5 },
+  { name: 'Luandre', domain: 'luandre.com.br', weight: 5 },
+  { name: 'Gi Group', domain: 'gigroup.com', weight: 5 },
+  { name: 'Kelly Services', domain: 'kellyservices.com.br', weight: 5 }
 ];
 
 // Produtos TOTVS para detectar
