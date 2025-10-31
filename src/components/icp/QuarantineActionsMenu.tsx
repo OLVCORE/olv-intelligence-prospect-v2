@@ -48,23 +48,23 @@ export function QuarantineActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="default"
-          size="default"
-          disabled={isProcessing || isDeleting}
-          data-testid="quarantine-actions-menu"
-          aria-label="Ações em Massa"
-          className="gap-2"
-        >
-          {isProcessing || isDeleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <MoreHorizontal className="h-4 w-4" />
-          )}
-          Ações em Massa
-        </Button>
-      </DropdownMenuTrigger>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="default"
+            size="default"
+            disabled={selectedCount === 0 || isProcessing || isDeleting}
+            data-testid="quarantine-actions-menu"
+            aria-label="Ações em Massa"
+            className="gap-2"
+          >
+            {isProcessing || isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MoreHorizontal className="h-4 w-4" />
+            )}
+            Ações em Massa ({selectedCount})
+          </Button>
+        </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
         className="w-64 z-[100] bg-popover"

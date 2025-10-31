@@ -122,6 +122,8 @@ export default function ICPBulkAnalysisWithMapping() {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
+    setIsParsingFile(true);
+    
     // Feedback visual imediato
     toast({
       title: '📂 Carregando arquivo...',
@@ -132,22 +134,24 @@ export default function ICPBulkAnalysisWithMapping() {
 
     // Validação básica de arquivo
     const isCSV = uploadedFile.name.toLowerCase().endsWith('.csv') || /csv|excel|text/.test(uploadedFile.type);
-    if (!isCSV) {
-      toast({
-        title: 'Arquivo inválido',
-        description: 'Selecione um arquivo CSV válido (.csv)',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (uploadedFile.size > 10 * 1024 * 1024) {
-      toast({
-        title: 'Arquivo muito grande',
-        description: 'O arquivo deve ter no máximo 10MB',
-        variant: 'destructive',
-      });
-      return;
-    }
+      if (!isCSV) {
+        toast({
+          title: 'Arquivo inválido',
+          description: 'Selecione um arquivo CSV válido (.csv)',
+          variant: 'destructive',
+        });
+        setIsParsingFile(false);
+        return;
+      }
+      if (uploadedFile.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'O arquivo deve ter no máximo 10MB',
+          variant: 'destructive',
+        });
+        setIsParsingFile(false);
+        return;
+      }
 
     try {
       // Ler texto para validações iniciais
@@ -163,6 +167,7 @@ export default function ICPBulkAnalysisWithMapping() {
           description: 'O arquivo parece ser HTML (XLS disfarçado). Exporte como CSV puro.',
           variant: 'destructive',
         });
+        setIsParsingFile(false);
         return;
       }
 
@@ -189,6 +194,7 @@ export default function ICPBulkAnalysisWithMapping() {
           description: 'Arquivo CSV vazio ou inválido.',
           variant: 'destructive',
         });
+        setIsParsingFile(false);
         return;
       }
 
@@ -255,6 +261,8 @@ export default function ICPBulkAnalysisWithMapping() {
         description: 'Verifique se o arquivo está no formato CSV correto.',
         variant: 'destructive',
       });
+    } finally {
+      setIsParsingFile(false);
     }
   };
 
@@ -1671,7 +1679,7 @@ export default function ICPBulkAnalysisWithMapping() {
 
   return (
     <>
-      {/* Dialog compartilhado para Carregar Template */}
+      {/* Dialog compartilhado para Carregar Template - SEMPRE RENDERIZADO */}
       <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1734,6 +1742,72 @@ export default function ICPBulkAnalysisWithMapping() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Conteúdo principal baseado no step */}
+      {step === 'upload' && (
+        <Card className="p-8">
+          <div className="text-center space-y-6">
+            <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
+              <p className="text-muted-foreground mb-6">
+                Sistema robusto de análise que:<br/>
+                • Mapeia automaticamente colunas do CSV<br/>
+                • Aplica scoring ICP inteligente<br/>
+                • Verifica se empresas usam TOTVS<br/>
+                • Remove duplicatas automaticamente<br/>
+                • Envia resultados para quarentena para aprovação
+              </p>
+              
+              <div className="max-w-md mx-auto space-y-4">
+                <Button 
+                  size="lg" 
+                  className="relative overflow-hidden group bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={isParsingFile}
+                >
+                  {isParsingFile ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
+                      Escolher Arquivo CSV
+                    </>
+                  )}
+                </Button>
+                
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                
+                <p className="text-sm text-muted-foreground">
+                  Formatos aceitos: CSV, Excel (máx. 10MB)
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="fixed bottom-4 right-4 z-50 shadow-lg"
+          onClick={scrollToTop}
+          aria-label="Voltar ao topo"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </>
   );
 }
