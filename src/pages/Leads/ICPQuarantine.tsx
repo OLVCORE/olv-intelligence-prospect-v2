@@ -687,13 +687,7 @@ export default function ICPQuarantine() {
                   );
                 })()}
 
-                {/* Simple TOTVS Check - única visualização unificada */}
-                <SimpleTOTVSCheckCard
-                  companyId={company.id}
-                  companyName={company.razao_social}
-                  cnpj={company.cnpj}
-                  domain={(company as any).domain || (company as any).site || undefined}
-                />
+                {/* Simple TOTVS Check removido do Preview: Preview deve exibir apenas o rosto/Resumo cadastral da empresa */}
 
                 {/* Competitor Intelligence */}
                 {(() => {

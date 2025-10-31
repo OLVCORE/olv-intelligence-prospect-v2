@@ -70,6 +70,8 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [autoCheckAttempted, setAutoCheckAttempted] = useState(false);
+  // Resultado a exibir: prioriza o retorno imediato da mutação
+  const viewCheck = (checkMutation.data as any) || latestCheck as any;
 
   const handleCheck = () => {
     // Validar CNPJ se fornecido
@@ -400,13 +402,13 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {latestCheck ? 'Atualizar Verificação' : 'Verificar Agora'}
+              {viewCheck ? 'Atualizar Verificação' : 'Verificar Agora'}
             </>
           )}
         </Button>
       </div>
 
-      {!latestCheck && !isLoading && !autoCheckAttempted && (
+      {!viewCheck && !isLoading && !autoCheckAttempted && (
         <Alert>
           <AlertDescription>
             Nenhuma verificação realizada ainda. Clique em "Verificar Agora" para iniciar a análise.
@@ -430,32 +432,32 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
         </Alert>
       )}
 
-      {latestCheck && (
+      {viewCheck && (
         <div className="space-y-6">
           {/* Status Principal */}
           <div className="flex items-center justify-between p-6 bg-muted/50 rounded-lg">
             <div className="space-y-2">
-              {renderStatusBadge(latestCheck.status)}
-              {renderConfidenceBadge(latestCheck.confidence)}
+              {renderStatusBadge(viewCheck.status)}
+              {renderConfidenceBadge(viewCheck.confidence)}
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold">{latestCheck.total_evidences}</div>
+              <div className="text-3xl font-bold">{viewCheck.total_evidences}</div>
               <div className="text-sm text-muted-foreground">
-                {latestCheck.total_evidences === 1 ? 'Evidência' : 'Evidências'}
+                {viewCheck.total_evidences === 1 ? 'Evidência' : 'Evidências'}
               </div>
             </div>
           </div>
 
           {/* Reasoning */}
           <Alert className={
-            latestCheck.status === 'no-go' 
+            viewCheck.status === 'no-go' 
               ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30' :
-            latestCheck.status === 'go' 
+            viewCheck.status === 'go' 
               ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30' :
             'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30'
           }>
             <AlertDescription className="font-medium text-foreground">
-              {latestCheck.reasoning}
+              {viewCheck.reasoning}
             </AlertDescription>
           </Alert>
 
@@ -481,7 +483,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
           </div>
 
           {/* Evidências por Categoria */}
-          {(latestCheck.total_evidences > 0) && (((latestCheck as any).evidences_by_category) || latestCheck.evidences) && (
+          {(viewCheck.total_evidences > 0) && (((viewCheck as any).evidences_by_category) || viewCheck.evidences) && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm">📂 Evidências por Fonte:</h4>
               
@@ -493,12 +495,12 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                   docs_oficiais?: Evidence[];
                 };
 
-                if ((latestCheck as any).evidences_by_category) {
+                if ((viewCheck as any).evidences_by_category) {
                   // Nova estrutura do edge function
-                  evidences = (latestCheck as any).evidences_by_category;
-                } else if (latestCheck.evidences) {
+                  evidences = (viewCheck as any).evidences_by_category;
+                } else if (viewCheck.evidences) {
                   // Estrutura do banco de dados
-                  evidences = latestCheck.evidences as any;
+                  evidences = viewCheck.evidences as any;
                 } else {
                   evidences = { vagas: [], noticias: [], docs_oficiais: [] };
                 }
@@ -516,7 +518,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
           {/* Timestamp */}
           <div className="text-xs text-muted-foreground text-right">
-            Verificado em: {new Date(latestCheck.checked_at).toLocaleString('pt-BR')}
+            Verificado em: {new Date(viewCheck.checked_at).toLocaleString('pt-BR')}
           </div>
         </div>
       )}
