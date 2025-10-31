@@ -27,6 +27,19 @@ type ScoreBreakdown = {
   search_url?: string;
 };
 
+type CompanyMatch = {
+  name: string;
+  matchScore: number;
+  confidence: 'high' | 'medium' | 'low';
+  matchReasons: string[];
+  sources: string[];
+  signals: {
+    positive: string[];
+    negative: string[];
+    neutral: string[];
+  };
+};
+
 type Methodology = {
   total_sources_checked: number;
   sources_with_results: string[];
@@ -55,7 +68,45 @@ function tokenVariants(name: string): string[] {
   if (tokens.length >= 1) variants.push(tokens[0]);
   if (tokens.length >= 2) variants.push(tokens.slice(0, 2).join(" "));
   if (tokens.length >= 3) variants.push(tokens.slice(0, 3).join(" "));
+  if (tokens.length >= 4) variants.push(tokens.slice(0, 4).join(" "));
   return variants;
+}
+
+function calculateMatchScore(searchText: string, companyName: string): number {
+  const normalizedSearch = normalizeName(searchText);
+  const normalizedCompany = normalizeName(companyName);
+  const companyTokens = normalizedCompany.split(" ").filter(w => w.length > 2);
+  
+  let matchedTokens = 0;
+  for (const token of companyTokens) {
+    if (normalizedSearch.includes(token)) {
+      matchedTokens++;
+    }
+  }
+  
+  return Math.round((matchedTokens / companyTokens.length) * 100);
+}
+
+function extractCompanyNames(text: string): string[] {
+  const names: string[] = [];
+  const lines = text.split('\n');
+  
+  for (const line of lines) {
+    // Padrões comuns de nomes de empresas
+    const patterns = [
+      /([A-Z][A-Za-z\s]+(?:LTDA|SA|S\.A\.|ME|EPP|EIRELI))/g,
+      /(?:Empresa|Company|Corporation):\s*([A-Z][A-Za-z\s]+)/gi
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = line.match(pattern);
+      if (matches) {
+        names.push(...matches);
+      }
+    }
+  }
+  
+  return names;
 }
 
 function validateMention(text: string, companyName: string): boolean {
@@ -70,7 +121,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { company_id, company_name, cnpj, domain, region, sector, niche } = await req.json();
+    const { company_id, company_name, cnpj, domain, region, sector, niche, selected_company_name } = await req.json();
 
     if (!company_id || !company_name) {
       return new Response(JSON.stringify({ 
@@ -82,12 +133,14 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log(`[detect-intent-v3] 🔍 Analisando: ${company_name}`);
+    const searchCompanyName = selected_company_name || company_name;
+    console.log(`[detect-intent-v3] 🔍 Analisando: ${searchCompanyName}`);
 
     const signals: IntentSignal[] = [];
     const platformsScanned: string[] = [];
     const scoreBreakdown: ScoreBreakdown[] = [];
-    const variants = tokenVariants(company_name);
+    const companyMatches: Map<string, CompanyMatch> = new Map();
+    const variants = tokenVariants(searchCompanyName);
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
 
@@ -105,7 +158,170 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // JOB POSTINGS (LinkedIn Jobs)
+    // FONTES OFICIAIS E REGULATÓRIAS (20 pontos cada, max 100)
+    const officialSources = [
+      { name: 'CVM', url: 'https://www.gov.br/cvm/pt-br', points: 20 },
+      { name: 'B3', url: 'https://www.b3.com.br/pt_br/', points: 20 },
+      { name: 'Imprensa Nacional', url: 'https://www.in.gov.br/', points: 15 },
+      { name: 'B3 Empresas Net', url: 'https://www.b3.com.br/pt_br/produtos-e-servicos/solucoes-para-emissores/sistema-empresas-net/', points: 15 },
+      { name: 'B3 Investidor', url: 'https://www.investidor.b3.com.br/', points: 15 }
+    ];
+
+    for (const source of officialSources) {
+      platformsScanned.push(source.name);
+      let sourcePoints = 0;
+      
+      try {
+        const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y1`;
+        
+        const res = await fetch(searchUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`;
+            const names = extractCompanyNames(fullText);
+            
+            for (const foundName of names) {
+              const matchScore = calculateMatchScore(foundName, searchCompanyName);
+              
+              if (matchScore >= 60) {
+                if (!companyMatches.has(foundName)) {
+                  companyMatches.set(foundName, {
+                    name: foundName,
+                    matchScore,
+                    confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
+                    matchReasons: [`Encontrado em ${source.name}`, `Score de match: ${matchScore}%`],
+                    sources: [source.name],
+                    signals: { positive: [], negative: [], neutral: [] }
+                  });
+                } else {
+                  const match = companyMatches.get(foundName)!;
+                  match.sources.push(source.name);
+                  match.matchScore = Math.max(match.matchScore, matchScore);
+                }
+              }
+              
+              if (validateMention(fullText, searchCompanyName)) {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'official_record',
+                  score: source.points,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'high',
+                  reason: `Menção oficial em ${source.name}`
+                });
+                
+                const match = companyMatches.get(foundName);
+                if (match) {
+                  match.signals.positive.push(`Menção oficial em ${source.name}`);
+                }
+                break;
+              }
+            }
+          }
+          
+          scoreBreakdown.push({
+            source: source.name,
+            points_awarded: sourcePoints,
+            max_points: source.points,
+            reason: sourcePoints > 0 ? `Menção encontrada em ${source.name}` : 'Nenhuma menção encontrada',
+            search_url: searchUrl
+          });
+        }
+      } catch (e) {
+        console.error(`[detect-intent-v3] Erro ${source.name}:`, e);
+      }
+    }
+
+    // FONTES DE NOTÍCIAS E ANÁLISES (15 pontos cada, max 75)
+    const newsSources = [
+      { name: 'Valor Econômico', url: 'https://valor.globo.com/', points: 15 },
+      { name: 'Exame', url: 'https://exame.com/', points: 15 },
+      { name: 'Folha de S.Paulo', url: 'https://www.folha.uol.com.br/', points: 15 },
+      { name: 'Estadão', url: 'https://www.estadao.com.br/economia-negocios/', points: 15 },
+      { name: 'InfoMoney', url: 'https://www.infomoney.com.br/', points: 15 }
+    ];
+
+    for (const source of newsSources) {
+      platformsScanned.push(source.name);
+      let sourcePoints = 0;
+      
+      try {
+        const keywords = ['investimento', 'expansão', 'tecnologia', 'digital', 'transformação'];
+        const query = `"${variants[0]}" (${keywords.join(' OR ')}) site:${new URL(source.url).hostname}`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        
+        const res = await fetch(searchUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`;
+            const names = extractCompanyNames(fullText);
+            
+            for (const foundName of names) {
+              const matchScore = calculateMatchScore(foundName, searchCompanyName);
+              
+              if (matchScore >= 60) {
+                if (!companyMatches.has(foundName)) {
+                  companyMatches.set(foundName, {
+                    name: foundName,
+                    matchScore,
+                    confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
+                    matchReasons: [`Encontrado em ${source.name}`, `Score de match: ${matchScore}%`],
+                    sources: [source.name],
+                    signals: { positive: [], negative: [], neutral: [] }
+                  });
+                } else {
+                  const match = companyMatches.get(foundName)!;
+                  match.sources.push(source.name);
+                  match.matchScore = Math.max(match.matchScore, matchScore);
+                }
+              }
+              
+              if (validateMention(fullText, searchCompanyName)) {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'news_mention',
+                  score: source.points,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'medium',
+                  reason: `Notícia sobre investimento/expansão em ${source.name}`
+                });
+                
+                const match = companyMatches.get(foundName);
+                if (match) {
+                  match.signals.positive.push(`Notícia positiva em ${source.name}`);
+                }
+                break;
+              }
+            }
+          }
+          
+          scoreBreakdown.push({
+            source: source.name,
+            points_awarded: sourcePoints,
+            max_points: source.points,
+            reason: sourcePoints > 0 ? `Notícia relevante encontrada em ${source.name}` : 'Nenhuma notícia relevante',
+            search_url: searchUrl
+          });
+        }
+      } catch (e) {
+        console.error(`[detect-intent-v3] Erro ${source.name}:`, e);
+      }
+    }
+
+    // JOB POSTINGS (LinkedIn Jobs) - 30 pontos
     const jobKeywords = [
       'CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 
       'ERP', 'Transformação Digital', 'Diretor Tecnologia',
@@ -127,8 +343,32 @@ serve(async (req: Request) => {
           const title = item.title || '';
           const snippet = item.snippet || '';
           const fullText = `${title} ${snippet}`;
+          const names = extractCompanyNames(fullText);
           
-          if (validateMention(fullText, company_name)) {
+          for (const foundName of names) {
+            const matchScore = calculateMatchScore(foundName, searchCompanyName);
+            
+            if (matchScore >= 60) {
+              if (!companyMatches.has(foundName)) {
+                companyMatches.set(foundName, {
+                  name: foundName,
+                  matchScore,
+                  confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
+                  matchReasons: [`Encontrado no LinkedIn Jobs`, `Score de match: ${matchScore}%`],
+                  sources: ['LinkedIn Jobs'],
+                  signals: { positive: [], negative: [], neutral: [] }
+                });
+              } else {
+                const match = companyMatches.get(foundName)!;
+                if (!match.sources.includes('LinkedIn Jobs')) {
+                  match.sources.push('LinkedIn Jobs');
+                }
+                match.matchScore = Math.max(match.matchScore, matchScore);
+              }
+            }
+          }
+          
+          if (validateMention(fullText, searchCompanyName)) {
             jobPoints = 30;
             signals.push({
               type: 'job_posting',
@@ -140,6 +380,13 @@ serve(async (req: Request) => {
               confidence: 'high',
               reason: 'Vaga estratégica em TI indica investimento'
             });
+            
+            for (const match of companyMatches.values()) {
+              if (validateMention(fullText, match.name)) {
+                match.signals.positive.push('Vaga estratégica em TI');
+              }
+            }
+            break;
           }
         }
         
@@ -153,6 +400,22 @@ serve(async (req: Request) => {
       }
     } catch (e) {
       console.error('[detect-intent-v3] Erro Job Postings:', e);
+    }
+
+    // Se encontramos múltiplas empresas e não foi feita uma seleção ainda
+    const matchesArray = Array.from(companyMatches.values())
+      .sort((a, b) => b.matchScore - a.matchScore);
+    
+    if (!selected_company_name && matchesArray.length > 1) {
+      console.log(`[detect-intent-v3] 🔍 Múltiplas empresas encontradas: ${matchesArray.length}`);
+      return new Response(
+        JSON.stringify({
+          multiple_matches: true,
+          matches: matchesArray,
+          original_company_name: company_name
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Calcular score total e temperatura

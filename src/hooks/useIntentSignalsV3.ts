@@ -43,6 +43,19 @@ export interface Methodology {
   };
 }
 
+export interface CompanyMatch {
+  name: string;
+  matchScore: number;
+  confidence: 'high' | 'medium' | 'low';
+  matchReasons: string[];
+  sources: string[];
+  signals: {
+    positive: string[];
+    negative: string[];
+    neutral: string[];
+  };
+}
+
 export interface IntentSignalsV3Result {
   ok: boolean;
   score: number;
@@ -53,6 +66,9 @@ export interface IntentSignalsV3Result {
   sources_checked: number;
   platforms_scanned: string[];
   message: string;
+  multiple_matches?: boolean;
+  matches?: CompanyMatch[];
+  original_company_name?: string;
 }
 
 export function useLatestIntentSignalsV3(companyId?: string) {
@@ -85,7 +101,7 @@ export function useDetectIntentSignalsV3() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: IntentSignalsV3Params) => {
+    mutationFn: async (params: IntentSignalsV3Params & { selected_company_name?: string }) => {
       const { data, error } = await supabase.functions.invoke('detect-intent-signals-v3', {
         body: {
           company_id: params.companyId,
@@ -94,7 +110,8 @@ export function useDetectIntentSignalsV3() {
           domain: params.domain,
           region: params.region,
           sector: params.sector,
-          niche: params.niche
+          niche: params.niche,
+          selected_company_name: params.selected_company_name
         },
       });
 
@@ -102,6 +119,11 @@ export function useDetectIntentSignalsV3() {
       return data as IntentSignalsV3Result;
     },
     onSuccess: (data) => {
+      // Se há múltiplos matches, não fazer nada aqui (o componente vai lidar)
+      if (data.multiple_matches) {
+        return;
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['company'] });
       queryClient.invalidateQueries({ queryKey: ['intent-signals-v3'] });

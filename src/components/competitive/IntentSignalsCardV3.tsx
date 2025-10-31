@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, TrendingUp, Flame, Thermometer, Snowflake, CheckCircle2, AlertTriangle } from "lucide-react";
-import { useDetectIntentSignalsV3, useLatestIntentSignalsV3 } from "@/hooks/useIntentSignalsV3";
+import { useDetectIntentSignalsV3, useLatestIntentSignalsV3, CompanyMatch } from "@/hooks/useIntentSignalsV3";
+import { CompanyMatchSelectorDialog } from "./CompanyMatchSelectorDialog";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -26,6 +27,9 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
   const { data: latestDetection } = useLatestIntentSignalsV3(company?.id);
   const [showMethodology, setShowMethodology] = useState(false);
   const [showSignals, setShowSignals] = useState(true);
+  const [showMatchSelector, setShowMatchSelector] = useState(false);
+  const [companyMatches, setCompanyMatches] = useState<CompanyMatch[]>([]);
+  const [originalCompanyName, setOriginalCompanyName] = useState("");
 
   const handleDetect = () => {
     if (!company) {
@@ -41,6 +45,32 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
       region: company.region,
       sector: company.sector,
       niche: company.niche
+    }, {
+      onSuccess: (data) => {
+        if (data.multiple_matches && data.matches) {
+          setCompanyMatches(data.matches);
+          setOriginalCompanyName(data.original_company_name || company.name);
+          setShowMatchSelector(true);
+        }
+      }
+    });
+  };
+
+  const handleSelectMatch = (match: CompanyMatch) => {
+    if (!company) return;
+    
+    setShowMatchSelector(false);
+    
+    // Re-executar análise com o nome selecionado
+    detectMutation.mutate({
+      companyId: company.id,
+      companyName: company.name,
+      cnpj: company.cnpj,
+      domain: company.domain,
+      region: company.region,
+      sector: company.sector,
+      niche: company.niche,
+      selected_company_name: match.name
     });
   };
 
@@ -71,8 +101,18 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
   const signals = latestDetection?.signals as any[] || [];
 
   return (
-    <Card>
-      <CardHeader>
+    <>
+      <CompanyMatchSelectorDialog
+        open={showMatchSelector}
+        onOpenChange={setShowMatchSelector}
+        originalCompanyName={originalCompanyName}
+        matches={companyMatches}
+        onSelectMatch={handleSelectMatch}
+        isProcessing={detectMutation.isPending}
+      />
+      
+      <Card>
+        <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -318,5 +358,6 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
