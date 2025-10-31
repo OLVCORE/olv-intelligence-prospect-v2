@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
@@ -92,6 +92,56 @@ export default function ICPBulkAnalysisWithMapping() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Aviso único de linhas descartadas durante análise para evitar re-render loop
+  const droppedToastShownRef = useRef(false);
+  useEffect(() => {
+    if (step !== 'analyzing' || droppedToastShownRef.current) return;
+
+    const fieldMap: Record<string, string> = {};
+    mappings.forEach(m => {
+      if (m.systemField && m.systemField !== '__SKIP__') {
+        fieldMap[m.csvColumn] = m.systemField;
+      }
+    });
+
+    const mappedAll = allData.map(row => {
+      const company: any = {};
+      Object.entries(row).forEach(([csvCol, value]) => {
+        const systemField = fieldMap[csvCol];
+        if (!systemField || value == null) return;
+        const strVal = String(value).trim();
+        if (systemField === 'cnpj') {
+          const cleaned = strVal.replace(/\D/g, '');
+          if (cleaned) company.cnpj = cleaned;
+        } else if (systemField === 'razao_social' || systemField === 'nome_da_empresa') {
+          const trivial = ['sim', 'não', 'nao', 'n/a', 'na'];
+          if (strVal && strVal.length >= 3 && !trivial.includes(strVal.toLowerCase())) {
+            company[systemField] = strVal;
+          }
+        } else {
+          company[systemField] = value;
+        }
+      });
+      return company;
+    });
+
+    const mappedData = mappedAll.filter((c) => {
+      const cnpj = String(c?.cnpj || '').replace(/\D/g, '');
+      const hasName = Boolean(c?.razao_social || c?.nome_da_empresa);
+      return cnpj.length === 14 && hasName;
+    });
+
+    const dropped = mappedAll.length - mappedData.length;
+    if (dropped > 0) {
+      toast({
+        title: 'Linhas ignoradas',
+        description: `${dropped} linha(s) foram ignoradas por CNPJ ou Razão Social inválidos`,
+      });
+    }
+
+    droppedToastShownRef.current = true;
+  }, [step, mappings, allData, toast]);
 
   // Handler para quando o processamento ao vivo terminar
   const handleLiveProcessingComplete = useCallback((results: any[]) => {
@@ -1570,12 +1620,7 @@ export default function ICPBulkAnalysisWithMapping() {
     });
 
     const dropped = mappedAll.length - mappedData.length;
-    if (dropped > 0) {
-      toast({
-        title: 'Linhas ignoradas',
-        description: `${dropped} linha(s) foram ignoradas por CNPJ ou Razão Social inválidos`,
-      });
-    }
+    // Aviso exibido via useEffect para evitar efeitos colaterais no render
 
     return (
       <>

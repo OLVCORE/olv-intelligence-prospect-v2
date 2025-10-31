@@ -57,39 +57,33 @@ export interface GoogleSearchOptions {
   exactTerms?: string; // exact phrase to match
 }
 
-class GoogleSearchAdapterImpl implements GoogleSearchAdapter {
-  private apiKey: string;
-  private searchEngineId: string;
-  private baseUrl = 'https://www.googleapis.com/customsearch/v1';
+import { supabase } from '@/integrations/supabase/client';
 
-  constructor(apiKey: string, searchEngineId: string) {
-    this.apiKey = apiKey;
-    this.searchEngineId = searchEngineId;
-  }
+class GoogleSearchAdapterImpl implements GoogleSearchAdapter {
+  constructor(private apiKey: string, private searchEngineId: string) {}
 
   async search(query: string, options: GoogleSearchOptions = {}): Promise<GoogleSearchResponse | null> {
     try {
-      const params = new URLSearchParams({
-        key: this.apiKey,
-        cx: this.searchEngineId,
-        q: query,
-        num: (options.numResults || 10).toString(),
-        ...(options.language && { lr: `lang_${options.language}` }),
-        ...(options.dateRestrict && { dateRestrict: options.dateRestrict }),
-        ...(options.siteSearch && { siteSearch: options.siteSearch }),
-        ...(options.exactTerms && { exactTerms: options.exactTerms }),
+      const { data, error } = await supabase.functions.invoke('google-search', {
+        body: {
+          query,
+          type: 'web',
+          options: {
+            numResults: options.numResults || 10,
+            language: options.language,
+            dateRestrict: options.dateRestrict,
+            siteSearch: options.siteSearch,
+            exactTerms: options.exactTerms,
+          }
+        }
       });
 
-      const response = await fetch(`${this.baseUrl}?${params}`);
-      
-      if (!response.ok) {
-        console.error('[Google CSE] Search error:', response.status);
+      if (error) {
+        console.error('[Google CSE] Search error via function:', error);
         return null;
       }
 
-      const result = await response.json() as GoogleSearchResponse;
-      console.log('[Google CSE] ✅ Search completed:', result.searchInformation);
-      return result;
+      return (data as GoogleSearchResponse) || null;
     } catch (error) {
       console.error('[Google CSE] Erro na busca:', error);
       return null;
@@ -98,26 +92,14 @@ class GoogleSearchAdapterImpl implements GoogleSearchAdapter {
 
   async searchNews(query: string): Promise<GoogleSearchResult[]> {
     try {
-      // Buscar em sites de notícias brasileiros e internacionais
-      const newsSites = [
-        'g1.globo.com',
-        'folha.uol.com.br',
-        'estadao.com.br',
-        'valor.com.br',
-        'exame.com',
-        'infomoney.com.br'
-      ];
-
-      const siteQuery = newsSites.map(site => `site:${site}`).join(' OR ');
-      const fullQuery = `${query} (${siteQuery})`;
-
-      const response = await this.search(fullQuery, {
-        numResults: 10,
-        language: 'pt',
-        dateRestrict: 'm6' // últimos 6 meses
+      const { data, error } = await supabase.functions.invoke('google-search', {
+        body: { query, type: 'news' }
       });
-
-      return response?.items || [];
+      if (error) {
+        console.error('[Google CSE] News search error via function:', error);
+        return [];
+      }
+      return (data?.items || []) as GoogleSearchResult[];
     } catch (error) {
       console.error('[Google CSE] Erro na busca de notícias:', error);
       return [];
@@ -126,29 +108,14 @@ class GoogleSearchAdapterImpl implements GoogleSearchAdapter {
 
   async searchSocial(companyName: string, platform?: string): Promise<GoogleSearchResult[]> {
     try {
-      let siteQuery = '';
-      
-      if (platform) {
-        const platformDomains: Record<string, string> = {
-          linkedin: 'linkedin.com',
-          facebook: 'facebook.com',
-          instagram: 'instagram.com',
-          twitter: 'twitter.com',
-          youtube: 'youtube.com'
-        };
-        siteQuery = `site:${platformDomains[platform.toLowerCase()]}`;
-      } else {
-        // Buscar em todas as redes sociais
-        siteQuery = 'site:linkedin.com OR site:facebook.com OR site:instagram.com OR site:twitter.com OR site:youtube.com';
-      }
-
-      const query = `"${companyName}" ${siteQuery}`;
-      const response = await this.search(query, {
-        numResults: 5,
-        language: 'pt'
+      const { data, error } = await supabase.functions.invoke('google-search', {
+        body: { query: companyName, type: 'social', options: { platform } }
       });
-
-      return response?.items || [];
+      if (error) {
+        console.error('[Google CSE] Social search error via function:', error);
+        return [];
+      }
+      return (data?.items || []) as GoogleSearchResult[];
     } catch (error) {
       console.error('[Google CSE] Erro na busca social:', error);
       return [];
