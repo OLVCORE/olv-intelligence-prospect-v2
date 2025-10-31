@@ -1,11 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { useSimpleTOTVSCheck, useLatestSimpleTOTVSCheck, type Evidence } from "@/hooks/useSimpleTOTVSCheck";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isValidUrl, formatWebsiteUrl } from "@/lib/utils/urlHelpers";
+import { toast } from "sonner";
 
 interface SimpleTOTVSCheckCardProps {
   companyId: string;
@@ -38,6 +39,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const { data: latestCheck, isLoading: isLoadingLatest } = useLatestSimpleTOTVSCheck(companyId);
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const handleCheck = () => {
     checkMutation.mutate({
@@ -46,6 +48,17 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
       cnpj,
       domain
     });
+  };
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(url);
+      toast.success('Link copiado!');
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch (err) {
+      toast.error('Erro ao copiar link');
+    }
   };
 
   const toggleCategory = (category: string) => {
@@ -197,6 +210,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
             {evidences.map((evidence, idx) => {
               const url = formatWebsiteUrl(evidence.url);
               const isLinkValid = isValidUrl(evidence.url);
+              const isCopied = copiedUrl === evidence.url;
               
               return (
                 <div key={idx} className="bg-card dark:bg-card/50 rounded p-3 border border-border">
@@ -204,21 +218,38 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                     <h4 className="font-medium text-sm flex-1">
                       {highlightText(evidence.title)}
                     </h4>
-                    {isLinkValid && url ? (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:text-primary/80 flex-shrink-0"
-                        title={url}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-muted">
-                        Link indisponível
-                      </Badge>
-                    )}
+                    <div className="flex gap-1 flex-shrink-0">
+                      {isLinkValid && url ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => copyToClipboard(evidence.url)}
+                            title="Copiar link"
+                          >
+                            {isCopied ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:text-primary/80 p-1"
+                            title="Abrir link"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-muted">
+                          Link indisponível
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="text-xs text-muted-foreground mb-3 leading-relaxed">
@@ -226,7 +257,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                   </div>
 
                   {/* Cross-matching visual */}
-                  <div className="flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
                     <span className="text-muted-foreground flex items-center gap-1">
                       🔍 {evidence.source}
                     </span>
@@ -243,10 +274,22 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                     </div>
                   </div>
 
-                  {/* URL completa para referência */}
+                  {/* URL completa com aviso */}
                   {isLinkValid && url && (
-                    <div className="mt-2 text-xs text-muted-foreground/70 truncate" title={url}>
-                      🔗 {url}
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground/70">🔗</span>
+                        <span className="flex-1 truncate text-muted-foreground/70" title={url}>
+                          {url}
+                        </span>
+                      </div>
+                      {url.includes('.pdf') && (
+                        <Alert className="mt-2 py-1.5 px-2">
+                          <AlertDescription className="text-xs">
+                            ⚠️ Se o PDF não abrir, o documento pode ter sido removido ou requer autenticação
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   )}
                 </div>
