@@ -16,10 +16,10 @@ serve(async (req: Request) => {
   try {
     const { company_id, company_name, cnpj, domain, state, city, sector_code, niche_code } = await req.json();
 
-    if (!company_id || !company_name || !state || !niche_code) {
+    if (!company_id || !company_name || !state) {
       return new Response(JSON.stringify({ 
-        error: 'company_id, company_name, state, niche_code required',
-        hint: 'Selecione empresa, estado e nicho'
+        error: 'company_id, company_name, state required',
+        hint: 'Selecione empresa e estado'
       }), { 
         status: 400, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -32,26 +32,27 @@ serve(async (req: Request) => {
     );
 
     // ========================================
-    // BUSCAR NICHO (palavras-chave específicas)
+    // BUSCAR NICHO (opcional - palavras-chave específicas)
     // ========================================
-    const { data: niche, error: nicheError } = await sb
-      .from('niches')
-      .select('*')
-      .eq('niche_code', niche_code)
-      .single();
+    let niche: any = null;
+    
+    if (niche_code) {
+      const { data: nicheData, error: nicheError } = await sb
+        .from('niches')
+        .select('*')
+        .eq('niche_code', niche_code)
+        .single();
 
-    if (nicheError || !niche) {
-      return new Response(JSON.stringify({ 
-        error: 'Nicho não encontrado',
-        hint: `Nicho '${niche_code}' não existe no banco`
-      }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      if (!nicheError && nicheData) {
+        niche = nicheData;
+        console.log(`[detect-totvs-v5] Nicho: ${niche.niche_name}`);
+        console.log(`[detect-totvs-v5] Keywords: ${niche.keywords.join(', ')}`);
+      } else {
+        console.warn(`⚠️ Nicho '${niche_code}' não encontrado - continuando sem palavras-chave específicas`);
+      }
+    } else {
+      console.log('ℹ️ Nenhum nicho fornecido - usando busca genérica');
     }
-
-    console.log(`[detect-totvs-v5] Nicho: ${niche.niche_name}`);
-    console.log(`[detect-totvs-v5] Keywords: ${niche.keywords.join(', ')}`);
 
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
@@ -66,7 +67,11 @@ serve(async (req: Request) => {
     // ========================================
     // QUERY CIRÚRGICA (nicho + estado + produtos TOTVS)
     // ========================================
-    const nicheKeywords = niche.keywords.slice(0, 3).map((k: string) => `"${k}"`).join(' OR ');
+    // Se não tem nicho, usa palavras-chave genéricas
+    const nicheKeywords = niche?.keywords?.length > 0 
+      ? niche.keywords.slice(0, 3).map((k: string) => `"${k}"`).join(' OR ')
+      : '"ERP" OR "sistema de gestão" OR "automação"'; // Fallback genérico
+      
     const totvsProducts = ['Protheus', 'RM TOTVS', 'Datasul', 'Fluig'].map(p => `"${p}"`).join(' OR ');
     
     const linkedinQuery = `"${company_name}" AND (${nicheKeywords}) AND (${totvsProducts}) AND "${state}" site:linkedin.com/jobs`;
@@ -93,8 +98,10 @@ serve(async (req: Request) => {
           // Validar estado
           const mentionsState = fullText.includes(state.toLowerCase());
 
-          // Validar nicho
-          const mentionsNiche = niche.keywords.some((k: string) => fullText.includes(k.toLowerCase()));
+          // Validar nicho (opcional)
+          const mentionsNiche = niche?.keywords 
+            ? niche.keywords.some((k: string) => fullText.includes(k.toLowerCase()))
+            : true; // Se não tem nicho, não valida
 
           // Validar produto TOTVS
           const mentionsTOTVS = ['protheus', 'rm totvs', 'datasul', 'fluig'].some((p: string) => fullText.includes(p));
@@ -111,7 +118,7 @@ serve(async (req: Request) => {
               url: item.link,
               timestamp: new Date().toISOString(),
               confidence: 'high',
-              reason: `Vaga menciona ${company_name} + ${niche.niche_name} + produtos TOTVS em ${state}`
+              reason: `Vaga menciona ${company_name} + ${niche?.niche_name || 'critérios gerais'} + produtos TOTVS em ${state}`
             });
 
             auditLogs.push({
@@ -168,7 +175,7 @@ serve(async (req: Request) => {
       score: normalizedScore,
       status,
       evidences,
-      niche: niche.niche_name,
+      niche: niche?.niche_name || 'Análise Genérica',
       audit: {
         accepted: auditLogs.filter(l => l.action === 'accepted_evidence').length,
         rejected: auditLogs.filter(l => l.action === 'rejected_evidence').length

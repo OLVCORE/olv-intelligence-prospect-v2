@@ -39,10 +39,7 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
       return;
     }
 
-    if (!company.niche_code) {
-      toast.error("Nicho é obrigatório para análise v5.0");
-      return;
-    }
+    // Campo niche_code é opcional - não mais obrigatório
 
     detectMutation.mutate({
       companyId: company.id,
@@ -52,7 +49,7 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
       state: company.state,
       city: company.city,
       sectorCode: company.sector_code,
-      nicheCode: company.niche_code,
+      nicheCode: company.niche_code, // Opcional
     });
   };
 
