@@ -108,9 +108,14 @@ serve(async (req: Request) => {
     // ========================================
     // JOB POSTINGS (LinkedIn Jobs)
     // ========================================
-    const jobKeywords = ['CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 'ERP', 'Transformação Digital'];
+    // 📌 MC2: Keywords expandidas e realistas
+    const jobKeywords = [
+      'CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 
+      'ERP', 'Transformação Digital', 'Diretor Tecnologia',
+      'VP Technology', 'Head TI', 'Coordenador TI'
+    ];
     const jobQuery = `"${variants[0]}" AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
-    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=m3`;
+    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
     
     platformsScanned.push('LinkedIn Jobs');
     let jobPoints = 0;
@@ -155,16 +160,22 @@ serve(async (req: Request) => {
       max_points: 30,
       reason: jobPoints > 0
         ? `Vaga de TI encontrada - empresa está investindo em tecnologia`
-        : `Nenhuma vaga de TI encontrada nos últimos 3 meses`,
+        : `Nenhuma vaga de TI encontrada no último ano`,
       search_url: jobUrl // 📌 MC3: Link da busca
     });
 
     // ========================================
     // GOOGLE NEWS
     // ========================================
-    const newsKeywords = ['expansão', 'IPO', 'transformação digital', 'investimento', 'modernização', 'crescimento'];
+    // 📌 MC2: Keywords expandidas e realistas BR
+    const newsKeywords = [
+      'expansão', 'IPO', 'transformação digital', 'investimento', 
+      'modernização', 'crescimento', 'inauguração', 'nova unidade',
+      'aquisição', 'fusão', 'rodada de investimento', 'Series A',
+      'Series B', 'captação', 'aporte', 'venture capital'
+    ];
     const newsQuery = `"${variants[0]}" AND (${newsKeywords.map(k => `"${k}"`).join(' OR ')})`;
-    const newsUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(newsQuery)}&num=5&dateRestrict=m6`;
+    const newsUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(newsQuery)}&num=5&dateRestrict=y1`;
     
     platformsScanned.push('Google News');
     let newsPoints = 0;
@@ -209,15 +220,21 @@ serve(async (req: Request) => {
       max_points: 25,
       reason: newsPoints > 0
         ? `Notícia recente indica momento favorável para investimento`
-        : `Nenhuma notícia relevante encontrada nos últimos 6 meses`,
+        : `Nenhuma notícia relevante encontrada no último ano`,
       search_url: newsUrl // 📌 MC3: Link da busca
     });
 
     // ========================================
     // LINKEDIN ACTIVITY
     // ========================================
-    const linkedinQuery = `"${variants[0]}" site:linkedin.com/posts AND (contratando OR hiring OR vagas OR oportunidades)`;
-    const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5&dateRestrict=m3`;
+    // 📌 MC2: Keywords expandidas
+    const linkedinActivityKeywords = [
+      'contratando', 'hiring', 'vagas', 'oportunidades',
+      'estamos crescendo', 'join our team', 'we are hiring',
+      'nova equipe', 'time em expansão'
+    ];
+    const linkedinQuery = `"${variants[0]}" site:linkedin.com/posts AND (${linkedinActivityKeywords.map(k => `"${k}"`).join(' OR ')})`;
+    const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5&dateRestrict=m6`;
     
     platformsScanned.push('LinkedIn Activity');
     let linkedinPoints = 0;
@@ -260,7 +277,7 @@ serve(async (req: Request) => {
       max_points: 20,
       reason: linkedinPoints > 0
         ? `Atividade recente no LinkedIn indica crescimento`
-        : `Pouca atividade no LinkedIn nos últimos 3 meses`,
+        : `Pouca atividade no LinkedIn nos últimos 6 meses`,
       search_url: linkedinUrl // 📌 MC3: Link da busca
     });
 
