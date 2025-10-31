@@ -15,7 +15,6 @@ import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
 import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
-import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
 import { useMultipleSimpleTOTVSChecks } from '@/hooks/useSimpleTOTVSCheckBatch';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
@@ -28,8 +27,6 @@ export default function ICPQuarantine() {
   const [searchQuery, setSearchQuery] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewCompany, setPreviewCompany] = useState<any>(null);
-  const [totvsCheckDialogOpen, setTotvsCheckDialogOpen] = useState(false);
-  const [selectedTotvsCheckCompany, setSelectedTotvsCheckCompany] = useState<any>(null);
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -178,6 +175,10 @@ export default function ICPQuarantine() {
   };
 
   const handleOpenTotvsCheck = (company: any) => {
+    if (!company?.id) {
+      toast.error('ID da empresa não encontrado');
+      return;
+    }
     const name = encodeURIComponent(company.razao_social || 'Empresa');
     const cnpj = encodeURIComponent(company.cnpj || '');
     const domain = encodeURIComponent(company.domain || '');
@@ -805,19 +806,6 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
-
-      {/* TOTVS Check Dialog */}
-      <SimpleTOTVSCheckDialog
-        companyId={selectedTotvsCheckCompany?.id || ""}
-        companyName={selectedTotvsCheckCompany?.razao_social || "Empresa"}
-        cnpj={selectedTotvsCheckCompany?.cnpj || undefined}
-        domain={selectedTotvsCheckCompany?.domain || undefined}
-        open={totvsCheckDialogOpen && !!selectedTotvsCheckCompany}
-        onOpenChange={(open) => {
-          setTotvsCheckDialogOpen(open);
-          if (!open) setSelectedTotvsCheckCompany(null);
-        }}
-      />
     </div>
   );
 }
