@@ -30,6 +30,12 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
   const [showMatchSelector, setShowMatchSelector] = useState(false);
   const [companyMatches, setCompanyMatches] = useState<CompanyMatch[]>([]);
   const [originalCompanyName, setOriginalCompanyName] = useState("");
+  const [showOpenWeb, setShowOpenWeb] = useState(true);
+  
+  const OPEN_WEB_SOURCES = new Set([
+    'CVM RAD','B3 BVMF','Serasa Experian','ADVFN Brasil','Investidor10','Banco Central','Jusbrasil','IstoÉ Dinheiro','Alta Administração','Public Now','B3 Site Empresas','Reclame Aqui','TMA Brasil'
+  ]);
+
 
   const handleDetect = () => {
     if (!company) {
@@ -283,6 +289,52 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
                       </span>
                     </div>
                   </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {/* Open Web - nova gaveta */}
+            {methodology && methodology.score_breakdown && (
+              <Collapsible open={showOpenWeb} onOpenChange={setShowOpenWeb}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between mt-4">
+                    <span className="flex items-center gap-2">🌐 Open Web</span>
+                    {showOpenWeb ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 mt-4 border rounded-lg p-4 bg-muted/30">
+                  {methodology.score_breakdown
+                    .filter((item: any) => OPEN_WEB_SOURCES.has(item.source))
+                    .map((item: any, idx: number) => (
+                      <div key={`ow-${idx}`} className={`p-3 rounded-lg border ${item.points_awarded > 0 ? 'bg-green-50 border-green-200' : 'bg-muted/50'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium flex items-center gap-2">
+                            {item.points_awarded > 0 ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            {item.source}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={item.points_awarded > 0 ? 'default' : 'outline'}>
+                              {item.points_awarded}/{item.max_points} pts
+                            </Badge>
+                            {item.search_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(item.search_url, '_blank')}
+                                className="h-6 px-2"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{item.reason}</p>
+                      </div>
+                    ))}
                 </CollapsibleContent>
               </Collapsible>
             )}

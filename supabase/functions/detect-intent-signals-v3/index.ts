@@ -76,6 +76,33 @@ function digitsOnly(s: string): string {
   return (s || '').replace(/\D/g, '');
 }
 
+async function serperSearch(query: string, num: number = 5) {
+  const apiKey = Deno.env.get('SERPER_API_KEY');
+  if (!apiKey) {
+    console.warn('[detect-intent-v3] SERPER_API_KEY não configurada');
+    return [] as Array<{ title: string; link: string; snippet: string }>;
+  }
+  const res = await fetch('https://google.serper.dev/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': apiKey,
+    },
+    body: JSON.stringify({ q: query, gl: 'br', hl: 'pt-BR', num }),
+  });
+  if (!res.ok) {
+    console.warn('[detect-intent-v3] Serper falhou', await res.text());
+    return [];
+  }
+  const data = await res.json();
+  const organic = data.organic || [];
+  return organic.map((it: any) => ({
+    title: it.title,
+    link: it.link,
+    snippet: it.snippet || it.description || '',
+  }));
+}
+
 // Palavras-chave negativas fortes (legal/financeiro)
 const negativeKeywords = [
   'recuperacao judicial',
@@ -194,12 +221,8 @@ serve(async (req: Request) => {
         const host = new URL(source.url).hostname;
         const baseTerm = variants[0] || searchCompanyName;
         const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
-        
-        const res = await fetch(searchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
+        searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        const items = await serperSearch(query, 5);
           
           // Se encontrou resultados, é uma menção válida
           if (items.length > 0) {
@@ -309,12 +332,9 @@ serve(async (req: Request) => {
         const host = new URL(source.url).hostname;
         const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
         const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        const items = await serperSearch(query, 3);
         
-        const res = await fetch(searchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
           
           for (const item of items) {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
@@ -361,12 +381,9 @@ serve(async (req: Request) => {
         const host = new URL(source.url).hostname;
         const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
         const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        const items = await serperSearch(query, 3);
         
-        const res = await fetch(searchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
           
           for (const item of items) {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
@@ -411,12 +428,9 @@ serve(async (req: Request) => {
         const host = new URL(source.url).hostname;
         const baseTerm = variants[0] || searchCompanyName;
         const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
+        searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        const items = await serperSearch(query, 3);
         
-        const res = await fetch(searchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
           
           for (const item of items) {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
@@ -462,12 +476,9 @@ serve(async (req: Request) => {
         const host = new URL(source.url).hostname;
         const baseTerm = variants[0] || searchCompanyName;
         const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
+        searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        const items = await serperSearch(query, 5);
         
-        const res = await fetch(searchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || [];
           
           for (const item of items) {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
@@ -527,16 +538,13 @@ serve(async (req: Request) => {
     const baseTerm = variants[0] || searchCompanyName;
     const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
     const jobQuery = `${left} AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
-    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
+    const jobUrl = `https://www.google.com/search?q=${encodeURIComponent(jobQuery)}`;
     
     platformsScanned.push('LinkedIn Jobs');
     let jobPoints = 0;
     
     try {
-      const res = await fetch(jobUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
+      const items = await serperSearch(jobQuery, 5);
         
         for (const item of items) {
           const title = item.title || '';
