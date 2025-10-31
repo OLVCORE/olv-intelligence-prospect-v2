@@ -43,6 +43,53 @@ function validateMention(text: string, companyName: string): boolean {
   return variants.some(v => normalized.includes(v));
 }
 
+async function searchWithFallback(query: string, num: number = 5): Promise<any[]> {
+  // Primeiro tenta Serper (mais confiável)
+  const serperKey = Deno.env.get('SERPER_API_KEY');
+  if (serperKey) {
+    try {
+      const res = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': serperKey,
+        },
+        body: JSON.stringify({ q: query, gl: 'br', hl: 'pt-BR', num }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const organic = data.organic || [];
+        return organic.map((item: any) => ({
+          title: item.title,
+          snippet: item.snippet || item.description || '',
+          link: item.link
+        }));
+      }
+    } catch (e) {
+      console.warn('[detect-intent-v2] Serper falhou, tentando Google CSE:', e);
+    }
+  }
+
+  // Fallback: Google CSE (pode retornar 403)
+  const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
+  const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
+  
+  if (googleApiKey && googleCseId) {
+    try {
+      const url = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=${num}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return data.items || [];
+      }
+    } catch (e) {
+      console.warn('[detect-intent-v2] Google CSE falhou:', e);
+    }
+  }
+
+  return []; // Sem resultados
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -66,18 +113,6 @@ serve(async (req: Request) => {
     const signals: IntentSignal[] = [];
     const platformsScanned: string[] = [];
     const variants = tokenVariants(company_name);
-    const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
-    const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
-
-    if (!googleApiKey || !googleCseId) {
-      return new Response(JSON.stringify({ 
-        error: 'Google API not configured',
-        hint: 'Configure GOOGLE_API_KEY and GOOGLE_CSE_ID'
-      }), { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
 
     const sb = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -88,36 +123,31 @@ serve(async (req: Request) => {
     
     const jobKeywords = ['CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 'ERP', 'Transformação Digital'];
     const jobQuery = `"${variants[0]}" AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
-    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=m3`;
     
     platformsScanned.push('LinkedIn Jobs');
     
     try {
-      const res = await fetch(jobUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
-        console.log(`[detect-intent-v2] Job Postings: ${items.length} resultados`);
+      const items = await searchWithFallback(jobQuery, 5);
+      console.log(`[detect-intent-v2] Job Postings: ${items.length} resultados`);
+      
+      for (const item of items) {
+        const title = item.title || '';
+        const snippet = item.snippet || '';
+        const fullText = `${title} ${snippet}`;
         
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            const matchedKeyword = jobKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
-            console.log(`[detect-intent-v2] ✅ Job Posting: ${title}`);
-            signals.push({
-              type: 'job_posting',
-              score: 30,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'high',
-              reason: `Vaga para ${matchedKeyword} indica investimento em TI`
-            });
-          }
+        if (validateMention(fullText, company_name)) {
+          const matchedKeyword = jobKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
+          console.log(`[detect-intent-v2] ✅ Job Posting: ${title}`);
+          signals.push({
+            type: 'job_posting',
+            score: 30,
+            title,
+            description: snippet,
+            url: item.link,
+            timestamp: new Date().toISOString(),
+            confidence: 'high',
+            reason: `Vaga para ${matchedKeyword} indica investimento em TI`
+          });
         }
       }
     } catch (e) {
@@ -128,36 +158,31 @@ serve(async (req: Request) => {
     
     const newsKeywords = ['expansão', 'IPO', 'transformação digital', 'investimento', 'modernização', 'crescimento'];
     const newsQuery = `"${variants[0]}" AND (${newsKeywords.map(k => `"${k}"`).join(' OR ')})`;
-    const newsUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(newsQuery)}&num=5&dateRestrict=m6`;
     
     platformsScanned.push('Google News');
     
     try {
-      const res = await fetch(newsUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
-        console.log(`[detect-intent-v2] News: ${items.length} resultados`);
+      const items = await searchWithFallback(newsQuery, 5);
+      console.log(`[detect-intent-v2] News: ${items.length} resultados`);
+      
+      for (const item of items) {
+        const title = item.title || '';
+        const snippet = item.snippet || '';
+        const fullText = `${title} ${snippet}`;
         
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            const matchedKeyword = newsKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
-            console.log(`[detect-intent-v2] ✅ News: ${title}`);
-            signals.push({
-              type: 'news',
-              score: 25,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'high',
-              reason: `Notícia sobre ${matchedKeyword} indica momento de investimento`
-            });
-          }
+        if (validateMention(fullText, company_name)) {
+          const matchedKeyword = newsKeywords.find(k => fullText.toLowerCase().includes(k.toLowerCase()));
+          console.log(`[detect-intent-v2] ✅ News: ${title}`);
+          signals.push({
+            type: 'news',
+            score: 25,
+            title,
+            description: snippet,
+            url: item.link,
+            timestamp: new Date().toISOString(),
+            confidence: 'high',
+            reason: `Notícia sobre ${matchedKeyword} indica momento de investimento`
+          });
         }
       }
     } catch (e) {
@@ -167,35 +192,30 @@ serve(async (req: Request) => {
     console.log(`[detect-intent-v2] Buscando LinkedIn Activity...`);
     
     const linkedinQuery = `"${variants[0]}" AND (modernização OR "investimento em TI" OR "transformação digital") site:linkedin.com/posts`;
-    const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5&dateRestrict=m3`;
     
     platformsScanned.push('LinkedIn Activity');
     
     try {
-      const res = await fetch(linkedinUrl);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || [];
-        console.log(`[detect-intent-v2] LinkedIn Activity: ${items.length} resultados`);
+      const items = await searchWithFallback(linkedinQuery, 5);
+      console.log(`[detect-intent-v2] LinkedIn Activity: ${items.length} resultados`);
+      
+      for (const item of items) {
+        const title = item.title || '';
+        const snippet = item.snippet || '';
+        const fullText = `${title} ${snippet}`;
         
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`;
-          
-          if (validateMention(fullText, company_name)) {
-            console.log(`[detect-intent-v2] ✅ LinkedIn Activity: ${title}`);
-            signals.push({
-              type: 'linkedin_activity',
-              score: 15,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'medium',
-              reason: `Post no LinkedIn sobre investimento em tecnologia`
-            });
-          }
+        if (validateMention(fullText, company_name)) {
+          console.log(`[detect-intent-v2] ✅ LinkedIn Activity: ${title}`);
+          signals.push({
+            type: 'linkedin_activity',
+            score: 15,
+            title,
+            description: snippet,
+            url: item.link,
+            timestamp: new Date().toISOString(),
+            confidence: 'medium',
+            reason: `Post no LinkedIn sobre investimento em tecnologia`
+          });
         }
       }
     } catch (e) {
