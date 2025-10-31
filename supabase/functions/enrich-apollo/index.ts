@@ -304,7 +304,7 @@ serve(async (req: Request) => {
                     location_state: src?.state || null,
                     location_country: src?.country || null,
                     title_at_company: src?.job_title || null,
-                    is_current: true,
+                    is_current: src?.is_current_at_company ?? false,
                     source: 'apollo'
                   };
                 });
@@ -331,7 +331,7 @@ serve(async (req: Request) => {
                   location_state: src?.state || null,
                   location_country: src?.country || null,
                   title_at_company: src?.job_title || null,
-                  is_current: true,
+                  is_current: src?.is_current_at_company ?? false,
                   source: 'apollo'
                 };
               });
@@ -376,7 +376,7 @@ serve(async (req: Request) => {
                       location_state: src?.state || null,
                       location_country: src?.country || null,
                       title_at_company: src?.job_title || null,
-                      is_current: true,
+                      is_current: src?.is_current_at_company ?? false,
                       source: 'apollo'
                     };
                   });
@@ -403,7 +403,7 @@ serve(async (req: Request) => {
                   location_state: src?.state || null,
                   location_country: src?.country || null,
                   title_at_company: src?.job_title || null,
-                  is_current: true,
+                  is_current: src?.is_current_at_company ?? false,
                   source: 'apollo'
                 };
               });
@@ -448,7 +448,7 @@ serve(async (req: Request) => {
                       location_state: src?.state || null,
                       location_country: src?.country || null,
                       title_at_company: src?.job_title || null,
-                      is_current: true,
+                      is_current: src?.is_current_at_company ?? false,
                       source: 'apollo'
                     };
                   });
@@ -475,7 +475,7 @@ serve(async (req: Request) => {
                   location_state: src?.state || null,
                   location_country: src?.country || null,
                   title_at_company: src?.job_title || null,
-                  is_current: true,
+                  is_current: src?.is_current_at_company ?? false,
                   source: 'apollo'
                 };
               });
