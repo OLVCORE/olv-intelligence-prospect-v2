@@ -55,7 +55,9 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       return data;
     },
     enabled: !!companyId,
-    staleTime: 1000 * 60 * 5 // 5 minutos
+    staleTime: 0, // Sempre buscar dados frescos
+    gcTime: 0, // Não manter em cache
+    refetchOnMount: 'always' // Sempre refetch ao montar
   });
 }
 
@@ -64,6 +66,9 @@ export function useSimpleTOTVSCheck() {
 
   return useMutation({
     mutationFn: async (params: SimpleTOTVSCheckParams) => {
+      // Invalidar cache ANTES da requisição para forçar loading state
+      queryClient.removeQueries({ queryKey: ['simple-totvs-check', params.companyId] });
+      
       const { data, error } = await supabase.functions.invoke('simple-totvs-check', {
         body: {
           company_id: params.companyId,
@@ -76,9 +81,14 @@ export function useSimpleTOTVSCheck() {
       if (error) throw error;
       return data as SimpleTOTVSCheckResult;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      // Invalidar TODOS os caches relacionados
       queryClient.invalidateQueries({ queryKey: ['simple-totvs-check'] });
+      queryClient.invalidateQueries({ queryKey: ['simple-totvs-check', variables.companyId] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      
+      // Forçar refetch imediato
+      queryClient.refetchQueries({ queryKey: ['simple-totvs-check', variables.companyId] });
       
       if (data.status === 'no-go') {
         toast.error('❌ NO-GO - Empresa JÁ USA TOTVS', {

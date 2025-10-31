@@ -365,14 +365,15 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold">🎯 Verificação TOTVS Simplificada</h3>
+          <h3 className="text-lg font-semibold">🎯 Simple TOTVS Check</h3>
           <p className="text-sm text-muted-foreground">Detecção direta em vagas, notícias e documentos</p>
         </div>
         <Button 
           onClick={handleCheck}
           disabled={isLoading}
-          variant="outline"
+          variant="default"
           size="sm"
+          className="font-medium"
         >
           {isLoading ? (
             <>
@@ -382,7 +383,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Verificar
+              {latestCheck ? 'Atualizar Verificação' : 'Verificar Agora'}
             </>
           )}
         </Button>
