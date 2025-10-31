@@ -687,85 +687,13 @@ export default function ICPQuarantine() {
                   );
                 })()}
 
-                {/* Simple TOTVS Check - mesma inteligência da página Individual */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Target className="h-5 w-5 text-primary" />
-                    <p className="text-lg font-semibold">Simple TOTVS Check</p>
-                  </div>
-                  <SimpleTOTVSCheckCard
-                    companyId={company.id}
-                    companyName={company.razao_social}
-                    cnpj={company.cnpj}
-                    domain={(company as any).domain || (company as any).site || undefined}
-                  />
-                </div>
-
-                {/* Resultados Web */}
-                {(() => {
-                  const organic = (company as any).raw_analysis?.serper?.organic || [];
-                  if (!organic || organic.length === 0) return null;
-                  return (
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Globe className="h-5 w-5 text-primary" />
-                        <p className="text-lg font-semibold">Resultados Web</p>
-                      </div>
-                      <div className="space-y-3">
-                        {organic.map((item: any, idx: number) => (
-                          <a
-                            key={idx}
-                            href={item.link || item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block p-3 rounded border hover:bg-accent transition-colors"
-                          >
-                            <p className="font-medium text-sm">{item.title || 'Resultado'}</p>
-                            {item.snippet && (
-                              <p className="text-xs text-muted-foreground mt-1">{item.snippet}</p>
-                            )}
-                            {(item.link || item.url) && (
-                              <p className="text-[10px] text-primary mt-1">{item.link || item.url}</p>
-                            )}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Notícias Recentes */}
-                {(() => {
-                  const news = (company as any).raw_analysis?.serper?.news || [];
-                  if (!news || news.length === 0) return null;
-                  return (
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Newspaper className="h-5 w-5 text-primary" />
-                        <p className="text-lg font-semibold">Notícias Recentes</p>
-                      </div>
-                      <div className="space-y-3">
-                        {news.map((n: any, idx: number) => (
-                          <a
-                            key={idx}
-                            href={n.link || n.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block p-3 rounded border hover:bg-accent transition-colors"
-                          >
-                            <p className="font-medium text-sm">{n.title || 'Notícia'}</p>
-                            {n.snippet && (
-                              <p className="text-xs text-muted-foreground mt-1">{n.snippet}</p>
-                            )}
-                            {(n.date || n.source) && (
-                              <p className="text-[10px] text-muted-foreground mt-1">{n.source ? `${n.source} • ` : ''}{n.date || ''}</p>
-                            )}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Simple TOTVS Check - única visualização unificada */}
+                <SimpleTOTVSCheckCard
+                  companyId={company.id}
+                  companyName={company.razao_social}
+                  cnpj={company.cnpj}
+                  domain={(company as any).domain || (company as any).site || undefined}
+                />
 
                 {/* Competitor Intelligence */}
                 {(() => {
