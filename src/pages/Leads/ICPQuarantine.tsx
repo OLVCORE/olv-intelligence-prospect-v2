@@ -19,6 +19,8 @@ import { useMultipleSimpleTOTVSChecks } from '@/hooks/useSimpleTOTVSCheckBatch';
 import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 export default function ICPQuarantine() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -38,6 +40,194 @@ export default function ICPQuarantine() {
   const { mutate: autoApprove, isPending: isAutoApproving } = useAutoApprove();
   const { mutate: deleteBatch, isPending: isDeleting } = useDeleteQuarantineBatch();
   const { mutate: refreshBatch, isPending: isRefreshing } = useRefreshQuarantineBatch();
+
+  const queryClient = useQueryClient();
+
+  // Mutations para enriquecimento na quarentena
+  const enrichReceitaMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      // Buscar dados da empresa na quarentena
+      const { data: analysis, error: fetchError } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (fetchError || !analysis) throw new Error('Empresa não encontrada');
+      if (!analysis.cnpj) throw new Error('CNPJ não disponível');
+
+      // Chamar edge function de enriquecimento
+      const { data, error } = await supabase.functions.invoke('enrich-company-receita', {
+        body: { cnpj: analysis.cnpj },
+      });
+
+      if (error) throw error;
+
+      // Atualizar dados na quarentena
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      const { error: updateError } = await supabase
+        .from('icp_analysis_results')
+        .update({
+          raw_analysis: {
+            ...rawData,
+            receita_federal: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      if (updateError) throw updateError;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Dados da Receita Federal atualizados');
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao enriquecer com Receita Federal', {
+        description: error.message,
+      });
+    },
+  });
+
+  const enrichApolloMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      const { data: analysis } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (!analysis) throw new Error('Empresa não encontrada');
+
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      const { data, error } = await supabase.functions.invoke('enrich-apollo', {
+        body: { 
+          company_name: analysis.razao_social,
+          domain: rawData.domain || '',
+        },
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('icp_analysis_results')
+        .update({
+          raw_analysis: {
+            ...rawData,
+            apollo: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Dados do Apollo atualizados');
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao enriquecer com Apollo', {
+        description: error.message,
+      });
+    },
+  });
+
+  const enrichEconodataMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      const { data: analysis } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (!analysis) throw new Error('Empresa não encontrada');
+      if (!analysis.cnpj) throw new Error('CNPJ não disponível');
+
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      const { data, error } = await supabase.functions.invoke('enrich-econodata', {
+        body: { cnpj: analysis.cnpj },
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('icp_analysis_results')
+        .update({
+          raw_analysis: {
+            ...rawData,
+            econodata: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Dados da Econodata atualizados');
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao enriquecer com Econodata', {
+        description: error.message,
+      });
+    },
+  });
+
+  const enrich360Mutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      const { data: analysis } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (!analysis) throw new Error('Empresa não encontrada');
+
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      const { data, error } = await supabase.functions.invoke('enrich-company-360', {
+        body: {
+          company_name: analysis.razao_social,
+          cnpj: analysis.cnpj,
+          domain: rawData.domain || '',
+        },
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('icp_analysis_results')
+        .update({
+          raw_analysis: {
+            ...rawData,
+            enrichment_360: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Enriquecimento 360° concluído');
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro no enriquecimento 360°', {
+        description: error.message,
+      });
+    },
+  });
 
   const filteredCompanies = companies.filter(c => 
     c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,6 +362,28 @@ export default function ICPQuarantine() {
     const company = filteredCompanies.find(c => c.id === id);
     if (!company) return;
     refreshBatch([{ id, razao_social: company.razao_social, cnpj: company.cnpj }]);
+  };
+
+  // Handlers para enriquecimento
+  const handleEnrichReceita = async (id: string) => {
+    return enrichReceitaMutation.mutateAsync(id);
+  };
+
+  const handleEnrichApollo = async (id: string) => {
+    return enrichApolloMutation.mutateAsync(id);
+  };
+
+  const handleEnrichEconodata = async (id: string) => {
+    return enrichEconodataMutation.mutateAsync(id);
+  };
+
+  const handleEnrich360 = async (id: string) => {
+    return enrich360Mutation.mutateAsync(id);
+  };
+
+  const handleDiscoverCNPJ = (id: string) => {
+    toast.info('Funcionalidade de descoberta de CNPJ em desenvolvimento');
+    // TODO: Implementar descoberta de CNPJ via APIs
   };
 
   const handleOpenTotvsCheck = (company: any) => {
@@ -489,6 +701,11 @@ export default function ICPQuarantine() {
                         onDelete={handleDeleteSingle}
                         onPreview={handlePreviewSingle}
                         onRefresh={handleRefreshSingle}
+                        onEnrichReceita={handleEnrichReceita}
+                        onEnrichApollo={handleEnrichApollo}
+                        onEnrichEconodata={handleEnrichEconodata}
+                        onEnrich360={handleEnrich360}
+                        onDiscoverCNPJ={handleDiscoverCNPJ}
                       />
                     </TableCell>
                   </TableRow>

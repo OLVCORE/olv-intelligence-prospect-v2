@@ -102,7 +102,7 @@ export function useApproveQuarantineBatch() {
       if (fetchError) throw fetchError;
       if (!quarantineData || quarantineData.length === 0) throw new Error('Nenhuma empresa encontrada');
 
-      // 2. Inserir no leads_pool
+      // 2. Inserir no leads_pool (usando origem válida do constraint)
       const leadsToInsert = quarantineData.map(q => ({
         company_id: q.company_id || null,
         cnpj: q.cnpj,
@@ -111,7 +111,7 @@ export function useApproveQuarantineBatch() {
         temperatura: q.temperatura,
         status: 'active',
         source: 'icp_batch_analysis',
-        origem: 'batch_icp_analysis',
+        origem: 'icp_massa', // Valor válido do constraint
         raw_data: q.raw_analysis,
       }));
 
@@ -252,7 +252,7 @@ export function useAutoApprove() {
 
       const analysisIds = data.map(d => d.id);
 
-      // Aprovar usando o batch
+      // Aprovar usando o batch (usando origem válida do constraint)
       const leadsToInsert = data.map(q => ({
         company_id: q.company_id,
         cnpj: q.cnpj,
@@ -261,7 +261,7 @@ export function useAutoApprove() {
         temperatura: q.temperatura,
         status: 'active',
         source: 'icp_auto_approval',
-        origem: 'auto_approval',
+        origem: 'icp_massa', // Valor válido do constraint
         raw_data: q.raw_analysis,
       }));
 
