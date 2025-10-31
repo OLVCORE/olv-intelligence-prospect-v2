@@ -31,15 +31,24 @@ export default function IndividualAnalysis() {
     queryKey: ['company', companyId],
     queryFn: async () => {
       if (!companyId) return null;
+      console.log('[IndividualAnalysis] Buscando empresa:', companyId);
       const { data, error } = await supabase
         .from('companies')
         .select('*')
         .eq('id', companyId)
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('[IndividualAnalysis] Erro ao buscar empresa:', error);
+        throw error;
+      }
+      console.log('[IndividualAnalysis] Dados da empresa:', data);
+      console.log('[IndividualAnalysis] Estado:', data?.headquarters_state);
+      console.log('[IndividualAnalysis] Cidade:', data?.headquarters_city);
       return data as any;
     },
     enabled: !!companyId,
+    staleTime: 0, // Sempre revalidar
+    refetchOnMount: true, // Revalidar ao montar
   });
 
   const { data: intentScore = 0 } = useCalculateIntentScore(companyId || undefined);
