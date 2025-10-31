@@ -85,6 +85,10 @@ export default function PreAnalysisReport({ data, onConfirm, onCancel }: PreAnal
             <p className="text-muted-foreground">
               Análise de qualidade e viabilidade antes do processamento
             </p>
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Este é apenas um relatório prévio. Clique em "Confirmar e Iniciar Análise" abaixo para executar o processamento real.
+            </p>
           </div>
           <Button variant="outline" onClick={exportarPDF}>
             <Download className="w-4 h-4 mr-2" />

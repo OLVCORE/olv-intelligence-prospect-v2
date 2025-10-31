@@ -4441,6 +4441,45 @@ export type Database = {
         }
         Relationships: []
       }
+      icp_mapping_templates: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          custom_fields: string[] | null
+          descricao: string | null
+          id: string
+          mappings: Json
+          nome_template: string
+          total_colunas: number
+          ultima_utilizacao: string | null
+          user_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          custom_fields?: string[] | null
+          descricao?: string | null
+          id?: string
+          mappings: Json
+          nome_template: string
+          total_colunas?: number
+          ultima_utilizacao?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          custom_fields?: string[] | null
+          descricao?: string | null
+          id?: string
+          mappings?: Json
+          nome_template?: string
+          total_colunas?: number
+          ultima_utilizacao?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       icp_scraping_log: {
         Row: {
           analysis_id: string | null

@@ -9,16 +9,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 import { cn } from '@/lib/utils';
 import { calculateICPScore } from '@/lib/icpCalculator';
 import { useSaveToQuarantine } from '@/hooks/useICPQuarantine';
+import { useICPMappingTemplates } from '@/hooks/useICPMappingTemplates';
 import PreAnalysisReport from './PreAnalysisReport';
 import LiveProcessingDashboard from './LiveProcessingDashboard';
 import FinalReportDashboard from './FinalReportDashboard';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type Step = 'upload' | 'mapping' | 'preview' | 'analyzing' | 'complete';
 
@@ -49,8 +68,13 @@ export default function ICPBulkAnalysisWithMapping() {
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
+  const { templates, saveTemplate, deleteTemplate, markAsUsed } = useICPMappingTemplates();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
@@ -193,6 +217,70 @@ export default function ICPBulkAnalysisWithMapping() {
       title: 'Campo removido',
       description: `Campo "${fieldName}" foi removido`,
     });
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Digite um nome para o template',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await saveTemplate({
+        nome_template: templateName,
+        descricao: templateDescription,
+        mappings,
+        custom_fields: customFields,
+      });
+      setShowSaveTemplateDialog(false);
+      setTemplateName('');
+      setTemplateDescription('');
+    } catch (error) {
+      console.error('Erro ao salvar template:', error);
+    }
+  };
+
+  const handleLoadTemplate = async (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    try {
+      // Aplicar mapeamento do template nas colunas atuais
+      const updatedMappings = mappings.map(currentMapping => {
+        // Procurar correspondência no template por nome da coluna CSV
+        const templateMapping = template.mappings.find(
+          tm => tm.csvColumn.toLowerCase() === currentMapping.csvColumn.toLowerCase()
+        );
+        
+        if (templateMapping && templateMapping.systemField) {
+          return {
+            ...currentMapping,
+            systemField: templateMapping.systemField,
+            status: 'mapped' as const,
+          };
+        }
+        return currentMapping;
+      });
+
+      setMappings(updatedMappings);
+      setCustomFields(template.custom_fields || []);
+      
+      // Marcar como usado
+      await markAsUsed(templateId);
+      
+      setShowLoadTemplateDialog(false);
+      
+      toast({
+        title: 'Template carregado!',
+        description: `Mapeamento "${template.nome_template}" aplicado com sucesso`,
+      });
+    } catch (error) {
+      console.error('Erro ao carregar template:', error);
+    }
   };
 
   const handleConfirmAnalysis = () => {
@@ -1054,9 +1142,124 @@ export default function ICPBulkAnalysisWithMapping() {
           </div>
 
           <div className="flex justify-between mt-6">
-            <Button variant="outline" onClick={() => setStep('upload')}>
-              Voltar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep('upload')}>
+                Voltar
+              </Button>
+              
+              <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <FolderOpen className="w-4 h-4 mr-2" />
+                    Carregar Template
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
+                    <DialogDescription>
+                      Selecione um template salvo para aplicar o mapeamento automaticamente
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {templates.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum template salvo ainda
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {templates.map((template) => (
+                          <div
+                            key={template.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                            onClick={() => handleLoadTemplate(template.id)}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium">{template.nome_template}</div>
+                              {template.descricao && (
+                                <div className="text-sm text-muted-foreground">
+                                  {template.descricao}
+                                </div>
+                              )}
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {template.total_colunas} colunas • {template.custom_fields.length} campos customizados
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Deseja realmente remover o template "${template.nome_template}"?`)) {
+                                  deleteTemplate(template.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar como Template
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Salvar Template de Mapeamento</DialogTitle>
+                    <DialogDescription>
+                      Salve este mapeamento para reutilizar em futuras análises
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="template-name">Nome do Template *</Label>
+                      <Input
+                        id="template-name"
+                        placeholder="Ex: Planilha Padrão ERP"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="template-desc">Descrição (opcional)</Label>
+                      <Textarea
+                        id="template-desc"
+                        placeholder="Descreva quando usar este template..."
+                        value={templateDescription}
+                        onChange={(e) => setTemplateDescription(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Este template incluirá:</p>
+                      <ul className="list-disc list-inside mt-1">
+                        <li>{mappings.length} mapeamentos de colunas</li>
+                        <li>{customFields.length} campos customizados</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveTemplate}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar Template
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             <Button onClick={handleAnalyze}>
               Confirmar e Analisar ({allData.length} empresas)
             </Button>
