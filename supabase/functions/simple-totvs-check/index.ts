@@ -77,9 +77,19 @@ function normalizeCompany(name: string) {
   return name
     .toLowerCase()
     .replace(/[.,]/g, ' ')
-    .replace(/\b(s\.?a\.?|ltda|eireli|me|sa)\b/gi, '')
+    .replace(/\b(s\.?a\.?|ltda|eireli|me|sa|epp|empresa|grupo)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Detecta se é um perfil pessoal (nomes próprios comuns antes de sobrenome)
+function isPersonalProfile(text: string): boolean {
+  // Padrões comuns de perfis pessoais: "Nome Sobrenome - Cargo" ou "Nome Sobrenome | Cargo"
+  const personalPatterns = [
+    /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+\s*[-|]/,
+    /(analista|desenvolvedor|gerente|coordenador|diretor|consultor|especialista|engenheiro|arquiteto|programador)/i
+  ];
+  return personalPatterns.some(pattern => pattern.test(text || ''));
 }
 
 function proximityCompanyAndTotvs(text: string, companyName: string, maxDistance = 60) {
@@ -154,13 +164,35 @@ function isValidTOTVSProduct(text: string): boolean {
   return hasSafeProduct || hasAmbiguous;
 }
 
-function crossMatch(text: string, companyName: string): { matched: boolean; detectedProducts: string[] } {
+function crossMatch(text: string, companyName: string, isLinkedInProfile = false): { matched: boolean; detectedProducts: string[] } {
   const t = (text || '').toLowerCase();
   const companyNorm = normalizeCompany(companyName);
-
-  const hasCompany = companyNorm.length > 0 && (t.includes(companyNorm) || companyNorm.split(' ').some(p => p.length > 3 && t.includes(p)));
-  const hasValidProduct = isValidTOTVSProduct(t);
   
+  // Se for perfil pessoal detectado, não aceitar match de token único
+  const isPerson = isPersonalProfile(text);
+  
+  let hasCompany = false;
+  
+  if (companyNorm.length > 0) {
+    // Tenta match do nome completo (mais confiável)
+    if (t.includes(companyNorm)) {
+      hasCompany = true;
+    } else {
+      // Match por tokens individuais
+      const tokens = companyNorm.split(' ').filter(p => p.length > 3);
+      
+      if (isPerson || isLinkedInProfile) {
+        // REGRA RIGOROSA: Para perfis pessoais/LinkedIn, exige 2+ tokens ou nome completo
+        const matchedTokens = tokens.filter(token => t.includes(token));
+        hasCompany = matchedTokens.length >= 2;
+      } else {
+        // Para outras fontes, aceita 1 token (comportamento original)
+        hasCompany = tokens.some(p => t.includes(p));
+      }
+    }
+  }
+  
+  const hasValidProduct = isValidTOTVSProduct(t);
   const matched = hasCompany && hasValidProduct;
 
   // Detectar produtos mencionados
@@ -238,12 +270,12 @@ serve(async (req) => {
           
           // Aplica correlação com proximidade contextual (mesma frase OU perto)
           const isRelevant = companyAndTotvsSameSentence(text, company_name) || proximityCompanyAndTotvs(text, company_name);
-          const { matched, detectedProducts } = crossMatch(text, company_name);
+          const { matched, detectedProducts } = crossMatch(text, company_name, isLinkedInProfile);
 
           // Regras:
-          // - Perfil pessoal do LinkedIn (/in/): EXIGE proximidade Empresa ↔ TOTVS
+          // - Perfil pessoal do LinkedIn (/in/): EXIGE proximidade Empresa ↔ TOTVS E match rigoroso (2+ tokens)
           // - Demais fontes: aceita correlação flexível padrão
-          const shouldAdd = (isLinkedInProfile && isRelevant) || (!isLinkedInProfile && matched);
+          const shouldAdd = (isLinkedInProfile && isRelevant && matched) || (!isLinkedInProfile && matched);
 
           if (shouldAdd) {
             evidencesByCategory.vagas.push({
