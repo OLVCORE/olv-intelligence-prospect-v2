@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
 import { useSimpleTOTVSCheck, useLatestSimpleTOTVSCheck, type Evidence } from "@/hooks/useSimpleTOTVSCheck";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isValidUrl, formatWebsiteUrl } from "@/lib/utils/urlHelpers";
 
 interface SimpleTOTVSCheckCardProps {
   companyId: string;
@@ -20,10 +21,18 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_COLORS = {
-  vagas: 'bg-blue-50 border-blue-200',
-  noticias: 'bg-purple-50 border-purple-200',
-  docs_oficiais: 'bg-green-50 border-green-200'
+  vagas: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800',
+  noticias: 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800',
+  docs_oficiais: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
 };
+
+// Produtos TOTVS conhecidos
+const TOTVS_PRODUCTS = [
+  'PROTHEUS', 'DATASUL', 'RM', 'FLUIG', 'CAROL',
+  'TOTVS GESTÃO', 'TOTVS ERP', 'TOTVS RH', 'TOTVS VAREJO',
+  'TOTVS TECHFIN', 'TOTVS BUSINESS', 'TOTVS MANUFATURA',
+  'WINTHOR', 'LOGIX'
+];
 
 export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: SimpleTOTVSCheckCardProps) {
   const { data: latestCheck, isLoading: isLoadingLatest } = useLatestSimpleTOTVSCheck(companyId);
@@ -47,6 +56,83 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
       newExpanded.add(category);
     }
     setExpandedCategories(newExpanded);
+  };
+
+  // Função para destacar palavras-chave no texto
+  const highlightText = (text: string): JSX.Element => {
+    if (!text) return <></>;
+
+    let highlightedText = text;
+    const highlights: Array<{ term: string; type: 'totvs' | 'company' | 'product' }> = [];
+
+    // Identificar TOTVS e variações
+    const totvsRegex = /\bTOTVS\b/gi;
+    const totvsMatches = text.match(totvsRegex);
+    if (totvsMatches) {
+      totvsMatches.forEach(match => {
+        highlights.push({ term: match, type: 'totvs' });
+      });
+    }
+
+    // Identificar produtos TOTVS
+    TOTVS_PRODUCTS.forEach(product => {
+      const productRegex = new RegExp(`\\b${product}\\b`, 'gi');
+      const matches = text.match(productRegex);
+      if (matches) {
+        matches.forEach(match => {
+          highlights.push({ term: match, type: 'product' });
+        });
+      }
+    });
+
+    // Identificar nome da empresa
+    if (companyName) {
+      const companyWords = companyName.split(' ').filter(w => w.length > 3);
+      companyWords.forEach(word => {
+        const companyRegex = new RegExp(`\\b${word}\\b`, 'gi');
+        const matches = text.match(companyRegex);
+        if (matches) {
+          matches.forEach(match => {
+            highlights.push({ term: match, type: 'company' });
+          });
+        }
+      });
+    }
+
+    // Aplicar highlights de forma ordenada
+    const sortedHighlights = [...new Set(highlights.map(h => h.term))];
+    
+    if (sortedHighlights.length === 0) {
+      return <span>{text}</span>;
+    }
+
+    // Criar regex combinado para split mantendo os termos
+    const combinedRegex = new RegExp(
+      `(${sortedHighlights.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+      'gi'
+    );
+
+    const parts = text.split(combinedRegex);
+
+    return (
+      <>
+        {parts.map((part, index) => {
+          const highlight = highlights.find(
+            h => h.term.toLowerCase() === part.toLowerCase()
+          );
+
+          if (highlight) {
+            const className = 
+              highlight.type === 'totvs' ? 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 font-bold px-1 rounded' :
+              highlight.type === 'product' ? 'bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 font-semibold px-1 rounded' :
+              'bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 font-medium px-1 rounded';
+            
+            return <mark key={index} className={className}>{part}</mark>;
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </>
+    );
   };
 
   const renderStatusBadge = (status: string) => {
@@ -76,9 +162,9 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
   const renderConfidenceBadge = (confidence: string) => {
     const colors = {
-      high: 'bg-green-100 text-green-800 border-green-300',
-      medium: 'bg-amber-100 text-amber-800 border-amber-300',
-      low: 'bg-gray-100 text-gray-800 border-gray-300'
+      high: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700',
+      medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700',
+      low: 'bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700'
     };
 
     return (
@@ -108,36 +194,64 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
         {isExpanded && (
           <div className="space-y-3 mt-3">
-            {evidences.map((evidence, idx) => (
-              <div key={idx} className="bg-white rounded p-3 border">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="font-medium text-sm line-clamp-2">{evidence.title}</h4>
-                  <a
-                    href={evidence.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/80 flex-shrink-0"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-3 mb-2">
-                  {evidence.snippet}
-                </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    🔍 {evidence.source}
-                  </span>
-                  <div className="flex gap-1">
-                    {evidence.totvs_products.map((product, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {product}
+            {evidences.map((evidence, idx) => {
+              const url = formatWebsiteUrl(evidence.url);
+              const isLinkValid = isValidUrl(evidence.url);
+              
+              return (
+                <div key={idx} className="bg-card dark:bg-card/50 rounded p-3 border border-border">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="font-medium text-sm flex-1">
+                      {highlightText(evidence.title)}
+                    </h4>
+                    {isLinkValid && url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80 flex-shrink-0"
+                        title={url}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-muted">
+                        Link indisponível
                       </Badge>
-                    ))}
+                    )}
                   </div>
+                  
+                  <div className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                    {highlightText(evidence.snippet)}
+                  </div>
+
+                  {/* Cross-matching visual */}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      🔍 {evidence.source}
+                    </span>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {evidence.totvs_products.map((product, i) => (
+                        <Badge 
+                          key={i} 
+                          variant="outline" 
+                          className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700"
+                        >
+                          🎯 {product}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* URL completa para referência */}
+                  {isLinkValid && url && (
+                    <div className="mt-2 text-xs text-muted-foreground/70 truncate" title={url}>
+                      🔗 {url}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -199,14 +313,30 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
           {/* Reasoning */}
           <Alert className={
-            latestCheck.status === 'no-go' ? 'border-red-200 bg-red-50' :
-            latestCheck.status === 'go' ? 'border-green-200 bg-green-50' :
-            'border-amber-200 bg-amber-50'
+            latestCheck.status === 'no-go' 
+              ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30' :
+            latestCheck.status === 'go' 
+              ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30' :
+            'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30'
           }>
-            <AlertDescription className="font-medium">
+            <AlertDescription className="font-medium text-foreground">
               {latestCheck.reasoning}
             </AlertDescription>
           </Alert>
+
+          {/* Legenda dos highlights */}
+          <div className="flex flex-wrap gap-2 text-xs p-3 bg-muted/50 rounded-lg">
+            <span className="font-medium text-muted-foreground">Destaques:</span>
+            <Badge variant="outline" className="bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 border-red-300 dark:border-red-700">
+              TOTVS
+            </Badge>
+            <Badge variant="outline" className="bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 border-orange-300 dark:border-orange-700">
+              Produtos TOTVS
+            </Badge>
+            <Badge variant="outline" className="bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700">
+              Nome da Empresa
+            </Badge>
+          </div>
 
           {/* Evidências por Categoria */}
           {latestCheck.total_evidences > 0 && latestCheck.evidences && (
