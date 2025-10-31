@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen, ArrowUp } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen, ArrowUp, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
@@ -348,11 +348,9 @@ export default function ICPBulkAnalysisWithMapping() {
     try {
       // Aplicar mapeamento do template nas colunas atuais
       const updatedMappings = mappings.map(currentMapping => {
-        // Procurar correspondência no template por nome da coluna CSV
         const templateMapping = template.mappings.find(
           tm => tm.csvColumn.toLowerCase() === currentMapping.csvColumn.toLowerCase()
         );
-        
         if (templateMapping && templateMapping.systemField) {
           return {
             ...currentMapping,
@@ -365,18 +363,28 @@ export default function ICPBulkAnalysisWithMapping() {
 
       setMappings(updatedMappings);
       setCustomFields(template.custom_fields || []);
-      
-      // Marcar como usado
-      await markAsUsed(templateId);
-      
+
+      // Fechar imediatamente para evitar travar a UI caso a marcação "usado" falhe
       setShowLoadTemplateDialog(false);
-      
+
       toast({
         title: 'Template carregado!',
         description: `Mapeamento "${template.nome_template}" aplicado com sucesso`,
       });
+
+      // Marcar como usado (não bloquear a UI se der erro)
+      try {
+        await markAsUsed(templateId);
+      } catch (err) {
+        console.error('Erro ao marcar template como usado:', err);
+      }
     } catch (error) {
       console.error('Erro ao carregar template:', error);
+      toast({
+        title: 'Erro ao aplicar template',
+        description: 'Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -917,15 +925,38 @@ export default function ICPBulkAnalysisWithMapping() {
               </p>
             </div>
             <div>
-              <Input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="max-w-md mx-auto"
-              />
-              <p className="text-sm text-muted-foreground mt-2">
-                Aceita arquivos .csv até 20MB
-              </p>
+              <div className="max-w-md mx-auto space-y-4">
+                <Button 
+                  size="lg" 
+                  className="relative overflow-hidden group bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={isParsingFile}
+                >
+                  {isParsingFile ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
+                      Escolher Arquivo CSV
+                    </>
+                  )}
+                </Button>
+                
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                
+                <p className="text-sm text-muted-foreground">
+                  Formatos aceitos: CSV, Excel (máx. 10MB)
+                </p>
+              </div>
             </div>
           </div>
         </Card>
@@ -1513,6 +1544,11 @@ export default function ICPBulkAnalysisWithMapping() {
 
     return (
       <>
+        <div className="flex justify-end mb-4">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2" /> Imprimir PDF
+          </Button>
+        </div>
         <FinalReportDashboard
           resultados={analysisResults}
           tempoTotal={tempoDecorrido}
