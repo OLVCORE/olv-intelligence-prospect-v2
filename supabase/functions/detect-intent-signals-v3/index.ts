@@ -248,6 +248,18 @@ serve(async (req: Request) => {
       { name: 'InfoMoney', url: 'https://www.infomoney.com.br/', points: 15 }
     ];
 
+    // FONTES DE INOVAÇÃO E TECNOLOGIA (15 pontos)
+    const innovationSources = [
+      { name: 'StartSE', url: 'https://www.startse.com/', points: 15 }
+    ];
+
+    // FONTES JUDICIAIS E LEGAIS (10 pontos cada, max 30)
+    const legalSources = [
+      { name: 'TJSP', url: 'https://esaj.tjsp.jus.br/', points: 10 },
+      { name: 'TJRJ', url: 'https://www.tjrj.jus.br/', points: 10 },
+      { name: 'CNJ', url: 'https://www.cnj.jus.br/', points: 10 }
+    ];
+
     for (const source of newsSources) {
       platformsScanned.push(source.name);
       let sourcePoints = 0;
@@ -313,6 +325,153 @@ serve(async (req: Request) => {
             points_awarded: sourcePoints,
             max_points: source.points,
             reason: sourcePoints > 0 ? `Notícia relevante encontrada em ${source.name}` : 'Nenhuma notícia relevante',
+            search_url: searchUrl
+          });
+        }
+      } catch (e) {
+        console.error(`[detect-intent-v3] Erro ${source.name}:`, e);
+      }
+    }
+
+    // FONTES DE INOVAÇÃO E TECNOLOGIA - 15 pontos
+    for (const source of innovationSources) {
+      platformsScanned.push(source.name);
+      let sourcePoints = 0;
+      
+      try {
+        const keywords = ['startup', 'inovação', 'tecnologia', 'transformação digital', 'investimento'];
+        const query = `"${variants[0]}" (${keywords.join(' OR ')}) site:${new URL(source.url).hostname}`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        
+        const res = await fetch(searchUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`;
+            const names = extractCompanyNames(fullText);
+            
+            for (const foundName of names) {
+              const matchScore = calculateMatchScore(foundName, searchCompanyName);
+              
+              if (matchScore >= 60) {
+                if (!companyMatches.has(foundName)) {
+                  companyMatches.set(foundName, {
+                    name: foundName,
+                    matchScore,
+                    confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
+                    matchReasons: [`Encontrado em ${source.name}`, `Score de match: ${matchScore}%`],
+                    sources: [source.name],
+                    signals: { positive: [], negative: [], neutral: [] }
+                  });
+                } else {
+                  const match = companyMatches.get(foundName)!;
+                  match.sources.push(source.name);
+                  match.matchScore = Math.max(match.matchScore, matchScore);
+                }
+              }
+              
+              if (validateMention(fullText, searchCompanyName)) {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'innovation_mention',
+                  score: source.points,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'medium',
+                  reason: `Menção em portal de inovação (${source.name})`
+                });
+                
+                const match = companyMatches.get(foundName);
+                if (match) {
+                  match.signals.positive.push(`Menção em portal de inovação`);
+                }
+                break;
+              }
+            }
+          }
+          
+          scoreBreakdown.push({
+            source: source.name,
+            points_awarded: sourcePoints,
+            max_points: source.points,
+            reason: sourcePoints > 0 ? `Menção em ${source.name}` : 'Nenhuma menção relevante',
+            search_url: searchUrl
+          });
+        }
+      } catch (e) {
+        console.error(`[detect-intent-v3] Erro ${source.name}:`, e);
+      }
+    }
+
+    // FONTES JUDICIAIS E LEGAIS - 10 pontos cada
+    for (const source of legalSources) {
+      platformsScanned.push(source.name);
+      let sourcePoints = 0;
+      
+      try {
+        const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y1`;
+        
+        const res = await fetch(searchUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`;
+            const names = extractCompanyNames(fullText);
+            
+            for (const foundName of names) {
+              const matchScore = calculateMatchScore(foundName, searchCompanyName);
+              
+              if (matchScore >= 60) {
+                if (!companyMatches.has(foundName)) {
+                  companyMatches.set(foundName, {
+                    name: foundName,
+                    matchScore,
+                    confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
+                    matchReasons: [`Encontrado em ${source.name}`, `Score de match: ${matchScore}%`],
+                    sources: [source.name],
+                    signals: { positive: [], negative: [], neutral: [] }
+                  });
+                } else {
+                  const match = companyMatches.get(foundName)!;
+                  match.sources.push(source.name);
+                  match.matchScore = Math.max(match.matchScore, matchScore);
+                }
+              }
+              
+              if (validateMention(fullText, searchCompanyName)) {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'legal_record',
+                  score: source.points,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'high',
+                  reason: `Registro em fonte judicial/legal (${source.name})`
+                });
+                
+                const match = companyMatches.get(foundName);
+                if (match) {
+                  match.signals.neutral.push(`Registro em ${source.name}`);
+                }
+                break;
+              }
+            }
+          }
+          
+          scoreBreakdown.push({
+            source: source.name,
+            points_awarded: sourcePoints,
+            max_points: source.points,
+            reason: sourcePoints > 0 ? `Registro encontrado em ${source.name}` : 'Nenhum registro encontrado',
             search_url: searchUrl
           });
         }
@@ -448,28 +607,35 @@ serve(async (req: Request) => {
     };
 
     // Salvar no banco
-    await sb.from('intent_signals_v3_detections').delete().eq('company_id', company_id);
+    await sb.from('intent_signals_detection').delete().eq('company_id', company_id);
     
-    await sb.from('intent_signals_v3_detections').insert({
+    await sb.from('intent_signals_detection').insert({
       company_id,
+      company_name: searchCompanyName,
       score: totalScore,
       temperature,
       confidence,
       signals,
       methodology,
-      checked_at: new Date().toISOString()
+      sources_checked: platformsScanned.length,
+      platforms_scanned: platformsScanned,
+      checked_at: new Date().toISOString(),
+      cnpj,
+      region,
+      sector
     });
 
     return new Response(
       JSON.stringify({
-        success: true,
-        company_id,
-        company_name,
+        ok: true,
         score: totalScore,
         temperature,
         confidence,
-        signals_count: signals.length,
-        methodology
+        signals,
+        methodology,
+        sources_checked: platformsScanned.length,
+        platforms_scanned: platformsScanned,
+        message: `${temperature === 'hot' ? '🔥' : temperature === 'warm' ? '🌡️' : '❄️'} ${temperature.toUpperCase()} LEAD. Score: ${totalScore}/100`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
