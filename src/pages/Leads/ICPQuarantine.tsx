@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
 import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
@@ -417,81 +417,201 @@ export default function ICPQuarantine() {
       </Card>
 
       {/* Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {previewCompany ? 'Preview da Empresa' : 'Preview das Empresas Selecionadas'}
-            </DialogTitle>
-            <DialogDescription>
-              {previewCompany 
-                ? `Visualizando: ${previewCompany.razao_social}`
-                : `${displayCompanies.length} empresa(s) selecionada(s)`
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {displayCompanies.map((company) => (
-              <Card key={company.id}>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Empresa</p>
-                      <p className="text-lg font-semibold">{company.razao_social}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">CNPJ</p>
-                      <p className="font-mono">{company.cnpj}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Score ICP</p>
-                      <Badge variant={company.icp_score >= 70 ? 'default' : 'secondary'}>
-                        {company.icp_score} pontos
+      <DraggableDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        title={previewCompany ? 'Preview da Empresa' : 'Preview das Empresas Selecionadas'}
+        description={previewCompany 
+          ? `Visualizando: ${previewCompany.razao_social}`
+          : `${displayCompanies.length} empresa(s) selecionada(s)`
+        }
+        className="max-w-6xl"
+        maxWidth="max-h-[90vh]"
+      >
+        <div className="space-y-6">
+          {displayCompanies.map((company) => (
+            <Card key={company.id} className="border-2">
+              <CardContent className="pt-6">
+                {/* Header Section */}
+                <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Empresa</p>
+                    <p className="text-xl font-bold">{company.razao_social}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">CNPJ</p>
+                    <p className="font-mono text-lg">{company.cnpj}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Score ICP</p>
+                    <Badge variant={company.icp_score >= 70 ? 'default' : 'secondary'} className="text-lg px-4 py-1">
+                      {company.icp_score} pontos
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Temperatura</p>
+                    <div className="flex items-center gap-2">
+                      {getTempIcon(company.temperatura)}
+                      <Badge variant={getTempBadge(company.temperatura)} className="text-lg px-4 py-1">
+                        {company.temperatura.toUpperCase()}
                       </Badge>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Temperatura</p>
-                      <div className="flex items-center gap-2">
-                        {getTempIcon(company.temperatura)}
-                        <Badge variant={getTempBadge(company.temperatura)}>
-                          {company.temperatura}
-                        </Badge>
+                  </div>
+                </div>
+
+                {/* Status Section */}
+                {company.status === 'descartada' && company.motivo_descarte && (
+                  <div className="mb-6 p-4 bg-destructive/10 border-l-4 border-destructive rounded">
+                    <div className="flex items-start gap-2">
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-destructive mb-1">Empresa Descartada</p>
+                        <p className="text-sm">{company.motivo_descarte}</p>
                       </div>
                     </div>
-                    {(company as any).motivo_qualificacao && (
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-muted-foreground">Motivo Qualificação</p>
-                        <p className="text-sm">{(company as any).motivo_qualificacao}</p>
-                      </div>
-                    )}
-                    {(company as any).evidencias && (company as any).evidencias.length > 0 && (
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">
-                          Evidências ({(company as any).evidencias.length})
-                        </p>
-                        <div className="space-y-2">
-                          {(company as any).evidencias.slice(0, 3).map((ev: any, idx: number) => (
-                            <div key={idx} className="text-xs bg-muted p-2 rounded">
-                              <p className="font-medium">{ev.criterio || ev.fonte_nome}</p>
-                              <p className="text-muted-foreground">{ev.evidencia || ev.motivo}</p>
-                            </div>
-                          ))}
-                          {(company as any).evidencias.length > 3 && (
-                            <p className="text-xs text-muted-foreground">
-                              + {(company as any).evidencias.length - 3} evidências adicionais
-                            </p>
+                  </div>
+                )}
+
+                {/* Qualification Reason */}
+                {(company as any).motivo_qualificacao && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                      <p className="text-lg font-semibold">Resumo da Qualificação</p>
+                    </div>
+                    <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+                      <p className="text-sm leading-relaxed">{(company as any).motivo_qualificacao}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Analysis Criteria */}
+                {(company as any).criterios_aplicados && (company as any).criterios_aplicados.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Filter className="h-5 w-5 text-primary" />
+                      <p className="text-lg font-semibold">Critérios de Análise Aplicados</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(company as any).criterios_aplicados.map((criterio: string, idx: number) => (
+                        <div key={idx} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
+                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{criterio}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Buying Intent Signals */}
+                {(company as any).sinais_intencao_compra && (company as any).sinais_intencao_compra.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Flame className="h-5 w-5 text-orange-500" />
+                      <p className="text-lg font-semibold">Sinais de Intenção de Compra</p>
+                    </div>
+                    <div className="space-y-3">
+                      {(company as any).sinais_intencao_compra.map((sinal: any, idx: number) => (
+                        <div key={idx} className="bg-orange-500/5 border-l-4 border-orange-500 p-4 rounded">
+                          <p className="font-medium text-sm mb-1">{sinal.tipo || 'Sinal Identificado'}</p>
+                          <p className="text-sm text-muted-foreground">{sinal.descricao}</p>
+                          {sinal.fonte && (
+                            <a 
+                              href={sinal.fonte} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline mt-2 inline-block"
+                            >
+                              Ver fonte →
+                            </a>
                           )}
                         </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+                )}
+
+                {/* Evidence Section */}
+                {(company as any).evidencias && (company as any).evidencias.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <p className="text-lg font-semibold">
+                        Evidências Coletadas ({(company as any).evidencias.length})
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {(company as any).evidencias.map((ev: any, idx: number) => (
+                        <div key={idx} className="bg-muted/30 p-4 rounded-lg border">
+                          <div className="flex items-start justify-between mb-2">
+                            <p className="font-semibold text-sm">{ev.criterio || ev.fonte_nome || 'Evidência'}</p>
+                            {ev.relevancia && (
+                              <Badge variant="outline" className="text-xs">
+                                Relevância: {ev.relevancia}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{ev.evidencia || ev.motivo}</p>
+                          {ev.fonte_url && (
+                            <a 
+                              href={ev.fonte_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>Ver fonte completa</span>
+                              <span>→</span>
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Competitor Intelligence */}
+                {(company as any).tecnologias_detectadas && (company as any).tecnologias_detectadas.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Search className="h-5 w-5 text-primary" />
+                      <p className="text-lg font-semibold">Tecnologias e Ferramentas Detectadas</p>
+                    </div>
+                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-lg">
+                      <div className="flex flex-wrap gap-2">
+                        {(company as any).tecnologias_detectadas.map((tech: string, idx: number) => (
+                          <Badge key={idx} variant="secondary">
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        💡 Oportunidade: Estas tecnologias podem indicar concorrentes diretos ou parceiros potenciais
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Data Sources */}
+                {(company as any).fontes_consultadas && (company as any).fontes_consultadas.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Download className="h-5 w-5 text-primary" />
+                      <p className="text-lg font-semibold">Fontes Consultadas</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(company as any).fontes_consultadas.map((fonte: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {fonte}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </DraggableDialog>
     </div>
   );
 }
