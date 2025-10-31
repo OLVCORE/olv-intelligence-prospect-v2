@@ -572,24 +572,14 @@ export default function ICPBulkAnalysisWithMapping() {
 
     setAnalysisResults(analysisResults);
     
-    // CRÍTICO: Salvar resultados na quarentena (icp_analysis_results)
-    try {
-      await saveToQuarantine(analysisResults);
-    } catch (error) {
-      console.error('Erro ao salvar na quarentena:', error);
-      toast({
-        title: "Atenção",
-        description: "Análise concluída mas houve erro ao salvar na quarentena. Verifique os logs.",
-        variant: "destructive",
-      });
-    }
-    
+    // Os resultados já foram salvos diretamente durante o processamento
+    // Não precisamos chamar saveToQuarantine novamente
     
     setStep('complete');
 
-    const successCount = analysisResults.filter(r => !r.error && !r.encontrou_totvs).length;
-    const rejectedCount = analysisResults.filter(r => r.encontrou_totvs).length;
-    const errorCount = analysisResults.filter(r => r.error).length;
+    const successCount = analysisResults.filter(r => r.status === 'approved').length;
+    const rejectedCount = analysisResults.filter(r => r.status === 'rejected').length;
+    const errorCount = analysisResults.filter(r => r.status === 'error').length;
 
     toast({
       title: "✅ Análise ICP concluída!",
@@ -702,14 +692,15 @@ export default function ICPBulkAnalysisWithMapping() {
       let encontrouTotvs = false;
       let evidenciasTotvs: any[] = [];
       let portaisVerificados = 0;
+      let scraperFailed = false;
 
       try {
         updateCompanyStatus({ 
-          currentStep: '⏳ Consultando 40+ fontes (aguarde 3-5 minutos)...', 
+          currentStep: '⏳ Consultando fontes externas...', 
           progress: 35 
         });
 
-        // CHAMAR SCRAPER REAL (DEMORA 3-5 MINUTOS)
+        // CHAMAR SCRAPER REAL (se existir)
         const { data: scraperData, error: scraperError } = await supabase.functions.invoke(
           'icp-scraper-real',
           {
@@ -724,8 +715,9 @@ export default function ICPBulkAnalysisWithMapping() {
 
         if (scraperError) {
           console.error('[ICP] Erro no scraper real:', scraperError);
+          scraperFailed = true;
           updateCompanyStatus({ 
-            currentStep: `❌ Erro ao consultar plataformas: ${scraperError.message}`, 
+            currentStep: `⚠️ Scraper indisponível - continuando análise básica`, 
             progress: 40 
           });
         } else if (scraperData && scraperData.success) {
@@ -745,17 +737,20 @@ export default function ICPBulkAnalysisWithMapping() {
               { fonte: 'Análise Multicanal', descricao: `Score ICP alto detectado: ${scraperData.score}` }
             ];
           }
+        } else {
+          scraperFailed = true;
         }
       } catch (error: any) {
         console.error('[ICP] Erro ao executar scraper real:', error);
+        scraperFailed = true;
         updateCompanyStatus({ 
-          currentStep: `⚠️ Erro na análise: ${error.message}`, 
+          currentStep: `⚠️ Scraper indisponível - continuando com análise básica`, 
           progress: 40 
         });
       }
 
-      // Se encontrou TOTVS, marcar como descartado NA QUARENTENA
-      if (encontrouTotvs) {
+      // Se encontrou TOTVS E o scraper funcionou corretamente, marcar como descartado
+      if (encontrouTotvs && !scraperFailed) {
         await supabase
           .from('icp_analysis_results')
           .update({
