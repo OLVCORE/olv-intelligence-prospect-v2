@@ -133,6 +133,17 @@ export function CompanyActionsMenu({
 
           <DropdownMenuItem 
             onClick={() => {
+              navigate(`/central-icp/individual?company=${companyId}`);
+              setIsOpen(false);
+            }}
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+          >
+            <Brain className="h-4 w-4 mr-2" />
+            Análise Individual ICP
+          </DropdownMenuItem>
+
+          <DropdownMenuItem 
+            onClick={() => {
               navigate('/companies');
               setIsOpen(false);
             }}
