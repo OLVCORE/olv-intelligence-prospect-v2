@@ -18,11 +18,11 @@ export default function CentralICPHome() {
       
       if (error) throw error;
 
-      // Buscar empresas na quarentena
+      // Buscar empresas na quarentena (status pendente)
       const { data: quarantineData } = await supabase
         .from('icp_analysis_results')
-        .select('id, moved_to_pool')
-        .eq('moved_to_pool', false);
+        .select('id')
+        .eq('status', 'pendente');
 
       const total = companies?.length || 0;
       const quarantine = quarantineData?.length || 0;
