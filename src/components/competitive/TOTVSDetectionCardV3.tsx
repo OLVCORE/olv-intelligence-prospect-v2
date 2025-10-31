@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, BarChart3, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useTOTVSDetectionV5, useLatestTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
+import { useTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
 import { useTOTVSDetectionReports } from "@/hooks/useTOTVSDetectionReports";
 import { EvidenceDialog } from "@/components/intelligence/EvidenceDialog";
 import { toast } from "sonner";
@@ -29,8 +29,8 @@ interface TOTVSDetectionCardV3Props {
 
 export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
   const detectMutation = useTOTVSDetectionV5();
-  const { data: latestDetection } = useLatestTOTVSDetectionV5(company?.id);
   const { data: reports } = useTOTVSDetectionReports(company?.id);
+  const latestDetection = reports?.[0]; // Usar o primeiro relatório da nova tabela
   const [showMethodology, setShowMethodology] = useState(false);
   const [showEvidences, setShowEvidences] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -152,7 +152,7 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Score de Confiança</span>
-                <Badge variant={latestDetection.status === 'disqualified' ? 'destructive' : 'default'}>
+                <Badge variant={latestDetection.detection_status === 'disqualified' ? 'destructive' : 'default'}>
                   {getScoreLabel(latestDetection.score || 0)}
                 </Badge>
               </div>
@@ -170,16 +170,16 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
             </div>
 
             {/* Status Alert */}
-            {latestDetection.status === 'disqualified' && (
+            {latestDetection.detection_status === 'disqualified' && (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>DESQUALIFICADO:</strong> {latestDetection.disqualification_reason || 'Empresa já usa TOTVS'}
+                  <strong>DESQUALIFICADO:</strong> Empresa já usa TOTVS
                 </AlertDescription>
               </Alert>
             )}
 
-            {latestDetection.status === 'qualified' && (
+            {latestDetection.detection_status === 'qualified' && (
               <Alert className="border-green-200 bg-green-50">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
@@ -356,16 +356,16 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
             )}
 
             {/* Plataformas Escaneadas */}
-            {latestDetection.platforms_scanned && latestDetection.platforms_scanned.length > 0 && (
+            {methodology?.sources_with_results && methodology.sources_with_results.length > 0 && (
               <div className="text-sm text-muted-foreground">
-                <strong>Plataformas escaneadas:</strong>{' '}
-                {latestDetection.platforms_scanned.join(', ')}
+                <strong>Plataformas com dados:</strong>{' '}
+                {methodology.sources_with_results.join(', ')}
               </div>
             )}
 
             {/* Última verificação */}
             <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-              Última verificação: {new Date(latestDetection.checked_at).toLocaleString('pt-BR')}
+              Última verificação: {new Date(latestDetection.created_at).toLocaleString('pt-BR')}
             </div>
           </>
         )}

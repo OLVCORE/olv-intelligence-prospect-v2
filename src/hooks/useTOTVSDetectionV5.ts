@@ -78,7 +78,7 @@ export function useTOTVSDetectionV5() {
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || 'Erro ao detectar uso de TOTVS');
 
-      // Salvar resultado na tabela totvs_usage_detection
+      // Salvar também na tabela antiga para compatibilidade
       const { error: insertError } = await supabase
         .from('totvs_usage_detection')
         .insert([{
@@ -100,12 +100,15 @@ export function useTOTVSDetectionV5() {
         }]);
 
       if (insertError) {
-        console.error('Erro ao salvar detecção:', insertError);
+        console.error('Erro ao salvar detecção na tabela antiga:', insertError);
       }
 
       return data;
     },
     onSuccess: (data, variables) => {
+      // Invalidar as queries da nova tabela
+      queryClient.invalidateQueries({ queryKey: ['totvs-detection-reports', variables.companyId] });
+      // Invalidar também a tabela antiga para compatibilidade
       queryClient.invalidateQueries({ queryKey: ['totvs-detection-v5', variables.companyId] });
       
       const status = data.status === 'disqualified' ? '❌' : '✅';
