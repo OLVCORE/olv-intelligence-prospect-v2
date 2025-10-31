@@ -154,11 +154,11 @@ serve(async (req: Request) => {
     const signals: IntentSignal[] = [];
     const platformsScanned: string[] = [];
     const scoreBreakdown: ScoreBreakdown[] = [];
-const variants = tokenVariants(searchCompanyName);
-const cnpjDigits = cnpj ? cnpj.replace(/\D/g, '') : '';
-const cnpjQuoted = cnpj ? `"${cnpj}"` : '';
-const cnpjDigitsQuoted = cnpjDigits ? `"${cnpjDigits}"` : '';
-const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
+    const variants = tokenVariants(searchCompanyName);
+    const cnpjDigits = cnpj ? cnpj.replace(/\D/g, '') : '';
+    const cnpjQuoted = cnpj ? `"${cnpj}"` : '';
+    const cnpjDigitsQuoted = cnpjDigits ? `"${cnpjDigits}"` : '';
+    const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
 
     if (!googleApiKey || !googleCseId) {
@@ -191,10 +191,10 @@ const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
       let searchUrl = '';
       
       try {
-const host = new URL(source.url).hostname;
-const baseTerm = variants[0] || searchCompanyName;
-const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
-searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
+        const host = new URL(source.url).hostname;
+        const baseTerm = variants[0] || searchCompanyName;
+        const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
+        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -281,18 +281,35 @@ searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=$
       { name: 'PJe Comunica', url: 'https://comunica.pje.jus.br/', points: 10 }
     ];
 
+    // FONTES OPEN WEB - Públicas e acessíveis (10 pontos cada)
+    const openWebSources = [
+      { name: 'CVM RAD', url: 'https://www.rad.cvm.gov.br/', points: 10 },
+      { name: 'B3 BVMF', url: 'https://bvmf.bmfbovespa.com.br/', points: 10 },
+      { name: 'Serasa Experian', url: 'https://empresas.serasaexperian.com.br/', points: 10 },
+      { name: 'ADVFN Brasil', url: 'https://br.advfn.com/', points: 10 },
+      { name: 'Investidor10', url: 'https://investidor10.com.br/', points: 10 },
+      { name: 'Banco Central', url: 'https://aprendervalor.bcb.gov.br/', points: 10 },
+      { name: 'Jusbrasil', url: 'https://www.jusbrasil.com.br/', points: 10 },
+      { name: 'IstoÉ Dinheiro', url: 'https://istoedinheiro.com.br/', points: 10 },
+      { name: 'Alta Administração', url: 'https://altaadmjudicial.com/', points: 10 },
+      { name: 'Public Now', url: 'https://docs.publicnow.com/', points: 10 },
+      { name: 'B3 Site Empresas', url: 'http://siteempresas.bovespa.com.br/', points: 10 },
+      { name: 'Reclame Aqui', url: 'https://www.reclameaqui.com.br/', points: 10 },
+      { name: 'TMA Brasil', url: 'https://www.tmabrasil.org/', points: 10 }
+    ];
+
     for (const source of newsSources) {
       platformsScanned.push(source.name);
       let sourcePoints = 0;
       let searchUrl = '';
       
       try {
-const keywords = ['investimento', 'aporte', 'captação', 'expansão', 'tecnologia', 'digital', 'transformação', 'aumento de capital'];
-const baseTerm = variants[0] || searchCompanyName;
-const host = new URL(source.url).hostname;
-const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
-const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
-searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        const keywords = ['investimento', 'aporte', 'captação', 'expansão', 'tecnologia', 'digital', 'transformação', 'aumento de capital'];
+        const baseTerm = variants[0] || searchCompanyName;
+        const host = new URL(source.url).hostname;
+        const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+        const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
+        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -303,7 +320,7 @@ searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=$
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               sourcePoints = source.points;
               signals.push({
                 type: 'news_mention',
@@ -339,12 +356,12 @@ if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(
       let searchUrl = '';
       
       try {
-const keywords = ['startup', 'inovação', 'tecnologia', 'transformação digital', 'investimento', 'aporte', 'captação'];
-const baseTerm = variants[0] || searchCompanyName;
-const host = new URL(source.url).hostname;
-const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
-const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
-searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+        const keywords = ['startup', 'inovação', 'tecnologia', 'transformação digital', 'investimento', 'aporte', 'captação'];
+        const baseTerm = variants[0] || searchCompanyName;
+        const host = new URL(source.url).hostname;
+        const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+        const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
+        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -355,7 +372,7 @@ searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=$
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               sourcePoints = source.points;
               signals.push({
                 type: 'innovation_mention',
@@ -391,10 +408,10 @@ if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(
       let searchUrl = '';
       
       try {
-const host = new URL(source.url).hostname;
-const baseTerm = variants[0] || searchCompanyName;
-const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
-searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
+        const host = new URL(source.url).hostname;
+        const baseTerm = variants[0] || searchCompanyName;
+        const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
+        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -405,7 +422,7 @@ searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=$
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
               sourcePoints = isNegative ? -source.points : source.points;
               signals.push({
@@ -435,16 +452,82 @@ if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(
       });
     }
 
+    // FONTES OPEN WEB - 10 pontos cada
+    for (const source of openWebSources) {
+      platformsScanned.push(source.name);
+      let sourcePoints = 0;
+      let searchUrl = '';
+      
+      try {
+        const host = new URL(source.url).hostname;
+        const baseTerm = variants[0] || searchCompanyName;
+        const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
+        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
+        
+        const res = await fetch(searchUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+            const normalizedText = normalizeName(fullText);
+            
+            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+              const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
+              
+              if (isNegative) {
+                sourcePoints = -source.points;
+                signals.push({
+                  type: 'legal_negative',
+                  score: sourcePoints,
+                  title: `⚠️ ALERTA (${source.name}): ${item.title}`,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'high',
+                  reason: `🚨 SINAL NEGATIVO encontrado em fonte pública`
+                });
+              } else {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'open_web_mention',
+                  score: sourcePoints,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'medium',
+                  reason: `Menção encontrada em fonte pública (${source.name})`
+                });
+              }
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`[detect-intent-v3] Erro ${source.name}:`, e);
+      }
+      
+      scoreBreakdown.push({
+        source: source.name,
+        points_awarded: sourcePoints,
+        max_points: source.points,
+        reason: sourcePoints < 0 ? `🚨 SINAL NEGATIVO encontrado` : sourcePoints > 0 ? `Menção encontrada em ${source.name}` : 'Nenhuma menção encontrada',
+        search_url: searchUrl
+      });
+    }
+
     // JOB POSTINGS (LinkedIn Jobs) - 30 pontos
     const jobKeywords = [
       'CIO', 'Diretor TI', 'Gerente TI', 'Analista Sistemas', 
       'ERP', 'Transformação Digital', 'Diretor Tecnologia',
       'VP Technology', 'Head TI', 'Coordenador TI'
     ];
-const baseTerm = variants[0] || searchCompanyName;
-const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
-const jobQuery = `${left} AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
-const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
+    const baseTerm = variants[0] || searchCompanyName;
+    const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+    const jobQuery = `${left} AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
+    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
     
     platformsScanned.push('LinkedIn Jobs');
     let jobPoints = 0;
@@ -461,8 +544,8 @@ const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&c
           const fullText = `${title} ${snippet}`.toLowerCase();
           const normalizedText = normalizeName(fullText);
           
-if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-  jobPoints = 30;
+          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            jobPoints = 30;
             signals.push({
               type: 'job_posting',
               score: 30,
