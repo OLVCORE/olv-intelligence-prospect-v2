@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { useSimpleTOTVSCheck, useLatestSimpleTOTVSCheck, type Evidence } from "@/hooks/useSimpleTOTVSCheck";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isValidUrl, formatWebsiteUrl } from "@/lib/utils/urlHelpers";
 import { toast } from "sonner";
@@ -370,13 +370,13 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
   const isLoading = isLoadingLatest || checkMutation.isPending;
 
-  // Auto-executar quando não há dados e ainda não tentou
-  const shouldAutoCheck = !latestCheck && !isLoading && !autoCheckAttempted && companyId && companyName;
-  
-  if (shouldAutoCheck) {
-    setAutoCheckAttempted(true);
-    handleCheck();
-  }
+  // Auto-executar uma única vez quando não há resultado anterior
+  useEffect(() => {
+    if (!autoCheckAttempted && !isLoadingLatest && !checkMutation.isPending && !latestCheck && companyId && companyName) {
+      setAutoCheckAttempted(true);
+      handleCheck();
+    }
+  }, [autoCheckAttempted, isLoadingLatest, checkMutation.isPending, latestCheck, companyId, companyName]);
 
   return (
     <Card className="p-6">
@@ -406,7 +406,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
         </Button>
       </div>
 
-      {!latestCheck && !isLoading && !shouldAutoCheck && (
+      {!latestCheck && !isLoading && !autoCheckAttempted && (
         <Alert>
           <AlertDescription>
             Nenhuma verificação realizada ainda. Clique em "Verificar Agora" para iniciar a análise.
