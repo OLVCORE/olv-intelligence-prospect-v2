@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
 import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
+import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
 
@@ -23,6 +24,7 @@ export default function ICPQuarantine() {
   const [tempFilter, setTempFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewCompany, setPreviewCompany] = useState<any>(null);
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -127,10 +129,29 @@ export default function ICPQuarantine() {
       toast.error('Selecione pelo menos uma empresa');
       return;
     }
+    setPreviewCompany(null);
     setPreviewOpen(true);
   };
 
+  const handlePreviewSingle = (company: any) => {
+    setPreviewCompany(company);
+    setPreviewOpen(true);
+  };
+
+  const handleApproveSingle = (id: string) => {
+    approveBatch([id]);
+  };
+
+  const handleRejectSingle = (id: string, motivo: string) => {
+    rejectCompany({ analysisId: id, motivo });
+  };
+
+  const handleDeleteSingle = (id: string) => {
+    deleteBatch([id]);
+  };
+
   const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
+  const displayCompanies = previewCompany ? [previewCompany] : selectedCompanies;
 
   const getTempIcon = (temp: string) => {
     switch (temp) {
@@ -379,45 +400,13 @@ export default function ICPQuarantine() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        {company.status === 'pendente' && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => approveBatch([company.id])}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                Aprovar e mover para Pool
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => 
-                                    rejectCompany({ 
-                                      analysisId: company.id, 
-                                      motivo: 'Descartado manualmente' 
-                                    })
-                                  }
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                Descartar e remover
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
+                      <QuarantineRowActions
+                        company={company}
+                        onApprove={handleApproveSingle}
+                        onReject={handleRejectSingle}
+                        onDelete={handleDeleteSingle}
+                        onPreview={handlePreviewSingle}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
@@ -431,14 +420,19 @@ export default function ICPQuarantine() {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preview das Empresas Selecionadas</DialogTitle>
+            <DialogTitle>
+              {previewCompany ? 'Preview da Empresa' : 'Preview das Empresas Selecionadas'}
+            </DialogTitle>
             <DialogDescription>
-              {selectedCompanies.length} empresa(s) selecionada(s)
+              {previewCompany 
+                ? `Visualizando: ${previewCompany.razao_social}`
+                : `${displayCompanies.length} empresa(s) selecionada(s)`
+              }
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            {selectedCompanies.map((company) => (
+            {displayCompanies.map((company) => (
               <Card key={company.id}>
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-2 gap-4">
