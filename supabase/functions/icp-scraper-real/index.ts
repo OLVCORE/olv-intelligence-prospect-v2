@@ -205,7 +205,7 @@ serve(async (req) => {
             
             // VALIDAÇÃO 1: Verifica se menciona a empresa
             if (!validateMention(fullText, empresa)) {
-              const reason = `❌ DESCARTADO: Não menciona "${empresa}" (encontrado: "${title.substring(0, 50)}...")`;
+              const reason = `⚠️ Resultado ignorado: NÃO menciona "${empresa}" (encontrado: "${title.substring(0, 50)}...")`;
               console.log(`[ICP SCRAPER] ${reason}`);
               discardReasons.push(reason);
               continue;
@@ -214,13 +214,15 @@ serve(async (req) => {
             // VALIDAÇÃO 2: Verifica se menciona produtos TOTVS
             const products = detectTotvsProducts(fullText);
             if (products.length === 0) {
-              const reason = `❌ DESCARTADO: Menciona "${empresa}" mas NÃO menciona produtos TOTVS (link: ${link})`;
+              const reason = `⚠️ Resultado ignorado: Menciona "${empresa}" mas NÃO menciona produtos TOTVS (link: ${link})`;
               console.log(`[ICP SCRAPER] ${reason}`);
               discardReasons.push(reason);
               continue;
             }
             
-            // ✅ EVIDÊNCIA VÁLIDA! Empresa + TOTVS encontrados
+            // 🚨 EVIDÊNCIA DE DESCARTE! Empresa JÁ USA TOTVS
+            console.log(`[ICP SCRAPER] 🚨 EVIDÊNCIA ENCONTRADA: "${empresa}" JÁ USA ${products.join(', ')} | Link: ${link}`);
+            
             evidencias.push({
               criterio: `Vaga de Emprego - ${platform.name}`,
               categoria: 'vagas_totvs',
@@ -237,7 +239,7 @@ serve(async (req) => {
               pontos_atribuidos: platform.weight,
               peso_criterio: platform.weight / 100,
               confiabilidade: 'alta',
-              motivo: `✅ APROVADO: Vaga em ${platform.name} menciona "${empresa}" + ${products.join(', ')} (período: últimos 5 anos)`,
+              motivo: `🚨 EVIDÊNCIA DE DESCARTE: Vaga em ${platform.name} exige expertise em ${products.join(', ')} - Empresa "${empresa}" JÁ É CLIENTE TOTVS (período: últimos 5 anos)`,
             });
             
             pointsAwarded = platform.weight;
@@ -277,8 +279,8 @@ serve(async (req) => {
           points_awarded: pointsAwarded,
           max_points: platform.weight,
           reason: pointsAwarded > 0 
-            ? `✅ Vaga encontrada (1-5 anos) mencionando ${empresa} + produtos TOTVS`
-            : `❌ Nenhuma vaga válida (1-5 anos) mencionando ${empresa} + TOTVS${discardReasons.length > 0 ? ` | Motivos: ${discardReasons[0]}` : ''}`
+            ? `🚨 EVIDÊNCIA: Vaga (1-5 anos) exige expertise TOTVS - Empresa JÁ É CLIENTE`
+            : `✅ Sem evidências de uso de TOTVS em vagas (1-5 anos)${discardReasons.length > 0 ? ` | ${discardReasons[0]}` : ''}`
         });
 
       } catch (error: any) {
@@ -339,7 +341,7 @@ serve(async (req) => {
           
           // VALIDAÇÃO: Verifica se menciona a empresa
           if (!validateMention(fullText, empresa)) {
-            const reason = `❌ DESCARTADO: Documento não menciona "${empresa}"`;
+            const reason = `⚠️ Documento ignorado: NÃO menciona "${empresa}"`;
             console.log(`[ICP SCRAPER] ${reason}`);
             discardReasons.push(reason);
             continue;
@@ -351,6 +353,8 @@ serve(async (req) => {
           
           const points = isTotvsCreditor ? 50 : 25;
           const confidence = isTotvsCreditor ? 'alta' : 'media';
+          
+          console.log(`[ICP SCRAPER] 🚨 EVIDÊNCIA ENCONTRADA: ${isTotvsCreditor ? 'TOTVS CREDORA no balanço!' : 'TOTVS mencionada em doc financeiro'} | Link: ${link}`);
           
           evidencias.push({
             criterio: 'Documento Financeiro',
@@ -368,8 +372,8 @@ serve(async (req) => {
             peso_criterio: points / 100,
             confiabilidade: confidence,
             motivo: isTotvsCreditor 
-              ? `✅ APROVADO: TOTVS aparece como CREDORA no balanço - empresa JÁ COMPROU software TOTVS (período: últimos 5 anos) | Link: ${link}`
-              : `✅ APROVADO: Documento financeiro menciona TOTVS (período: últimos 5 anos) | Link: ${link}`,
+              ? `🚨 EVIDÊNCIA CRÍTICA: TOTVS é CREDORA no balanço - Empresa JÁ COMPROU software TOTVS (período: últimos 5 anos)`
+              : `🚨 EVIDÊNCIA: Documento financeiro menciona TOTVS (período: últimos 5 anos)`,
           });
           
           financialPoints = points;
@@ -395,10 +399,10 @@ serve(async (req) => {
         points_awarded: financialPoints,
         max_points: 50,
         reason: financialPoints === 50 
-          ? `✅ TOTVS como credora em balanço (1-5 anos) - empresa JÁ É CLIENTE`
+          ? `🚨 EVIDÊNCIA CRÍTICA: TOTVS é CREDORA - Empresa JÁ COMPROU TOTVS`
           : financialPoints === 25
-          ? `✅ Documento (1-5 anos) menciona TOTVS mas não como credora`
-          : `❌ Nenhum documento financeiro válido (1-5 anos) encontrado${discardReasons.length > 0 ? ` | ${discardReasons[0]}` : ''}`
+          ? `🚨 EVIDÊNCIA: Documento menciona TOTVS`
+          : `✅ Sem evidências de TOTVS em documentos financeiros (1-5 anos)${discardReasons.length > 0 ? ` | ${discardReasons[0]}` : ''}`
       });
       
     } catch (error: any) {
@@ -519,8 +523,8 @@ serve(async (req) => {
         logs_gerados: logs.length,
         tempo_total_segundos: tempoTotal,
         message: status === 'disqualified' 
-          ? `⚠️ DESQUALIFICAR: Empresa já usa TOTVS (score: ${scoreICP}/100)`
-          : `✅ QUALIFICADO: Empresa não usa TOTVS (score: ${scoreICP}/100)`,
+          ? `⚠️ DESQUALIFICAR: ${evidencias.length} evidência(s) encontrada(s) - Empresa JÁ USA TOTVS (score: ${scoreICP}/100)`
+          : `✅ QUALIFICADO: Nenhuma evidência de TOTVS encontrada - ICP IDEAL (score: ${scoreICP}/100)`,
         evidencias,
         score_breakdown: scoreBreakdown,
       }),
