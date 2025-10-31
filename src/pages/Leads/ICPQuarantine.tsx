@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, Newspaper } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, Newspaper, Target, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
 import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
+import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
+import { useMultipleSimpleTOTVSChecks } from '@/hooks/useSimpleTOTVSCheckBatch';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
 
@@ -26,6 +28,8 @@ export default function ICPQuarantine() {
   const [searchQuery, setSearchQuery] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewCompany, setPreviewCompany] = useState<any>(null);
+  const [totvsCheckDialogOpen, setTotvsCheckDialogOpen] = useState(false);
+  const [selectedTotvsCheckCompany, setSelectedTotvsCheckCompany] = useState<any>(null);
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -42,6 +46,10 @@ export default function ICPQuarantine() {
     c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.cnpj?.includes(searchQuery)
   );
+
+  // Buscar todos os checks de TOTVS para as empresas exibidas
+  const companyIds = filteredCompanies.map(c => c.id);
+  const { data: totvsChecks = {} } = useMultipleSimpleTOTVSChecks(companyIds);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -168,6 +176,12 @@ export default function ICPQuarantine() {
     if (!company) return;
     refreshBatch([{ id, razao_social: company.razao_social, cnpj: company.cnpj }]);
   };
+
+  const handleOpenTotvsCheck = (company: any) => {
+    setSelectedTotvsCheckCompany(company);
+    setTotvsCheckDialogOpen(true);
+  };
+
   const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
   const displayCompanies = previewCompany ? [previewCompany] : selectedCompanies;
 
@@ -363,6 +377,7 @@ export default function ICPQuarantine() {
                 <TableHead>Score ICP</TableHead>
                 <TableHead>Temperatura</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>TOTVS Check</TableHead>
                 <TableHead>Motivo Descarte</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -370,18 +385,20 @@ export default function ICPQuarantine() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCompanies.map((company) => (
+                filteredCompanies.map((company) => {
+                  const totvsCheck = totvsChecks[company.id];
+                  return (
                   <TableRow key={company.id}>
                     <TableCell>
                       <Checkbox
@@ -413,6 +430,48 @@ export default function ICPQuarantine() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {totvsCheck ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenTotvsCheck(company)}
+                                className="h-8 px-2 gap-1"
+                              >
+                                <Target className="h-4 w-4" />
+                                <Badge 
+                                  variant={
+                                    totvsCheck.status === 'go' ? 'default' : 
+                                    totvsCheck.status === 'no-go' ? 'destructive' : 
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {totvsCheck.status === 'go' ? 'GO' : 
+                                   totvsCheck.status === 'no-go' ? 'NO-GO' : 
+                                   'REVISAR'}
+                                </Badge>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="text-xs">
+                                <p>Verificado em: {new Date(totvsCheck.checked_at).toLocaleString('pt-BR')}</p>
+                                <p className="font-semibold mt-1">{totvsCheck.total_evidences} evidência(s)</p>
+                                <p className="text-muted-foreground">Clique para ver relatório completo</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Não verificado
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {company.motivo_descarte && (
                         <span className="text-sm text-muted-foreground">
                           {company.motivo_descarte}
@@ -430,7 +489,8 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                   </TableRow>
-                ))
+                );
+                })
               )}
             </TableBody>
           </Table>
@@ -743,6 +803,18 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
+
+      {/* TOTVS Check Dialog */}
+      {selectedTotvsCheckCompany && (
+        <SimpleTOTVSCheckDialog
+          companyId={selectedTotvsCheckCompany.id}
+          companyName={selectedTotvsCheckCompany.razao_social || "Empresa"}
+          cnpj={selectedTotvsCheckCompany.cnpj || undefined}
+          domain={selectedTotvsCheckCompany.domain || undefined}
+          open={totvsCheckDialogOpen}
+          onOpenChange={setTotvsCheckDialogOpen}
+        />
+      )}
     </div>
   );
 }

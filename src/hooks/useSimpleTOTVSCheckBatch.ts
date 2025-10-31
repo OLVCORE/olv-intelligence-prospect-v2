@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createDeterminateProgressToast } from '@/lib/utils/progressToast';
@@ -66,5 +66,38 @@ export function useSimpleTOTVSCheckBatch() {
         description: error?.message || 'Falha desconhecida',
       });
     },
+  });
+}
+
+// Hook para buscar checks de múltiplas empresas de uma vez
+export function useMultipleSimpleTOTVSChecks(companyIds: string[]) {
+  return useQuery({
+    queryKey: ['simple-totvs-checks-multiple', companyIds],
+    queryFn: async () => {
+      if (companyIds.length === 0) return {};
+
+      const { data, error } = await supabase
+        .from('simple_totvs_checks')
+        .select('*')
+        .in('company_id', companyIds)
+        .order('checked_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar verificações:', error);
+        throw error;
+      }
+
+      // Agrupar por company_id e pegar apenas o mais recente
+      const grouped: Record<string, any> = {};
+      data?.forEach(check => {
+        if (!grouped[check.company_id]) {
+          grouped[check.company_id] = check;
+        }
+      });
+
+      return grouped;
+    },
+    enabled: companyIds.length > 0,
+    staleTime: 30000, // 30 segundos
   });
 }
