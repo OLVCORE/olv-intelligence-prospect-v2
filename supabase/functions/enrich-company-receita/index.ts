@@ -59,7 +59,7 @@ serve(async (req) => {
     
     const { data: company, error: companyError } = await supabase
       .from('companies')
-      .select('id, cnpj, headquarters_state, headquarters_city, niche_code, raw_data')
+      .select('id, cnpj, headquarters_state, headquarters_city, raw_data')
       .eq('id', company_id)
       .maybeSingle();
 
@@ -145,13 +145,10 @@ serve(async (req) => {
       updateData.headquarters_city = receitaData.municipio;
     }
 
-    // CNAEs primários e secundários (OPCIONAL - não obrigatório)
-    if (receitaData.atividade_principal?.[0]?.code) {
-      updateData.niche_code = receitaData.atividade_principal[0].code;
-    }
-
+    // CNAEs já estão em raw_data, então não duplicamos aqui
+    // Apenas se quiser popular algum campo de 'nicho' futuramente
     if (receitaData.atividade_principal?.[0]?.text) {
-      updateData.niche = receitaData.atividade_principal[0].text;
+      updateData.industry = receitaData.atividade_principal[0].text;
     }
 
     // Adicionar dados extras se disponíveis
