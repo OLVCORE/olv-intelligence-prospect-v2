@@ -103,6 +103,57 @@ function normalizeCompany(name: string) {
     .trim();
 }
 
+function proximityCompanyAndTotvs(text: string, companyName: string, maxDistance = 60) {
+  const t = (text || '').toLowerCase();
+  const companyNorm = normalizeCompany(companyName);
+
+  // tokens relevantes do nome da empresa (>= 3 chars)
+  const companyTokens = companyNorm.split(' ').filter(w => w.length >= 3);
+
+  // índices de ocorrências
+  const findAll = (needle: string) => {
+    const idxs: number[] = [];
+    let start = 0;
+    while (true) {
+      const i = t.indexOf(needle.toLowerCase(), start);
+      if (i === -1) break;
+      idxs.push(i);
+      start = i + needle.length;
+    }
+    return idxs;
+  };
+
+  const totvsTerms = ['totvs','microsiga','protheus','datasul','rm','logix','winthor','fluig','backoffice'];
+  const totvsIdx: number[] = [];
+  for (const term of totvsTerms) totvsIdx.push(...findAll(term));
+  if (totvsIdx.length === 0) return false;
+
+  const companyIdx: number[] = [];
+  for (const token of companyTokens) companyIdx.push(...findAll(token));
+  if (companyIdx.length === 0) return false;
+
+  // menor distância entre qualquer termo TOTVS e qualquer token da empresa
+  let minDist = Infinity;
+  for (const ti of totvsIdx) {
+    for (const ci of companyIdx) {
+      minDist = Math.min(minDist, Math.abs(ti - ci));
+      if (minDist <= maxDistance) return true;
+    }
+  }
+  return minDist <= maxDistance;
+}
+
+function companyAndTotvsSameSentence(text: string, companyName: string) {
+  const sentences = (text || '').split(/[\.|!|\?|\u00B7|\u2022|\n]+/);
+  const cNorm = normalizeCompany(companyName);
+  const totvsRegex = /(totvs|microsiga|protheus|datasul|rm|logix|winthor|fluig|backoffice)/i;
+  return sentences.some(s => {
+    const t = s.toLowerCase();
+    const hasCompany = t.includes(cNorm) || cNorm.split(' ').some(w => w.length >= 3 && t.includes(w));
+    return hasCompany && totvsRegex.test(t);
+  });
+}
+
 function crossMatch(text: string, companyName: string) {
   const t = (text || '').toLowerCase();
   const companyNorm = normalizeCompany(companyName);
@@ -184,11 +235,18 @@ serve(async (req) => {
       if (vagasData.organic) {
         for (const item of vagasData.organic) {
           const text = `${item.title || ''} ${item.snippet || ''}`;
+          const isLinkedInProfile = /linkedin\.com\/in\//.test(item.link || '');
           
-          // Aplica correlação flexível
+          // Aplica correlação com proximidade contextual (mesma frase OU perto)
+          const isRelevant = companyAndTotvsSameSentence(text, company_name) || proximityCompanyAndTotvs(text, company_name);
           const { matched, detectedProducts } = crossMatch(text, company_name);
 
-          if (matched) {
+          // Regras:
+          // - Perfil pessoal do LinkedIn (/in/): EXIGE proximidade Empresa ↔ TOTVS
+          // - Demais fontes: aceita correlação flexível padrão
+          const shouldAdd = (isLinkedInProfile && isRelevant) || (!isLinkedInProfile && matched);
+
+          if (shouldAdd) {
             evidencesByCategory.vagas.push({
               source: new URL(item.link).hostname,
               category: 'vagas',
@@ -228,10 +286,12 @@ serve(async (req) => {
         for (const item of noticiasData.organic) {
           const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          // Aplica correlação flexível
+          // Aplica correlação com proximidade contextual
+          const isRelevant = proximityCompanyAndTotvs(text, company_name);
           const { matched, detectedProducts } = crossMatch(text, company_name);
 
-          if (matched) {
+          // Só considera se há proximidade contextual OU correlação direta
+          if (isRelevant || matched) {
             evidencesByCategory.noticias.push({
               source: new URL(item.link).hostname,
               category: 'noticias',
@@ -271,10 +331,12 @@ serve(async (req) => {
         for (const item of docsData.organic) {
           const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          // Aplica correlação flexível
+          // Aplica correlação com proximidade contextual
+          const isRelevant = proximityCompanyAndTotvs(text, company_name);
           const { matched, detectedProducts } = crossMatch(text, company_name);
 
-          if (matched) {
+          // Só considera se há proximidade contextual OU correlação direta
+          if (isRelevant || matched) {
             evidencesByCategory.docs_oficiais.push({
               source: new URL(item.link).hostname,
               category: 'docs_oficiais',
