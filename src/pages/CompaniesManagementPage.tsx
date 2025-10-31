@@ -44,6 +44,8 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { CNPJDiscoveryDialog } from '@/components/companies/CNPJDiscoveryDialog';
+import { formatWebsiteUrl, isValidUrl, extractDomain } from '@/lib/utils/urlHelpers';
+import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
 
 
 export default function CompaniesManagementPage() {
@@ -1052,16 +1054,21 @@ export default function CompaniesManagementPage() {
                         <EnrichmentStatusBadge companyId={company.id} showProgress />
                       </TableCell>
                       <TableCell>
-                        {company.website ? (
-                          <a
-                            href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {company.website}
-                          </a>
+                        {company.website || company.domain ? (
+                          isValidUrl(company.website || company.domain) ? (
+                            <a
+                              href={formatWebsiteUrl(company.website || company.domain)!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {extractDomain(company.website || company.domain)}
+                              <ExternalLinkIcon className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-amber-600">⚠️ Inválido</span>
+                          )
                         ) : (
                           <span className="text-xs text-muted-foreground">N/A</span>
                         )}

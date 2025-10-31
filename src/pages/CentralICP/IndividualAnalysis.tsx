@@ -15,6 +15,8 @@ import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
 import { CompanyEnrichmentDialog } from "@/components/icp/CompanyEnrichmentDialog";
 import { CompanyActionsMenu } from "@/components/companies/CompanyActionsMenu";
 import { toast } from "sonner";
+import { ExternalLink } from "lucide-react";
+import { formatWebsiteUrl, isValidUrl, extractDomain } from "@/lib/utils/urlHelpers";
 
 export default function IndividualAnalysis() {
   const navigate = useNavigate();
@@ -166,10 +168,28 @@ export default function IndividualAnalysis() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <CardTitle className="text-xl">{company.name}</CardTitle>
-                  <CardDescription>
-                    {company.cnpj && `CNPJ: ${company.cnpj} • `}
-                    {(company.domain || company.website) && (company.domain || company.website)}
-                    {(company.headquarters_city || company.headquarters_state) && ` • ${company.headquarters_city || ''}${company.headquarters_city && company.headquarters_state ? ' - ' : ''}${company.headquarters_state || ''}`}
+                  <CardDescription className="flex items-center gap-2 flex-wrap">
+                    {company.cnpj && <span>CNPJ: {company.cnpj}</span>}
+                    {company.cnpj && (company.domain || company.website || company.headquarters_city || company.headquarters_state) && <span>•</span>}
+                    {(company.domain || company.website) && (
+                      isValidUrl(company.domain || company.website) ? (
+                        <a 
+                          href={formatWebsiteUrl(company.domain || company.website)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          {extractDomain(company.domain || company.website)}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-amber-600 text-xs">⚠️ Website inválido: {company.domain || company.website}</span>
+                      )
+                    )}
+                    {(company.headquarters_city || company.headquarters_state) && (company.domain || company.website) && <span>•</span>}
+                    {(company.headquarters_city || company.headquarters_state) && (
+                      <span>{company.headquarters_city || ''}{company.headquarters_city && company.headquarters_state ? ' - ' : ''}{company.headquarters_state || ''}</span>
+                    )}
                   </CardDescription>
                 </div>
                 <Button
@@ -187,7 +207,24 @@ export default function IndividualAnalysis() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 <div><span className="text-muted-foreground">Razão Social:</span> <span className="font-medium">{company.name}</span></div>
                 <div><span className="text-muted-foreground">CNPJ:</span> <span className="font-medium">{company.cnpj || '—'}</span></div>
-                <div><span className="text-muted-foreground">Domínio:</span> <span className="font-medium">{company.domain || company.website || '—'}</span></div>
+                <div>
+                  <span className="text-muted-foreground">Website:</span> 
+                  {(company.domain || company.website) && isValidUrl(company.domain || company.website) ? (
+                    <a 
+                      href={formatWebsiteUrl(company.domain || company.website)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-1 font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {extractDomain(company.domain || company.website)}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (company.domain || company.website) ? (
+                    <span className="ml-1 text-amber-600 text-xs">⚠️ Inválido: {company.domain || company.website}</span>
+                  ) : (
+                    <span className="ml-1 font-medium">—</span>
+                  )}
+                </div>
                 <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{company.headquarters_state || '—'}</span></div>
                 <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{company.headquarters_city || '—'}</span></div>
                 <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{company.headquarters_country || '—'}</span></div>
