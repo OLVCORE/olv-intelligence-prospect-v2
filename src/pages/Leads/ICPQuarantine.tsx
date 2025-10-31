@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, Newspaper } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -507,9 +507,21 @@ export default function ICPQuarantine() {
 
                 {/* Analysis Criteria */}
                 {(() => {
-                  const criterios = (company as any).criterios_aplicados 
-                    || (company as any).motivos 
-                    || Object.keys(((company as any).breakdown || {}));
+                  const motivos: string[] = (company as any).motivos || [];
+                  const breakdown = (company as any).breakdown || {};
+                  const labelMap: Record<string, string> = {
+                    web_presence: 'Presença web detectada',
+                    news: 'Notícias recentes',
+                    tecnologia: 'Tecnologia',
+                    cnae: 'CNAE',
+                    porte: 'Porte',
+                    situacao: 'Situação',
+                    localizacao: 'Localização',
+                  };
+                  const criteriosRaw: string[] = motivos.length > 0
+                    ? motivos
+                    : Object.keys(breakdown).map(k => labelMap[k] || k);
+                  const criterios = Array.from(new Set(criteriosRaw)).filter(Boolean);
                   if (!criterios || criterios.length === 0) return null;
                   return (
                     <div className="mb-6">
@@ -605,6 +617,72 @@ export default function ICPQuarantine() {
                               </a>
                             )}
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Resultados Web */}
+                {(() => {
+                  const organic = (company as any).raw_analysis?.serper?.organic || [];
+                  if (!organic || organic.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Globe className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">Resultados Web</p>
+                      </div>
+                      <div className="space-y-3">
+                        {organic.map((item: any, idx: number) => (
+                          <a
+                            key={idx}
+                            href={item.link || item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block p-3 rounded border hover:bg-accent transition-colors"
+                          >
+                            <p className="font-medium text-sm">{item.title || 'Resultado'}</p>
+                            {item.snippet && (
+                              <p className="text-xs text-muted-foreground mt-1">{item.snippet}</p>
+                            )}
+                            {(item.link || item.url) && (
+                              <p className="text-[10px] text-primary mt-1">{item.link || item.url}</p>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Notícias Recentes */}
+                {(() => {
+                  const news = (company as any).raw_analysis?.serper?.news || [];
+                  if (!news || news.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Newspaper className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">Notícias Recentes</p>
+                      </div>
+                      <div className="space-y-3">
+                        {news.map((n: any, idx: number) => (
+                          <a
+                            key={idx}
+                            href={n.link || n.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block p-3 rounded border hover:bg-accent transition-colors"
+                          >
+                            <p className="font-medium text-sm">{n.title || 'Notícia'}</p>
+                            {n.snippet && (
+                              <p className="text-xs text-muted-foreground mt-1">{n.snippet}</p>
+                            )}
+                            {(n.date || n.source) && (
+                              <p className="text-[10px] text-muted-foreground mt-1">{n.source ? `${n.source} • ` : ''}{n.date || ''}</p>
+                            )}
+                          </a>
                         ))}
                       </div>
                     </div>

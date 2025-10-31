@@ -18,7 +18,16 @@ export function createDeterminateProgressToast(title: string, total: number) {
         <div className="group toast bg-background text-foreground border border-border shadow-lg rounded-md p-3 w-80">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{title}</span>
-            <span className="text-xs text-muted-foreground">{percent}%</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{percent}%</span>
+              <button
+                aria-label="Fechar"
+                className="text-muted-foreground/70 hover:text-foreground text-xs"
+                onClick={() => toast.dismiss(id)}
+              >
+                ✕
+              </button>
+            </div>
           </div>
           <div className="mt-2 h-2 bg-muted rounded overflow-hidden">
             <div
@@ -46,8 +55,14 @@ export function createDeterminateProgressToast(title: string, total: number) {
       current = Math.max(0, Math.min(current + delta, total));
       render();
     },
-    success: (message: string) => toast.success(message, { id }),
-    error: (message: string) => toast.error(message, { id }),
+    success: (message: string) => {
+      toast.success(message, { id, duration: 3000 });
+      setTimeout(() => toast.dismiss(id), 3200);
+    },
+    error: (message: string) => {
+      toast.error(message, { id, duration: 4000 });
+      setTimeout(() => toast.dismiss(id), 4200);
+    },
     dismiss: () => toast.dismiss(id),
   };
 }
