@@ -72,6 +72,10 @@ function tokenVariants(name: string): string[] {
   return variants;
 }
 
+function digitsOnly(s: string): string {
+  return (s || '').replace(/\D/g, '');
+}
+
 // Palavras-chave negativas fortes (legal/financeiro)
 const negativeKeywords = [
   'recuperacao judicial',
@@ -150,8 +154,11 @@ serve(async (req: Request) => {
     const signals: IntentSignal[] = [];
     const platformsScanned: string[] = [];
     const scoreBreakdown: ScoreBreakdown[] = [];
-    const variants = tokenVariants(searchCompanyName);
-    const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
+const variants = tokenVariants(searchCompanyName);
+const cnpjDigits = cnpj ? cnpj.replace(/\D/g, '') : '';
+const cnpjQuoted = cnpj ? `"${cnpj}"` : '';
+const cnpjDigitsQuoted = cnpjDigits ? `"${cnpjDigits}"` : '';
+const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
 
     if (!googleApiKey || !googleCseId) {
@@ -184,8 +191,10 @@ serve(async (req: Request) => {
       let searchUrl = '';
       
       try {
-        const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
+const host = new URL(source.url).hostname;
+const baseTerm = variants[0] || searchCompanyName;
+const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
+searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -199,7 +208,7 @@ serve(async (req: Request) => {
               const normalizedText = normalizeName(fullText);
               
               // Verificar se contém o nome da empresa (mais flexível)
-              const companyMentioned = variants.some(v => normalizedText.includes(v));
+              const companyMentioned = variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits));
               
               if (companyMentioned) {
                 // Detectar sinais negativos
@@ -278,9 +287,12 @@ serve(async (req: Request) => {
       let searchUrl = '';
       
       try {
-        const keywords = ['investimento', 'expansão', 'tecnologia', 'digital', 'transformação'];
-        const query = `"${variants[0]}" (${keywords.join(' OR ')}) site:${new URL(source.url).hostname}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+const keywords = ['investimento', 'aporte', 'captação', 'expansão', 'tecnologia', 'digital', 'transformação', 'aumento de capital'];
+const baseTerm = variants[0] || searchCompanyName;
+const host = new URL(source.url).hostname;
+const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
+searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -291,7 +303,7 @@ serve(async (req: Request) => {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-            if (variants.some(v => normalizedText.includes(v))) {
+if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               sourcePoints = source.points;
               signals.push({
                 type: 'news_mention',
@@ -327,9 +339,12 @@ serve(async (req: Request) => {
       let searchUrl = '';
       
       try {
-        const keywords = ['startup', 'inovação', 'tecnologia', 'transformação digital', 'investimento'];
-        const query = `"${variants[0]}" (${keywords.join(' OR ')}) site:${new URL(source.url).hostname}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
+const keywords = ['startup', 'inovação', 'tecnologia', 'transformação digital', 'investimento', 'aporte', 'captação'];
+const baseTerm = variants[0] || searchCompanyName;
+const host = new URL(source.url).hostname;
+const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+const query = `${left} (${keywords.map(k => `"${k}"`).join(' OR ')}) site:${host}`;
+searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=m6`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -340,7 +355,7 @@ serve(async (req: Request) => {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-            if (variants.some(v => normalizedText.includes(v))) {
+if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               sourcePoints = source.points;
               signals.push({
                 type: 'innovation_mention',
@@ -376,8 +391,10 @@ serve(async (req: Request) => {
       let searchUrl = '';
       
       try {
-        const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
-        searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
+const host = new URL(source.url).hostname;
+const baseTerm = variants[0] || searchCompanyName;
+const query = `${[cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ')} site:${host}`;
+searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -388,7 +405,7 @@ serve(async (req: Request) => {
             const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
             const normalizedText = normalizeName(fullText);
             
-            if (variants.some(v => normalizedText.includes(v))) {
+if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
               const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
               sourcePoints = isNegative ? -source.points : source.points;
               signals.push({
@@ -424,8 +441,10 @@ serve(async (req: Request) => {
       'ERP', 'Transformação Digital', 'Diretor Tecnologia',
       'VP Technology', 'Head TI', 'Coordenador TI'
     ];
-    const jobQuery = `"${variants[0]}" AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
-    const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
+const baseTerm = variants[0] || searchCompanyName;
+const left = [cnpjQuoted, cnpjDigitsQuoted, `"${baseTerm}"`].filter(Boolean).join(' OR ');
+const jobQuery = `${left} AND (${jobKeywords.map(k => `"${k}"`).join(' OR ')}) site:linkedin.com/jobs`;
+const jobUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(jobQuery)}&num=5&dateRestrict=y1`;
     
     platformsScanned.push('LinkedIn Jobs');
     let jobPoints = 0;
@@ -442,8 +461,8 @@ serve(async (req: Request) => {
           const fullText = `${title} ${snippet}`.toLowerCase();
           const normalizedText = normalizeName(fullText);
           
-          if (variants.some(v => normalizedText.includes(v))) {
-            jobPoints = 30;
+if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+  jobPoints = 30;
             signals.push({
               type: 'job_posting',
               score: 30,
