@@ -16,11 +16,13 @@ export default function TOTVSCheckReport() {
   const qpName = searchParams.get("name") || undefined;
   const qpCnpj = searchParams.get("cnpj") || undefined;
   const qpDomain = searchParams.get("domain") || undefined;
+  const qpCompanyId = searchParams.get("companyId") || undefined;
+  const resolvedCompanyId = companyId || qpCompanyId;
 
   useEffect(() => {
     let ignore = false;
     const load = async () => {
-      if (!companyId) return;
+      if (!resolvedCompanyId) return;
 
       // Preferir dados vindos por query string para evitar consultas desnecessárias
       if (qpName || qpCnpj || qpDomain) {
@@ -32,7 +34,7 @@ export default function TOTVSCheckReport() {
       const { data } = await supabase
         .from("icp_analysis_results")
         .select("razao_social, cnpj, domain")
-        .eq("id", companyId)
+        .eq("id", resolvedCompanyId)
         .maybeSingle();
 
       if (!ignore) {
@@ -47,7 +49,7 @@ export default function TOTVSCheckReport() {
     return () => {
       ignore = true;
     };
-  }, [companyId, qpName, qpCnpj, qpDomain]);
+  }, [resolvedCompanyId, qpName, qpCnpj, qpDomain]);
 
   const headerTitle = useMemo(() => companyMeta?.name || "Relatório TOTVS Check", [companyMeta]);
 
@@ -71,9 +73,9 @@ export default function TOTVSCheckReport() {
           )}
         </CardHeader>
         <CardContent>
-          {companyId && (
+          {resolvedCompanyId && (
             <SimpleTOTVSCheckCard
-              companyId={companyId}
+              companyId={resolvedCompanyId}
               companyName={companyMeta?.name || "Empresa"}
               cnpj={companyMeta?.cnpj}
               domain={companyMeta?.domain}

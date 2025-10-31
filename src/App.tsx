@@ -741,6 +741,16 @@ const App = () => (
               }
             />
             <Route
+              path="/leads/icp-quarantine/report"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TOTVSCheckReport />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/leads/icp-quarantine/report/:companyId"
               element={
                 <ProtectedRoute>
