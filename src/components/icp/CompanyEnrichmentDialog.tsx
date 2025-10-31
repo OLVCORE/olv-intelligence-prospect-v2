@@ -61,7 +61,7 @@ export function CompanyEnrichmentDialog({ open, onOpenChange, company }: Company
       if (formData.headquarters_country) updateData.headquarters_country = formData.headquarters_country;
       if (formData.sector) updateData.sector = formData.sector;
       if (formData.sector_code) updateData.sector_code = formData.sector_code;
-      if (formData.niche) updateData.niche = formData.niche;
+      // Campo 'niche' não existe na tabela - não enviar para evitar erro 400
       if (formData.niche_code) updateData.niche_code = formData.niche_code;
       if (formData.size) updateData.size = formData.size;
       if (formData.employees) updateData.employees = parseInt(formData.employees);

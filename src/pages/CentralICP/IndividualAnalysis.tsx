@@ -73,6 +73,11 @@ export default function IndividualAnalysis() {
 
   const hasIntentCheck = (intentSignals?.length ?? 0) > 0;
 
+  // Normalização de localização com fallbacks (headquarters -> location -> raw_data)
+  const displayCity = (company as any)?.headquarters_city || (company as any)?.location?.city || (company as any)?.city || (company as any)?.raw_data?.municipio || null;
+  const displayState = (company as any)?.headquarters_state || (company as any)?.location?.state || (company as any)?.state || (company as any)?.raw_data?.uf || null;
+  const displayCountry = (company as any)?.headquarters_country || (company as any)?.location?.country || (company as any)?.country || null;
+
   const handleSelectCompany = (ids: string[]) => {
     const newCompanyId = ids[0];
     navigate(`/central-icp/individual?company=${newCompanyId}`);
@@ -179,7 +184,7 @@ export default function IndividualAnalysis() {
                   <CardTitle className="text-xl">{company.name}</CardTitle>
                   <CardDescription className="flex items-center gap-2 flex-wrap">
                     {company.cnpj && <span>CNPJ: {company.cnpj}</span>}
-                    {company.cnpj && (company.domain || company.website || company.headquarters_city || company.headquarters_state) && <span>•</span>}
+                    {company.cnpj && (company.domain || company.website || displayCity || displayState) && <span>•</span>}
                     {(company.domain || company.website) && (
                       isValidUrl(company.domain || company.website) ? (
                         <a 
@@ -195,9 +200,9 @@ export default function IndividualAnalysis() {
                         <span className="text-amber-600 text-xs">⚠️ Website inválido: {company.domain || company.website}</span>
                       )
                     )}
-                    {(company.headquarters_city || company.headquarters_state) && (company.domain || company.website) && <span>•</span>}
-                    {(company.headquarters_city || company.headquarters_state) && (
-                      <span>{company.headquarters_city || ''}{company.headquarters_city && company.headquarters_state ? ' - ' : ''}{company.headquarters_state || ''}</span>
+                    {(displayCity || displayState) && (company.domain || company.website) && <span>•</span>}
+                    {(displayCity || displayState) && (
+                      <span>{displayCity || ''}{displayCity && displayState ? ' - ' : ''}{displayState || ''}</span>
                     )}
                   </CardDescription>
                 </div>
@@ -234,9 +239,9 @@ export default function IndividualAnalysis() {
                     <span className="ml-1 font-medium">—</span>
                   )}
                 </div>
-                <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{company.headquarters_state || '—'}</span></div>
-                <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{company.headquarters_city || '—'}</span></div>
-                <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{company.headquarters_country || '—'}</span></div>
+                <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{displayState || '—'}</span></div>
+                <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{displayCity || '—'}</span></div>
+                <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{displayCountry || '—'}</span></div>
               </div>
 
               {/* Seção CNAEs (se disponível) */}
