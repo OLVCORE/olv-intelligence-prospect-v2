@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCardV3";
@@ -13,13 +13,17 @@ import { QualificationRecommendation } from "@/components/competitive/Qualificat
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
 import { CompanyEnrichmentDialog } from "@/components/icp/CompanyEnrichmentDialog";
+import { CompanyActionsMenu } from "@/components/companies/CompanyActionsMenu";
+import { toast } from "sonner";
 
 export default function IndividualAnalysis() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const companyId = searchParams.get('company');
   const [showCompanySelector, setShowCompanySelector] = useState(!companyId);
   const [showEnrichmentDialog, setShowEnrichmentDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: company } = useQuery({
     queryKey: ['company', companyId],
@@ -64,6 +68,35 @@ export default function IndividualAnalysis() {
     setShowCompanySelector(false);
   };
 
+  const handleRefresh = async () => {
+    if (!companyId) return;
+    
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-company-receita', {
+        body: { company_id: companyId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Dados atualizados com sucesso!');
+        queryClient.invalidateQueries({ queryKey: ['company', companyId] });
+      } else {
+        toast.info(data?.message || 'Dados já atualizados');
+      }
+    } catch (error: any) {
+      console.error('Erro ao atualizar dados:', error);
+      toast.error('Erro ao atualizar dados da empresa');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleEnrich = async () => {
+    setShowEnrichmentDialog(true);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -80,15 +113,26 @@ export default function IndividualAnalysis() {
             Qualifique empresas uma por vez com análise detalhada ICP
           </p>
         </div>
-        {company && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCompanySelector(true)}
-          >
-            Trocar Empresa
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {company && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCompanySelector(true)}
+              >
+                Trocar Empresa
+              </Button>
+              <CompanyActionsMenu
+                companyId={company.id}
+                companyName={company.name}
+                isLoading={isRefreshing}
+                onRefresh={handleRefresh}
+                onEnrich={handleEnrich}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       <CompanySelectDialog

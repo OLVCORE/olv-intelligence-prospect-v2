@@ -140,13 +140,7 @@ serve(async (req) => {
       updateData.size = receitaData.porte;
     }
 
-    // Preparar CNAEs estruturados para exibição
-    const cnaes: any = {
-      primary: receitaData.atividade_principal || [],
-      secondary: receitaData.atividades_secundarias || []
-    };
-    
-    updateData.cnaes_data = cnaes;
+    // CNAEs já estão em raw_data, não precisa duplicar
 
     // 6. Atualizar empresa no banco
     const { data: updatedCompany, error: updateError } = await supabase
