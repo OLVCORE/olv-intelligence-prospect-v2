@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const GoogleIcon = () => (
   <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -29,8 +30,9 @@ export function BulkUploadDialog({ children }: { children?: ReactNode }) {
   const [googleSheetUrl, setGoogleSheetUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
-  const navigate = useNavigate();
+const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
+const navigate = useNavigate();
+const [importMode, setImportMode] = useState<'analyze' | 'direct'>('analyze');
 
   // Fecha automaticamente após sucesso
   useEffect(() => {
@@ -492,25 +494,55 @@ export function BulkUploadDialog({ children }: { children?: ReactNode }) {
         return;
       }
 
-      // NOVO FLUXO: Redirecionar para análise ICP antes de cadastrar
-      toast.success(`📊 ${companies.length} empresas prontas para análise ICP`, {
-        description: 'Redirecionando para análise automática...',
-      });
+// Se o modo for importação direta, enviar ao backend
+if (importMode === 'direct') {
+  try {
+    toast.info(`Importando ${companies.length} empresas para a base...`);
+    const { data, error } = await supabase.functions.invoke('bulk-upload-companies', {
+      body: { companies }
+    });
+    if (error) throw error;
 
-      setIsUploading(false);
-      
-      // Fechar o dialog
-      setIsOpen(false);
-      
-      // Redirecionar para página de análise em massa com os dados
-      setTimeout(() => {
-        navigate('/central-icp/batch', {
-          state: {
-            empresas: companies,
-            origem: 'upload_massa'
-          }
-        });
-      }, 500);
+    const imported = (data?.success as number) ?? (Array.isArray(data?.inserted) ? data.inserted.length : 0);
+    toast.success('Importação concluída', {
+      description: `${imported} empresas importadas com sucesso`,
+      action: {
+        label: 'Ver empresas',
+        onClick: () => navigate('/companies')
+      }
+    });
+
+    setIsUploading(false);
+    setIsOpen(false);
+    navigate('/companies');
+    return;
+  } catch (e: any) {
+    console.error('Erro ao importar direto:', e);
+    toast.error('Falha ao importar', { description: e?.message || 'Erro desconhecido' });
+    setIsUploading(false);
+    return;
+  }
+}
+
+// Fluxo atual: Redirecionar para análise ICP antes de cadastrar
+toast.success(`📊 ${companies.length} empresas prontas para análise ICP`, {
+  description: 'Redirecionando para análise automática...',
+});
+
+setIsUploading(false);
+
+// Fechar o dialog
+setIsOpen(false);
+
+// Redirecionar para página de análise em massa com os dados
+setTimeout(() => {
+  navigate('/central-icp/batch', {
+    state: {
+      empresas: companies,
+      origem: 'upload_massa'
+    }
+  });
+}, 500);
 
     } catch (error) {
       console.error('Erro no upload:', error);
@@ -629,6 +661,22 @@ try {
                 <strong>Valores vazios:</strong> "não encontrado", "---", "###" são ignorados
               </AlertDescription>
             </Alert>
+
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Destino do upload</p>
+                <p className="text-xs text-muted-foreground">Analisar ICP ou importar direto para a base</p>
+              </div>
+              <Select value={importMode} onValueChange={(v) => setImportMode(v as 'analyze' | 'direct')}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Selecione o destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="analyze">Analisar ICP (recomendado)</SelectItem>
+                  <SelectItem value="direct">Importar direto para Empresas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-4">
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
