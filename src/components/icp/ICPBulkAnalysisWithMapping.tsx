@@ -92,6 +92,31 @@ export default function ICPBulkAnalysisWithMapping() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Handler para quando o processamento ao vivo terminar
+  const handleLiveProcessingComplete = useCallback((results: any[]) => {
+    setAnalysisResults(results);
+    setTotalProcessed(results.length);
+    setStep('complete');
+    
+    // Toast clicável para ir direto à quarentena
+    const successCount = results.filter(r => r.status === 'concluido').length;
+    const errorCount = results.filter(r => r.status === 'erro').length;
+    
+    toast({
+      title: "✅ Análise ICP concluída!",
+      description: `${successCount} na quarentena | ${errorCount} com problemas.`,
+      duration: 10000,
+      action: (
+        <button
+          onClick={() => navigate('/leads/icp-quarantine')}
+          className="px-3 py-2 text-sm font-medium text-primary hover:text-primary/80 underline"
+        >
+          Ver Quarentena →
+        </button>
+      ),
+    });
+  }, [navigate, toast]);
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
@@ -1299,29 +1324,6 @@ export default function ICPBulkAnalysisWithMapping() {
     );
   }
 
-  const handleLiveProcessingComplete = useCallback((results: any[]) => {
-    setAnalysisResults(results);
-    setTotalProcessed(results.length);
-    setStep('complete');
-    
-    // Toast clicável para ir direto à quarentena
-    const successCount = results.filter(r => r.status === 'concluido').length;
-    const errorCount = results.filter(r => r.status === 'erro').length;
-    
-    toast({
-      title: "✅ Análise ICP concluída!",
-      description: `${successCount} na quarentena | ${errorCount} com problemas.`,
-      duration: 10000,
-      action: (
-        <button
-          onClick={() => navigate('/leads/icp-quarantine')}
-          className="px-3 py-2 text-sm font-medium text-primary hover:text-primary/80 underline"
-        >
-          Ver Quarentena →
-        </button>
-      ),
-    });
-  }, [navigate, toast]);
 
   if (step === 'analyzing') {
     const fieldMap: Record<string, string> = {};
