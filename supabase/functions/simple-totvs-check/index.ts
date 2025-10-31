@@ -90,6 +90,41 @@ const TOTVS_MODULES = [
 // Combina produtos e módulos para busca completa
 const ALL_TOTVS_TERMS = [...TOTVS_PRODUCTS, ...TOTVS_MODULES];
 
+// Termos de marca TOTVS (obrigatório para correlação)
+const TOTVS_BRAND_TERMS = ['TOTVS', 'Microsiga'];
+
+// Funções utilitárias para normalização e correlação (Empresa + TOTVS + Produto/Módulo)
+function normalizeCompany(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[.,]/g, ' ')
+    .replace(/\b(s\.?a\.?|ltda|eireli|me|sa)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function crossMatch(text: string, companyName: string) {
+  const t = (text || '').toLowerCase();
+  const companyNorm = normalizeCompany(companyName);
+
+  const hasCompany = companyNorm.length > 0 && (t.includes(companyNorm) || companyNorm.split(' ').some(p => p.length > 3 && t.includes(p)));
+  const brandHits = TOTVS_BRAND_TERMS.filter(term => t.includes(term.toLowerCase()));
+
+  // Produtos TOTVS (desconsidera termos de marca pura para a contagem de "produto")
+  const productHits = TOTVS_PRODUCTS.filter(term => t.includes(term.toLowerCase()))
+    .filter(term => !TOTVS_BRAND_TERMS.map(s => s.toLowerCase()).includes(term.toLowerCase()));
+
+  // Módulos somente contam se houver menção à marca/produto para evitar falsos positivos
+  const moduleHits = TOTVS_MODULES.filter(term => t.includes(term.toLowerCase()));
+
+  const hasProductOrModule = productHits.length > 0 || moduleHits.length > 0;
+  const matched = hasCompany && brandHits.length > 0 && hasProductOrModule;
+
+  const detected = Array.from(new Set([...brandHits, ...productHits, ...moduleHits]));
+
+  return { matched, detectedProducts: detected };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -122,7 +157,7 @@ serve(async (req) => {
     // 1. VAGAS (LinkedIn, Infojobs, Catho)
     // Busca por principais produtos TOTVS em vagas
     const mainProducts = ['TOTVS', 'Protheus', 'Datasul', 'RM', 'Fluig', 'Winthor', 'Logix', 'Carol'];
-    const vagasQuery = `"${company_name}" (${mainProducts.join(' OR ')}) (vaga OR job OR requisito OR conhecimento) site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br`;
+    const vagasQuery = `"${company_name}" (TOTVS OR Microsiga OR Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix) (Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix OR "TOTVS CRM" OR "TOTVS RH" OR "TOTVS BI" OR Techfin) (vaga OR job OR requisito OR conhecimento OR experiência) (site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br)`;
     console.log('[Vagas] Query:', vagasQuery);
     
     const vagasResponse = await fetch('https://google.serper.dev/search', {
@@ -167,7 +202,7 @@ serve(async (req) => {
 
     // 2. NOTÍCIAS (InfoMoney, Valor, Exame)
     // Busca ampliada com produtos específicos
-    const noticiasQuery = `"${company_name}" (TOTVS OR Protheus OR Datasul OR Fluig OR Techfin OR "ERP TOTVS") site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br`;
+    const noticiasQuery = `"${company_name}" (TOTVS OR Microsiga OR Protheus OR Datasul OR RM OR Fluig OR Winthor OR Logix OR "TOTVS CRM" OR "TOTVS RH" OR "TOTVS BI" OR Techfin) (site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br)`;
     console.log('[Notícias] Query:', noticiasQuery);
     
     const noticiasResponse = await fetch('https://google.serper.dev/search', {
@@ -188,14 +223,12 @@ serve(async (req) => {
       const noticiasData = await noticiasResponse.json();
       if (noticiasData.organic) {
         for (const item of noticiasData.organic) {
-          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-          
-          // Busca por TODOS os termos do catálogo
-          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
-            text.includes(term.toLowerCase())
-          );
+          const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          if (detectedProducts.length > 0) {
+          // Exige correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
+          const { matched, detectedProducts } = crossMatch(text, company_name);
+
+          if (matched) {
             evidencesByCategory.noticias.push({
               source: new URL(item.link).hostname,
               category: 'noticias',
@@ -233,14 +266,12 @@ serve(async (req) => {
       const docsData = await docsResponse.json();
       if (docsData.organic) {
         for (const item of docsData.organic) {
-          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-          
-          // Busca por TODOS os termos do catálogo
-          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
-            text.includes(term.toLowerCase())
-          );
+          const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          if (detectedProducts.length > 0) {
+          // Exige correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
+          const { matched, detectedProducts } = crossMatch(text, company_name);
+
+          if (matched) {
             evidencesByCategory.docs_oficiais.push({
               source: new URL(item.link).hostname,
               category: 'docs_oficiais',

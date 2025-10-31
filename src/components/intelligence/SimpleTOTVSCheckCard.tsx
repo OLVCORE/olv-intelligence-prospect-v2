@@ -217,7 +217,15 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   };
 
   const renderEvidencesList = (evidences: Evidence[], category: keyof typeof CATEGORY_LABELS) => {
-    if (evidences.length === 0) return null;
+    // Filtra para mostrar somente evidências com correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
+    const list = (evidences || []).filter(ev => {
+      const prods = (ev.totvs_products || []).map(p => p.toLowerCase());
+      const hasBrand = prods.some(p => p.includes('totvs') || p.includes('microsiga'));
+      const hasProductOrModule = prods.some(p => !(p === 'totvs' || p === 'microsiga'));
+      return hasBrand && hasProductOrModule;
+    });
+
+    if (list.length === 0) return null;
 
     const isExpanded = expandedCategories.has(category);
 
@@ -229,14 +237,14 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
         >
           <span className="flex items-center gap-2">
             {CATEGORY_LABELS[category]}
-            <Badge variant="secondary">{evidences.length}</Badge>
+            <Badge variant="secondary">{list.length}</Badge>
           </span>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
 
         {isExpanded && (
           <div className="space-y-3 mt-3">
-            {evidences.map((evidence, idx) => {
+            {list.map((evidence, idx) => {
               const url = formatWebsiteUrl(evidence.url);
               const isLinkValid = isValidUrl(evidence.url);
               const isCopied = copiedUrl === evidence.url;
