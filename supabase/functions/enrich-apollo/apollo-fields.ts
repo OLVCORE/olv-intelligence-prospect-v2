@@ -245,7 +245,7 @@ export function mapPersonFields(person: any, companyId: string, apolloOrgId: str
     
     // Classificação interna
     is_decision_maker: isDecisionMaker(person),
-    is_current_at_company: person.employment_history?.[0]?.current === true,
+    is_current_at_company: true, // Será validado depois
     department_classification: classifyDepartment(person.title, person.functions),
     
     // Fonte de enriquecimento
