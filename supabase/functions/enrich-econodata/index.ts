@@ -78,13 +78,32 @@ serve(async (req) => {
       }
     );
 
-    const { companyId, cnpj } = await req.json() as EconodataEnrichmentRequest;
+    const { companyId, cnpj: directCnpj } = await req.json() as Partial<EconodataEnrichmentRequest> & { cnpj?: string };
 
-    if (!companyId || !cnpj) {
-      throw new Error('companyId and cnpj are required');
+    console.log(`[Econodata] companyId:`, companyId, 'cnpj direto:', directCnpj);
+
+    // Aceitar CNPJ direto ou buscar pelo companyId
+    let cnpj = directCnpj;
+
+    if (!cnpj && !companyId) {
+      throw new Error('companyId ou cnpj são obrigatórios');
     }
 
-    console.log(`[Econodata] Starting enrichment for company ${companyId} with CNPJ ${cnpj}`);
+    // Se não tem CNPJ mas tem companyId, buscar CNPJ da empresa
+    if (!cnpj && companyId) {
+      const { data: company } = await supabaseClient
+        .from('companies')
+        .select('cnpj')
+        .eq('id', companyId)
+        .single();
+      
+      if (!company?.cnpj) {
+        throw new Error('Empresa não possui CNPJ cadastrado');
+      }
+      cnpj = company.cnpj;
+    }
+
+    console.log(`[Econodata] Starting enrichment for CNPJ ${cnpj}`);
 
     // ============================================
     // FASE 1: BUSCAR DADOS DA API ECONODATA
@@ -131,6 +150,19 @@ serve(async (req) => {
     const econodataData: EconodataResponse = await econodataResponse.json();
     console.log('[Econodata] Data retrieved successfully');
 
+    // Se não tem companyId, retornar apenas os dados da API
+    if (!companyId) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Dados consultados com sucesso',
+          data: econodataData
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Se tem companyId, atualizar no banco
     // ============================================
     // FASE 2: BUSCAR DADOS EXISTENTES DA EMPRESA
     // ============================================

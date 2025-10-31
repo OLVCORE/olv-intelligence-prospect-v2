@@ -35,14 +35,17 @@ serve(async (req) => {
   try {
     console.log('[Enrich Receita] Iniciando função');
     
-    const { company_id } = await req.json();
+    const { company_id, cnpj: directCnpj } = await req.json();
     
-    console.log('[Enrich Receita] company_id recebido:', company_id);
+    console.log('[Enrich Receita] company_id:', company_id, 'cnpj direto:', directCnpj);
 
-    if (!company_id) {
-      console.error('[Enrich Receita] company_id não fornecido');
+    // Aceitar CNPJ direto ou buscar pelo company_id
+    let cnpj = directCnpj;
+
+    if (!cnpj && !company_id) {
+      console.error('[Enrich Receita] Nem company_id nem cnpj foram fornecidos');
       return new Response(
-        JSON.stringify({ error: 'company_id é obrigatório' }),
+        JSON.stringify({ error: 'company_id ou cnpj são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -54,58 +57,52 @@ serve(async (req) => {
     console.log('[Enrich Receita] Conectando ao Supabase...');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Buscar empresa no banco (usando service role para bypass RLS)
-    console.log('[Enrich Receita] Buscando empresa:', company_id);
-    
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('id, cnpj, headquarters_state, headquarters_city, raw_data')
-      .eq('id', company_id)
-      .maybeSingle();
+    // Se recebeu company_id, buscar e atualizar empresa
+    if (company_id) {
+      console.log('[Enrich Receita] Buscando empresa:', company_id);
+      
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('id, cnpj, headquarters_state, headquarters_city, raw_data')
+        .eq('id', company_id)
+        .maybeSingle();
 
-    console.log('[Enrich Receita] Resultado da busca:', { company, companyError });
+      if (companyError || !company) {
+        console.error('[Enrich Receita] Erro ao buscar empresa:', companyError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Empresa não encontrada' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (companyError) {
-      console.error('[Enrich Receita] Erro ao buscar empresa:', companyError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Erro ao buscar empresa', details: companyError }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Verificar se já tem dados básicos
+      if (company.headquarters_state && company.headquarters_city) {
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Empresa já possui dados de localização',
+            data: company
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      cnpj = company.cnpj;
     }
 
-    if (!company) {
-      console.error('[Enrich Receita] Empresa não encontrada:', company_id);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Empresa não encontrada', company_id }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 2. Verificar se já tem dados básicos (Estado e Município são os essenciais)
-    if (company.headquarters_state && company.headquarters_city) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Empresa já possui dados de localização',
-          data: company
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 3. Se não tem CNPJ, não pode enriquecer
-    if (!company.cnpj) {
+    // Se não tem CNPJ neste ponto, não pode enriquecer
+    if (!cnpj) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Empresa não possui CNPJ cadastrado' 
+          message: 'CNPJ não disponível' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 4. Buscar na ReceitaWS
-    const cnpjClean = company.cnpj.replace(/\D/g, '');
+    // Buscar na ReceitaWS
+    const cnpjClean = cnpj.replace(/\D/g, '');
     const receitaUrl = `https://receitaws.com.br/v1/cnpj/${cnpjClean}`;
     
     const headers: HeadersInit = {
@@ -131,34 +128,30 @@ serve(async (req) => {
 
     const receitaData: ReceitaWSResponse = await receitaResponse.json();
 
-    // 5. Preparar dados para atualização
+    // Se não tem company_id, retornar apenas os dados da ReceitaWS
+    if (!company_id) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Dados consultados com sucesso',
+          data: receitaData
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Se tem company_id, atualizar no banco
     const updateData: any = {
-      raw_data: receitaData, // Salvar dados completos
+      raw_data: receitaData,
     };
 
-    // Apenas atualizar campos que estão vazios
-    if (!company.headquarters_state && receitaData.uf) {
-      updateData.headquarters_state = receitaData.uf;
-    }
+    // Apenas atualizar campos vazios
+    if (receitaData.uf) updateData.headquarters_state = receitaData.uf;
+    if (receitaData.municipio) updateData.headquarters_city = receitaData.municipio;
+    if (receitaData.atividade_principal?.[0]?.text) updateData.industry = receitaData.atividade_principal[0].text;
+    if (receitaData.porte) updateData.size = receitaData.porte;
 
-    if (!company.headquarters_city && receitaData.municipio) {
-      updateData.headquarters_city = receitaData.municipio;
-    }
-
-    // CNAEs já estão em raw_data, então não duplicamos aqui
-    // Apenas se quiser popular algum campo de 'nicho' futuramente
-    if (receitaData.atividade_principal?.[0]?.text) {
-      updateData.industry = receitaData.atividade_principal[0].text;
-    }
-
-    // Adicionar dados extras se disponíveis
-    if (receitaData.porte) {
-      updateData.size = receitaData.porte;
-    }
-
-    // CNAEs já estão em raw_data, não precisa duplicar
-
-    // 6. Atualizar empresa no banco
+    // Atualizar empresa no banco
     const { data: updatedCompany, error: updateError } = await supabase
       .from('companies')
       .update(updateData)

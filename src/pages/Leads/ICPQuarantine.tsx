@@ -46,17 +46,15 @@ export default function ICPQuarantine() {
   // Mutations para enriquecimento na quarentena
   const enrichReceitaMutation = useMutation({
     mutationFn: async (analysisId: string) => {
-      // Buscar dados da empresa na quarentena
-      const { data: analysis, error: fetchError } = await supabase
+      const { data: analysis } = await supabase
         .from('icp_analysis_results')
         .select('*')
         .eq('id', analysisId)
         .single();
 
-      if (fetchError || !analysis) throw new Error('Empresa não encontrada');
-      if (!analysis.cnpj) throw new Error('CNPJ não disponível');
+      if (!analysis?.cnpj) throw new Error('CNPJ não disponível');
 
-      // Chamar edge function de enriquecimento
+      // Chamar com apenas CNPJ (sem company_id)
       const { data, error } = await supabase.functions.invoke('enrich-company-receita', {
         body: { cnpj: analysis.cnpj },
       });
@@ -146,13 +144,13 @@ export default function ICPQuarantine() {
         .eq('id', analysisId)
         .single();
 
-      if (!analysis) throw new Error('Empresa não encontrada');
-      if (!analysis.cnpj) throw new Error('CNPJ não disponível');
+      if (!analysis?.cnpj) throw new Error('CNPJ não disponível');
 
       const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
         ? analysis.raw_analysis as Record<string, any>
         : {};
 
+      // Enviar apenas CNPJ
       const { data, error } = await supabase.functions.invoke('enrich-econodata', {
         body: { cnpj: analysis.cnpj },
       });
