@@ -805,16 +805,17 @@ export default function ICPQuarantine() {
       </DraggableDialog>
 
       {/* TOTVS Check Dialog */}
-      {selectedTotvsCheckCompany && (
-        <SimpleTOTVSCheckDialog
-          companyId={selectedTotvsCheckCompany.id}
-          companyName={selectedTotvsCheckCompany.razao_social || "Empresa"}
-          cnpj={selectedTotvsCheckCompany.cnpj || undefined}
-          domain={selectedTotvsCheckCompany.domain || undefined}
-          open={totvsCheckDialogOpen}
-          onOpenChange={setTotvsCheckDialogOpen}
-        />
-      )}
+      <SimpleTOTVSCheckDialog
+        companyId={selectedTotvsCheckCompany?.id || ""}
+        companyName={selectedTotvsCheckCompany?.razao_social || "Empresa"}
+        cnpj={selectedTotvsCheckCompany?.cnpj || undefined}
+        domain={selectedTotvsCheckCompany?.domain || undefined}
+        open={totvsCheckDialogOpen && !!selectedTotvsCheckCompany}
+        onOpenChange={(open) => {
+          setTotvsCheckDialogOpen(open);
+          if (!open) setSelectedTotvsCheckCompany(null);
+        }}
+      />
     </div>
   );
 }
