@@ -1,4 +1,4 @@
-import { Settings, CheckCircle, XCircle, Eye, Trash2, RefreshCw } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Eye, Trash2, RefreshCw, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
 
 interface QuarantineRowActionsProps {
   company: any;
@@ -29,6 +30,7 @@ export function QuarantineRowActions({
   onRefresh,
 }: QuarantineRowActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showTOTVSCheck, setShowTOTVSCheck] = useState(false);
 
   const handleApprove = () => {
     onApprove(company.id);
@@ -86,6 +88,18 @@ export function QuarantineRowActions({
           Ver Preview
         </DropdownMenuItem>
 
+        {/* Simple TOTVS Check */}
+        <DropdownMenuItem 
+          onClick={() => {
+            setShowTOTVSCheck(true);
+            setIsOpen(false);
+          }}
+          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
+          <Target className="h-4 w-4 mr-2" />
+          Simple TOTVS Check
+        </DropdownMenuItem>
+
         {/* Atualizar relatório */}
         <DropdownMenuItem 
           onClick={() => {
@@ -133,6 +147,17 @@ export function QuarantineRowActions({
           Deletar Permanentemente
         </DropdownMenuItem>
       </DropdownMenuContent>
+      
+      {showTOTVSCheck && (
+        <SimpleTOTVSCheckDialog
+          companyId={company.id}
+          companyName={company.razao_social || "Empresa"}
+          cnpj={company.cnpj || undefined}
+          domain={company.domain || undefined}
+          open={showTOTVSCheck}
+          onOpenChange={setShowTOTVSCheck}
+        />
+      )}
     </DropdownMenu>
   );
 }

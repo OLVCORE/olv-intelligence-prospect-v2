@@ -15,9 +15,11 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Target
 } from 'lucide-react';
 import { useState } from 'react';
+import { BatchTOTVSCheckDialog } from './BatchTOTVSCheckDialog';
 
 interface QuarantineActionsMenuProps {
   selectedCount: number;
@@ -26,6 +28,7 @@ interface QuarantineActionsMenuProps {
   onPreviewSelected: () => void;
   onRefreshSelected?: () => void;
   isProcessing?: boolean;
+  selectedItems?: any[];
 }
 
 export function QuarantineActionsMenu({
@@ -34,9 +37,11 @@ export function QuarantineActionsMenu({
   onExportSelected,
   onPreviewSelected,
   onRefreshSelected,
-  isProcessing = false
+  isProcessing = false,
+  selectedItems = []
 }: QuarantineActionsMenuProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showBatchTOTVS, setShowBatchTOTVS] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -138,6 +143,21 @@ export function QuarantineActionsMenu({
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar Relatórios
           </DropdownMenuItem>
+
+          <DropdownMenuItem 
+            onClick={() => {
+              if (selectedCount === 0) {
+                return;
+              }
+              setShowBatchTOTVS(true);
+            }}
+            disabled={selectedCount === 0 || isDeleting}
+            data-testid="action-totvs-check"
+            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            TOTVS Check em Lote
+          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
@@ -164,6 +184,12 @@ export function QuarantineActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
+      
+      <BatchTOTVSCheckDialog
+        open={showBatchTOTVS}
+        onOpenChange={setShowBatchTOTVS}
+        selectedItems={selectedItems}
+      />
     </DropdownMenu>
   );
 }

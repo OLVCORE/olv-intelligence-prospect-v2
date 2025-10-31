@@ -259,6 +259,7 @@ export default function ICPQuarantine() {
                 onPreviewSelected={handlePreviewSelected}
                 onRefreshSelected={handleRefreshSelected}
                 isProcessing={isApproving || isDeleting || isRefreshing}
+                selectedItems={companies.filter(c => selectedIds.includes(c.id))}
               />
               
               <TooltipProvider>
