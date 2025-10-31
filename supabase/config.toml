@@ -254,3 +254,6 @@ verify_jwt = false
 
   [functions.engines-health]
   verify_jwt = false
+
+  [functions.icp-refresh-report]
+  verify_jwt = false

@@ -15,45 +15,19 @@ export function useRefreshQuarantineBatch() {
     mutationFn: async (items: RefreshItem[]) => {
       if (!items || items.length === 0) throw new Error('Nenhuma empresa selecionada');
 
-      let ok = 0;
-      let fail = 0;
+      const { data, error } = await supabase.functions.invoke('icp-refresh-report', {
+        body: { ids: items.map(item => item.id) }
+      });
 
-      // Disparar consultas básicas aos buscadores para validar chaves/saúde
-      for (const item of items) {
-        const query = item.razao_social || item.cnpj || '';
-        if (!query) {
-          fail += 1;
-          continue;
-        }
-        try {
-          // Preferir Serper se disponível; se falhar, tenta Google CSE
-          const serper = await supabase.functions.invoke('serper-search', {
-            body: { type: 'search', query, numResults: 3 },
-          });
-          if (serper.error) throw serper.error;
-          ok += 1;
-        } catch (_) {
-          try {
-            const google = await supabase.functions.invoke('google-search', {
-              body: { query, type: 'search', options: { numResults: 3 } },
-            });
-            if (google.error) throw google.error;
-            ok += 1;
-          } catch (err) {
-            console.error('[Refresh ICP] Falha ao consultar buscadores:', err);
-            fail += 1;
-          }
-        }
-      }
-
-      return { ok, fail, total: items.length };
+      if (error) throw error;
+      return data;
     },
-    onSuccess: ({ ok, fail, total }) => {
-      if (ok > 0) {
-        toast.success(`Atualização disparada para ${ok}/${total} empresa(s)`);
+    onSuccess: (data) => {
+      if (data?.ok > 0) {
+        toast.success(`${data.ok} relatório(s) atualizado(s) com sucesso`);
       }
-      if (fail > 0) {
-        toast.error(`${fail} empresa(s) falharam ao atualizar`);
+      if (data?.fail > 0) {
+        toast.error(`${data.fail} relatório(s) falharam ao atualizar`);
       }
       queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
     },
