@@ -178,8 +178,10 @@ export default function ICPQuarantine() {
   };
 
   const handleOpenTotvsCheck = (company: any) => {
-    setSelectedTotvsCheckCompany(company);
-    setTotvsCheckDialogOpen(true);
+    const name = encodeURIComponent(company.razao_social || 'Empresa');
+    const cnpj = encodeURIComponent(company.cnpj || '');
+    const domain = encodeURIComponent(company.domain || '');
+    navigate(`/leads/icp-quarantine/report/${company.id}?name=${name}&cnpj=${cnpj}&domain=${domain}`);
   };
 
   const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));

@@ -9,8 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
 
 interface QuarantineRowActionsProps {
   company: any;
@@ -30,7 +30,7 @@ export function QuarantineRowActions({
   onRefresh,
 }: QuarantineRowActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showTOTVSCheck, setShowTOTVSCheck] = useState(false);
+  const navigate = useNavigate();
 
   const handleApprove = () => {
     onApprove(company.id);
@@ -91,7 +91,10 @@ export function QuarantineRowActions({
         {/* Simple TOTVS Check */}
         <DropdownMenuItem 
           onClick={() => {
-            setShowTOTVSCheck(true);
+            const name = encodeURIComponent(company.razao_social || 'Empresa');
+            const cnpj = encodeURIComponent(company.cnpj || '');
+            const domain = encodeURIComponent(company.domain || '');
+            navigate(`/leads/icp-quarantine/report/${company.id}?name=${name}&cnpj=${cnpj}&domain=${domain}`);
             setIsOpen(false);
           }}
           className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
@@ -148,16 +151,7 @@ export function QuarantineRowActions({
         </DropdownMenuItem>
       </DropdownMenuContent>
       
-      {showTOTVSCheck && (
-        <SimpleTOTVSCheckDialog
-          companyId={company.id}
-          companyName={company.razao_social || "Empresa"}
-          cnpj={company.cnpj || undefined}
-          domain={company.domain || undefined}
-          open={showTOTVSCheck}
-          onOpenChange={setShowTOTVSCheck}
-        />
-      )}
+      {/* Dialog removido aqui: navegação para subpágina dedicada */}
     </DropdownMenu>
   );
 }

@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import TOTVSCheckReport from "@/pages/Leads/TOTVSCheckReport";
 import { Loader2 } from "lucide-react";
 import { TrevoAssistant } from "./components/trevo/TrevoAssistant";
 
@@ -735,6 +736,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ICPQuarantinePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/icp-quarantine/report/:companyId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TOTVSCheckReport />
                   </AppLayout>
                 </ProtectedRoute>
               }
