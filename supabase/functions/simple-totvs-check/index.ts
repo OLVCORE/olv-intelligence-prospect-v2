@@ -118,7 +118,12 @@ function crossMatch(text: string, companyName: string) {
   const moduleHits = TOTVS_MODULES.filter(term => t.includes(term.toLowerCase()));
 
   const hasProductOrModule = productHits.length > 0 || moduleHits.length > 0;
-  const matched = hasCompany && brandHits.length > 0 && hasProductOrModule;
+  
+  // NOVA LÓGICA FLEXÍVEL: Aceita QUALQUER combinação de 2 elementos:
+  // 1. Empresa + TOTVS (marca)
+  // 2. Empresa + Produto/Módulo TOTVS
+  // 3. TOTVS + Produto/Módulo (com menção à empresa)
+  const matched = hasCompany && (brandHits.length > 0 || hasProductOrModule);
 
   const detected = Array.from(new Set([...brandHits, ...productHits, ...moduleHits]));
 
@@ -178,14 +183,12 @@ serve(async (req) => {
       const vagasData = await vagasResponse.json();
       if (vagasData.organic) {
         for (const item of vagasData.organic) {
-          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          const text = `${item.title || ''} ${item.snippet || ''}`;
           
-          // Busca por TODOS os termos do catálogo (produtos + módulos)
-          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
-            text.includes(term.toLowerCase())
-          );
+          // Aplica correlação flexível
+          const { matched, detectedProducts } = crossMatch(text, company_name);
 
-          if (detectedProducts.length > 0) {
+          if (matched) {
             evidencesByCategory.vagas.push({
               source: new URL(item.link).hostname,
               category: 'vagas',
@@ -225,7 +228,7 @@ serve(async (req) => {
         for (const item of noticiasData.organic) {
           const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          // Exige correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
+          // Aplica correlação flexível
           const { matched, detectedProducts } = crossMatch(text, company_name);
 
           if (matched) {
@@ -268,7 +271,7 @@ serve(async (req) => {
         for (const item of docsData.organic) {
           const text = `${item.title || ''} ${item.snippet || ''}`;
 
-          // Exige correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
+          // Aplica correlação flexível
           const { matched, detectedProducts } = crossMatch(text, company_name);
 
           if (matched) {

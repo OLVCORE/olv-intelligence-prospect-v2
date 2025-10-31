@@ -217,13 +217,8 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   };
 
   const renderEvidencesList = (evidences: Evidence[], category: keyof typeof CATEGORY_LABELS) => {
-    // Filtra para mostrar somente evidências com correlação: Empresa + (TOTVS/Microsiga) + Produto/Módulo
-    const list = (evidences || []).filter(ev => {
-      const prods = (ev.totvs_products || []).map(p => p.toLowerCase());
-      const hasBrand = prods.some(p => p.includes('totvs') || p.includes('microsiga'));
-      const hasProductOrModule = prods.some(p => !(p === 'totvs' || p === 'microsiga'));
-      return hasBrand && hasProductOrModule;
-    });
+    // Backend já aplica a lógica flexível de correlação
+    const list = evidences || [];
 
     if (list.length === 0) return null;
 
@@ -404,18 +399,25 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
             </AlertDescription>
           </Alert>
 
-          {/* Legenda dos highlights */}
-          <div className="flex flex-wrap gap-2 text-xs p-3 bg-muted/50 rounded-lg">
-            <span className="font-medium text-muted-foreground">Destaques:</span>
-            <Badge variant="outline" className="bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 border-red-300 dark:border-red-700">
-              TOTVS
-            </Badge>
-            <Badge variant="outline" className="bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 border-orange-300 dark:border-orange-700">
-              Produtos TOTVS
-            </Badge>
-            <Badge variant="outline" className="bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700">
-              Nome da Empresa
-            </Badge>
+          {/* Legenda dos highlights e lógica de correlação */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 text-xs p-3 bg-muted/50 rounded-lg">
+              <span className="font-medium text-muted-foreground">Destaques:</span>
+              <Badge variant="outline" className="bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 border-red-300 dark:border-red-700">
+                TOTVS
+              </Badge>
+              <Badge variant="outline" className="bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 border-orange-300 dark:border-orange-700">
+                Produtos TOTVS
+              </Badge>
+              <Badge variant="outline" className="bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700">
+                Nome da Empresa
+              </Badge>
+            </div>
+            <Alert className="border-primary/20 bg-primary/5">
+              <AlertDescription className="text-xs">
+                <span className="font-semibold">Lógica de Correlação:</span> Evidências válidas contêm <span className="font-medium">Empresa + (TOTVS OU Produto/Módulo)</span> - qualquer combinação de 2 elementos é aceita.
+              </AlertDescription>
+            </Alert>
           </div>
 
           {/* Evidências por Categoria */}
