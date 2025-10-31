@@ -80,16 +80,50 @@ serve(async (req: Request) => {
       'Logix', 'Microsiga', 'Backoffice', 'Winthor', 'Line', 'Magnus'
     ].map((p: string) => `"${p}"`).join(' OR ');
 
-    // 📌 MC1: Lista de portais de emprego brasileiros
+    // 📌 MC1: Lista expandida de portais de emprego brasileiros (33 portais)
     const jobPortals = [
-      'linkedin.com/jobs',
+      // Top 10 - Principais portais brasileiros
+      'br.linkedin.com/jobs',
+      'br.indeed.com',
+      'infojobs.com.br',
       'vagas.com.br',
       'catho.com.br',
-      'infojobs.com.br',
-      'trampos.co',
-      'Indeed.com.br',
+      'portal.gupy.io',
       'glassdoor.com.br',
-      'gupy.io'
+      'vagas.solides.com.br',
+      'bne.com.br',
+      'trabalhabrasil.com.br',
+      
+      // Governamentais
+      'empregabrasil.mte.gov.br',
+      
+      // Agregadores internacionais no Brasil
+      'br.jooble.org',
+      'adzuna.com.br',
+      'talent.com',
+      'br.jora.com',
+      'br.jobrapido.com',
+      'br.jobsora.com',
+      'jobisjob.com.br',
+      'jobatus.com.br',
+      
+      // Portais nacionais especializados
+      'empregos.com.br',
+      'manager.com.br',
+      'curriculum.com.br',
+      'emprego.net',
+      'recrutasimples.com.br',
+      'empregoligado.com.br',
+      'jobbol.com.br',
+      'elancers.net',
+      'jobs.abler.com.br',
+      'jobconvo.com',
+      'trampos.co',
+      
+      // Estágio e trainee (usuário administrativo/júnior)
+      'portal.ciee.org.br',
+      'nube.com.br',
+      'iel.org.br'
     ];
 
     let totalJobPoints = 0;
