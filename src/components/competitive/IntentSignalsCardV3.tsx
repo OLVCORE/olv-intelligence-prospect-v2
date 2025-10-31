@@ -299,45 +299,70 @@ export function IntentSignalsCardV3({ company }: IntentSignalsCardV3Props) {
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-3 mt-4">
-                  {signals.map((signal, idx) => (
-                    <div key={idx} className="border rounded-lg p-4 space-y-2 bg-green-50 border-green-200">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="default">+{signal.score} pts</Badge>
-                            <span className="text-sm font-medium capitalize">{signal.type.replace('_', ' ')}</span>
-                            {signal.confidence && (
-                              <Badge variant="outline" className="text-xs">
-                                {signal.confidence === 'high' ? 'Alta' : 
-                                 signal.confidence === 'medium' ? 'Média' : 'Baixa'} confiança
+                {signals.map((signal, idx) => {
+                    const isNegative = signal.score < 0;
+                    const scoreDisplay = isNegative ? signal.score : `+${signal.score}`;
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`border rounded-lg p-4 space-y-2 ${
+                          isNegative 
+                            ? 'bg-red-50 border-red-300' 
+                            : 'bg-green-50 border-green-200'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge 
+                                variant={isNegative ? "destructive" : "default"}
+                                className="font-semibold"
+                              >
+                                {scoreDisplay} pts
                               </Badge>
-                            )}
+                              <span className={`text-sm font-medium capitalize ${isNegative ? 'text-red-700' : ''}`}>
+                                {signal.type.replace('_', ' ')}
+                              </span>
+                              {signal.confidence && (
+                                <Badge variant="outline" className="text-xs">
+                                  {signal.confidence === 'high' ? 'Alta' : 
+                                   signal.confidence === 'medium' ? 'Média' : 'Baixa'} confiança
+                                </Badge>
+                              )}
+                            </div>
+                            <h4 className={`font-medium text-sm ${isNegative ? 'text-red-900' : ''}`}>
+                              {signal.title}
+                            </h4>
                           </div>
-                          <h4 className="font-medium text-sm">{signal.title}</h4>
+                        </div>
+                        
+                        <p className={`text-sm ${isNegative ? 'text-red-700' : 'text-muted-foreground'}`}>
+                          {signal.description}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(signal.timestamp).toLocaleString('pt-BR')}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(signal.url, '_blank')}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Abrir link
+                          </Button>
+                        </div>
+
+                        <div className={`text-xs italic border-t pt-2 ${
+                          isNegative ? 'text-red-800 font-semibold' : 'text-muted-foreground'
+                        }`}>
+                          <strong>Razão:</strong> {signal.reason}
                         </div>
                       </div>
-                      
-                      <p className="text-sm text-muted-foreground">{signal.description}</p>
-
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(signal.timestamp).toLocaleString('pt-BR')}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleLinkClick(signal.url)}
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Copiar link
-                        </Button>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground italic border-t pt-2">
-                        <strong>Razão:</strong> {signal.reason}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CollapsibleContent>
               </Collapsible>
             )}

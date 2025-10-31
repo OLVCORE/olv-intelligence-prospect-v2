@@ -185,62 +185,53 @@ serve(async (req: Request) => {
       
       try {
         const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
-        
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
           const data = await res.json();
           const items = data.items || [];
           
-          for (const item of items) {
-            const fullText = `${item.title || ''} ${item.snippet || ''}`;
-            const names = extractCompanyNames(fullText);
-            
-            for (const foundName of names) {
-              const matchScore = calculateMatchScore(foundName, searchCompanyName);
+          // Se encontrou resultados, é uma menção válida
+          if (items.length > 0) {
+            for (const item of items) {
+              const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+              const normalizedText = normalizeName(fullText);
               
-              if (matchScore >= 60) {
-                if (!companyMatches.has(foundName)) {
-                  companyMatches.set(foundName, {
-                    name: foundName,
-                    matchScore,
-                    confidence: matchScore >= 80 ? 'high' : matchScore >= 65 ? 'medium' : 'low',
-                    matchReasons: [`Encontrado em ${source.name}`, `Score de match: ${matchScore}%`],
-                    sources: [source.name],
-                    signals: { positive: [], negative: [], neutral: [] }
-                  });
-                } else {
-                  const match = companyMatches.get(foundName)!;
-                  match.sources.push(source.name);
-                  match.matchScore = Math.max(match.matchScore, matchScore);
-                }
-              }
+              // Verificar se contém o nome da empresa (mais flexível)
+              const companyMentioned = variants.some(v => normalizedText.includes(v));
               
-              if (validateMention(fullText, searchCompanyName)) {
-                const normalizedText = normalizeName(fullText);
+              if (companyMentioned) {
+                // Detectar sinais negativos
                 const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
-                sourcePoints = isNegative ? -source.points : source.points;
-                signals.push({
-                  type: isNegative ? 'legal_negative' : 'official_record',
-                  score: sourcePoints,
-                  title: item.title,
-                  description: item.snippet || '',
-                  url: item.link,
-                  timestamp: new Date().toISOString(),
-                  confidence: isNegative ? 'high' : 'high',
-                  reason: isNegative ? `Indício negativo (${source.name}): recuperação/falência/protesto` : `Menção oficial em ${source.name}`
-                });
                 
-                const match = companyMatches.get(foundName);
-                if (match) {
-                  if (isNegative) {
-                    match.signals.negative.push(`Registro negativo em ${source.name}`);
-                  } else {
-                    match.signals.positive.push(`Menção oficial em ${source.name}`);
-                  }
+                if (isNegative) {
+                  sourcePoints = -source.points;
+                  signals.push({
+                    type: 'legal_negative',
+                    score: sourcePoints,
+                    title: `⚠️ ALERTA: ${item.title}`,
+                    description: item.snippet || '',
+                    url: item.link,
+                    timestamp: new Date().toISOString(),
+                    confidence: 'high',
+                    reason: `🚨 SINAL NEGATIVO em ${source.name}: Recuperação judicial, falência ou protesto detectado`
+                  });
+                  console.log(`[NEGATIVO] ${source.name}: ${item.title}`);
+                } else {
+                  sourcePoints = source.points;
+                  signals.push({
+                    type: 'official_record',
+                    score: sourcePoints,
+                    title: item.title,
+                    description: item.snippet || '',
+                    url: item.link,
+                    timestamp: new Date().toISOString(),
+                    confidence: 'high',
+                    reason: `Menção oficial em ${source.name}`
+                  });
                 }
-                break;
+                break; // Encontrou uma menção válida, não precisa continuar
               }
             }
           }
