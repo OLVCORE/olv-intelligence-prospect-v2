@@ -72,7 +72,11 @@ serve(async (req: Request) => {
       ? niche.keywords.slice(0, 3).map((k: string) => `"${k}"`).join(' OR ')
       : '"ERP" OR "sistema de gestão" OR "automação"'; // Fallback genérico
       
-    const totvsProducts = ['Protheus', 'RM TOTVS', 'Datasul', 'Fluig'].map(p => `"${p}"`).join(' OR ');
+    // 📌 MC4: Produtos TOTVS expandidos (10 produtos principais)
+    const totvsProducts = [
+      'Protheus', 'RM TOTVS', 'Datasul', 'Fluig',
+      'Logix', 'Microsiga', 'Backoffice', 'Winthor', 'Line', 'Magnus'
+    ].map(p => `"${p}"`).join(' OR ');
     
     const linkedinQuery = `"${company_name}" AND (${nicheKeywords}) AND (${totvsProducts}) AND "${state}" site:linkedin.com/jobs`;
     const linkedinUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(linkedinQuery)}&num=5`;
@@ -103,8 +107,11 @@ serve(async (req: Request) => {
             ? niche.keywords.some((k: string) => fullText.includes(k.toLowerCase()))
             : true; // Se não tem nicho, não valida
 
-          // Validar produto TOTVS
-          const mentionsTOTVS = ['protheus', 'rm totvs', 'datasul', 'fluig'].some((p: string) => fullText.includes(p));
+          // Validar produto TOTVS (MC4: lista expandida)
+          const mentionsTOTVS = [
+            'protheus', 'rm totvs', 'datasul', 'fluig',
+            'logix', 'microsiga', 'backoffice', 'winthor', 'line', 'magnus'
+          ].some((p: string) => fullText.includes(p));
 
           if (mentionsCompany && mentionsState && mentionsNiche && mentionsTOTVS) {
             console.log(`[detect-totvs-v5] ✅ ACEITO: ${title}`);
