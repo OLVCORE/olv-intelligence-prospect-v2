@@ -474,7 +474,7 @@ export default function ICPQuarantine() {
                     <div className="flex items-center gap-2">
                       {getTempIcon(company.temperatura)}
                       <Badge variant={getTempBadge(company.temperatura)} className="text-lg px-4 py-1">
-                        {company.temperatura.toUpperCase()}
+                        {company.temperatura?.toUpperCase() || 'N/A'}
                       </Badge>
                     </div>
                   </div>
