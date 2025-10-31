@@ -122,7 +122,7 @@ function proximityCompanyAndTotvs(text: string, companyName: string, maxDistance
   return minDist <= maxDistance;
 }
 
-function companyAndTotvsSameSentence(text: string, companyName: string) {
+function companyAndTotvsSameSentence(text: string, companyName: string): boolean {
   const sentences = (text || '').split(/[\.|!|\?|\u00B7|\u2022|\n]+/);
   const cNorm = normalizeCompany(companyName);
   const totvsRegex = /(totvs|microsiga|protheus|datasul|rm|logix|winthor|fluig|backoffice)/i;
@@ -133,7 +133,7 @@ function companyAndTotvsSameSentence(text: string, companyName: string) {
   });
 }
 
-function isValidTOTVSProduct(text: string) {
+function isValidTOTVSProduct(text: string): boolean {
   const t = (text || '').toLowerCase();
   const hasBrand = TOTVS_BRAND_TERMS.some(term => t.includes(term.toLowerCase()));
   
@@ -154,7 +154,7 @@ function isValidTOTVSProduct(text: string) {
   return hasSafeProduct || hasAmbiguous;
 }
 
-function crossMatch(text: string, companyName: string) {
+function crossMatch(text: string, companyName: string): { matched: boolean; detectedProducts: string[] } {
   const t = (text || '').toLowerCase();
   const companyNorm = normalizeCompany(companyName);
 
