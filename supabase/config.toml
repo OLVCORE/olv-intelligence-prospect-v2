@@ -39,8 +39,8 @@ verify_jwt = false
  [functions.canvas-export]
  verify_jwt = true
  
- [functions.google-search]
- verify_jwt = true
+  [functions.google-search]
+  verify_jwt = false
  
  [functions.search-companies]
  verify_jwt = true
@@ -247,4 +247,10 @@ verify_jwt = false
   verify_jwt = false
 
   [functions.icp-scraper-real]
+  verify_jwt = false
+
+  [functions.serper-search]
+  verify_jwt = false
+
+  [functions.engines-health]
   verify_jwt = false

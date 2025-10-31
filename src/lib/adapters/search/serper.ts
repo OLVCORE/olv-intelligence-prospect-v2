@@ -38,34 +38,17 @@ export interface SerperAdapter {
 }
 
 class SerperAdapterImpl implements SerperAdapter {
-  private apiKey: string;
-  private baseUrl = 'https://google.serper.dev';
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
+  constructor(_apiKey?: string) {}
 
   async search(query: string, numResults: number = 10): Promise<SerperSearchResponse | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/search`, {
-        method: 'POST',
-        headers: {
-          'X-API-KEY': this.apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          q: query,
-          num: numResults
-        })
+      const { data, error } = await (await import('@/integrations/supabase/client')).supabase.functions.invoke('serper-search', {
+        body: { type: 'search', query, numResults }
       });
-
-      if (!response.ok) {
-        console.error('[Serper] Search error:', response.status);
+      if (error) {
+        console.error('[Serper] Search error via function:', error);
         return null;
       }
-
-      const data = await response.json();
-      console.log('[Serper] ✅ Busca concluída:', data.organic?.length || 0, 'resultados');
       return data as SerperSearchResponse;
     } catch (error) {
       console.error('[Serper] Erro na busca:', error);
@@ -75,26 +58,15 @@ class SerperAdapterImpl implements SerperAdapter {
 
   async searchNews(query: string, numResults: number = 10): Promise<SerperNewsResult[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/news`, {
-        method: 'POST',
-        headers: {
-          'X-API-KEY': this.apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          q: query,
-          num: numResults
-        })
+      const { data, error } = await (await import('@/integrations/supabase/client')).supabase.functions.invoke('serper-search', {
+        body: { type: 'news', query, numResults }
       });
-
-      if (!response.ok) {
-        console.error('[Serper] News search error:', response.status);
+      if (error) {
+        console.error('[Serper] News search error via function:', error);
         return [];
       }
-
-      const data = await response.json();
-      console.log('[Serper] ✅ Notícias encontradas:', data.news?.length || 0);
-      return data.news || [];
+      const res = data as { news?: SerperNewsResult[] };
+      return res.news || [];
     } catch (error) {
       console.error('[Serper] Erro na busca de notícias:', error);
       return [];
