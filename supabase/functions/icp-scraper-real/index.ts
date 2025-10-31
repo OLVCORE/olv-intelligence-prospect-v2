@@ -480,8 +480,8 @@ serve(async (req) => {
           icp_score: scoreICP,
           temperatura,
           status,
-          disqualification_reason: disqualificationReason,
-          criterios_atendidos: evidencias.map(e => ({
+          motivo_descarte: disqualificationReason,
+          evidencias_totvs: evidencias.map(e => ({
             criterio: e.criterio,
             pontos: e.pontos_atribuidos,
             fonte: e.fonte_nome,
@@ -489,13 +489,13 @@ serve(async (req) => {
             motivo: e.motivo,
             produtos_totvs: e.dados_extraidos?.produtos_totvs || [],
           })),
-          methodology: {
+          breakdown: scoreBreakdown,
+          analysis_data: {
             total_sources_checked: platformsScanned.length,
             sources_with_results: [...new Set(evidencias.map(e => e.fonte_nome))],
             sources_without_results: platformsScanned.filter(p => 
               !evidencias.some(e => e.fonte_nome === p)
             ),
-            score_breakdown: scoreBreakdown,
             calculation_formula: 'Score = Σ(pontos de cada fonte com evidência VALIDADA). Máximo: 100 pontos.',
             threshold_applied: {
               qualified_if_below: 70,
