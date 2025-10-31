@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -49,6 +49,7 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
   const [tempoInicio] = useState(Date.now());
   const [tempoDecorrido, setTempoDecorrido] = useState(0);
   const [processamentoIniciado, setProcessamentoIniciado] = useState(false);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -86,7 +87,7 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
   }, [empresas, empresasProcessamento.length, processamentoIniciado]);
 
   useEffect(() => {
-    if (isPaused || empresasProcessamento.length === 0) return;
+    if (isPaused || empresasProcessamento.length === 0 || completedRef.current) return;
 
     const processarLote = async () => {
       const aguardando = empresasProcessamento.filter(e => e.status === 'aguardando').slice(0, 3);
@@ -96,7 +97,8 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
           e.status === 'concluido' || e.status === 'erro'
         );
         
-        if (todasConcluidas) {
+        if (todasConcluidas && !completedRef.current) {
+          completedRef.current = true;
           onComplete(empresasProcessamento);
         }
         return;
@@ -109,7 +111,7 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
 
     const timer = setTimeout(processarLote, 100);
     return () => clearTimeout(timer);
-  }, [empresasProcessamento, isPaused, onComplete]);
+  }, [empresasProcessamento, isPaused]);
 
   const atualizarEmpresa = (id: string, updates: Partial<EmpresaProcessamento>) => {
     setEmpresasProcessamento(prev =>

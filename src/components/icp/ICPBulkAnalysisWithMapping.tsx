@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -1279,6 +1279,12 @@ export default function ICPBulkAnalysisWithMapping() {
     );
   }
 
+  const handleLiveProcessingComplete = useCallback((results: any[]) => {
+    setAnalysisResults(results);
+    setTotalProcessed(results.length);
+    setStep('complete');
+  }, []);
+
   if (step === 'analyzing') {
     const fieldMap: Record<string, string> = {};
     mappings.forEach(m => {
@@ -1322,17 +1328,10 @@ export default function ICPBulkAnalysisWithMapping() {
       });
     }
 
-    const tempoInicio = Date.now();
-
     return (
       <LiveProcessingDashboard
         empresas={mappedData}
-        onComplete={(results) => {
-          const tempoDecorrido = Math.floor((Date.now() - tempoInicio) / 1000);
-          setAnalysisResults(results);
-          setTotalProcessed(results.length);
-          setStep('complete');
-        }}
+        onComplete={handleLiveProcessingComplete}
       />
     );
   }
