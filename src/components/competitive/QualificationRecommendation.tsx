@@ -284,7 +284,7 @@ export function QualificationRecommendation({
                 </Button>
 
                 <p className="text-xs text-muted-foreground">
-                  Powered by Advanced AI Analytics
+                  Powered by OLV Internacional - AI Analytics
                 </p>
               </>
             )}
@@ -690,7 +690,7 @@ export function QualificationRecommendation({
           <div className="flex items-center justify-center text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />
-              Powered by Advanced AI Analytics & Multi-Source Intelligence
+              Powered by OLV Internacional - AI Analytics & Multi-Source Intelligence
             </span>
           </div>
         </div>

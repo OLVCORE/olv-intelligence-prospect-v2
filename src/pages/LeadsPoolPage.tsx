@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useLeadsPool, useAddToQualified } from '@/hooks/useLeadsPool';
+import { PoolRowActions } from '@/components/leads-pool/PoolRowActions';
 import {
   Table,
   TableBody,
@@ -222,14 +223,20 @@ export default function LeadsPoolPage() {
                 </TableCell>
                 <TableCell>{getTemperaturaBadge(lead.temperatura)}</TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddToQualified(lead.id)}
-                    disabled={addToQualified.isPending}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Qualificar
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddToQualified(lead.id)}
+                      disabled={addToQualified.isPending}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      Qualificar
+                    </Button>
+                    <PoolRowActions
+                      lead={lead}
+                      onQualify={handleAddToQualified}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

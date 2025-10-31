@@ -71,6 +71,14 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const handleCheck = () => {
+    // Validar CNPJ se fornecido
+    if (cnpj && cnpj.replace(/\D/g, '').length !== 14) {
+      toast.error('CNPJ inválido', {
+        description: 'O CNPJ deve conter exatamente 14 dígitos'
+      });
+      return;
+    }
+
     checkMutation.mutate({
       companyId,
       companyName,
@@ -392,7 +400,23 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
       {!latestCheck && !isLoading && (
         <Alert>
           <AlertDescription>
-            Nenhuma verificação realizada ainda. Clique em "Verificar" para iniciar.
+            Nenhuma verificação realizada ainda. Clique em "Verificar Agora" para iniciar a análise.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {checkMutation.isError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              <div>
+                <strong>Erro na verificação</strong>
+                <p className="text-sm mt-1">
+                  {checkMutation.error?.message || 'Não foi possível realizar a verificação. Verifique se o CNPJ está correto e tente novamente.'}
+                </p>
+              </div>
+            </div>
           </AlertDescription>
         </Alert>
       )}
