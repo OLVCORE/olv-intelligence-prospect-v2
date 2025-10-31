@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, ArrowLeft, Target, AlertCircle } from 'lucide-react';
+import { FileText, ArrowLeft, Target, AlertCircle, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,12 +12,14 @@ import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
+import { CompanyEnrichmentDialog } from "@/components/icp/CompanyEnrichmentDialog";
 
 export default function IndividualAnalysis() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const companyId = searchParams.get('company');
   const [showCompanySelector, setShowCompanySelector] = useState(!companyId);
+  const [showEnrichmentDialog, setShowEnrichmentDialog] = useState(false);
 
   const { data: company } = useQuery({
     queryKey: ['company', companyId],
@@ -114,35 +116,91 @@ export default function IndividualAnalysis() {
 
       {/* Company Info */}
       {company && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-xl">{company.name}</CardTitle>
-                <CardDescription>
-                  {company.cnpj && `CNPJ: ${company.cnpj} • `}
-                  {(company.domain || company.website) && (company.domain || company.website)}
-                  {(company.headquarters_city || company.headquarters_state) && ` • ${company.headquarters_city || ''}${company.headquarters_city && company.headquarters_state ? ' - ' : ''}${company.headquarters_state || ''}`}
-                </CardDescription>
+        <>
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-xl">{company.name}</CardTitle>
+                  <CardDescription>
+                    {company.cnpj && `CNPJ: ${company.cnpj} • `}
+                    {(company.domain || company.website) && (company.domain || company.website)}
+                    {(company.headquarters_city || company.headquarters_state) && ` • ${company.headquarters_city || ''}${company.headquarters_city && company.headquarters_state ? ' - ' : ''}${company.headquarters_state || ''}`}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEnrichmentDialog(true)}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Enriquecer Dados
+                </Button>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Razão Social:</span> <span className="font-medium">{company.name}</span></div>
-              <div><span className="text-muted-foreground">CNPJ:</span> <span className="font-medium">{company.cnpj || '—'}</span></div>
-              <div><span className="text-muted-foreground">Domínio:</span> <span className="font-medium">{company.domain || company.website || '—'}</span></div>
-              <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{company.headquarters_state || '—'}</span></div>
-              <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{company.headquarters_city || '—'}</span></div>
-              <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{company.headquarters_country || '—'}</span></div>
-            </div>
-            {(!company.headquarters_state || !company.niche_code) && (
-              <div className="mt-3 text-xs text-destructive">
-                Dados ausentes para análises: {!company.headquarters_state ? 'Estado (UF)' : ''}{!company.headquarters_state && !company.niche_code ? ' e ' : ''}{!company.niche_code ? 'Nicho' : ''}.
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Razão Social:</span> <span className="font-medium">{company.name}</span></div>
+                <div><span className="text-muted-foreground">CNPJ:</span> <span className="font-medium">{company.cnpj || '—'}</span></div>
+                <div><span className="text-muted-foreground">Domínio:</span> <span className="font-medium">{company.domain || company.website || '—'}</span></div>
+                <div><span className="text-muted-foreground">Estado (UF):</span> <span className="font-medium">{company.headquarters_state || '—'}</span></div>
+                <div><span className="text-muted-foreground">Município:</span> <span className="font-medium">{company.headquarters_city || '—'}</span></div>
+                <div><span className="text-muted-foreground">País:</span> <span className="font-medium">{company.headquarters_country || '—'}</span></div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {/* Seção CNAEs (se disponível) */}
+              {company.raw_data?.atividade_principal && (
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  <div className="text-sm font-semibold text-muted-foreground">CNAEs (Receita Federal)</div>
+                  
+                  {/* CNAE Primário */}
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">CNAE Principal:</div>
+                    <div className="text-sm">
+                      <span className="font-mono font-semibold">{company.raw_data.atividade_principal[0]?.code}</span>
+                      {' - '}
+                      <span>{company.raw_data.atividade_principal[0]?.text}</span>
+                    </div>
+                  </div>
+
+                  {/* CNAEs Secundários */}
+                  {company.raw_data.atividades_secundarias?.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">CNAEs Secundários:</div>
+                      <div className="space-y-1">
+                        {company.raw_data.atividades_secundarias.slice(0, 3).map((atividade: any, idx: number) => (
+                          <div key={idx} className="text-xs">
+                            <span className="font-mono font-semibold">{atividade.code}</span>
+                            {' - '}
+                            <span className="text-muted-foreground">{atividade.text}</span>
+                          </div>
+                        ))}
+                        {company.raw_data.atividades_secundarias.length > 3 && (
+                          <div className="text-xs text-muted-foreground italic">
+                            + {company.raw_data.atividades_secundarias.length - 3} outros CNAEs
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(!company.headquarters_state || !company.headquarters_city) && (
+                <div className="mt-3 text-xs text-amber-600">
+                  ⚠️ Dados de localização ausentes. Use o botão "Enriquecer Dados" para completar.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <CompanyEnrichmentDialog
+            open={showEnrichmentDialog}
+            onOpenChange={setShowEnrichmentDialog}
+            company={company}
+          />
+        </>
       )}
 
       {company && (

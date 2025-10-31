@@ -45,19 +45,19 @@ export function useAutoEnrichCompany(company?: Company | null) {
     if (!company?.id) return;
     if (enrichMutation.isPending) return;
 
+    // Prioridade: Estado e Município (essenciais para análises)
     const needsEnrichment = 
       !company.headquarters_state || 
-      !company.headquarters_city || 
-      !company.niche_code;
+      !company.headquarters_city;
 
     const hasCNPJ = !!company.cnpj;
 
     // Se precisa enriquecer e tem CNPJ, executar automaticamente
     if (needsEnrichment && hasCNPJ) {
-      console.log('🔄 Iniciando enriquecimento automático da empresa...');
+      console.log('🔄 Iniciando enriquecimento automático da empresa (Estado/Município)...');
       enrichMutation.mutate(company.id);
     }
-  }, [company?.id, company?.cnpj, company?.headquarters_state, company?.headquarters_city, company?.niche_code]);
+  }, [company?.id, company?.cnpj, company?.headquarters_state, company?.headquarters_city]);
 
   return {
     isEnriching: enrichMutation.isPending,

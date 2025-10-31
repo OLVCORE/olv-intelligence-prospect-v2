@@ -19,6 +19,10 @@ interface ReceitaWSResponse {
     code: string;
     text: string;
   }>;
+  atividades_secundarias?: Array<{
+    code: string;
+    text: string;
+  }>;
   natureza_juridica: string;
   porte: string;
 }
@@ -58,12 +62,12 @@ serve(async (req) => {
       );
     }
 
-    // 2. Verificar se já tem dados completos
-    if (company.headquarters_state && company.headquarters_city && company.niche_code) {
+    // 2. Verificar se já tem dados básicos (Estado e Município são os essenciais)
+    if (company.headquarters_state && company.headquarters_city) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Empresa já possui dados completos',
+          message: 'Empresa já possui dados de localização',
           data: company
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -122,8 +126,13 @@ serve(async (req) => {
       updateData.headquarters_city = receitaData.municipio;
     }
 
-    if (!company.niche_code && receitaData.atividade_principal?.[0]?.code) {
+    // CNAEs primários e secundários (OPCIONAL - não obrigatório)
+    if (receitaData.atividade_principal?.[0]?.code) {
       updateData.niche_code = receitaData.atividade_principal[0].code;
+    }
+
+    if (receitaData.atividade_principal?.[0]?.text) {
+      updateData.niche = receitaData.atividade_principal[0].text;
     }
 
     // Adicionar dados extras se disponíveis
@@ -131,9 +140,13 @@ serve(async (req) => {
       updateData.size = receitaData.porte;
     }
 
-    if (receitaData.atividade_principal?.[0]?.text) {
-      updateData.niche = receitaData.atividade_principal[0].text;
-    }
+    // Preparar CNAEs estruturados para exibição
+    const cnaes: any = {
+      primary: receitaData.atividade_principal || [],
+      secondary: receitaData.atividades_secundarias || []
+    };
+    
+    updateData.cnaes_data = cnaes;
 
     // 6. Atualizar empresa no banco
     const { data: updatedCompany, error: updateError } = await supabase
