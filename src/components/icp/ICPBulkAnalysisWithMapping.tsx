@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen, ArrowUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
@@ -74,9 +74,23 @@ export default function ICPBulkAnalysisWithMapping() {
   const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
   const { templates, saveTemplate, deleteTemplate, markAsUsed } = useICPMappingTemplates();
+
+  // Scroll to top functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
@@ -807,32 +821,46 @@ export default function ICPBulkAnalysisWithMapping() {
 
   if (step === 'upload') {
     return (
-      <Card className="p-8">
-        <div className="text-center space-y-6">
-          <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
-            <p className="text-muted-foreground mb-6">
-              Sistema robusto de análise que:<br/>
-              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Verifica 40+ portais de vagas para detectar clientes TOTVS</span><br/>
-              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Calcula score ICP detalhado para cada empresa</span><br/>
-              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Processa até 3 empresas simultaneamente</span><br/>
-              <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Gera relatório completo com evidências</span>
-            </p>
+      <>
+        <Card className="p-8">
+          <div className="text-center space-y-6">
+            <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
+              <p className="text-muted-foreground mb-6">
+                Sistema robusto de análise que:<br/>
+                <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Verifica 40+ portais de vagas para detectar clientes TOTVS</span><br/>
+                <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Calcula score ICP detalhado para cada empresa</span><br/>
+                <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Processa até 3 empresas simultaneamente</span><br/>
+                <span className="inline-flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-500" /> Gera relatório completo com evidências</span>
+              </p>
+            </div>
+            <div>
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                className="max-w-md mx-auto"
+              />
+              <p className="text-sm text-muted-foreground mt-2">
+                Aceita arquivos .csv até 20MB
+              </p>
+            </div>
           </div>
-          <div>
-            <Input
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="max-w-md mx-auto"
-            />
-            <p className="text-sm text-muted-foreground mt-2">
-              Aceita arquivos .csv até 20MB
-            </p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+
+        {/* Scroll to Top Button */}
+        {showScrollTop && (
+          <Button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            size="icon"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        )}
+      </>
     );
   }
 
@@ -842,10 +870,78 @@ export default function ICPBulkAnalysisWithMapping() {
     const unmappedCount = mappings.filter(m => m.status === 'unmapped').length;
 
     return (
-      <div className="space-y-6">
+      <>
+        <div className="space-y-6">
         <Card className="p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Mapeamento de Colunas</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold">Mapeamento de Colunas</h2>
+              
+              <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FolderOpen className="w-4 h-4 mr-2" />
+                    Carregar Template
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
+                    <DialogDescription>
+                      Selecione um template salvo para aplicar o mapeamento automaticamente
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {templates.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum template salvo ainda
+                      </p>
+                    ) : (
+                      <ScrollArea className="h-[300px] pr-4">
+                        <div className="space-y-2">
+                          {templates.map((template) => (
+                            <Card
+                              key={template.id}
+                              className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                              onClick={() => handleLoadTemplate(template.id)}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{template.nome_template}</h4>
+                                  {template.descricao && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {template.descricao}
+                                    </p>
+                                  )}
+                                  <div className="flex gap-2 mt-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {template.mappings?.length || 0} mapeamentos
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Deletar template "${template.nome_template}"?`)) {
+                                      deleteTemplate(template.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
             <p className="text-muted-foreground mb-4">
               Revise o mapeamento automático. Ajuste se necessário.
             </p>
@@ -1268,16 +1364,43 @@ export default function ICPBulkAnalysisWithMapping() {
           </div>
         </Card>
       </div>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+          size="icon"
+          aria-label="Voltar ao topo"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
+    </>
     );
   }
 
   if (step === 'preview' && preAnalysisData) {
     return (
-      <PreAnalysisReport
-        data={preAnalysisData}
-        onConfirm={handleConfirmAnalysis}
-        onCancel={() => setStep('mapping')}
-      />
+      <>
+        <PreAnalysisReport
+          data={preAnalysisData}
+          onConfirm={handleConfirmAnalysis}
+          onCancel={() => setStep('mapping')}
+        />
+        
+        {/* Scroll to Top Button */}
+        {showScrollTop && (
+          <Button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            size="icon"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        )}
+      </>
     );
   }
 
@@ -1349,10 +1472,24 @@ export default function ICPBulkAnalysisWithMapping() {
     }
 
     return (
-      <LiveProcessingDashboard
-        empresas={mappedData}
-        onComplete={handleLiveProcessingComplete}
-      />
+      <>
+        <LiveProcessingDashboard
+          empresas={mappedData}
+          onComplete={handleLiveProcessingComplete}
+        />
+        
+        {/* Scroll to Top Button */}
+        {showScrollTop && (
+          <Button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            size="icon"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        )}
+      </>
     );
   }
 
@@ -1362,11 +1499,25 @@ export default function ICPBulkAnalysisWithMapping() {
       : 0;
 
     return (
-      <FinalReportDashboard
-        resultados={analysisResults}
-        tempoTotal={tempoDecorrido}
-        onNovaAnalise={resetAnalysis}
-      />
+      <>
+        <FinalReportDashboard
+          resultados={analysisResults}
+          tempoTotal={tempoDecorrido}
+          onNovaAnalise={resetAnalysis}
+        />
+        
+        {/* Scroll to Top Button */}
+        {showScrollTop && (
+          <Button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            size="icon"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        )}
+      </>
     );
   }
 
