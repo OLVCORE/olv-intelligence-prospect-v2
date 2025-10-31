@@ -106,7 +106,8 @@ export default function ICPQuarantine() {
 
       const { data, error } = await supabase.functions.invoke('enrich-apollo', {
         body: { 
-          company_name: analysis.razao_social,
+          type: 'search_organizations',
+          name: analysis.razao_social,
           domain: rawData.domain || '',
         },
       });
@@ -194,12 +195,48 @@ export default function ICPQuarantine() {
         ? analysis.raw_analysis as Record<string, any>
         : {};
 
+      // Se já tem company_id linkado, usar. Senão criar empresa primeiro
+      let companyId = analysis.company_id;
+      
+      if (!companyId && analysis.cnpj) {
+        // Verificar se empresa já existe pelo CNPJ
+        const { data: existing } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('cnpj', analysis.cnpj)
+          .maybeSingle();
+        
+        if (existing) {
+          companyId = existing.id;
+        } else {
+          // Criar empresa
+          const { data: newCompany, error: createError } = await supabase
+            .from('companies')
+            .insert({
+              name: analysis.razao_social,
+              cnpj: analysis.cnpj,
+              domain: rawData.domain || null,
+              website: rawData.domain || null,
+              source: 'icp_quarantine',
+            })
+            .select('id')
+            .single();
+          
+          if (createError) throw createError;
+          companyId = newCompany.id;
+          
+          // Linkar empresa ao registro da quarentena
+          await supabase
+            .from('icp_analysis_results')
+            .update({ company_id: companyId })
+            .eq('id', analysisId);
+        }
+      }
+      
+      if (!companyId) throw new Error('Impossível criar/encontrar empresa');
+
       const { data, error } = await supabase.functions.invoke('enrich-company-360', {
-        body: {
-          company_name: analysis.razao_social,
-          cnpj: analysis.cnpj,
-          domain: rawData.domain || '',
-        },
+        body: { company_id: companyId },
       });
 
       if (error) throw error;
