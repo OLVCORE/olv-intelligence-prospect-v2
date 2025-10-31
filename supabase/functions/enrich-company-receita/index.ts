@@ -33,9 +33,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[Enrich Receita] Iniciando função');
+    
     const { company_id } = await req.json();
+    
+    console.log('[Enrich Receita] company_id recebido:', company_id);
 
     if (!company_id) {
+      console.error('[Enrich Receita] company_id não fornecido');
       return new Response(
         JSON.stringify({ error: 'company_id é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,18 +51,32 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const receitaToken = Deno.env.get('RECEITAWS_API_TOKEN');
     
+    console.log('[Enrich Receita] Conectando ao Supabase...');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Buscar empresa no banco
+    // 1. Buscar empresa no banco (usando service role para bypass RLS)
+    console.log('[Enrich Receita] Buscando empresa:', company_id);
+    
     const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('id, cnpj, headquarters_state, headquarters_city, niche_code, raw_data')
       .eq('id', company_id)
-      .single();
+      .maybeSingle();
 
-    if (companyError || !company) {
+    console.log('[Enrich Receita] Resultado da busca:', { company, companyError });
+
+    if (companyError) {
+      console.error('[Enrich Receita] Erro ao buscar empresa:', companyError);
       return new Response(
-        JSON.stringify({ error: 'Empresa não encontrada' }),
+        JSON.stringify({ error: 'Erro ao buscar empresa', details: companyError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!company) {
+      console.error('[Enrich Receita] Empresa não encontrada:', company_id);
+      return new Response(
+        JSON.stringify({ error: 'Empresa não encontrada no banco de dados', company_id }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
