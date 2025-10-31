@@ -224,47 +224,46 @@ serve(async (req: Request) => {
         searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         const items = await serperSearch(query, 5);
           
-          // Se encontrou resultados, é uma menção válida
-          if (items.length > 0) {
-            for (const item of items) {
-              const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-              const normalizedText = normalizeName(fullText);
+        // Se encontrou resultados, é uma menção válida
+        if (items.length > 0) {
+          for (const item of items) {
+            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+            const normalizedText = normalizeName(fullText);
+            
+            // Verificar se contém o nome da empresa (mais flexível)
+            const companyMentioned = variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits));
+            
+            if (companyMentioned) {
+              // Detectar sinais negativos
+              const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
               
-              // Verificar se contém o nome da empresa (mais flexível)
-              const companyMentioned = variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits));
-              
-              if (companyMentioned) {
-                // Detectar sinais negativos
-                const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
-                
-                if (isNegative) {
-                  sourcePoints = -source.points;
-                  signals.push({
-                    type: 'legal_negative',
-                    score: sourcePoints,
-                    title: `⚠️ ALERTA: ${item.title}`,
-                    description: item.snippet || '',
-                    url: item.link,
-                    timestamp: new Date().toISOString(),
-                    confidence: 'high',
-                    reason: `🚨 SINAL NEGATIVO em ${source.name}: Recuperação judicial, falência ou protesto detectado`
-                  });
-                  console.log(`[NEGATIVO] ${source.name}: ${item.title}`);
-                } else {
-                  sourcePoints = source.points;
-                  signals.push({
-                    type: 'official_record',
-                    score: sourcePoints,
-                    title: item.title,
-                    description: item.snippet || '',
-                    url: item.link,
-                    timestamp: new Date().toISOString(),
-                    confidence: 'high',
-                    reason: `Menção oficial em ${source.name}`
-                  });
-                }
-                break; // Encontrou uma menção válida, não precisa continuar
+              if (isNegative) {
+                sourcePoints = -source.points;
+                signals.push({
+                  type: 'legal_negative',
+                  score: sourcePoints,
+                  title: `⚠️ ALERTA: ${item.title}`,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'high',
+                  reason: `🚨 SINAL NEGATIVO em ${source.name}: Recuperação judicial, falência ou protesto detectado`
+                });
+                console.log(`[NEGATIVO] ${source.name}: ${item.title}`);
+              } else {
+                sourcePoints = source.points;
+                signals.push({
+                  type: 'official_record',
+                  score: sourcePoints,
+                  title: item.title,
+                  description: item.snippet || '',
+                  url: item.link,
+                  timestamp: new Date().toISOString(),
+                  confidence: 'high',
+                  reason: `Menção oficial em ${source.name}`
+                });
               }
+              break; // Encontrou uma menção válida, não precisa continuar
             }
           }
         }
@@ -335,25 +334,23 @@ serve(async (req: Request) => {
         searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         const items = await serperSearch(query, 3);
         
+        for (const item of items) {
+          const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          const normalizedText = normalizeName(fullText);
           
-          for (const item of items) {
-            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-            const normalizedText = normalizeName(fullText);
-            
-            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-              sourcePoints = source.points;
-              signals.push({
-                type: 'news_mention',
-                score: source.points,
-                title: item.title,
-                description: item.snippet || '',
-                url: item.link,
-                timestamp: new Date().toISOString(),
-                confidence: 'medium',
-                reason: `Notícia sobre investimento/expansão em ${source.name}`
-              });
-              break;
-            }
+          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            sourcePoints = source.points;
+            signals.push({
+              type: 'news_mention',
+              score: source.points,
+              title: item.title,
+              description: item.snippet || '',
+              url: item.link,
+              timestamp: new Date().toISOString(),
+              confidence: 'medium',
+              reason: `Notícia sobre investimento/expansão em ${source.name}`
+            });
+            break;
           }
         }
       } catch (e) {
@@ -384,25 +381,23 @@ serve(async (req: Request) => {
         searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         const items = await serperSearch(query, 3);
         
+        for (const item of items) {
+          const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          const normalizedText = normalizeName(fullText);
           
-          for (const item of items) {
-            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-            const normalizedText = normalizeName(fullText);
-            
-            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-              sourcePoints = source.points;
-              signals.push({
-                type: 'innovation_mention',
-                score: source.points,
-                title: item.title,
-                description: item.snippet || '',
-                url: item.link,
-                timestamp: new Date().toISOString(),
-                confidence: 'medium',
-                reason: `Menção em portal de inovação (${source.name})`
-              });
-              break;
-            }
+          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            sourcePoints = source.points;
+            signals.push({
+              type: 'innovation_mention',
+              score: source.points,
+              title: item.title,
+              description: item.snippet || '',
+              url: item.link,
+              timestamp: new Date().toISOString(),
+              confidence: 'medium',
+              reason: `Menção em portal de inovação (${source.name})`
+            });
+            break;
           }
         }
       } catch (e) {
@@ -431,26 +426,24 @@ serve(async (req: Request) => {
         searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         const items = await serperSearch(query, 3);
         
+        for (const item of items) {
+          const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          const normalizedText = normalizeName(fullText);
           
-          for (const item of items) {
-            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-            const normalizedText = normalizeName(fullText);
-            
-            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-              const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
-              sourcePoints = isNegative ? -source.points : source.points;
-              signals.push({
-                type: isNegative ? 'legal_negative' : 'legal_record',
-                score: sourcePoints,
-                title: isNegative ? `⚠️ ALERTA LEGAL: ${item.title}` : item.title,
-                description: item.snippet || '',
-                url: item.link,
-                timestamp: new Date().toISOString(),
-                confidence: 'high',
-                reason: isNegative ? `🚨 SINAL NEGATIVO (${source.name}): Recuperação judicial/falência/protesto` : `Registro em fonte judicial/legal (${source.name})`
-              });
-              break;
-            }
+          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
+            sourcePoints = isNegative ? -source.points : source.points;
+            signals.push({
+              type: isNegative ? 'legal_negative' : 'legal_record',
+              score: sourcePoints,
+              title: isNegative ? `⚠️ ALERTA LEGAL: ${item.title}` : item.title,
+              description: item.snippet || '',
+              url: item.link,
+              timestamp: new Date().toISOString(),
+              confidence: 'high',
+              reason: isNegative ? `🚨 SINAL NEGATIVO (${source.name}): Recuperação judicial/falência/protesto` : `Registro em fonte judicial/legal (${source.name})`
+            });
+            break;
           }
         }
       } catch (e) {
@@ -479,41 +472,39 @@ serve(async (req: Request) => {
         searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         const items = await serperSearch(query, 5);
         
+        for (const item of items) {
+          const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          const normalizedText = normalizeName(fullText);
           
-          for (const item of items) {
-            const fullText = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
-            const normalizedText = normalizeName(fullText);
+          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+            const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
             
-            if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-              const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
-              
-              if (isNegative) {
-                sourcePoints = -source.points;
-                signals.push({
-                  type: 'legal_negative',
-                  score: sourcePoints,
-                  title: `⚠️ ALERTA (${source.name}): ${item.title}`,
-                  description: item.snippet || '',
-                  url: item.link,
-                  timestamp: new Date().toISOString(),
-                  confidence: 'high',
-                  reason: `🚨 SINAL NEGATIVO encontrado em fonte pública`
-                });
-              } else {
-                sourcePoints = source.points;
-                signals.push({
-                  type: 'open_web_mention',
-                  score: sourcePoints,
-                  title: item.title,
-                  description: item.snippet || '',
-                  url: item.link,
-                  timestamp: new Date().toISOString(),
-                  confidence: 'medium',
-                  reason: `Menção encontrada em fonte pública (${source.name})`
-                });
-              }
-              break;
+            if (isNegative) {
+              sourcePoints = -source.points;
+              signals.push({
+                type: 'legal_negative',
+                score: sourcePoints,
+                title: `⚠️ ALERTA (${source.name}): ${item.title}`,
+                description: item.snippet || '',
+                url: item.link,
+                timestamp: new Date().toISOString(),
+                confidence: 'high',
+                reason: `🚨 SINAL NEGATIVO encontrado em fonte pública`
+              });
+            } else {
+              sourcePoints = source.points;
+              signals.push({
+                type: 'open_web_mention',
+                score: sourcePoints,
+                title: item.title,
+                description: item.snippet || '',
+                url: item.link,
+                timestamp: new Date().toISOString(),
+                confidence: 'medium',
+                reason: `Menção encontrada em fonte pública (${source.name})`
+              });
             }
+            break;
           }
         }
       } catch (e) {
@@ -545,27 +536,26 @@ serve(async (req: Request) => {
     
     try {
       const items = await serperSearch(jobQuery, 5);
+      
+      for (const item of items) {
+        const title = item.title || '';
+        const snippet = item.snippet || '';
+        const fullText = `${title} ${snippet}`.toLowerCase();
+        const normalizedText = normalizeName(fullText);
         
-        for (const item of items) {
-          const title = item.title || '';
-          const snippet = item.snippet || '';
-          const fullText = `${title} ${snippet}`.toLowerCase();
-          const normalizedText = normalizeName(fullText);
-          
-          if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
-            jobPoints = 30;
-            signals.push({
-              type: 'job_posting',
-              score: 30,
-              title,
-              description: snippet,
-              url: item.link,
-              timestamp: new Date().toISOString(),
-              confidence: 'high',
-              reason: 'Vaga estratégica em TI indica investimento'
-            });
-            break;
-          }
+        if (variants.some(v => normalizedText.includes(v)) || (cnpjDigits && digitsOnly(fullText).includes(cnpjDigits))) {
+          jobPoints = 30;
+          signals.push({
+            type: 'job_posting',
+            score: 30,
+            title,
+            description: snippet,
+            url: item.link,
+            timestamp: new Date().toISOString(),
+            confidence: 'high',
+            reason: 'Vaga estratégica em TI indica investimento'
+          });
+          break;
         }
       }
       
