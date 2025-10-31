@@ -10,7 +10,7 @@ export function useDeleteQuarantineBatch() {
       console.log('[DELETE BATCH] Deletando:', analysisIds);
 
       const { error } = await supabase
-        .from('leads_qualified')
+        .from('icp_analysis_results')
         .delete()
         .in('id', analysisIds);
 
@@ -22,7 +22,7 @@ export function useDeleteQuarantineBatch() {
       return analysisIds;
     },
     onSuccess: (deletedIds) => {
-      queryClient.invalidateQueries({ queryKey: ['quarantine-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
       toast.success(`${deletedIds.length} empresa(s) deletada(s) com sucesso`);
     },
     onError: (error: any) => {

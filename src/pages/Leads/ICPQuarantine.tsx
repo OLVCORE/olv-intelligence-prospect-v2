@@ -486,127 +486,159 @@ export default function ICPQuarantine() {
                 )}
 
                 {/* Analysis Criteria */}
-                {(company as any).criterios_aplicados && (company as any).criterios_aplicados.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Filter className="h-5 w-5 text-primary" />
-                      <p className="text-lg font-semibold">Critérios de Análise Aplicados</p>
+                {(() => {
+                  const criterios = (company as any).criterios_aplicados 
+                    || (company as any).motivos 
+                    || Object.keys(((company as any).breakdown || {}));
+                  if (!criterios || criterios.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Filter className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">Critérios de Análise Aplicados</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {criterios.map((criterio: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
+                            <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{criterio}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {(company as any).criterios_aplicados.map((criterio: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-2 bg-muted/50 p-3 rounded-lg">
-                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">{criterio}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Buying Intent Signals */}
-                {(company as any).sinais_intencao_compra && (company as any).sinais_intencao_compra.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Flame className="h-5 w-5 text-orange-500" />
-                      <p className="text-lg font-semibold">Sinais de Intenção de Compra</p>
-                    </div>
-                    <div className="space-y-3">
-                      {(company as any).sinais_intencao_compra.map((sinal: any, idx: number) => (
-                        <div key={idx} className="bg-orange-500/5 border-l-4 border-orange-500 p-4 rounded">
-                          <p className="font-medium text-sm mb-1">{sinal.tipo || 'Sinal Identificado'}</p>
-                          <p className="text-sm text-muted-foreground">{sinal.descricao}</p>
-                          {sinal.fonte && (
-                            <a 
-                              href={sinal.fonte} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline mt-2 inline-block"
-                            >
-                              Ver fonte →
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Evidence Section */}
-                {(company as any).evidencias && (company as any).evidencias.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <p className="text-lg font-semibold">
-                        Evidências Coletadas ({(company as any).evidencias.length})
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      {(company as any).evidencias.map((ev: any, idx: number) => (
-                        <div key={idx} className="bg-muted/30 p-4 rounded-lg border">
-                          <div className="flex items-start justify-between mb-2">
-                            <p className="font-semibold text-sm">{ev.criterio || ev.fonte_nome || 'Evidência'}</p>
-                            {ev.relevancia && (
-                              <Badge variant="outline" className="text-xs">
-                                Relevância: {ev.relevancia}
-                              </Badge>
+                {(() => {
+                  const ra = (company as any).raw_analysis || {};
+                  const sinais = (company as any).sinais_intencao_compra 
+                    || ra.intencao_compra?.sinais 
+                    || ra.signals 
+                    || [];
+                  if (!sinais || sinais.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Flame className="h-5 w-5 text-orange-500" />
+                        <p className="text-lg font-semibold">Sinais de Intenção de Compra</p>
+                      </div>
+                      <div className="space-y-3">
+                        {sinais.map((sinal: any, idx: number) => (
+                          <div key={idx} className="bg-orange-500/5 border-l-4 border-orange-500 p-4 rounded">
+                            <p className="font-medium text-sm mb-1">{sinal?.tipo || 'Sinal Identificado'}</p>
+                            <p className="text-sm text-muted-foreground">{sinal?.descricao || sinal?.texto || sinal}</p>
+                            {sinal?.fonte && (
+                              <a 
+                                href={sinal.fonte} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline mt-2 inline-block"
+                              >
+                                Ver fonte →
+                              </a>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{ev.evidencia || ev.motivo}</p>
-                          {ev.fonte_url && (
-                            <a 
-                              href={ev.fonte_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                            >
-                              <span>Ver fonte completa</span>
-                              <span>→</span>
-                            </a>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
+
+                {/* Evidence Section */}
+                {(() => {
+                  const ra = (company as any).raw_analysis || {};
+                  const evidencias = (company as any).evidencias 
+                    || (company as any).evidencias_totvs 
+                    || ra.evidencias 
+                    || [];
+                  if (!evidencias || evidencias.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">
+                          Evidências Coletadas ({evidencias.length})
+                        </p>
+                      </div>
+                      <div className="space-y-3">
+                        {evidencias.map((ev: any, idx: number) => (
+                          <div key={idx} className="bg-muted/30 p-4 rounded-lg border">
+                            <div className="flex items-start justify-between mb-2">
+                              <p className="font-semibold text-sm">{ev?.criterio || ev?.fonte_nome || 'Evidência'}</p>
+                              {ev?.relevancia && (
+                                <Badge variant="outline" className="text-xs">
+                                  Relevância: {ev.relevancia}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{ev?.evidencia || ev?.motivo || ev?.descricao || ev}</p>
+                            {ev?.fonte_url && (
+                              <a 
+                                href={ev.fonte_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                              >
+                                <span>Ver fonte completa</span>
+                                <span>→</span>
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Competitor Intelligence */}
-                {(company as any).tecnologias_detectadas && (company as any).tecnologias_detectadas.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Search className="h-5 w-5 text-primary" />
-                      <p className="text-lg font-semibold">Tecnologias e Ferramentas Detectadas</p>
+                {(() => {
+                  const ra = (company as any).raw_analysis || {};
+                  const tecnologias = (company as any).tecnologias_detectadas || ra.tecnologias || ra.stacks || [];
+                  if (!tecnologias || tecnologias.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Search className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">Tecnologias e Ferramentas Detectadas</p>
+                      </div>
+                      <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-lg">
+                        <div className="flex flex-wrap gap-2">
+                          {tecnologias.map((tech: string, idx: number) => (
+                            <Badge key={idx} variant="secondary">
+                              {tech}
+                            </Badge>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-3">
+                          💡 Oportunidade: Estas tecnologias podem indicar concorrentes diretos ou parceiros potenciais
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-lg">
+                  );
+                })()}
+
+                {/* Data Sources */}
+                {(() => {
+                  const ra = (company as any).raw_analysis || {};
+                  const fontes = (company as any).fontes_consultadas || ra.fontes || ra.sources || [];
+                  if (!fontes || fontes.length === 0) return null;
+                  return (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Download className="h-5 w-5 text-primary" />
+                        <p className="text-lg font-semibold">Fontes Consultadas</p>
+                      </div>
                       <div className="flex flex-wrap gap-2">
-                        {(company as any).tecnologias_detectadas.map((tech: string, idx: number) => (
-                          <Badge key={idx} variant="secondary">
-                            {tech}
+                        {fontes.map((fonte: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {fonte}
                           </Badge>
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-3">
-                        💡 Oportunidade: Estas tecnologias podem indicar concorrentes diretos ou parceiros potenciais
-                      </p>
                     </div>
-                  </div>
-                )}
-
-                {/* Data Sources */}
-                {(company as any).fontes_consultadas && (company as any).fontes_consultadas.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Download className="h-5 w-5 text-primary" />
-                      <p className="text-lg font-semibold">Fontes Consultadas</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(company as any).fontes_consultadas.map((fonte: string, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {fonte}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
           ))}
