@@ -68,16 +68,16 @@ serve(async (req) => {
     if (companyError) {
       console.error('[Enrich Receita] Erro ao buscar empresa:', companyError);
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresa', details: companyError }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Erro ao buscar empresa', details: companyError }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!company) {
       console.error('[Enrich Receita] Empresa não encontrada:', company_id);
       return new Response(
-        JSON.stringify({ error: 'Empresa não encontrada no banco de dados', company_id }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Empresa não encontrada', company_id }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
