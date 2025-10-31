@@ -14,6 +14,7 @@ serve(async (req: Request) => {
   }
 
   try {
+    const startTime = Date.now();
     const { company_id, company_name, cnpj, domain, state, city, sector_code, niche_code } = await req.json();
 
     if (!company_id || !company_name || !state) {
@@ -219,6 +220,7 @@ serve(async (req: Request) => {
     console.log(`[detect-totvs-v5] ✅ Score: ${normalizedScore}/100 | Aceitos: ${evidences.length} | Portais com dados: ${portalsWithResults.length}/${jobPortals.length}`);
 
     // 📌 FASE 1: Persistir relatório no banco
+    const executionTime = Date.now() - startTime;
     const reportData = {
       company_id,
       score: normalizedScore,
@@ -227,7 +229,7 @@ serve(async (req: Request) => {
       evidences,
       methodology,
       score_breakdown: scoreBreakdown,
-      execution_time_ms: Date.now() - Date.now(), // Will be calculated by edge function
+      execution_time_ms: executionTime,
       sources_checked: jobPortals.length,
       sources_with_results: portalsWithResults.length
     };
