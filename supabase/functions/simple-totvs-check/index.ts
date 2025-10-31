@@ -84,12 +84,14 @@ function normalizeCompany(name: string) {
 
 // Detecta se é um perfil pessoal (nomes próprios comuns antes de sobrenome)
 function isPersonalProfile(text: string): boolean {
-  // Padrões comuns de perfis pessoais: "Nome Sobrenome - Cargo" ou "Nome Sobrenome | Cargo"
-  const personalPatterns = [
-    /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+\s*[-|]/,
-    /(analista|desenvolvedor|gerente|coordenador|diretor|consultor|especialista|engenheiro|arquiteto|programador)/i
+  const t = (text || '').toLowerCase();
+  // Padrões comuns de perfis pessoais: menciona cargo/função
+  const jobTitles = [
+    'analista', 'desenvolvedor', 'gerente', 'coordenador', 'diretor', 
+    'consultor', 'especialista', 'engenheiro', 'arquiteto', 'programador',
+    'supervisor', 'assistente', 'técnico', 'líder', 'estagiário'
   ];
-  return personalPatterns.some(pattern => pattern.test(text || ''));
+  return jobTitles.some(job => t.includes(job));
 }
 
 function proximityCompanyAndTotvs(text: string, companyName: string, maxDistance = 60) {
