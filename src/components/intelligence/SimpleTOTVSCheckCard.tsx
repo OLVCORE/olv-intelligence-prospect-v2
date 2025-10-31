@@ -69,6 +69,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [autoCheckAttempted, setAutoCheckAttempted] = useState(false);
 
   const handleCheck = () => {
     // Validar CNPJ se fornecido
@@ -369,6 +370,14 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
   const isLoading = isLoadingLatest || checkMutation.isPending;
 
+  // Auto-executar quando não há dados e ainda não tentou
+  const shouldAutoCheck = !latestCheck && !isLoading && !autoCheckAttempted && companyId && companyName;
+  
+  if (shouldAutoCheck) {
+    setAutoCheckAttempted(true);
+    handleCheck();
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -397,7 +406,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
         </Button>
       </div>
 
-      {!latestCheck && !isLoading && (
+      {!latestCheck && !isLoading && !shouldAutoCheck && (
         <Alert>
           <AlertDescription>
             Nenhuma verificação realizada ainda. Clique em "Verificar Agora" para iniciar a análise.
