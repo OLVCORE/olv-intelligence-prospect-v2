@@ -59,11 +59,9 @@ export function CompanyEnrichmentDialog({ open, onOpenChange, company }: Company
       if (formData.headquarters_state) updateData.headquarters_state = formData.headquarters_state;
       if (formData.headquarters_city) updateData.headquarters_city = formData.headquarters_city;
       if (formData.headquarters_country) updateData.headquarters_country = formData.headquarters_country;
-      if (formData.sector) updateData.sector = formData.sector;
-      if (formData.sector_code) updateData.sector_code = formData.sector_code;
-      // Campo 'niche' não existe na tabela - não enviar para evitar erro 400
-      if (formData.niche_code) updateData.niche_code = formData.niche_code;
-      if (formData.size) updateData.size = formData.size;
+      // Mapear 'Setor' para coluna existente 'industry'
+      if (formData.sector) updateData.industry = formData.sector;
+      // Não enviar campos inexistentes: sector_code, niche, niche_code, size
       if (formData.employees) updateData.employees = parseInt(formData.employees);
       if (formData.revenue) updateData.revenue = formData.revenue;
 
