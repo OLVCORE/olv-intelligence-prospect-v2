@@ -90,6 +90,23 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
     }
   };
 
+  const copySearchTerms = async (products: string[]) => {
+    try {
+      // Filtra apenas produtos específicos (remove "TOTVS" e "Microsiga" genéricos)
+      const specificProducts = products.filter(p => 
+        !['totvs', 'microsiga'].includes(p.toLowerCase())
+      );
+      
+      const terms = specificProducts.length > 0 ? specificProducts.join(' ') : products.join(' ');
+      await navigator.clipboard.writeText(terms);
+      toast.success('Termos copiados! Use Ctrl+F (ou Cmd+F) na página para encontrar rapidamente.', {
+        duration: 4000
+      });
+    } catch (err) {
+      toast.error('Erro ao copiar termos');
+    }
+  };
+
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories);
     if (newExpanded.has(category)) {
@@ -251,6 +268,15 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                       {highlightText(evidence.title)}
                     </h4>
                     <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => copySearchTerms(evidence.totvs_products)}
+                        title="Copiar termos TOTVS para busca rápida com Ctrl+F"
+                      >
+                        📋 Copiar termos
+                      </Button>
                       {isLinkValid && url ? (
                         <>
                           <Button
