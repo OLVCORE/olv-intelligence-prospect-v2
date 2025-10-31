@@ -877,69 +877,14 @@ export default function ICPBulkAnalysisWithMapping() {
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold">Mapeamento de Colunas</h2>
               
-              <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <FolderOpen className="w-4 h-4 mr-2" />
-                    Carregar Template
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
-                    <DialogDescription>
-                      Selecione um template salvo para aplicar o mapeamento automaticamente
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    {templates.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum template salvo ainda
-                      </p>
-                    ) : (
-                      <ScrollArea className="h-[300px] pr-4">
-                        <div className="space-y-2">
-                          {templates.map((template) => (
-                            <Card
-                              key={template.id}
-                              className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                              onClick={() => handleLoadTemplate(template.id)}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h4 className="font-medium">{template.nome_template}</h4>
-                                  {template.descricao && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      {template.descricao}
-                                    </p>
-                                  )}
-                                  <div className="flex gap-2 mt-2">
-                                    <Badge variant="outline" className="text-xs">
-                                      {template.mappings?.length || 0} mapeamentos
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (confirm(`Deletar template "${template.nome_template}"?`)) {
-                                      deleteTemplate(template.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowLoadTemplateDialog(true)}
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Carregar Template
+              </Button>
             </div>
             
             <p className="text-muted-foreground mb-4">
@@ -1245,63 +1190,13 @@ export default function ICPBulkAnalysisWithMapping() {
                 Voltar
               </Button>
               
-              <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <FolderOpen className="w-4 h-4 mr-2" />
-                    Carregar Template
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
-                    <DialogDescription>
-                      Selecione um template salvo para aplicar o mapeamento automaticamente
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    {templates.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum template salvo ainda
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {templates.map((template) => (
-                          <div
-                            key={template.id}
-                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                            onClick={() => handleLoadTemplate(template.id)}
-                          >
-                            <div className="flex-1">
-                              <div className="font-medium">{template.nome_template}</div>
-                              {template.descricao && (
-                                <div className="text-sm text-muted-foreground">
-                                  {template.descricao}
-                                </div>
-                              )}
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {template.total_colunas} colunas • {template.custom_fields.length} campos customizados
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Deseja realmente remover o template "${template.nome_template}"?`)) {
-                                  deleteTemplate(template.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                variant="outline"
+                onClick={() => setShowLoadTemplateDialog(true)}
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Carregar Template
+              </Button>
 
               <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
                 <DialogTrigger asChild>
@@ -1664,5 +1559,71 @@ export default function ICPBulkAnalysisWithMapping() {
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Dialog compartilhado para Carregar Template */}
+      <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
+            <DialogDescription>
+              Selecione um template salvo para aplicar o mapeamento automaticamente
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {templates.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum template salvo ainda
+              </p>
+            ) : (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-2">
+                  {templates.map((template) => (
+                    <Card
+                      key={template.id}
+                      className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                      onClick={() => handleLoadTemplate(template.id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{template.nome_template}</h4>
+                          {template.descricao && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {template.descricao}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">
+                              {template.mappings?.length || 0} mapeamentos
+                            </Badge>
+                            {template.custom_fields && template.custom_fields.length > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {template.custom_fields.length} campos customizados
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Deletar template "${template.nome_template}"?`)) {
+                              deleteTemplate(template.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
