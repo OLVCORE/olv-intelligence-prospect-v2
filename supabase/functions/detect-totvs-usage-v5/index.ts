@@ -221,6 +221,8 @@ serve(async (req: Request) => {
 
     // 📌 FASE 1: Persistir relatório no banco
     const executionTime = Date.now() - startTime;
+    console.log('[detect-totvs-v5] 📝 Preparando para salvar relatório...');
+    
     const reportData = {
       company_id,
       score: normalizedScore,
@@ -234,7 +236,16 @@ serve(async (req: Request) => {
       sources_with_results: portalsWithResults.length
     };
 
+    console.log('[detect-totvs-v5] 📊 Dados do relatório:', {
+      company_id,
+      score: normalizedScore,
+      confidence,
+      status,
+      evidences_count: evidences.length
+    });
+
     try {
+      console.log('[detect-totvs-v5] 🔄 Inserindo na tabela totvs_detection_reports...');
       const { data: savedReport, error: saveError } = await sb
         .from('totvs_detection_reports')
         .insert(reportData)
@@ -242,12 +253,12 @@ serve(async (req: Request) => {
         .single();
 
       if (saveError) {
-        console.error('[detect-totvs-v5] Erro ao salvar relatório:', saveError);
+        console.error('[detect-totvs-v5] ❌ Erro ao salvar relatório:', JSON.stringify(saveError));
       } else {
-        console.log(`[detect-totvs-v5] ✅ Relatório salvo: ${savedReport.id}`);
+        console.log(`[detect-totvs-v5] ✅ Relatório salvo com sucesso! ID: ${savedReport.id}`);
       }
-    } catch (saveErr) {
-      console.error('[detect-totvs-v5] Exceção ao salvar:', saveErr);
+    } catch (saveErr: any) {
+      console.error('[detect-totvs-v5] ❌ Exceção ao salvar:', saveErr.message || String(saveErr));
     }
 
     return new Response(JSON.stringify({
