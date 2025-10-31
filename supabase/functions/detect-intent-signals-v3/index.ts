@@ -72,6 +72,17 @@ function tokenVariants(name: string): string[] {
   return variants;
 }
 
+// Palavras-chave negativas fortes (legal/financeiro)
+const negativeKeywords = [
+  'recuperacao judicial',
+  'em recuperacao judicial',
+  'falencia',
+  'protesto',
+  'execucao fiscal',
+  'plano de recuperacao',
+  'massa falida'
+];
+
 function calculateMatchScore(searchText: string, companyName: string): number {
   const normalizedSearch = normalizeName(searchText);
   const normalizedCompany = normalizeName(companyName);
@@ -161,6 +172,7 @@ serve(async (req: Request) => {
     // FONTES OFICIAIS E REGULATÓRIAS (20 pontos cada, max 100)
     const officialSources = [
       { name: 'CVM', url: 'https://www.gov.br/cvm/pt-br', points: 20 },
+      { name: 'CVM RAD', url: 'https://rad.cvm.gov.br/', points: 20 },
       { name: 'B3', url: 'https://www.b3.com.br/pt_br/', points: 20 },
       { name: 'Imprensa Nacional', url: 'https://www.in.gov.br/', points: 15 },
       { name: 'B3 Empresas Net', url: 'https://www.b3.com.br/pt_br/produtos-e-servicos/solucoes-para-emissores/sistema-empresas-net/', points: 15 },
@@ -173,7 +185,8 @@ serve(async (req: Request) => {
       
       try {
         const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y1`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
+        
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -205,21 +218,27 @@ serve(async (req: Request) => {
               }
               
               if (validateMention(fullText, searchCompanyName)) {
-                sourcePoints = source.points;
+                const normalizedText = normalizeName(fullText);
+                const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
+                sourcePoints = isNegative ? -source.points : source.points;
                 signals.push({
-                  type: 'official_record',
-                  score: source.points,
+                  type: isNegative ? 'legal_negative' : 'official_record',
+                  score: sourcePoints,
                   title: item.title,
                   description: item.snippet || '',
                   url: item.link,
                   timestamp: new Date().toISOString(),
-                  confidence: 'high',
-                  reason: `Menção oficial em ${source.name}`
+                  confidence: isNegative ? 'high' : 'high',
+                  reason: isNegative ? `Indício negativo (${source.name}): recuperação/falência/protesto` : `Menção oficial em ${source.name}`
                 });
                 
                 const match = companyMatches.get(foundName);
                 if (match) {
-                  match.signals.positive.push(`Menção oficial em ${source.name}`);
+                  if (isNegative) {
+                    match.signals.negative.push(`Registro negativo em ${source.name}`);
+                  } else {
+                    match.signals.positive.push(`Menção oficial em ${source.name}`);
+                  }
                 }
                 break;
               }
@@ -257,7 +276,9 @@ serve(async (req: Request) => {
     const legalSources = [
       { name: 'TJSP', url: 'https://esaj.tjsp.jus.br/', points: 10 },
       { name: 'TJRJ', url: 'https://www.tjrj.jus.br/', points: 10 },
-      { name: 'CNJ', url: 'https://www.cnj.jus.br/', points: 10 }
+      { name: 'CNJ', url: 'https://www.cnj.jus.br/', points: 10 },
+      { name: 'Imprensa Oficial SP', url: 'https://www.imprensaoficial.com.br/', points: 10 },
+      { name: 'PJe Comunica', url: 'https://comunica.pje.jus.br/', points: 10 }
     ];
 
     for (const source of newsSources) {
@@ -414,7 +435,7 @@ serve(async (req: Request) => {
       
       try {
         const query = `"${variants[0]}" site:${new URL(source.url).hostname}`;
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y1`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=3&dateRestrict=y5`;
         
         const res = await fetch(searchUrl);
         if (res.ok) {
@@ -446,21 +467,27 @@ serve(async (req: Request) => {
               }
               
               if (validateMention(fullText, searchCompanyName)) {
-                sourcePoints = source.points;
+                const normalizedText = normalizeName(fullText);
+                const isNegative = negativeKeywords.some(k => normalizedText.includes(k));
+                sourcePoints = isNegative ? -source.points : source.points;
                 signals.push({
-                  type: 'legal_record',
-                  score: source.points,
+                  type: isNegative ? 'legal_negative' : 'legal_record',
+                  score: sourcePoints,
                   title: item.title,
                   description: item.snippet || '',
                   url: item.link,
                   timestamp: new Date().toISOString(),
                   confidence: 'high',
-                  reason: `Registro em fonte judicial/legal (${source.name})`
+                  reason: isNegative ? `Indício negativo (${source.name}): recuperação/falência/protesto` : `Registro em fonte judicial/legal (${source.name})`
                 });
                 
                 const match = companyMatches.get(foundName);
                 if (match) {
-                  match.signals.neutral.push(`Registro em ${source.name}`);
+                  if (isNegative) {
+                    match.signals.negative.push(`Registro negativo em ${source.name}`);
+                  } else {
+                    match.signals.neutral.push(`Registro em ${source.name}`);
+                  }
                 }
                 break;
               }
