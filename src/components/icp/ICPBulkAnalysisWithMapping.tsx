@@ -983,6 +983,68 @@ export default function ICPBulkAnalysisWithMapping() {
 
     return (
       <>
+        <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
+              <DialogDescription>
+                Selecione um template salvo para aplicar o mapeamento automaticamente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {templates.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum template salvo ainda
+                </p>
+              ) : (
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-2">
+                    {templates.map((template) => (
+                      <Card
+                        key={template.id}
+                        className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => handleLoadTemplate(template.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium">{template.nome_template}</h4>
+                            {template.descricao && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {template.descricao}
+                              </p>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                {template.mappings?.length || 0} mapeamentos
+                              </Badge>
+                              {template.custom_fields && template.custom_fields.length > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  {template.custom_fields.length} campos customizados
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Deletar template "${template.nome_template}"?`)) {
+                                deleteTemplate(template.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
         <div className="space-y-6">
         <Card className="p-6">
           <div className="mb-6">
@@ -1713,137 +1775,5 @@ export default function ICPBulkAnalysisWithMapping() {
     );
   }
 
-  return (
-    <>
-      {/* Dialog compartilhado para Carregar Template - SEMPRE RENDERIZADO */}
-      <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Carregar Template de Mapeamento</DialogTitle>
-            <DialogDescription>
-              Selecione um template salvo para aplicar o mapeamento automaticamente
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {templates.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum template salvo ainda
-              </p>
-            ) : (
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-2">
-                  {templates.map((template) => (
-                    <Card
-                      key={template.id}
-                      className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                      onClick={() => handleLoadTemplate(template.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{template.nome_template}</h4>
-                          {template.descricao && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {template.descricao}
-                            </p>
-                          )}
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              {template.mappings?.length || 0} mapeamentos
-                            </Badge>
-                            {template.custom_fields && template.custom_fields.length > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {template.custom_fields.length} campos customizados
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Deletar template "${template.nome_template}"?`)) {
-                              deleteTemplate(template.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Conteúdo principal baseado no step */}
-      {step === 'upload' && (
-        <Card className="p-8">
-          <div className="text-center space-y-6">
-            <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Análise ICP em Massa com Verificação TOTVS</h2>
-              <p className="text-muted-foreground mb-6">
-                Sistema robusto de análise que:<br/>
-                • Mapeia automaticamente colunas do CSV<br/>
-                • Aplica scoring ICP inteligente<br/>
-                • Verifica se empresas usam TOTVS<br/>
-                • Remove duplicatas automaticamente<br/>
-                • Envia resultados para quarentena para aprovação
-              </p>
-              
-              <div className="max-w-md mx-auto space-y-4">
-                <Button 
-                  size="lg" 
-                  className="relative overflow-hidden group bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                  disabled={isParsingFile}
-                >
-                  {isParsingFile ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                      Escolher Arquivo CSV
-                    </>
-                  )}
-                </Button>
-                
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                
-                <p className="text-sm text-muted-foreground">
-                  Formatos aceitos: CSV, Excel (máx. 10MB)
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Scroll to Top Button */}
-      {showScrollTop && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed bottom-4 right-4 z-50 shadow-lg"
-          onClick={scrollToTop}
-          aria-label="Voltar ao topo"
-        >
-          <ArrowUp className="h-5 w-5" />
-        </Button>
-      )}
-    </>
-  );
+return null;
 }
