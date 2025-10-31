@@ -8,6 +8,7 @@ import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, BarChart3, CheckCircle
 import { useTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
 import { useTOTVSDetectionReports } from "@/hooks/useTOTVSDetectionReports";
 import { EvidenceDialog } from "@/components/intelligence/EvidenceDialog";
+import { TOTVSDetectionHistory } from "./TOTVSDetectionHistory";
 import { toast } from "sonner";
 import { useState } from "react";
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
   const [showEvidences, setShowEvidences] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   const handleDetect = () => {
     if (!company) {
@@ -120,7 +122,11 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
             </div>
             <div className="flex items-center gap-2">
               {reports && reports.length > 1 && (
-                <Badge variant="outline" className="gap-1">
+                <Badge 
+                  variant="outline" 
+                  className="gap-1 cursor-pointer hover:bg-muted"
+                  onClick={() => setHistoryDialogOpen(true)}
+                >
                   <Database className="h-3 w-3" />
                   {reports.length} análise(s)
                 </Badge>
@@ -289,65 +295,37 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
               </Collapsible>
             )}
 
-            {/* Evidências Encontradas */}
+            {/* Evidências Encontradas - Organizadas por Plataforma */}
             {evidences.length > 0 && (
               <Collapsible open={showEvidences} onOpenChange={setShowEvidences}>
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center gap-2">
-                      🔍 Evidências Encontradas ({evidences.length})
+                      🔍 Evidências por Categoria ({evidences.length} total)
                     </span>
                     {showEvidences ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-3 mt-4">
-                  {evidences.map((evidence, idx) => (
-                    <div key={idx} className="border rounded-lg p-4 space-y-2 bg-destructive/5 border-destructive/20">
-                      <div className="flex items-start justify-between">
+                  {Object.entries(evidencesByPlatform).map(([platform, platformEvidences]: [string, any]) => (
+                    <div 
+                      key={platform}
+                      className="border rounded-lg p-4 bg-destructive/5 border-destructive/20 cursor-pointer hover:bg-destructive/10 transition-colors"
+                      onClick={() => handleCategoryClick(platform, platformEvidences)}
+                    >
+                      <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="destructive">+{evidence.score} pts</Badge>
-                            <span className="text-sm font-medium">{evidence.platform}</span>
-                            {evidence.confidence && (
-                              <Badge variant="outline" className="text-xs">
-                                {evidence.confidence === 'high' ? 'Alta' : 
-                                 evidence.confidence === 'medium' ? 'Média' : 'Baixa'} confiança
-                              </Badge>
-                            )}
-                          </div>
-                          <h4 className="font-medium text-sm">{evidence.title}</h4>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground">{evidence.snippet}</p>
-                      
-                      {evidence.totvs_products_mentioned && evidence.totvs_products_mentioned.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-xs text-muted-foreground">Produtos TOTVS:</span>
-                          {evidence.totvs_products_mentioned.map((product: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {product}
+                            <Badge variant="destructive">
+                              {platformEvidences.length} evidência(s)
                             </Badge>
-                          ))}
+                            <span className="text-sm font-medium">{platform}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {platformEvidences.reduce((sum: number, ev: any) => sum + ev.score, 0)} pontos totais
+                          </p>
                         </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(evidence.timestamp).toLocaleString('pt-BR')}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleLinkClick(evidence.url)}
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Copiar link
-                        </Button>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground italic border-t pt-2">
-                        <strong>Razão:</strong> {evidence.reason}
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
                   ))}
@@ -379,6 +357,15 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
         onOpenChange={setDialogOpen}
         category={selectedCategory}
         evidences={evidencesByPlatform[selectedCategory] || []}
+      />
+    )}
+
+    {/* History Dialog */}
+    {reports && reports.length > 0 && (
+      <TOTVSDetectionHistory
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        reports={reports}
       />
     )}
     </>
