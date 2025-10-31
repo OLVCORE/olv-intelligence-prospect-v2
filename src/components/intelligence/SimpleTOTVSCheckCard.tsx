@@ -209,13 +209,25 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
           </Alert>
 
           {/* Evidências por Categoria */}
-          {latestCheck.total_evidences > 0 && (
+          {latestCheck.total_evidences > 0 && latestCheck.evidences && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm">📂 Evidências por Fonte:</h4>
               
-              {renderEvidencesList(latestCheck.evidences?.vagas || [], 'vagas')}
-              {renderEvidencesList(latestCheck.evidences?.noticias || [], 'noticias')}
-              {renderEvidencesList(latestCheck.evidences?.docs_oficiais || [], 'docs_oficiais')}
+              {(() => {
+                const evidences = latestCheck.evidences as unknown as {
+                  vagas?: Evidence[];
+                  noticias?: Evidence[];
+                  docs_oficiais?: Evidence[];
+                };
+                
+                return (
+                  <>
+                    {renderEvidencesList(evidences.vagas || [], 'vagas')}
+                    {renderEvidencesList(evidences.noticias || [], 'noticias')}
+                    {renderEvidencesList(evidences.docs_oficiais || [], 'docs_oficiais')}
+                  </>
+                );
+              })()}
             </div>
           )}
 

@@ -257,3 +257,6 @@ verify_jwt = false
 
   [functions.icp-refresh-report]
   verify_jwt = false
+
+  [functions.simple-totvs-check]
+  verify_jwt = false

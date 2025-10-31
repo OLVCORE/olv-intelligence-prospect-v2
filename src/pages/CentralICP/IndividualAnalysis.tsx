@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCardV3";
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
+import { SimpleTOTVSCheckCard } from "@/components/intelligence/SimpleTOTVSCheckCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
@@ -332,28 +333,37 @@ export default function IndividualAnalysis() {
             </AlertDescription>
           </Alert>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <TOTVSDetectionCardV3 
-              company={{
+          <div className="space-y-6">
+            <SimpleTOTVSCheckCard 
+              companyId={company.id}
+              companyName={company.name}
+              cnpj={company.cnpj}
+              domain={company.domain}
+            />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <TOTVSDetectionCardV3 
+                company={{
+                  id: company.id,
+                  name: company.name,
+                  cnpj: company.cnpj,
+                  domain: company.domain,
+                  state: displayState,
+                  city: displayCity,
+                  sector_code: company.sector_code,
+                  niche_code: company.niche_code,
+                }}
+              />
+              <IntentSignalsCardV3 company={{
                 id: company.id,
                 name: company.name,
                 cnpj: company.cnpj,
-                domain: company.domain,
-                state: displayState,
-                city: displayCity,
-                sector_code: company.sector_code,
-                niche_code: company.niche_code,
-              }}
-            />
-            <IntentSignalsCardV3 company={{
-              id: company.id,
-              name: company.name,
-              cnpj: company.cnpj,
-              domain: company.domain || company.website,
-              region: displayState,
-              sector: company.sector_code,
-              niche: company.niche_code,
-            }} />
+                domain: company.domain || company.website,
+                region: displayState,
+                sector: company.sector_code,
+                niche: company.niche_code,
+              }} />
+            </div>
           </div>
 
           {/* AI Recommendation */}

@@ -7428,6 +7428,53 @@ export type Database = {
           },
         ]
       }
+      simple_totvs_checks: {
+        Row: {
+          checked_at: string
+          company_id: string
+          confidence: string
+          created_at: string
+          detected_totvs: boolean
+          evidences: Json | null
+          id: string
+          reasoning: string | null
+          status: string
+          total_evidences: number
+        }
+        Insert: {
+          checked_at?: string
+          company_id: string
+          confidence: string
+          created_at?: string
+          detected_totvs?: boolean
+          evidences?: Json | null
+          id?: string
+          reasoning?: string | null
+          status: string
+          total_evidences?: number
+        }
+        Update: {
+          checked_at?: string
+          company_id?: string
+          confidence?: string
+          created_at?: string
+          detected_totvs?: boolean
+          evidences?: Json | null
+          id?: string
+          reasoning?: string | null
+          status?: string
+          total_evidences?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simple_totvs_checks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smart_tasks: {
         Row: {
           ai_suggestions: Json | null
@@ -7848,6 +7895,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_search_preferences: {
+        Row: {
+          company_id: string | null
+          confidence_threshold: string | null
+          created_at: string | null
+          custom_keywords: Json | null
+          date_range_days: number | null
+          disabled_sources: Json | null
+          enabled_sources: Json | null
+          excluded_keywords: Json | null
+          id: string
+          search_depth: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          confidence_threshold?: string | null
+          created_at?: string | null
+          custom_keywords?: Json | null
+          date_range_days?: number | null
+          disabled_sources?: Json | null
+          enabled_sources?: Json | null
+          excluded_keywords?: Json | null
+          id?: string
+          search_depth?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          confidence_threshold?: string | null
+          created_at?: string | null
+          custom_keywords?: Json | null
+          date_range_days?: number | null
+          disabled_sources?: Json | null
+          enabled_sources?: Json | null
+          excluded_keywords?: Json | null
+          id?: string
+          search_depth?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_search_preferences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       value_milestones: {
         Row: {
