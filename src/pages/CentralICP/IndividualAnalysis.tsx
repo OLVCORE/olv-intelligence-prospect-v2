@@ -11,6 +11,7 @@ import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCar
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
+import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
 
 export default function IndividualAnalysis() {
   const navigate = useNavigate();
@@ -34,6 +35,9 @@ export default function IndividualAnalysis() {
   });
 
   const { data: intentScore = 0 } = useCalculateIntentScore(companyId || undefined);
+
+  // Enriquecimento automático com ReceitaWS (apenas se dados estiverem faltando)
+  useAutoEnrichCompany(company);
 
   const { data: intentSignals } = useQuery({
     queryKey: ['intent-signals', companyId],
