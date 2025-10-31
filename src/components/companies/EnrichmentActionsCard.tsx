@@ -116,7 +116,8 @@ export function EnrichmentActionsCard({ company, onEnrichmentComplete }: Enrichm
           </div>
         )}
 
-        {/* Econodata Enrichment */}
+        {/* ECONODATA: Desabilitado - será usado na fase 2 */}
+        {/* Mantendo estrutura intacta para uso futuro
         {hasCNPJ && (
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
             <div className="space-y-1 flex-1">
@@ -140,6 +141,7 @@ export function EnrichmentActionsCard({ company, onEnrichmentComplete }: Enrichm
             />
           </div>
         )}
+        */}
 
         {/* External Validation Links */}
         <div className="pt-4 border-t">

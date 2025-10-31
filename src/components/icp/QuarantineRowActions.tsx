@@ -237,7 +237,8 @@ export function QuarantineRowActions({
           Apollo (Decisores)
         </DropdownMenuItem>
 
-        {/* Eco-Booster */}
+        {/* ECONODATA: Desabilitado - fase 2 */}
+        {/* Eco-Booster
         <DropdownMenuItem
           onClick={() => handleEnrich('Eco-Booster', onEnrichEconodata)}
           disabled={isDisabled('econodata') || isEnriching}
@@ -251,6 +252,7 @@ export function QuarantineRowActions({
           Eco-Booster
           {getTooltip('econodata') && <span className="ml-auto text-xs text-muted-foreground">{getTooltip('econodata')}</span>}
         </DropdownMenuItem>
+        */}
 
         {/* 360° Completo */}
         <DropdownMenuItem

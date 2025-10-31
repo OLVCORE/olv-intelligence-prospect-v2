@@ -137,7 +137,9 @@ export default function ICPQuarantine() {
     },
   });
 
-  const enrichEconodataMutation = useMutation({
+  // ECONODATA: Desabilitado temporariamente - será usado na fase 2
+  // Mantendo estrutura intacta para uso futuro
+  /* const enrichEconodataMutation = useMutation({
     mutationFn: async (analysisId: string) => {
       const { data: analysis } = await supabase
         .from('icp_analysis_results')
@@ -179,7 +181,7 @@ export default function ICPQuarantine() {
         description: error.message,
       });
     },
-  });
+  }); */
 
   const enrich360Mutation = useMutation({
     mutationFn: async (analysisId: string) => {
@@ -408,9 +410,10 @@ export default function ICPQuarantine() {
     return enrichApolloMutation.mutateAsync(id);
   };
 
-  const handleEnrichEconodata = async (id: string) => {
+  // ECONODATA: Desabilitado - fase 2
+  /* const handleEnrichEconodata = async (id: string) => {
     return enrichEconodataMutation.mutateAsync(id);
-  };
+  }; */
 
   const handleEnrich360 = async (id: string) => {
     return enrich360Mutation.mutateAsync(id);
@@ -738,7 +741,6 @@ export default function ICPQuarantine() {
                         onRefresh={handleRefreshSingle}
                         onEnrichReceita={handleEnrichReceita}
                         onEnrichApollo={handleEnrichApollo}
-                        onEnrichEconodata={handleEnrichEconodata}
                         onEnrich360={handleEnrich360}
                         onDiscoverCNPJ={handleDiscoverCNPJ}
                       />
