@@ -477,11 +477,22 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
               <h4 className="font-semibold text-sm">📂 Evidências por Fonte:</h4>
               
               {(() => {
-                const evidences = latestCheck.evidences as unknown as {
+                // Compatibilidade com diferentes estruturas de dados
+                let evidences: {
                   vagas?: Evidence[];
                   noticias?: Evidence[];
                   docs_oficiais?: Evidence[];
                 };
+
+                if ((latestCheck as any).evidences_by_category) {
+                  // Nova estrutura do edge function
+                  evidences = (latestCheck as any).evidences_by_category;
+                } else if (latestCheck.evidences) {
+                  // Estrutura do banco de dados
+                  evidences = latestCheck.evidences as any;
+                } else {
+                  evidences = { vagas: [], noticias: [], docs_oficiais: [] };
+                }
                 
                 return (
                   <>
