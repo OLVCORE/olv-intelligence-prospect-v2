@@ -18,6 +18,9 @@ export default function BatchAnalysis() {
             Upload de qualquer CSV com mapeamento inteligente automático
           </p>
         </div>
+        <Button variant="outline" onClick={() => navigate('/leads/icp-quarantine')}>
+          Ver Quarentena ICP
+        </Button>
       </div>
 
       <ICPBulkAnalysisWithMapping />
