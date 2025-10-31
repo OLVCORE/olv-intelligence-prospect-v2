@@ -16,9 +16,9 @@ import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
 import { useMultipleSimpleTOTVSChecks } from '@/hooks/useSimpleTOTVSCheckBatch';
+import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
-
 export default function ICPQuarantine() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -686,6 +686,20 @@ export default function ICPQuarantine() {
                     </div>
                   );
                 })()}
+
+                {/* Simple TOTVS Check - mesma inteligência da página Individual */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Target className="h-5 w-5 text-primary" />
+                    <p className="text-lg font-semibold">Simple TOTVS Check</p>
+                  </div>
+                  <SimpleTOTVSCheckCard
+                    companyId={company.id}
+                    companyName={company.razao_social}
+                    cnpj={company.cnpj}
+                    domain={(company as any).domain || (company as any).site || undefined}
+                  />
+                </div>
 
                 {/* Resultados Web */}
                 {(() => {

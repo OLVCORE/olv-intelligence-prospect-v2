@@ -481,7 +481,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
           </div>
 
           {/* Evidências por Categoria */}
-          {latestCheck.total_evidences > 0 && latestCheck.evidences && (
+          {(latestCheck.total_evidences > 0) && (((latestCheck as any).evidences_by_category) || latestCheck.evidences) && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm">📂 Evidências por Fonte:</h4>
               
