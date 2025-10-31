@@ -106,16 +106,31 @@ serve(async (req) => {
           news: Math.min(10, newsCount * 2),
         } as Record<string, number>;
 
+        // Recalcular score total
+        const totalScore = Object.values(updatedBreakdown).reduce((sum, val) => sum + (val || 0), 0);
+        
+        // Recalcular temperatura
+        let temperatura = 'cold';
+        if (totalScore >= 70) temperatura = 'hot';
+        else if (totalScore >= 40) temperatura = 'warm';
+
         const motivos = Array.isArray(row.motivos) ? [...row.motivos] : [];
-        if (webPresence) motivos.push('Presença web detectada');
-        if (newsCount > 0) motivos.push(`${newsCount} notícia(s) recente(s)`);
+        const newMotivos = [...motivos];
+        if (webPresence && !newMotivos.includes('Presença web detectada')) {
+          newMotivos.push('Presença web detectada');
+        }
+        if (newsCount > 0 && !newMotivos.some(m => m.includes('notícia'))) {
+          newMotivos.push(`${newsCount} notícia(s) recente(s)`);
+        }
 
         const { error: updateError } = await supabase
           .from('icp_analysis_results')
           .update({
             raw_analysis: updatedRaw,
             breakdown: updatedBreakdown,
-            motivos,
+            motivos: newMotivos,
+            icp_score: totalScore,
+            temperatura,
           })
           .eq('id', id);
 
