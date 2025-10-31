@@ -27,12 +27,41 @@ const CATEGORY_COLORS = {
   docs_oficiais: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
 };
 
-// Produtos TOTVS conhecidos
+// Catálogo COMPLETO de produtos TOTVS (sincronizado com o edge function e catálogo da plataforma)
 const TOTVS_PRODUCTS = [
-  'PROTHEUS', 'DATASUL', 'RM', 'FLUIG', 'CAROL',
-  'TOTVS GESTÃO', 'TOTVS ERP', 'TOTVS RH', 'TOTVS VAREJO',
-  'TOTVS TECHFIN', 'TOTVS BUSINESS', 'TOTVS MANUFATURA',
-  'WINTHOR', 'LOGIX'
+  // Marca e termos gerais
+  'TOTVS', 'Microsiga',
+  
+  // ERPs principais
+  'Protheus', 'Datasul', 'RM', 'Logix', 'Winthor', 'Backoffice',
+  
+  // Plataformas e Cloud
+  'Fluig', 'Carol', 'Carol AI', 'TOTVS Cloud',
+  
+  // Financeiro e Crédito
+  'Techfin', 'TOTVS Techfin', 'TOTVS Pay',
+  
+  // CRM e Vendas
+  'TOTVS CRM', 'SFA', 'Sales Force',
+  
+  // RH
+  'TOTVS RH', 'Folha de Pagamento', 'Ponto Eletrônico',
+  
+  // Analytics e BI
+  'TOTVS BI', 'Advanced Analytics', 'Data Platform',
+  
+  // Outros produtos
+  'TOTVS iPaaS', 'TOTVS Atende', 'RD Station', 'Assinatura Eletrônica',
+  
+  // Módulos e funcionalidades específicas
+  'Auditoria de Folha', 'Supervisão de Compras', 'Supervisão Financeira',
+  'Gestão Industrial', 'Financeiro', 'Compras e Suprimentos', 'Vendas',
+  'Estoque e Logística', 'Fiscal', 'BPM', 'ECM', 'Workflow',
+  'Portal Corporativo', 'Dashboards Executivos', 'KPIs e Indicadores',
+  'Gateway de Pagamentos', 'Conciliação Bancária', 'Recrutamento e Seleção',
+  'Treinamento e Desenvolvimento', 'Avaliação de Desempenho', 'Gestão de Benefícios',
+  'Roteirização', 'Pedidos Mobile', 'Catálogo de Produtos',
+  'Email Marketing', 'Landing Pages', 'Marketing Automation'
 ];
 
 export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: SimpleTOTVSCheckCardProps) {

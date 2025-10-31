@@ -30,10 +30,65 @@ interface CheckResult {
   checked_at: string;
 }
 
+// Catálogo COMPLETO de produtos TOTVS (extraído do catálogo da plataforma)
 const TOTVS_PRODUCTS = [
-  'TOTVS', 'Protheus', 'Datasul', 'RM', 'Fluig', 'Carol',
-  'Techfin', 'Winthor', 'Logix', 'Microsiga'
+  // Marca e termos gerais
+  'TOTVS', 'Microsiga',
+  
+  // ERPs principais
+  'Protheus', 'Datasul', 'RM', 'Logix', 'Winthor', 'Backoffice',
+  
+  // Plataformas e Cloud
+  'Fluig', 'Carol', 'Carol AI', 'TOTVS Cloud',
+  
+  // Financeiro e Crédito
+  'Techfin', 'TOTVS Techfin', 'TOTVS Pay',
+  
+  // CRM e Vendas
+  'TOTVS CRM', 'SFA', 'Sales Force',
+  
+  // RH
+  'TOTVS RH', 'Folha de Pagamento', 'Ponto Eletrônico',
+  
+  // Analytics e BI
+  'TOTVS BI', 'Advanced Analytics', 'Data Platform',
+  
+  // Outros produtos
+  'TOTVS iPaaS', 'TOTVS Atende', 'RD Station', 'Assinatura Eletrônica'
 ];
+
+// Módulos e funcionalidades específicas (para detecção mais granular)
+const TOTVS_MODULES = [
+  // IA
+  'Auditoria de Folha', 'Supervisão de Compras', 'Supervisão Financeira', 
+  'Dilligence Check', 'Contract Chat', 'Target Talk', 'RoPA Legal',
+  
+  // ERP Módulos
+  'Gestão Industrial', 'Financeiro', 'Compras e Suprimentos', 'Vendas', 
+  'Estoque e Logística', 'Fiscal',
+  
+  // Fluig
+  'BPM', 'ECM', 'Workflow', 'Portal Corporativo',
+  
+  // Analytics
+  'Dashboards Executivos', 'KPIs e Indicadores',
+  
+  // Pagamentos
+  'PIX', 'Gateway de Pagamentos', 'Conciliação Bancária',
+  
+  // RH
+  'Recrutamento e Seleção', 'Treinamento e Desenvolvimento', 
+  'Avaliação de Desempenho', 'Gestão de Benefícios',
+  
+  // SFA
+  'Roteirização', 'Pedidos Mobile', 'Catálogo de Produtos',
+  
+  // Marketing
+  'Email Marketing', 'Landing Pages', 'Marketing Automation'
+];
+
+// Combina produtos e módulos para busca completa
+const ALL_TOTVS_TERMS = [...TOTVS_PRODUCTS, ...TOTVS_MODULES];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,7 +120,9 @@ serve(async (req) => {
     };
 
     // 1. VAGAS (LinkedIn, Infojobs, Catho)
-    const vagasQuery = `"${company_name}" (TOTVS OR Protheus OR RM OR Fluig) (vaga OR job) site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br`;
+    // Busca por principais produtos TOTVS em vagas
+    const mainProducts = ['TOTVS', 'Protheus', 'Datasul', 'RM', 'Fluig', 'Winthor', 'Logix', 'Carol'];
+    const vagasQuery = `"${company_name}" (${mainProducts.join(' OR ')}) (vaga OR job OR requisito OR conhecimento) site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br`;
     console.log('[Vagas] Query:', vagasQuery);
     
     const vagasResponse = await fetch('https://google.serper.dev/search', {
@@ -86,9 +143,11 @@ serve(async (req) => {
       const vagasData = await vagasResponse.json();
       if (vagasData.organic) {
         for (const item of vagasData.organic) {
-          const detectedProducts = TOTVS_PRODUCTS.filter(product => 
-            (item.title?.toLowerCase() || '').includes(product.toLowerCase()) ||
-            (item.snippet?.toLowerCase() || '').includes(product.toLowerCase())
+          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          
+          // Busca por TODOS os termos do catálogo (produtos + módulos)
+          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
+            text.includes(term.toLowerCase())
           );
 
           if (detectedProducts.length > 0) {
@@ -107,7 +166,8 @@ serve(async (req) => {
     }
 
     // 2. NOTÍCIAS (InfoMoney, Valor, Exame)
-    const noticiasQuery = `"${company_name}" TOTVS site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br`;
+    // Busca ampliada com produtos específicos
+    const noticiasQuery = `"${company_name}" (TOTVS OR Protheus OR Datasul OR Fluig OR Techfin OR "ERP TOTVS") site:infomoney.com.br OR site:valor.globo.com OR site:exame.com OR site:bloomberglinea.com.br`;
     console.log('[Notícias] Query:', noticiasQuery);
     
     const noticiasResponse = await fetch('https://google.serper.dev/search', {
@@ -128,9 +188,11 @@ serve(async (req) => {
       const noticiasData = await noticiasResponse.json();
       if (noticiasData.organic) {
         for (const item of noticiasData.organic) {
-          const detectedProducts = TOTVS_PRODUCTS.filter(product => 
-            (item.title?.toLowerCase() || '').includes(product.toLowerCase()) ||
-            (item.snippet?.toLowerCase() || '').includes(product.toLowerCase())
+          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          
+          // Busca por TODOS os termos do catálogo
+          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
+            text.includes(term.toLowerCase())
           );
 
           if (detectedProducts.length > 0) {
@@ -149,7 +211,8 @@ serve(async (req) => {
     }
 
     // 3. DOCS OFICIAIS (CVM, B3, site da empresa)
-    const docsQuery = `"${company_name}" TOTVS site:rad.cvm.gov.br OR site:bovespa.com.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''}`;
+    // Busca ampliada em documentos oficiais
+    const docsQuery = `"${company_name}" (TOTVS OR Protheus OR Datasul OR "sistema de gestão" OR ERP) site:rad.cvm.gov.br OR site:bovespa.com.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''}`;
     console.log('[Docs Oficiais] Query:', docsQuery);
     
     const docsResponse = await fetch('https://google.serper.dev/search', {
@@ -170,9 +233,11 @@ serve(async (req) => {
       const docsData = await docsResponse.json();
       if (docsData.organic) {
         for (const item of docsData.organic) {
-          const detectedProducts = TOTVS_PRODUCTS.filter(product => 
-            (item.title?.toLowerCase() || '').includes(product.toLowerCase()) ||
-            (item.snippet?.toLowerCase() || '').includes(product.toLowerCase())
+          const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+          
+          // Busca por TODOS os termos do catálogo
+          const detectedProducts = ALL_TOTVS_TERMS.filter(term => 
+            text.includes(term.toLowerCase())
           );
 
           if (detectedProducts.length > 0) {
