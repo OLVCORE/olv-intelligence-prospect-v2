@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,6 +54,7 @@ interface ProcessingCompany {
 }
 
 export default function ICPBulkAnalysisWithMapping() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
@@ -1283,7 +1285,25 @@ export default function ICPBulkAnalysisWithMapping() {
     setAnalysisResults(results);
     setTotalProcessed(results.length);
     setStep('complete');
-  }, []);
+    
+    // Toast clicável para ir direto à quarentena
+    const successCount = results.filter(r => r.status === 'concluido').length;
+    const errorCount = results.filter(r => r.status === 'erro').length;
+    
+    toast({
+      title: "✅ Análise ICP concluída!",
+      description: `${successCount} na quarentena | ${errorCount} com problemas.`,
+      duration: 10000,
+      action: (
+        <button
+          onClick={() => navigate('/leads/icp-quarantine')}
+          className="px-3 py-2 text-sm font-medium text-primary hover:text-primary/80 underline"
+        >
+          Ver Quarentena →
+        </button>
+      ),
+    });
+  }, [navigate, toast]);
 
   if (step === 'analyzing') {
     const fieldMap: Record<string, string> = {};

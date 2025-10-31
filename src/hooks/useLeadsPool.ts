@@ -61,11 +61,12 @@ export function useAddToQualified() {
 
       if (poolError) throw poolError;
 
+      // Usar UPSERT para evitar duplicatas (baseado no CNPJ único)
       const { data, error } = await supabase
         .from('leads_qualified')
-        .insert({
+        .upsert({
+          cnpj: poolData.cnpj, // CNPJ é a chave única
           lead_pool_id: poolData.id,
-          cnpj: poolData.cnpj,
           razao_social: poolData.razao_social,
           nome_fantasia: poolData.nome_fantasia,
           uf: poolData.uf,
@@ -78,6 +79,10 @@ export function useAddToQualified() {
           temperatura: poolData.temperatura,
           status: 'qualificada',
           motivo_qualificacao: 'Seleção manual do usuário',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'cnpj', // Usa CNPJ como chave de conflito
+          ignoreDuplicates: false, // Atualiza se já existir
         })
         .select()
         .single();

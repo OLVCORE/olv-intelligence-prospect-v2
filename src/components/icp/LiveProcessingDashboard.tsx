@@ -75,10 +75,10 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
             etapa_atual: 'Aguardando processamento',
             checkpoints: [
               { nome: 'Validação de Dados', status: 'pendente', tempo: 0 },
-              { nome: 'Verificação TOTVS', status: 'pendente', tempo: 0 },
-              { nome: 'Enriquecimento de Dados', status: 'pendente', tempo: 0 },
+              { nome: 'Análise ICP Real (50+ portais)', status: 'pendente', tempo: 0 },
+              { nome: 'Enriquecimento', status: 'pendente', tempo: 0 },
               { nome: 'Análise Financeira', status: 'pendente', tempo: 0 },
-              { nome: 'Cálculo ICP Score', status: 'pendente', tempo: 0 },
+              { nome: 'Salvando no Banco', status: 'pendente', tempo: 0 },
             ],
           });
         })
@@ -189,45 +189,60 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
 
       atualizarEmpresa(empresa.id, { etapa_atual: 'Verificando cliente TOTVS...' });
 
-      // CHECKPOINT 2: Verificação TOTVS
+      // CHECKPOINT 2-5: Análise ICP Real (combina todos os checkpoints)
       await executarCheckpoint(empresa.id, 1, async () => {
-        const { data, error } = await supabase.functions.invoke('web-scraper-totvs', {
-          body: { cnpj: empresa.cnpj, razao_social: empresa.razao_social }
+        console.log(`[LIVE] 🚀 Iniciando análise ICP REAL para ${empresa.razao_social}`);
+        
+        const { data, error } = await supabase.functions.invoke('icp-scraper-real', {
+          body: { 
+            cnpj: empresa.cnpj, 
+            razao_social: empresa.razao_social 
+          }
         });
         
-        if (error) throw error;
-        
-        if (data?.encontrou_totvs) {
-          throw new Error('Cliente TOTVS detectado');
+        if (error) {
+          console.error(`[LIVE] ❌ Erro na análise:`, error);
+          throw error;
         }
         
-        return { detalhes: `${data?.portais_verificados || 0} portais verificados` };
+        console.log(`[LIVE] ✅ Análise concluída:`, data);
+        
+        // Salvar resultado no banco com UPSERT (evita duplicatas)
+        const { error: upsertError } = await supabase
+          .from('leads_qualified')
+          .upsert({
+            cnpj: empresa.cnpj,
+            razao_social: empresa.razao_social,
+            icp_score: data?.score || 0,
+            temperatura: data?.temperatura || 'cold',
+            status: 'pendente',
+            motivo_qualificacao: data?.message || '',
+            evidencias: data?.evidencias || [],
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'cnpj'
+          });
+        
+        if (upsertError) {
+          console.error(`[LIVE] ❌ Erro ao salvar no banco:`, upsertError);
+          throw upsertError;
+        }
+        
+        // Se encontrou evidências de TOTVS, é descarte
+        if (data?.evidencias && data.evidencias.length > 0) {
+          throw new Error(`Cliente TOTVS detectado: ${data.evidencias.length} evidência(s) encontrada(s)`);
+        }
+        
+        return { 
+          detalhes: `${data?.evidencias?.length || 0} evidências | Score: ${data?.score || 0}`,
+          resultado: data
+        };
       });
 
-      atualizarEmpresa(empresa.id, { etapa_atual: 'Enriquecendo dados...' });
-
-      // CHECKPOINT 3: Enriquecimento
-      await executarCheckpoint(empresa.id, 2, async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return { detalhes: 'Dados enriquecidos com sucesso' };
-      });
-
-      atualizarEmpresa(empresa.id, { etapa_atual: 'Análise financeira...' });
-
-      // CHECKPOINT 4: Análise Financeira
-      await executarCheckpoint(empresa.id, 3, async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return { detalhes: 'Situação financeira: Regular' };
-      });
-
-      atualizarEmpresa(empresa.id, { etapa_atual: 'Calculando ICP Score...' });
-
-      // CHECKPOINT 5: Cálculo ICP
-      await executarCheckpoint(empresa.id, 4, async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const score = Math.floor(Math.random() * 100);
-        return { detalhes: `Score: ${score}`, resultado: { score } };
-      });
+      // Marcar checkpoints restantes como concluídos (já feitos pela análise real)
+      atualizarCheckpoint(empresa.id, 2, { status: 'concluido', tempo: 100 });
+      atualizarCheckpoint(empresa.id, 3, { status: 'concluido', tempo: 100 });
+      atualizarCheckpoint(empresa.id, 4, { status: 'concluido', tempo: 100 });
 
       atualizarEmpresa(empresa.id, { 
         status: 'concluido', 

@@ -5032,6 +5032,7 @@ export type Database = {
           cnpj: string
           created_at: string | null
           email: string | null
+          evidencias: Json | null
           icp_score: number | null
           id: string
           lead_pool_id: string | null
@@ -5053,6 +5054,7 @@ export type Database = {
           cnpj: string
           created_at?: string | null
           email?: string | null
+          evidencias?: Json | null
           icp_score?: number | null
           id?: string
           lead_pool_id?: string | null
@@ -5074,6 +5076,7 @@ export type Database = {
           cnpj?: string
           created_at?: string | null
           email?: string | null
+          evidencias?: Json | null
           icp_score?: number | null
           id?: string
           lead_pool_id?: string | null
