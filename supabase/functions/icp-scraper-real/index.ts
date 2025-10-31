@@ -6,65 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lista de 40+ plataformas para scraping REAL
-const PLATAFORMAS = [
-  // Busca geral (3 fontes)
-  { nome: 'Google Search', url: (empresa: string) => `https://www.google.com/search?q=${encodeURIComponent(empresa + ' empresa')}`, peso: 0.08 },
-  { nome: 'Google News', url: (empresa: string) => `https://news.google.com/search?q=${encodeURIComponent(empresa)}`, peso: 0.05 },
-  { nome: 'Bing Search', url: (empresa: string) => `https://www.bing.com/search?q=${encodeURIComponent(empresa)}`, peso: 0.04 },
-
-  // Redes sociais (7 fontes)
-  { nome: 'LinkedIn', url: (empresa: string) => `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(empresa)}`, peso: 0.15 },
-  { nome: 'Facebook', url: (empresa: string) => `https://www.facebook.com/search/top?q=${encodeURIComponent(empresa)}`, peso: 0.08 },
-  { nome: 'Instagram', url: (empresa: string) => `https://www.instagram.com/explore/tags/${encodeURIComponent(empresa.replace(/\s+/g, ''))}`, peso: 0.06 },
-  { nome: 'Twitter/X', url: (empresa: string) => `https://twitter.com/search?q=${encodeURIComponent(empresa)}`, peso: 0.07 },
-  { nome: 'YouTube', url: (empresa: string) => `https://www.youtube.com/results?search_query=${encodeURIComponent(empresa)}`, peso: 0.05 },
-  { nome: 'TikTok', url: (empresa: string) => `https://www.tiktok.com/search?q=${encodeURIComponent(empresa)}`, peso: 0.03 },
-  { nome: 'Pinterest', url: (empresa: string) => `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(empresa)}`, peso: 0.02 },
-
-  // Reputação (5 fontes)
-  { nome: 'Reclame Aqui', url: (empresa: string) => `https://www.reclameaqui.com.br/busca/?q=${encodeURIComponent(empresa)}`, peso: 0.10 },
-  { nome: 'TrustPilot', url: (empresa: string) => `https://www.trustpilot.com/search?query=${encodeURIComponent(empresa)}`, peso: 0.08 },
-  { nome: 'Glassdoor', url: (empresa: string) => `https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(empresa)}`, peso: 0.09 },
-  { nome: 'Indeed', url: (empresa: string) => `https://www.indeed.com/q-${encodeURIComponent(empresa)}-jobs.html`, peso: 0.07 },
-  { nome: 'Vagas.com', url: (empresa: string) => `https://www.vagas.com.br/vagas-em-${encodeURIComponent(empresa)}`, peso: 0.06 },
-
-  // Reviews B2B (4 fontes)
-  { nome: 'G2', url: (empresa: string) => `https://www.g2.com/search?query=${encodeURIComponent(empresa)}`, peso: 0.07 },
-  { nome: 'Capterra', url: (empresa: string) => `https://www.capterra.com/search/?query=${encodeURIComponent(empresa)}`, peso: 0.06 },
-  { nome: 'GetApp', url: (empresa: string) => `https://www.getapp.com/search?query=${encodeURIComponent(empresa)}`, peso: 0.05 },
-  { nome: 'Software Advice', url: (empresa: string) => `https://www.softwareadvice.com/search/${encodeURIComponent(empresa)}`, peso: 0.04 },
-
-  // Tecnologia (4 fontes)
-  { nome: 'BuiltWith', url: (domain: string) => `https://builtwith.com/${domain}`, peso: 0.12 },
-  { nome: 'Wappalyzer', url: (domain: string) => `https://www.wappalyzer.com/lookup/${domain}`, peso: 0.11 },
-  { nome: 'SimilarTech', url: (domain: string) => `https://www.similartech.com/websites/${domain}`, peso: 0.09 },
-  { nome: 'StackShare', url: (empresa: string) => `https://stackshare.io/search/q=${encodeURIComponent(empresa)}`, peso: 0.08 },
-
-  // Dados empresariais (5 fontes)
-  { nome: 'CNPJ.biz', url: (cnpj: string) => `https://www.cnpj.biz/${cnpj}`, peso: 0.10 },
-  { nome: 'ReceitaWS', url: (cnpj: string) => `https://www.receitaws.com.br/v1/cnpj/${cnpj}`, peso: 0.12 },
-  { nome: 'EmpresAqui', url: (cnpj: string) => `https://www.empresaqui.com.br/empresa/${cnpj}`, peso: 0.09 },
-  { nome: 'Consulta CNPJ', url: (cnpj: string) => `https://www.consultacnpj.com/cnpj/${cnpj}`, peso: 0.08 },
-  { nome: 'Sintegra', url: (cnpj: string) => `http://www.sintegra.gov.br`, peso: 0.07 },
-
-  // Financeiro (3 fontes)
-  { nome: 'Bloomberg', url: (empresa: string) => `https://www.bloomberg.com/search?query=${encodeURIComponent(empresa)}`, peso: 0.10 },
-  { nome: 'Valor Econômico', url: (empresa: string) => `https://valor.globo.com/busca/?q=${encodeURIComponent(empresa)}`, peso: 0.08 },
-  { nome: 'InfoMoney', url: (empresa: string) => `https://www.infomoney.com.br/busca/?q=${encodeURIComponent(empresa)}`, peso: 0.07 },
-
-  // Vagas (4 fontes)
-  { nome: 'LinkedIn Jobs', url: (empresa: string) => `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(empresa)}`, peso: 0.09 },
-  { nome: 'Catho', url: (empresa: string) => `https://www.catho.com.br/vagas/${encodeURIComponent(empresa)}`, peso: 0.06 },
-  { nome: 'Infojobs', url: (empresa: string) => `https://www.infojobs.com.br/empregos.aspx?Palabra=${encodeURIComponent(empresa)}`, peso: 0.05 },
-  { nome: 'Trabalha Brasil', url: (empresa: string) => `https://www.trabalhabrasil.com.br/vagas/${encodeURIComponent(empresa)}`, peso: 0.04 },
-
-  // Outros (5 fontes)
-  { nome: 'Wikipedia', url: (empresa: string) => `https://pt.wikipedia.org/wiki/${encodeURIComponent(empresa)}`, peso: 0.06 },
-  { nome: 'Crunchbase', url: (empresa: string) => `https://www.crunchbase.com/textsearch?q=${encodeURIComponent(empresa)}`, peso: 0.12 },
-  { nome: 'PitchBook', url: (empresa: string) => `https://pitchbook.com/search?q=${encodeURIComponent(empresa)}`, peso: 0.10 },
-  { nome: 'AngelList', url: (empresa: string) => `https://angel.co/company/${encodeURIComponent(empresa)}`, peso: 0.08 },
-  { nome: 'Owler', url: (empresa: string) => `https://www.owler.com/company/${encodeURIComponent(empresa)}`, peso: 0.07 },
+// Categorias de busca para análise ICP com TOTVS usando Google Custom Search API
+const CATEGORIAS_BUSCA = [
+  { nome: 'LinkedIn Jobs TOTVS', query: (empresa: string) => `site:linkedin.com/jobs "${empresa}" TOTVS`, peso: 0.25, categoria: 'vagas_totvs' },
+  { nome: 'LinkedIn Profile TOTVS', query: (empresa: string) => `site:linkedin.com "${empresa}" "TOTVS" OR "Protheus" OR "RM" OR "Datasul"`, peso: 0.20, categoria: 'presenca_digital' },
+  { nome: 'Vagas TOTVS Geral', query: (empresa: string) => `"${empresa}" vagas TOTVS OR Protheus OR RM OR Datasul`, peso: 0.15, categoria: 'vagas_totvs' },
+  { nome: 'Notícias TOTVS', query: (empresa: string) => `"${empresa}" TOTVS implantação OR implementação OR cliente`, peso: 0.12, categoria: 'noticias' },
+  { nome: 'Site Próprio TOTVS', query: (empresa: string, domain?: string) => domain ? `site:${domain} TOTVS OR Protheus OR RM OR Datasul` : `"${empresa}" TOTVS`, peso: 0.18, categoria: 'site_proprio' },
+  { nome: 'Reclame Aqui TOTVS', query: (empresa: string) => `site:reclameaqui.com.br "${empresa}" TOTVS`, peso: 0.10, categoria: 'reputacao' },
 ];
 
 serve(async (req) => {
@@ -72,12 +21,26 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  console.log('[ICP SCRAPER] 🚀 Iniciando análise REAL com 40+ plataformas...');
+  console.log('[ICP SCRAPER] 🚀 Iniciando análise ICP com Google Custom Search API...');
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
+    const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (!googleApiKey || !googleCseId) {
+      console.error('[ICP SCRAPER] ❌ Google API não configurada');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Google API não configurada',
+          hint: 'Configure GOOGLE_API_KEY e GOOGLE_CSE_ID nos secrets'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { empresa, cnpj, domain, analysis_id } = await req.json();
 
@@ -88,125 +51,122 @@ serve(async (req) => {
       );
     }
 
-    console.log('[ICP SCRAPER] 📊 Analisando:', empresa, cnpj);
+    console.log('[ICP SCRAPER] 📊 Analisando:', empresa, cnpj, domain);
 
     const evidencias: any[] = [];
     const logs: any[] = [];
     let totalPontos = 0;
     const startTimeTotal = Date.now();
 
-    // SCRAPING REAL DE CADA PLATAFORMA
-    for (const plataforma of PLATAFORMAS) {
+    // BUSCAR COM GOOGLE CUSTOM SEARCH API
+    for (const categoria of CATEGORIAS_BUSCA) {
       const startTime = Date.now();
       
       try {
-        console.log(`[ICP SCRAPER] 🔍 Buscando em: ${plataforma.nome}`);
+        const searchQuery = categoria.nome.includes('Site Próprio') && domain
+          ? categoria.query(empresa, domain)
+          : categoria.query(empresa);
+          
+        console.log(`[ICP SCRAPER] 🔍 ${categoria.nome}: ${searchQuery}`);
         
-        // Escolher argumento correto (empresa, cnpj ou domain)
-        let searchArg = empresa;
-        if (plataforma.nome.includes('CNPJ') || plataforma.nome === 'ReceitaWS' || plataforma.nome === 'Sintegra') {
-          searchArg = cnpj || empresa;
-        } else if (plataforma.nome === 'BuiltWith' || plataforma.nome === 'Wappalyzer' || plataforma.nome === 'SimilarTech') {
-          searchArg = domain || empresa;
-        }
-
-        const url = plataforma.url(searchArg);
+        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(searchQuery)}&num=10`;
         
-        // FAZER REQUISIÇÃO REAL com timeout de 10s por plataforma
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
+        const response = await fetch(googleUrl);
         const tempo = Date.now() - startTime;
 
         if (response.ok) {
-          const html = await response.text();
+          const data = await response.json();
           
-          // EXTRAIR DADOS RELEVANTES
-          const dadosExtraidos = extrairDados(html, plataforma.nome, empresa, cnpj);
-          
-          if (dadosExtraidos.encontrado) {
-            const pontos = Math.round(plataforma.peso * 100);
+          if (data.items && data.items.length > 0) {
+            const pontos = Math.round(categoria.peso * 100);
             
-            // SALVAR EVIDÊNCIA
-            evidencias.push({
-              criterio: dadosExtraidos.criterio,
-              categoria: dadosExtraidos.categoria,
-              evidencia: dadosExtraidos.evidencia,
-              fonte_url: url,
-              fonte_nome: plataforma.nome,
-              dados_extraidos: dadosExtraidos.dados,
-              pontos_atribuidos: pontos,
-              peso_criterio: plataforma.peso,
-              confiabilidade: dadosExtraidos.confiabilidade,
-            });
+            // Processar cada resultado encontrado
+            for (const item of data.items) {
+              evidencias.push({
+                criterio: categoria.nome,
+                categoria: categoria.categoria,
+                evidencia: `${item.title} - ${item.snippet || 'Sem descrição'}`,
+                fonte_url: item.link,
+                fonte_nome: new URL(item.link).hostname,
+                dados_extraidos: {
+                  titulo: item.title,
+                  snippet: item.snippet,
+                  link: item.link,
+                  displayLink: item.displayLink,
+                },
+                pontos_atribuidos: pontos / data.items.length, // Distribuir pontos
+                peso_criterio: categoria.peso,
+                confiabilidade: 'alta',
+              });
+            }
 
             totalPontos += pontos;
+            
+            logs.push({
+              plataforma: categoria.nome,
+              url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
+              status: 'sucesso',
+              dados_encontrados: true,
+              tempo_resposta_ms: tempo,
+              resultados_encontrados: data.items.length,
+            });
+
+            console.log(`[ICP SCRAPER] ✅ ${categoria.nome}: ${data.items.length} resultados (${tempo}ms)`);
+          } else {
+            logs.push({
+              plataforma: categoria.nome,
+              url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
+              status: 'sem_resultados',
+              dados_encontrados: false,
+              tempo_resposta_ms: tempo,
+            });
+            
+            console.log(`[ICP SCRAPER] ⚠️ ${categoria.nome}: Nenhum resultado encontrado`);
           }
-
-          // LOG DE SUCESSO
-          logs.push({
-            plataforma: plataforma.nome,
-            url_buscada: url,
-            status: 'sucesso',
-            dados_encontrados: dadosExtraidos.encontrado,
-            tempo_resposta_ms: tempo,
-          });
-
-          console.log(`[ICP SCRAPER] ✅ ${plataforma.nome}: ${dadosExtraidos.encontrado ? 'Dados encontrados (' + tempo + 'ms)' : 'Sem dados'}`);
-
         } else {
-          // LOG DE ERRO HTTP
+          const errorText = await response.text();
           logs.push({
-            plataforma: plataforma.nome,
-            url_buscada: url,
+            plataforma: categoria.nome,
+            url_buscada: googleUrl.replace(googleApiKey, 'HIDDEN'),
             status: 'erro',
             dados_encontrados: false,
             tempo_resposta_ms: tempo,
-            erro_mensagem: `HTTP ${response.status}`,
+            erro_mensagem: `HTTP ${response.status}: ${errorText}`,
           });
 
-          console.log(`[ICP SCRAPER] ❌ ${plataforma.nome}: Erro ${response.status}`);
+          console.log(`[ICP SCRAPER] ❌ ${categoria.nome}: Erro ${response.status}`);
         }
 
       } catch (error: any) {
         const tempo = Date.now() - startTime;
         
-        // LOG DE TIMEOUT/ERRO
-        const status = error.name === 'AbortError' ? 'timeout' : (error.message.includes('blocked') ? 'bloqueado' : 'erro');
-        
         logs.push({
-          plataforma: plataforma.nome,
-          url_buscada: plataforma.url(empresa || cnpj),
-          status,
+          plataforma: categoria.nome,
+          url_buscada: 'Google Custom Search API',
+          status: 'erro',
           dados_encontrados: false,
           tempo_resposta_ms: tempo,
           erro_mensagem: error.message,
         });
 
-        console.log(`[ICP SCRAPER] ⚠️ ${plataforma.nome}: ${error.message}`);
+        console.log(`[ICP SCRAPER] ⚠️ ${categoria.nome}: ${error.message}`);
       }
 
-      // DELAY entre requisições (evitar bloqueio) - 500ms
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Pequeno delay entre buscas (200ms)
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     // CALCULAR SCORE FINAL
     const scoreICP = Math.min(100, Math.round(totalPontos));
     const temperatura = scoreICP >= 70 ? 'hot' : scoreICP >= 40 ? 'warm' : 'cold';
     const tempoTotal = Math.round((Date.now() - startTimeTotal) / 1000);
+    const buscasRealizadas = logs.length;
+    const buscasComResultados = logs.filter(l => l.dados_encontrados).length;
 
     console.log('[ICP SCRAPER] 📊 Score final:', scoreICP, temperatura);
     console.log('[ICP SCRAPER] 📝 Evidências encontradas:', evidencias.length);
+    console.log('[ICP SCRAPER] 🔍 Buscas realizadas:', buscasRealizadas);
+    console.log('[ICP SCRAPER] ✅ Buscas com resultados:', buscasComResultados);
     console.log('[ICP SCRAPER] ⏱️ Tempo total:', tempoTotal, 'segundos');
 
     // SALVAR EVIDÊNCIAS NO BANCO
@@ -258,6 +218,7 @@ serve(async (req) => {
             criterio: e.criterio,
             pontos: e.pontos_atribuidos,
             fonte: e.fonte_nome,
+            link: e.fonte_url,
           })),
           analyzed_at: new Date().toISOString(),
         })
@@ -274,12 +235,12 @@ serve(async (req) => {
         score: scoreICP,
         temperatura,
         evidencias_encontradas: evidencias.length,
-        plataformas_consultadas: PLATAFORMAS.length,
+        categorias_consultadas: CATEGORIAS_BUSCA.length,
         logs_gerados: logs.length,
         tempo_total_segundos: tempoTotal,
-        plataformas_sucesso: logs.filter(l => l.status === 'sucesso').length,
-        plataformas_erro: logs.filter(l => l.status === 'erro').length,
-        plataformas_timeout: logs.filter(l => l.status === 'timeout').length,
+        buscas_sucesso: logs.filter(l => l.status === 'sucesso').length,
+        buscas_sem_resultados: logs.filter(l => l.status === 'sem_resultados').length,
+        buscas_erro: logs.filter(l => l.status === 'erro').length,
       }),
       { 
         status: 200,
@@ -298,135 +259,3 @@ serve(async (req) => {
     );
   }
 });
-
-// FUNÇÃO PARA EXTRAIR DADOS DO HTML
-function extrairDados(html: string, plataforma: string, empresa: string, cnpj: string): any {
-  // Verificação básica: HTML deve ter conteúdo substancial
-  if (!html || html.length < 500) {
-    return { encontrado: false };
-  }
-
-  const htmlLower = html.toLowerCase();
-  const empresaLower = empresa?.toLowerCase() || '';
-  const cnpjLimpo = cnpj?.replace(/\D/g, '') || '';
-
-  // Verificar se a empresa ou CNPJ aparecem no HTML
-  const temEmpresa = empresaLower && htmlLower.includes(empresaLower);
-  const temCNPJ = cnpjLimpo && htmlLower.includes(cnpjLimpo);
-
-  if (!temEmpresa && !temCNPJ) {
-    return { encontrado: false };
-  }
-
-  // Extrair dados específicos baseado na plataforma
-  switch (plataforma) {
-    case 'LinkedIn':
-      return {
-        encontrado: true,
-        criterio: 'Presença no LinkedIn',
-        categoria: 'digital',
-        evidencia: `Empresa ${empresa} encontrada no LinkedIn`,
-        dados: { 
-          plataforma: 'LinkedIn',
-          tem_perfil: temEmpresa,
-        },
-        confiabilidade: 'alta',
-      };
-    
-    case 'Reclame Aqui':
-      // Extrair nota se possível
-      const notaMatch = html.match(/nota["\s:]+(\d+[.,]?\d*)/i);
-      return {
-        encontrado: true,
-        criterio: 'Reputação Online',
-        categoria: 'reputacao',
-        evidencia: `Empresa encontrada no Reclame Aqui${notaMatch ? ` (Nota: ${notaMatch[1]})` : ''}`,
-        dados: { 
-          plataforma: 'Reclame Aqui',
-          nota: notaMatch ? notaMatch[1] : null,
-        },
-        confiabilidade: 'alta',
-      };
-    
-    case 'Glassdoor':
-      return {
-        encontrado: true,
-        criterio: 'Reputação como Empregador',
-        categoria: 'reputacao',
-        evidencia: `Empresa encontrada no Glassdoor`,
-        dados: { plataforma: 'Glassdoor' },
-        confiabilidade: 'alta',
-      };
-    
-    case 'LinkedIn Jobs':
-      // Tentar contar vagas
-      const vagasMatch = html.match(/(\d+)\s*vagas?/i);
-      return {
-        encontrado: true,
-        criterio: 'Vagas Abertas',
-        categoria: 'sinais_compra',
-        evidencia: `Empresa com vagas no LinkedIn${vagasMatch ? ` (${vagasMatch[1]} vagas)` : ''}`,
-        dados: { 
-          plataforma: 'LinkedIn Jobs',
-          vagas: vagasMatch ? parseInt(vagasMatch[1]) : null,
-        },
-        confiabilidade: 'alta',
-      };
-
-    case 'BuiltWith':
-    case 'Wappalyzer':
-      return {
-        encontrado: true,
-        criterio: 'Stack Tecnológico',
-        categoria: 'tecnologia',
-        evidencia: `Tecnologias detectadas em ${plataforma}`,
-        dados: { plataforma },
-        confiabilidade: 'alta',
-      };
-
-    case 'ReceitaWS':
-    case 'CNPJ.biz':
-      return {
-        encontrado: true,
-        criterio: 'Dados Cadastrais Válidos',
-        categoria: 'financeiro',
-        evidencia: `CNPJ encontrado em ${plataforma}`,
-        dados: { plataforma, cnpj: cnpjLimpo },
-        confiabilidade: 'alta',
-      };
-
-    case 'Crunchbase':
-    case 'PitchBook':
-      return {
-        encontrado: true,
-        criterio: 'Perfil Investidor',
-        categoria: 'financeiro',
-        evidencia: `Empresa encontrada em ${plataforma}`,
-        dados: { plataforma },
-        confiabilidade: 'alta',
-      };
-
-    case 'Vagas.com':
-    case 'Catho':
-    case 'Infojobs':
-    case 'Indeed':
-      return {
-        encontrado: true,
-        criterio: 'Contratação Ativa',
-        categoria: 'sinais_compra',
-        evidencia: `Empresa com vagas abertas em ${plataforma}`,
-        dados: { plataforma },
-        confiabilidade: 'media',
-      };
-
-    default:
-      return {
-        encontrado: true,
-        criterio: 'Presença Digital',
-        categoria: 'digital',
-        evidencia: `Empresa encontrada em ${plataforma}`,
-        dados: { plataforma },
-        confiabilidade: 'media',
-      };
-  }
-}
