@@ -479,6 +479,17 @@ serve(async (req) => {
     let confidence: CheckResult['confidence'] = 'low';
     let reasoning = '';
 
+    // Buscar dados da empresa para decisão mais inteligente
+    const { data: companyData } = await supabase
+      .from('icp_analysis_results')
+      .select('icp_score, website, setor, porte, cnpj')
+      .eq('id', company_id)
+      .maybeSingle();
+
+    const icpScore = companyData?.icp_score || 0;
+    const hasWebsite = !!companyData?.website && companyData.website !== 'N/A';
+    const hasBasicData = !!(companyData?.setor && companyData?.porte && companyData?.cnpj);
+
     if (totalWeight >= 250) {
       status = 'no-go';
       confidence = 'high';
@@ -496,9 +507,43 @@ serve(async (req) => {
       confidence = 'low';
       reasoning = `👁️ REVISAR - Poucas evidências (${allEvidences.length}). Peso: ${totalWeight}.`;
     } else {
-      status = 'go';
-      confidence = 'medium';
-      reasoning = `✅ GO - Nenhuma evidência TOTVS nas fontes consultadas.`;
+      // SEM evidências TOTVS - decisão conservadora baseada em QUALIDADE DOS DADOS
+      
+      // Caso 1: Empresa SEM presença digital E score baixo → SUSPEITO, precisa revisão
+      if (!hasWebsite && icpScore < 50) {
+        status = 'revisar';
+        confidence = 'low';
+        reasoning = `⚠️ REVISAR - Sem website e score ICP baixo (${icpScore}). Falta de presença digital impede validação confiável.`;
+        console.log(`[DECISÃO] REVISAR por falta de presença digital (ICP: ${icpScore}, Website: ${hasWebsite})`);
+      }
+      // Caso 2: Empresa sem dados básicos (setor, porte) → precisa revisão
+      else if (!hasBasicData) {
+        status = 'revisar';
+        confidence = 'low';
+        reasoning = `⚠️ REVISAR - Dados incompletos. Necessário completar cadastro para validação confiável.`;
+        console.log(`[DECISÃO] REVISAR por dados incompletos`);
+      }
+      // Caso 3: Score ICP muito baixo (< 40) → precisa revisão mesmo sem TOTVS
+      else if (icpScore < 40) {
+        status = 'revisar';
+        confidence = 'low';
+        reasoning = `⚠️ REVISAR - Score ICP muito baixo (${icpScore}/100). Empresa não atende perfil mínimo do ICP.`;
+        console.log(`[DECISÃO] REVISAR por score ICP muito baixo (${icpScore})`);
+      }
+      // Caso 4: Sem website mas score razoável (50-69) → revisar por precaução
+      else if (!hasWebsite && icpScore < 70) {
+        status = 'revisar';
+        confidence = 'medium';
+        reasoning = `⚠️ REVISAR - Sem website mas score ICP médio (${icpScore}). Validação manual recomendada.`;
+        console.log(`[DECISÃO] REVISAR por ausência de website (ICP: ${icpScore})`);
+      }
+      // Caso 5: OK para GO - tem presença digital OU score alto, e sem evidências TOTVS
+      else {
+        status = 'go';
+        confidence = hasWebsite && icpScore >= 60 ? 'high' : 'medium';
+        reasoning = `✅ GO - Nenhuma evidência TOTVS. ICP: ${icpScore}/100${hasWebsite ? ', website identificado' : ''}.`;
+        console.log(`[DECISÃO] GO aprovado (ICP: ${icpScore}, Website: ${hasWebsite})`);
+      }
     }
 
     const evidencesByCategory: CheckResult['evidences_by_category'] = {
