@@ -353,22 +353,26 @@ async function searchGoogleCSE(
   }
 }
 
-// Busca Serper (Primária)
+// Busca Serper (Primária) - COM FILTRO TEMPORAL
 async function searchSerper(
   query: string,
   apiKey: string,
   companyName: string,
   category: Evidence['category'],
-  weight: number
+  weight: number,
+  dateFilter?: 'qdr:y' | 'qdr:y2' | 'qdr:y5' // 1, 2 ou 5 anos
 ): Promise<Evidence[]> {
   try {
+    const queryWithFilter = dateFilter ? `${query} ${dateFilter}` : query;
+    console.log(`[SERPER-${category.toUpperCase()}] Query: "${query.substring(0, 80)}..." | Filtro: ${dateFilter || 'sem filtro'}`);
+    
     const response = await fetchWithRetry('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
         'X-API-KEY': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ q: query, num: 10, gl: 'br', hl: 'pt-br' })
+      body: JSON.stringify({ q: queryWithFilter, num: 20, gl: 'br', hl: 'pt-br' }) // Aumentado para 20
     });
     
     if (!response.ok) {
@@ -379,9 +383,15 @@ async function searchSerper(
     const data = await response.json();
     const evidences: Evidence[] = [];
     
+    console.log(`[SERPER] Retornou ${data.organic?.length || 0} resultados brutos`);
+    
     if (data.organic) {
+      let accepted = 0;
+      let rejected = 0;
+      
       for (const item of data.organic) {
         const fullText = `${item.title || ''} ${item.snippet || ''}`;
+        const itemTitle = item.title?.substring(0, 50) || 'Sem título';
         
         // Triple Match (Empresa + TOTVS + Produto)
         const tripleResult = tripleMatch(fullText, companyName);
@@ -397,6 +407,8 @@ async function searchSerper(
             match_type: 'triple',
             weight
           });
+          console.log(`[SERPER] ✅ TRIPLE: "${itemTitle}..." | Produtos: ${tripleResult.detectedProducts.join(', ')}`);
+          accepted++;
           continue;
         }
         
@@ -414,8 +426,15 @@ async function searchSerper(
             match_type: 'double',
             weight: Math.floor(weight * 0.7) // Reduz peso de double
           });
+          console.log(`[SERPER] ✅ DOUBLE: "${itemTitle}..." | Produtos: ${doubleResult.detectedProducts.join(', ')}`);
+          accepted++;
+        } else {
+          console.log(`[SERPER] ❌ DESCARTADO: "${itemTitle}..." | Motivo: Sem match empresa+TOTVS+produto`);
+          rejected++;
         }
       }
+      
+      console.log(`[SERPER] Aprovados: ${accepted} | Rejeitados: ${rejected}`);
     }
     
     return evidences;
@@ -425,7 +444,7 @@ async function searchSerper(
   }
 }
 
-// Busca com Fallback Automático (Serper → Google CSE)
+// Busca com Fallback Automático (Serper → Google CSE) + FILTROS TEMPORAIS
 async function searchWithFallback(
   query: string,
   serperKey: string | undefined,
@@ -433,17 +452,30 @@ async function searchWithFallback(
   googleCseId: string | undefined,
   companyName: string,
   category: Evidence['category'],
-  weight: number
+  weight: number,
+  tryMultipleDates = true // Se true, tenta 1, 2 e 5 anos
 ): Promise<Evidence[]> {
-  // 1ª Tentativa: Serper (mais rápido)
+  const allResults: Evidence[] = [];
+  
+  // 1ª Tentativa: Serper (mais rápido) com múltiplos filtros de data
   if (serperKey) {
     try {
-      const results = await searchSerper(query, serperKey, companyName, category, weight);
-      if (results.length > 0) {
-        console.log(`[FALLBACK] ✅ Serper retornou ${results.length} evidências`);
-        return results;
+      const dateFilters: Array<'qdr:y' | 'qdr:y2' | 'qdr:y5' | undefined> = 
+        tryMultipleDates ? ['qdr:y', 'qdr:y2', 'qdr:y5'] : [undefined];
+      
+      for (const dateFilter of dateFilters) {
+        const results = await searchSerper(query, serperKey, companyName, category, weight, dateFilter);
+        if (results.length > 0) {
+          allResults.push(...results);
+          console.log(`[FALLBACK] ✅ Serper (${dateFilter || 'sem filtro'}) retornou ${results.length} evidências`);
+        }
       }
-      console.log(`[FALLBACK] ⚠️ Serper vazio, tentando Google CSE...`);
+      
+      if (allResults.length > 0) {
+        return allResults;
+      }
+      
+      console.log(`[FALLBACK] ⚠️ Serper vazio em todos os períodos, tentando Google CSE...`);
     } catch (error) {
       console.warn(`[FALLBACK] Serper falhou:`, error);
     }
@@ -584,7 +616,7 @@ serve(async (req) => {
       }
     ];
 
-    console.log(`[PARALLEL] 🚀 Executando ${queries.length + 1} buscas em paralelo com fallback automático...`);
+    console.log(`[PARALLEL] 🚀 Executando ${queries.length + 1} buscas em paralelo com filtros de 1-5 anos...`);
 
     const [apolloEv, ...searchResults] = await Promise.all([
       domain && APOLLO_API_KEY ? checkApolloTechStack(domain, APOLLO_API_KEY) : Promise.resolve([]),
@@ -595,11 +627,14 @@ serve(async (req) => {
         GOOGLE_CSE_ID,
         company_name, 
         q.category, 
-        q.weight
+        q.weight,
+        true // Ativa filtros de múltiplas datas
       ))
     ]);
 
     const allEvidences = [...apolloEv, ...searchResults.flat()];
+    
+    console.log(`[PARALLEL] ✅ Busca finalizada: ${allEvidences.length} evidências totais`);
 
     // Boost de peso para setores prioritários
     if (prioritySector) {
