@@ -61,34 +61,60 @@ export function useAddToQualified() {
 
       if (poolError) throw poolError;
 
-      // Usar UPSERT para evitar duplicatas (baseado no CNPJ único)
-      const { data, error } = await supabase
+      // Upsert manual por CNPJ (evita erro 400 sem unique index)
+      const { data: existing } = await supabase
         .from('leads_qualified')
-        .upsert({
-          cnpj: poolData.cnpj, // CNPJ é a chave única
-          lead_pool_id: poolData.id,
-          razao_social: poolData.razao_social,
-          nome_fantasia: poolData.nome_fantasia,
-          uf: poolData.uf,
-          municipio: poolData.municipio,
-          porte: poolData.porte,
-          website: poolData.website,
-          email: poolData.email,
-          telefone: poolData.telefone,
-          icp_score: poolData.icp_score,
-          temperatura: poolData.temperatura,
-          status: 'qualificada',
-          motivo_qualificacao: 'Seleção manual do usuário',
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'cnpj', // Usa CNPJ como chave de conflito
-          ignoreDuplicates: false, // Atualiza se já existir
-        })
-        .select()
-        .single();
-      
+        .select('id')
+        .eq('cnpj', poolData.cnpj)
+        .maybeSingle();
+
+      let error: any = null;
+      if (existing) {
+        const { error: updateErr } = await supabase
+          .from('leads_qualified')
+          .update({
+            lead_pool_id: poolData.id,
+            razao_social: poolData.razao_social,
+            nome_fantasia: poolData.nome_fantasia,
+            uf: poolData.uf,
+            municipio: poolData.municipio,
+            porte: poolData.porte,
+            website: poolData.website,
+            email: poolData.email,
+            telefone: poolData.telefone,
+            icp_score: poolData.icp_score,
+            temperatura: poolData.temperatura,
+            status: 'qualificada',
+            motivo_qualificacao: 'Seleção manual do usuário',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+        error = updateErr;
+      } else {
+        const { error: insertErr } = await supabase
+          .from('leads_qualified')
+          .insert({
+            cnpj: poolData.cnpj,
+            lead_pool_id: poolData.id,
+            razao_social: poolData.razao_social,
+            nome_fantasia: poolData.nome_fantasia,
+            uf: poolData.uf,
+            municipio: poolData.municipio,
+            porte: poolData.porte,
+            website: poolData.website,
+            email: poolData.email,
+            telefone: poolData.telefone,
+            icp_score: poolData.icp_score,
+            temperatura: poolData.temperatura,
+            status: 'qualificada',
+            motivo_qualificacao: 'Seleção manual do usuário',
+            updated_at: new Date().toISOString(),
+          });
+        error = insertErr;
+      }
+
       if (error) throw error;
-      return data;
+      return { ok: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_POOL_QUERY_KEY });

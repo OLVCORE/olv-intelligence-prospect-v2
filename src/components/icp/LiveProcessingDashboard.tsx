@@ -282,20 +282,42 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
         atualizarEmpresa(empresa.id, { etapa_atual: 'Salvando resultados...' });
         atualizarCheckpoint(empresa.id, 5, { status: 'processando', progresso: 50 });
         
-        const { error: upsertError } = await supabase
+        const { data: existingLead } = await supabase
           .from('leads_qualified')
-          .upsert({
-            cnpj: empresa.cnpj,
-            razao_social: empresa.razao_social,
-            icp_score: data?.score || 0,
-            temperatura: data?.temperatura || 'cold',
-            status: 'pendente',
-            motivo_qualificacao: data?.message || '',
-            evidencias: data?.evidencias || [],
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'cnpj'
-          });
+          .select('id')
+          .eq('cnpj', empresa.cnpj)
+          .maybeSingle();
+        
+        let upsertError = null as any;
+        if (existingLead) {
+          const { error } = await supabase
+            .from('leads_qualified')
+            .update({
+              razao_social: empresa.razao_social,
+              icp_score: data?.score || 0,
+              temperatura: data?.temperatura || 'cold',
+              status: 'pendente',
+              motivo_qualificacao: data?.message || '',
+              evidencias: data?.evidencias || [],
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingLead.id);
+          upsertError = error;
+        } else {
+          const { error } = await supabase
+            .from('leads_qualified')
+            .insert({
+              cnpj: empresa.cnpj,
+              razao_social: empresa.razao_social,
+              icp_score: data?.score || 0,
+              temperatura: data?.temperatura || 'cold',
+              status: 'pendente',
+              motivo_qualificacao: data?.message || '',
+              evidencias: data?.evidencias || [],
+              updated_at: new Date().toISOString()
+            });
+          upsertError = error;
+        }
         
         if (upsertError) {
           console.error(`[LIVE] ❌ Erro ao salvar no banco:`, upsertError);
