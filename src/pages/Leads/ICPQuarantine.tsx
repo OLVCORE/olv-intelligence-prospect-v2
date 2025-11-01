@@ -946,8 +946,7 @@ export default function ICPQuarantine() {
       {/* Table */}
       <Card>
         <CardContent className="pt-6">
-          <ScrollArea className="w-full">
-            <div className="min-w-full">
+          <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1192,8 +1191,7 @@ export default function ICPQuarantine() {
               )}
             </TableBody>
           </Table>
-            </div>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
 
