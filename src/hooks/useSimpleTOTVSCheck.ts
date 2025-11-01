@@ -55,10 +55,21 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
 
       if (data) return data;
 
-      // 2) Fallback inteligente para registros da QUARENTENA
+      // 2) Fallback INTELIGENTE para registros da QUARENTENA (icp_analysis_results)
       const { data: q, error: qErr } = await supabase
         .from('icp_analysis_results')
-        .select('id, is_cliente_totvs, totvs_evidences, totvs_check_date, updated_at')
+        .select(`
+          id, 
+          totvs_check_status,
+          totvs_check_confidence,
+          totvs_check_evidences,
+          totvs_check_date,
+          totvs_check_total_weight,
+          totvs_check_reasoning,
+          is_cliente_totvs,
+          totvs_evidences,
+          updated_at
+        `)
         .eq('id', companyId)
         .maybeSingle();
 
@@ -69,6 +80,25 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
 
       if (!q) return null;
 
+      // Se tiver dados do STC completo (novas colunas), usar eles
+      if (q.totvs_check_status) {
+        const evidences = q.totvs_check_evidences || { vagas: [], noticias: [], docs_oficiais: [] };
+        const total = Object.values(evidences).flat().length;
+        
+        return {
+          company_id: companyId,
+          status: q.totvs_check_status,
+          confidence: q.totvs_check_confidence,
+          total_evidences: total,
+          evidences_by_category: evidences,
+          total_weight: q.totvs_check_total_weight,
+          reasoning: q.totvs_check_reasoning,
+          checked_at: q.totvs_check_date || new Date().toISOString(),
+          detected_totvs: q.totvs_check_status === 'no-go'
+        } as any;
+      }
+
+      // Fallback legado (colunas antigas)
       const total = Array.isArray(q.totvs_evidences) ? q.totvs_evidences.length : 0;
       const status = q.is_cliente_totvs ? 'no-go' : (total >= 2 ? 'no-go' : total === 1 ? 'revisar' : 'go');
       const confidence = q.is_cliente_totvs || total >= 5 ? 'high' : total >= 2 ? 'medium' : 'low';

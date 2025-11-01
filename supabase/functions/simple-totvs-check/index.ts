@@ -526,24 +526,28 @@ serve(async (req) => {
       cache_hit: false
     };
 
-    // Salvar no banco (mesmo que company_id não exista na tabela companies)
-    const { error: insertError } = await supabase
-      .from('simple_totvs_checks')
-      .insert({
-        company_id,
-        status: result.status,
-        detected_totvs: result.detected_totvs,
-        confidence: result.confidence,
-        total_evidences: result.total_evidences,
-        evidences: result.evidences_by_category,
-        reasoning: result.reasoning,
-        checked_at: result.checked_at
-      });
+    // Salvar resultados na QUARENTENA (icp_analysis_results)
+    console.log(`[SAVE] 💾 Salvando em icp_analysis_results (QUARENTENA)`);
+    console.log(`[SAVE] 📊 Status: ${result.status} | Weight: ${total_weight} | Evidências: ${result.total_evidences}`);
+    
+    const { error: updateError } = await supabase
+      .from('icp_analysis_results')
+      .update({
+        totvs_check_status: result.status,
+        totvs_check_confidence: result.confidence,
+        totvs_check_evidences: result.evidences_by_category,
+        totvs_check_date: result.checked_at,
+        totvs_check_total_weight: total_weight,
+        totvs_check_reasoning: result.reasoning,
+        is_cliente_totvs: result.detected_totvs,
+        totvs_evidences: result.evidences_by_category
+      })
+      .eq('id', company_id);
 
-    if (insertError) {
-      console.error('[SAVE] ⚠️ Erro ao salvar (ignorado):', insertError.message);
+    if (updateError) {
+      console.error('[SAVE] ⚠️ Erro ao atualizar QUARENTENA:', updateError.message);
     } else {
-      console.log('[SAVE] ✅ Salvo com sucesso');
+      console.log('[SAVE] ✅ Salvo na QUARENTENA com sucesso');
     }
 
     console.log(`[SIMPLE-TOTVS] ⚡ Finalizado em ${executionTime}ms - ${status.toUpperCase()}`);

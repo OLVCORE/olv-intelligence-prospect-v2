@@ -4067,7 +4067,12 @@ export type Database = {
           status: string | null
           telefone: string | null
           temperatura: string | null
+          totvs_check_confidence: string | null
           totvs_check_date: string | null
+          totvs_check_evidences: Json | null
+          totvs_check_reasoning: string | null
+          totvs_check_status: string | null
+          totvs_check_total_weight: number | null
           totvs_evidences: Json | null
           uf: string | null
           updated_at: string | null
@@ -4102,7 +4107,12 @@ export type Database = {
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
+          totvs_check_confidence?: string | null
           totvs_check_date?: string | null
+          totvs_check_evidences?: Json | null
+          totvs_check_reasoning?: string | null
+          totvs_check_status?: string | null
+          totvs_check_total_weight?: number | null
           totvs_evidences?: Json | null
           uf?: string | null
           updated_at?: string | null
@@ -4137,7 +4147,12 @@ export type Database = {
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
+          totvs_check_confidence?: string | null
           totvs_check_date?: string | null
+          totvs_check_evidences?: Json | null
+          totvs_check_reasoning?: string | null
+          totvs_check_status?: string | null
+          totvs_check_total_weight?: number | null
           totvs_evidences?: Json | null
           uf?: string | null
           updated_at?: string | null
