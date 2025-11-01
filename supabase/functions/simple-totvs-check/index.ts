@@ -23,6 +23,11 @@ interface CheckResult {
   detected_totvs: boolean;
   confidence: 'high' | 'medium' | 'low';
   total_evidences: number;
+  total_weight: number;
+  match_summary: {
+    triple_matches: number;
+    double_matches: number;
+  };
   evidences_by_category: {
     vagas: Evidence[];
     noticias: Evidence[];
@@ -30,6 +35,8 @@ interface CheckResult {
   };
   reasoning: string;
   checked_at: string;
+  execution_time_ms: number;
+  cache_hit: boolean;
 }
 
 // Sistema de Pesos por Fonte
@@ -43,21 +50,51 @@ const SOURCE_WEIGHTS = {
   google_search: 40
 };
 
-// Produtos TOTVS seguros (não ambíguos)
+// Setores Prioritários TOTVS (Manufatura, Logística, Serviços)
+const PRIORITY_SECTORS = {
+  manufatura: ['manufatura', 'industria', 'industrial', 'fabricação', 'produção'],
+  logistica: ['logística', 'logistica', 'transporte', 'armazenagem', 'distribuição'],
+  servicos: ['serviços', 'servicos', 'consultoria', 'terceirização', 'outsourcing']
+};
+
+// Produtos TOTVS por Setor (para boost de peso)
+const SECTOR_PRODUCTS = {
+  manufatura: ['Protheus', 'Datasul', 'Logix'],
+  logistica: ['Winthor', 'Backoffice', 'TOTVS Cloud'],
+  servicos: ['RM', 'Fluig', 'TOTVS CRM', 'TOTVS RH']
+};
+
+// Produtos TOTVS seguros
 const TOTVS_SAFE_PRODUCTS = [
   'TOTVS', 'Microsiga', 'Protheus', 'Datasul', 'Fluig', 'Winthor', 
   'Logix', 'Backoffice', 'Carol', 'Carol AI', 'Techfin', 'TOTVS Pay',
   'TOTVS CRM', 'TOTVS RH', 'TOTVS BI', 'TOTVS Cloud', 'TOTVS Atende'
 ];
 
-// Produtos ambíguos (precisam de contexto TOTVS)
-const TOTVS_AMBIGUOUS_PRODUCTS = [
-  'RM', 'SFA', 'BPM', 'ECM', 'Workflow'
-];
-
+const TOTVS_AMBIGUOUS_PRODUCTS = ['RM', 'SFA', 'BPM', 'ECM', 'Workflow'];
 const TOTVS_BRAND_TERMS = ['TOTVS', 'Microsiga'];
 
-// ============= FUNÇÕES UTILITÁRIAS =============
+// Função retry com backoff exponencial
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status === 404) return response;
+      
+      if (attempt < maxRetries - 1) {
+        const delay = 1000 * Math.pow(2, attempt);
+        console.log(`[RETRY] Attempt ${attempt + 1}/${maxRetries} failed. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+      const delay = 1000 * Math.pow(2, attempt);
+      console.log(`[RETRY] Error on attempt ${attempt + 1}. Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max retries reached');
+}
 
 function normalizeCompany(name: string): string {
   return name
@@ -79,21 +116,15 @@ function isPersonalProfile(text: string): boolean {
   return personalIndicators.some(term => t.includes(term));
 }
 
-// Validação rigorosa de vaga LinkedIn (apenas vagas ATUAIS da empresa)
 function isValidLinkedInJobPosting(snippet: string, companyName: string): boolean {
   const text = snippet.toLowerCase();
-  
-  // Rejeitar históricos profissionais
   const rejectedTerms = [
     'experiência anterior', 'trabalhou na', 'ex-funcionário', 'atuou em',
     'passou pela', 'ex-', 'anterior', 'trabalhou como'
   ];
   
-  if (rejectedTerms.some(term => text.includes(term))) {
-    return false;
-  }
+  if (rejectedTerms.some(term => text.includes(term))) return false;
   
-  // Deve mencionar empresa, TOTVS e produto no mesmo trecho (100 chars)
   const companyNorm = normalizeCompany(companyName);
   const hasCompany = text.includes(companyNorm);
   const hasTotvs = TOTVS_BRAND_TERMS.some(t => text.includes(t.toLowerCase()));
@@ -103,13 +134,24 @@ function isValidLinkedInJobPosting(snippet: string, companyName: string): boolea
   return hasCompany && hasTotvs && hasProduct;
 }
 
-// Triple Match: Empresa + TOTVS + Produto (mesmos 80 caracteres)
+// Detectar setor prioritário
+function detectPrioritySector(companyName: string, setor?: string): string | null {
+  const text = `${companyName} ${setor || ''}`.toLowerCase();
+  
+  for (const [sector, keywords] of Object.entries(PRIORITY_SECTORS)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return sector;
+    }
+  }
+  return null;
+}
+
+// Triple Match
 function tripleMatch(text: string, companyName: string): { matched: boolean; detectedProducts: string[] } {
   const t = text.toLowerCase();
   const companyNorm = normalizeCompany(companyName);
-  
-  // Dividir em chunks de 80 caracteres
   const chunks: string[] = [];
+  
   for (let i = 0; i < t.length; i += 40) {
     chunks.push(t.substring(i, i + 80));
   }
@@ -123,14 +165,12 @@ function tripleMatch(text: string, companyName: string): { matched: boolean; det
     const hasTotvs = TOTVS_BRAND_TERMS.some(term => chunk.includes(term.toLowerCase()));
     
     if (hasCompany && hasTotvs) {
-      // Detectar produtos no chunk
       for (const product of TOTVS_SAFE_PRODUCTS) {
         if (chunk.includes(product.toLowerCase())) {
           detectedProducts.push(product);
         }
       }
       
-      // Produtos ambíguos (só com contexto TOTVS)
       for (const product of TOTVS_AMBIGUOUS_PRODUCTS) {
         if (chunk.includes(product.toLowerCase()) && hasTotvs) {
           detectedProducts.push(product);
@@ -145,12 +185,12 @@ function tripleMatch(text: string, companyName: string): { matched: boolean; det
   };
 }
 
-// Double Match: Empresa + TOTVS OU Empresa + Produto (mesmos 60 caracteres)
+// Double Match
 function doubleMatch(text: string, companyName: string): { matched: boolean; detectedProducts: string[] } {
   const t = text.toLowerCase();
   const companyNorm = normalizeCompany(companyName);
-  
   const chunks: string[] = [];
+  
   for (let i = 0; i < t.length; i += 30) {
     chunks.push(t.substring(i, i + 60));
   }
@@ -163,13 +203,9 @@ function doubleMatch(text: string, companyName: string): { matched: boolean; det
     
     if (!hasCompany) continue;
     
-    // Empresa + TOTVS
     const hasTotvs = TOTVS_BRAND_TERMS.some(term => chunk.includes(term.toLowerCase()));
-    if (hasTotvs) {
-      detectedProducts.push('TOTVS');
-    }
+    if (hasTotvs) detectedProducts.push('TOTVS');
     
-    // Empresa + Produto TOTVS
     for (const product of TOTVS_SAFE_PRODUCTS) {
       if (chunk.includes(product.toLowerCase())) {
         detectedProducts.push(product);
@@ -183,27 +219,24 @@ function doubleMatch(text: string, companyName: string): { matched: boolean; det
   };
 }
 
-// Apollo.io Tech Stack Check
+// Apollo Tech Stack
 async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evidence[]> {
   if (!domain) return [];
   
-  console.log(`[APOLLO] Verificando tech stack para: ${domain}`);
+  console.log(`[APOLLO] Verificando tech stack: ${domain}`);
   
   try {
-    const response = await fetch('https://api.apollo.io/v1/organizations/search', {
+    const response = await fetchWithRetry('https://api.apollo.io/v1/organizations/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Api-Key': apiKey
       },
-      body: JSON.stringify({
-        domain: domain,
-        reveal_personal_emails: false
-      })
+      body: JSON.stringify({ domain, reveal_personal_emails: false })
     });
     
     if (!response.ok) {
-      console.error('[APOLLO] Erro na API:', response.status);
+      console.error(`[APOLLO] API error: ${response.status}`);
       return [];
     }
     
@@ -226,13 +259,13 @@ async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evi
     }
     
     if (detectedProducts.length > 0) {
-      console.log(`[APOLLO] ✅ Tech stack TOTVS detectado:`, detectedProducts);
+      console.log(`[APOLLO] ✅ TOTVS detectado:`, detectedProducts);
       return [{
         source: 'apollo.io',
         category: 'docs_oficiais',
         title: `Tech Stack: ${detectedProducts.join(', ')}`,
         url: `https://apollo.io/companies/${domain}`,
-        snippet: `Tecnologias TOTVS detectadas no stack da empresa: ${detectedProducts.join(', ')}`,
+        snippet: `Tecnologias TOTVS: ${detectedProducts.join(', ')}`,
         timestamp: new Date().toISOString(),
         totvs_products: detectedProducts,
         match_type: 'triple',
@@ -240,7 +273,6 @@ async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evi
       }];
     }
     
-    console.log('[APOLLO] Nenhum produto TOTVS detectado no tech stack');
     return [];
   } catch (error) {
     console.error('[APOLLO] Erro:', error);
@@ -248,7 +280,7 @@ async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evi
   }
 }
 
-// Busca Serper com matching
+// Busca Serper
 async function searchSerper(
   query: string,
   apiKey: string,
@@ -257,18 +289,13 @@ async function searchSerper(
   weight: number
 ): Promise<Evidence[]> {
   try {
-    const response = await fetch('https://google.serper.dev/search', {
+    const response = await fetchWithRetry('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
         'X-API-KEY': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        q: query,
-        num: 10,
-        gl: 'br',
-        hl: 'pt-br'
-      })
+      body: JSON.stringify({ q: query, num: 10, gl: 'br', hl: 'pt-br' })
     });
     
     if (!response.ok) return [];
@@ -280,14 +307,10 @@ async function searchSerper(
       for (const item of data.organic) {
         const text = `${item.title || ''} ${item.snippet || ''}`;
         
-        // Validação especial para LinkedIn
         if (category === 'vagas' && /linkedin\.com/.test(item.link)) {
-          if (!isValidLinkedInJobPosting(text, companyName)) {
-            continue;
-          }
+          if (!isValidLinkedInJobPosting(text, companyName)) continue;
         }
         
-        // Primeira onda: Triple Match
         const tripleResult = tripleMatch(text, companyName);
         
         if (tripleResult.matched) {
@@ -305,7 +328,6 @@ async function searchSerper(
           continue;
         }
         
-        // Segunda onda: Double Match
         const doubleResult = doubleMatch(text, companyName);
         
         if (doubleResult.matched) {
@@ -318,7 +340,7 @@ async function searchSerper(
             timestamp: new Date().toISOString(),
             totvs_products: doubleResult.detectedProducts,
             match_type: 'double',
-            weight: Math.floor(weight * 0.8) // Peso reduzido para double match
+            weight: Math.floor(weight * 0.8)
           });
         }
       }
@@ -326,12 +348,10 @@ async function searchSerper(
     
     return evidences;
   } catch (error) {
-    console.error(`[SERPER] Erro na busca:`, error);
+    console.error(`[SERPER] Erro:`, error);
     return [];
   }
 }
-
-// ============= SERVIDOR PRINCIPAL =============
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -341,16 +361,15 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { company_id, company_name, cnpj, domain } = await req.json();
+    const { company_id, company_name, cnpj, domain, setor } = await req.json();
 
     if (!company_id || !company_name) {
       throw new Error('company_id e company_name são obrigatórios');
     }
 
     console.log(`[SIMPLE-TOTVS] ========================================`);
-    console.log(`[SIMPLE-TOTVS] Iniciando busca NACIONAL para: ${company_name}`);
-    console.log(`[SIMPLE-TOTVS] Domain: ${domain || 'N/A'} | CNPJ: ${cnpj || 'N/A'}`);
-    console.log(`[SIMPLE-TOTVS] ========================================`);
+    console.log(`[SIMPLE-TOTVS] 🔍 Busca NACIONAL: ${company_name}`);
+    console.log(`[SIMPLE-TOTVS] Domain: ${domain || 'N/A'} | Setor: ${setor || 'N/A'}`);
 
     const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
     const APOLLO_API_KEY = Deno.env.get('APOLLO_API_KEY');
@@ -363,69 +382,99 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const allEvidences: Evidence[] = [];
-    let queriesExecuted = 0;
+    // ========== CACHE (24h) ==========
+    const oneDayAgo = new Date(Date.now() - 24*60*60*1000).toISOString();
+    const { data: cachedCheck } = await supabase
+      .from('simple_totvs_checks')
+      .select('*')
+      .eq('company_id', company_id)
+      .gte('checked_at', oneDayAgo)
+      .order('checked_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // ========== 1. APOLLO TECH STACK (Peso 100) ==========
-    if (domain && APOLLO_API_KEY) {
-      console.log(`[APOLLO] Verificando tech stack...`);
-      const apolloEvidences = await checkApolloTechStack(domain, APOLLO_API_KEY);
-      allEvidences.push(...apolloEvidences);
+    if (cachedCheck) {
+      console.log(`[CACHE] ✅ Cache hit - retornando resultado de ${cachedCheck.checked_at}`);
+      return new Response(JSON.stringify({
+        ...cachedCheck,
+        cache_hit: true,
+        execution_time_ms: Date.now() - startTime
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // ========== 2. VAGAS - LinkedIn, Infojobs, Catho (Peso 70) ==========
-    console.log(`[VAGAS] Buscando vagas em portais nacionais...`);
-    const vagasQuery = `"${company_name}" ("TOTVS Protheus" OR "TOTVS Datasul" OR "TOTVS RM" OR "TOTVS Fluig" OR "sistema TOTVS") (vaga OR requisito OR conhecimento) (site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br)`;
-    const vagasEvidences = await searchSerper(vagasQuery, SERPER_API_KEY, company_name, 'vagas', SOURCE_WEIGHTS.linkedin_jobs);
-    allEvidences.push(...vagasEvidences);
-    queriesExecuted++;
-    console.log(`[VAGAS] ✅ Encontradas ${vagasEvidences.length} evidências`);
+    console.log(`[CACHE] ❌ Cache miss - executando busca completa`);
 
-    // ========== 3. NOTÍCIAS PREMIUM (Peso 80) ==========
-    console.log(`[NOTICIAS-PREMIUM] Buscando em veículos especializados...`);
-    const noticiasQuery = `"${company_name}" ("cliente TOTVS" OR "implementa TOTVS" OR "adota TOTVS" OR "sistema TOTVS") (site:valor.globo.com OR site:exame.com OR site:infomoney.com.br OR site:bloomberglinea.com.br OR site:estadao.com.br/economia)`;
-    const noticiasEvidences = await searchSerper(noticiasQuery, SERPER_API_KEY, company_name, 'noticias', SOURCE_WEIGHTS.premium_news);
-    allEvidences.push(...noticiasEvidences);
-    queriesExecuted++;
-    console.log(`[NOTICIAS-PREMIUM] ✅ Encontradas ${noticiasEvidences.length} evidências`);
+    // Detectar setor prioritário
+    const prioritySector = detectPrioritySector(company_name, setor);
+    if (prioritySector) {
+      console.log(`[SETOR] ⭐ Setor prioritário detectado: ${prioritySector.toUpperCase()}`);
+    }
 
-    // ========== 4. JUDICIAL (Peso 85) ==========
-    console.log(`[JUDICIAL] Buscando processos e documentos judiciais...`);
-    const judicialQuery = `"${company_name}" "TOTVS" (site:jusbrasil.com.br OR site:esaj.tjsp.jus.br OR site:rad.cvm.gov.br OR site:stf.jus.br OR site:pje.tjmg.jus.br)`;
-    const judicialEvidences = await searchSerper(judicialQuery, SERPER_API_KEY, company_name, 'docs_oficiais', SOURCE_WEIGHTS.judicial);
-    allEvidences.push(...judicialEvidences);
-    queriesExecuted++;
-    console.log(`[JUDICIAL] ✅ Encontradas ${judicialEvidences.length} evidências`);
+    // ========== PARALLELIZAÇÃO TOTAL ==========
+    const queries = [
+      // Vagas
+      {
+        query: `"${company_name}" ("TOTVS Protheus" OR "TOTVS Datasul" OR "TOTVS RM" OR "TOTVS Fluig" OR "sistema TOTVS") (vaga OR requisito) (site:linkedin.com OR site:infojobs.com.br OR site:catho.com.br)`,
+        category: 'vagas' as const,
+        weight: SOURCE_WEIGHTS.linkedin_jobs
+      },
+      // Notícias Premium
+      {
+        query: `"${company_name}" ("cliente TOTVS" OR "implementa TOTVS" OR "sistema TOTVS") (site:valor.globo.com OR site:exame.com OR site:infomoney.com.br OR site:bloomberglinea.com.br)`,
+        category: 'noticias' as const,
+        weight: SOURCE_WEIGHTS.premium_news
+      },
+      // Judicial
+      {
+        query: `"${company_name}" "TOTVS" (site:jusbrasil.com.br OR site:esaj.tjsp.jus.br OR site:rad.cvm.gov.br)`,
+        category: 'docs_oficiais' as const,
+        weight: SOURCE_WEIGHTS.judicial
+      },
+      // RI/PDFs
+      {
+        query: `"${company_name}" ("TOTVS" OR "Protheus" OR "Datasul") filetype:pdf (site:rad.cvm.gov.br OR site:b3.com.br)`,
+        category: 'docs_oficiais' as const,
+        weight: SOURCE_WEIGHTS.cvm_ri_docs
+      },
+      // Docs Oficiais
+      {
+        query: `"${company_name}" ("sistema TOTVS" OR "Protheus" OR "Datasul") (site:rad.cvm.gov.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''})`,
+        category: 'docs_oficiais' as const,
+        weight: SOURCE_WEIGHTS.google_search
+      }
+    ];
 
-    // ========== 5. RELAÇÕES COM INVESTIDORES / PDFs (Peso 90) ==========
-    console.log(`[RI-DOCS] Buscando documentos de RI e balanços...`);
-    const riQuery = `"${company_name}" ("TOTVS" OR "Protheus" OR "Datasul") filetype:pdf (site:rad.cvm.gov.br OR site:b3.com.br OR site:ri.totvs.com.br)`;
-    const riEvidences = await searchSerper(riQuery, SERPER_API_KEY, company_name, 'docs_oficiais', SOURCE_WEIGHTS.cvm_ri_docs);
-    allEvidences.push(...riEvidences);
-    queriesExecuted++;
-    console.log(`[RI-DOCS] ✅ Encontradas ${riEvidences.length} evidências`);
+    console.log(`[PARALLEL] 🚀 Executando ${queries.length + 1} buscas em paralelo...`);
 
-    // ========== 6. DOCUMENTOS OFICIAIS (Peso 60) ==========
-    console.log(`[DOCS-OFICIAIS] Buscando em CVM, B3 e site da empresa...`);
-    const docsQuery = `"${company_name}" ("sistema TOTVS" OR "Protheus" OR "Datasul") (site:rad.cvm.gov.br OR site:b3.com.br${domain ? ` OR site:${domain}` : ''})`;
-    const docsEvidences = await searchSerper(docsQuery, SERPER_API_KEY, company_name, 'docs_oficiais', SOURCE_WEIGHTS.google_search);
-    allEvidences.push(...docsEvidences);
-    queriesExecuted++;
-    console.log(`[DOCS-OFICIAIS] ✅ Encontradas ${docsEvidences.length} evidências`);
+    const [apolloEv, ...serperResults] = await Promise.all([
+      domain && APOLLO_API_KEY ? checkApolloTechStack(domain, APOLLO_API_KEY) : Promise.resolve([]),
+      ...queries.map(q => searchSerper(q.query, SERPER_API_KEY, company_name, q.category, q.weight))
+    ]);
 
-    // ========== ANÁLISE DE RESULTADOS ==========
+    const allEvidences = [...apolloEv, ...serperResults.flat()];
+
+    // Boost de peso para setores prioritários
+    if (prioritySector) {
+      const sectorProducts = SECTOR_PRODUCTS[prioritySector as keyof typeof SECTOR_PRODUCTS] || [];
+      allEvidences.forEach(ev => {
+        if (ev.totvs_products.some(p => sectorProducts.includes(p))) {
+          ev.weight = Math.floor((ev.weight || 0) * 1.3); // +30% boost
+          console.log(`[SETOR-BOOST] +30% peso para ${ev.totvs_products.join(', ')} (setor: ${prioritySector})`);
+        }
+      });
+    }
+
     const tripleMatches = allEvidences.filter(e => e.match_type === 'triple');
     const doubleMatches = allEvidences.filter(e => e.match_type === 'double');
     const totalWeight = allEvidences.reduce((sum, e) => sum + (e.weight || 0), 0);
 
     console.log(`\n[RESULTADO] ========================================`);
-    console.log(`[RESULTADO] Triple Matches: ${tripleMatches.length}`);
-    console.log(`[RESULTADO] Double Matches: ${doubleMatches.length}`);
-    console.log(`[RESULTADO] Total de Evidências: ${allEvidences.length}`);
-    console.log(`[RESULTADO] Peso Total: ${totalWeight} pontos`);
+    console.log(`[RESULTADO] Triple: ${tripleMatches.length} | Double: ${doubleMatches.length}`);
+    console.log(`[RESULTADO] Total: ${allEvidences.length} | Peso: ${totalWeight}`);
     console.log(`[RESULTADO] ========================================\n`);
 
-    // Classificação por peso acumulado
     let status: CheckResult['status'] = 'go';
     let confidence: CheckResult['confidence'] = 'low';
     let reasoning = '';
@@ -433,59 +482,55 @@ serve(async (req) => {
     if (totalWeight >= 250) {
       status = 'no-go';
       confidence = 'high';
-      reasoning = `❌ NO-GO (Alta Confiança) - Empresa JÁ USA TOTVS. Peso total: ${totalWeight} pontos com ${allEvidences.length} evidências fortes em múltiplas fontes.`;
+      reasoning = `❌ NO-GO (Alta) - Peso: ${totalWeight} pts, ${allEvidences.length} evidências fortes.`;
     } else if (totalWeight >= 150) {
       status = 'no-go';
       confidence = 'medium';
-      reasoning = `⚠️ NO-GO (Média Confiança) - Empresa provavelmente usa TOTVS. Peso total: ${totalWeight} pontos com ${allEvidences.length} evidências.`;
+      reasoning = `⚠️ NO-GO (Média) - Peso: ${totalWeight} pts, ${allEvidences.length} evidências.`;
     } else if (totalWeight >= 70) {
       status = 'revisar';
       confidence = 'medium';
-      reasoning = `👁️ REVISAR - ${allEvidences.length} evidências encontradas (${tripleMatches.length} triple + ${doubleMatches.length} double). Peso: ${totalWeight}. Análise manual recomendada.`;
+      reasoning = `👁️ REVISAR - ${allEvidences.length} evidências (${tripleMatches.length}T + ${doubleMatches.length}D). Peso: ${totalWeight}.`;
     } else if (allEvidences.length > 0) {
       status = 'revisar';
       confidence = 'low';
-      reasoning = `👁️ REVISAR - Poucas evidências encontradas (${allEvidences.length}). Peso: ${totalWeight}. Validação manual necessária.`;
+      reasoning = `👁️ REVISAR - Poucas evidências (${allEvidences.length}). Peso: ${totalWeight}.`;
     } else {
       status = 'go';
       confidence = 'medium';
-      reasoning = `✅ GO - Nenhuma evidência de uso de TOTVS encontrada nas fontes consultadas (vagas, notícias, judicial, RI, tech stack).`;
+      reasoning = `✅ GO - Nenhuma evidência TOTVS nas fontes consultadas.`;
     }
 
-    // Organizar evidências por categoria
     const evidencesByCategory: CheckResult['evidences_by_category'] = {
       vagas: allEvidences.filter(e => e.category === 'vagas'),
       noticias: allEvidences.filter(e => e.category === 'noticias'),
       docs_oficiais: allEvidences.filter(e => e.category === 'docs_oficiais')
     };
 
+    const executionTime = Date.now() - startTime;
+
     const result: CheckResult = {
       status,
       detected_totvs: allEvidences.length > 0,
       confidence,
       total_evidences: allEvidences.length,
+      total_weight: totalWeight,
+      match_summary: {
+        triple_matches: tripleMatches.length,
+        double_matches: doubleMatches.length
+      },
       evidences_by_category: evidencesByCategory,
       reasoning,
-      checked_at: new Date().toISOString()
+      checked_at: new Date().toISOString(),
+      execution_time_ms: executionTime,
+      cache_hit: false
     };
 
-    // Salvar no banco
-    let companyIdToSave: string | null = company_id;
-    if (company_id) {
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('id', company_id)
-        .maybeSingle();
-      if (!existingCompany) {
-        companyIdToSave = null;
-      }
-    }
-
+    // Salvar no banco (mesmo que company_id não exista na tabela companies)
     const { error: insertError } = await supabase
       .from('simple_totvs_checks')
       .insert({
-        company_id: companyIdToSave,
+        company_id,
         status: result.status,
         detected_totvs: result.detected_totvs,
         confidence: result.confidence,
@@ -496,26 +541,22 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error('[SAVE] Erro ao salvar resultado:', insertError);
+      console.error('[SAVE] ⚠️ Erro ao salvar (ignorado):', insertError.message);
     } else {
-      console.log('[SAVE] ✅ Resultado salvo com sucesso');
+      console.log('[SAVE] ✅ Salvo com sucesso');
     }
 
-    const executionTime = Date.now() - startTime;
-    console.log(`[SIMPLE-TOTVS] Finalizado em ${executionTime}ms - Status: ${status}`);
+    console.log(`[SIMPLE-TOTVS] ⚡ Finalizado em ${executionTime}ms - ${status.toUpperCase()}`);
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('[ERROR] Erro em simple-totvs-check:', error);
+    console.error('[ERROR]', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
