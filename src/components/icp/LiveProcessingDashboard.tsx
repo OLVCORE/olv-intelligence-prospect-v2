@@ -225,8 +225,10 @@ export default function LiveProcessingDashboard({ empresas, onComplete }: LivePr
         
         const { data, error } = await supabase.functions.invoke('icp-scraper-real', {
           body: { 
-            cnpj: empresa.cnpj, 
-            razao_social: empresa.razao_social 
+            empresa: empresa.razao_social,
+            cnpj: empresa.cnpj,
+            domain: '',
+            analysis_id: empresa.id
           }
         });
         
