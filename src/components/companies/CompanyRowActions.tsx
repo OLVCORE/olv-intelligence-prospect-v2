@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
+import { ExecutiveReportModal } from '@/components/reports/ExecutiveReportModal';
 
 interface CompanyRowActionsProps {
   company: any;
@@ -48,6 +49,7 @@ export function CompanyRowActions({
   const navigate = useNavigate();
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichingAction, setEnrichingAction] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   const handleEnrich = async (action: string, fn: () => Promise<void>) => {
     try {
@@ -102,7 +104,7 @@ export function CompanyRowActions({
 
         {/* Relatório Executivo */}
         <DropdownMenuItem 
-          onClick={() => navigate(`/reports?companyId=${company.id}`)}
+          onClick={() => setShowReport(true)}
           className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
           <FileText className="h-4 w-4 mr-2" />
@@ -228,6 +230,12 @@ export function CompanyRowActions({
           Excluir
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {/* Modal de Relatório Executivo */}
+      <ExecutiveReportModal 
+        open={showReport} 
+        onOpenChange={setShowReport} 
+        companyId={company.id}
+      />
     </DropdownMenu>
   );
 }

@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
+import { QuarantineReportModal } from '@/components/icp/QuarantineReportModal';
 
 interface QuarantineRowActionsProps {
   company: any;
@@ -45,6 +46,7 @@ export function QuarantineRowActions({
   const [isOpen, setIsOpen] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichingAction, setEnrichingAction] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
   const navigate = useNavigate();
 
   const handleApprove = () => {
@@ -162,13 +164,10 @@ export function QuarantineRowActions({
           Executar TOTVS Check
         </DropdownMenuItem>
 
-        {/* Ver Relatório TOTVS */}
+        {/* Ver Relatório TOTVS (Modal) */}
         <DropdownMenuItem 
           onClick={() => {
-            const name = encodeURIComponent(company.razao_social || 'Empresa');
-            const cnpj = encodeURIComponent(company.cnpj || '');
-            const domain = encodeURIComponent(company.domain || '');
-            navigate(`/leads/icp-quarantine/report/${company.id}?name=${name}&cnpj=${cnpj}&domain=${domain}`);
+            setShowReport(true);
             setIsOpen(false);
           }}
           className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
@@ -337,8 +336,16 @@ export function QuarantineRowActions({
           Deletar Permanentemente
         </DropdownMenuItem>
       </DropdownMenuContent>
-      
-      {/* Dialog removido aqui: navegação para subpágina dedicada */}
+
+      {/* Modal de Relatório (Quarentena) */}
+      <QuarantineReportModal 
+        open={showReport}
+        onOpenChange={setShowReport}
+        analysisId={company.id}
+        companyName={company.razao_social || 'Empresa'}
+        cnpj={company.cnpj}
+        domain={company.domain || company.website}
+      />
     </DropdownMenu>
   );
 }
