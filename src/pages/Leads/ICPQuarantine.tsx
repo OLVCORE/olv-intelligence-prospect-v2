@@ -75,8 +75,6 @@ export default function ICPQuarantine() {
             ...rawData,
             receita_federal: data,
           },
-          // Atualizar status para ativo se era pendente
-          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
@@ -125,8 +123,6 @@ export default function ICPQuarantine() {
             ...rawData,
             apollo: data,
           },
-          // Atualizar status para ativo se era pendente
-          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
@@ -225,7 +221,6 @@ export default function ICPQuarantine() {
               cnpj: analysis.cnpj,
               domain: rawData.domain || null,
               website: rawData.domain || null,
-              source: 'icp_quarantine',
             })
             .select('id')
             .single();
@@ -256,8 +251,6 @@ export default function ICPQuarantine() {
             ...rawData,
             enrichment_360: data,
           },
-          // Atualizar status para ativo se era pendente
-          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
