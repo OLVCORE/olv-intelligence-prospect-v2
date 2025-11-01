@@ -66,7 +66,6 @@ export function useQuarantineCompanies(filters?: {
           companies(
             id,
             cnpj_status,
-            status,
             domain,
             website
           )
@@ -92,7 +91,6 @@ export function useQuarantineCompanies(filters?: {
         return {
           ...item,
           cnpj_status: companyData.cnpj_status,
-          company_status: companyData.status,
           domain: companyData.domain || item.domain,
           website: companyData.website || item.website,
         };
