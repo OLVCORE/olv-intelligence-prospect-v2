@@ -74,54 +74,8 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
         } as any;
       }
 
-      // 2) Fallback INTELIGENTE para registros da QUARENTENA (icp_analysis_results) - apenas V2
-      console.log(`[HOOK] Cache V2 não encontrado, tentando fallback quarentena...`);
-      const { data: q, error: qErr } = await supabase
-        .from('icp_analysis_results')
-        .select(`
-          id, 
-          totvs_check_status,
-          totvs_check_confidence,
-          totvs_check_evidences,
-          totvs_check_date,
-          totvs_check_total_weight,
-          totvs_check_reasoning,
-          is_cliente_totvs,
-          totvs_evidences,
-          updated_at,
-          logic_version
-        `)
-        .eq('id', companyId)
-        .gte('logic_version', 2)
-        .maybeSingle();
-
-      if (qErr) {
-        console.warn('Fallback QUARENTENA falhou:', qErr);
-        return null;
-      }
-
-      if (!q) return null;
-
-      // Se tiver dados do STC completo (novas colunas), usar eles
-      if (q.totvs_check_status) {
-        const evidences = q.totvs_check_evidences || { vagas: [], noticias: [], docs_oficiais: [] };
-        const total = Object.values(evidences).flat().length;
-        
-        return {
-          company_id: companyId,
-          status: q.totvs_check_status,
-          confidence: q.totvs_check_confidence,
-          total_evidences: total,
-          evidences_by_category: evidences,
-          total_weight: q.totvs_check_total_weight,
-          reasoning: q.totvs_check_reasoning,
-          checked_at: q.totvs_check_date || new Date().toISOString(),
-          detected_totvs: q.totvs_check_status === 'no-go',
-          source: 'quarantine_fallback'
-        } as any;
-      }
-
-      // Sem verificação STC = retornar null (não criar status falso)
+      // 2) Sem cache V2 = retornar null (não usar dados V1 da quarentena)
+      console.log(`[HOOK] ❌ Sem cache V2 para ${companyId} - retornando null para forçar nova verificação`);
       return null;
     },
     enabled: !!companyId,

@@ -69,7 +69,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [autoCheckAttempted] = useState(true); // bloqueia auto-disparo por padrão
+  const [autoCheckAttempted, setAutoCheckAttempted] = useState(false);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>(() => {
     const saved = localStorage.getItem(`stc:filter:${companyId}`);
     return (saved === 'triple' || saved === 'all') ? (saved as any) : 'all';
@@ -91,18 +91,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
       return;
     }
 
-    // Guarda anti-gasto: cooldown de 5 minutos por empresa
-    const key = `stc:last:${companyId}`;
-    const last = Number(localStorage.getItem(key) || '0');
-    const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutos
-    const elapsed = Date.now() - last;
-    if (elapsed < COOLDOWN_MS) {
-      const mins = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
-      toast.info(`Aguarde ${mins} min para nova verificação`, { duration: 4000 });
-      return;
-    }
-    localStorage.setItem(key, String(Date.now()));
-
+    setAutoCheckAttempted(true);
     checkMutation.mutate({
       companyId,
       companyName,
@@ -406,10 +395,13 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
   const isLoading = isLoadingLatest || checkMutation.isPending;
 
-  // Desabilitado: sem auto-disparo para não consumir créditos
+  // Auto-disparo apenas se não houver dados V2 válidos
   useEffect(() => {
-    // Intencionalmente vazio
-  }, []);
+    if (!autoCheckAttempted && !isLoadingLatest && !checkMutation.isPending && !latestCheck && companyId && cnpj) {
+      console.log(`[STC Card] 🔄 Sem dados V2 - disparando verificação automaticamente para ${companyName}`);
+      handleCheck();
+    }
+  }, [autoCheckAttempted, isLoadingLatest, checkMutation.isPending, latestCheck, companyId, cnpj, companyName]);
 
   return (
     <Card className="p-6">
