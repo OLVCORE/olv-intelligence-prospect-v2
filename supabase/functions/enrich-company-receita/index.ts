@@ -232,7 +232,6 @@ serve(async (req) => {
     if (receitaData.uf) updateData.headquarters_state = receitaData.uf;
     if (receitaData.municipio) updateData.headquarters_city = receitaData.municipio;
     if (receitaData.atividade_principal?.[0]?.text) updateData.industry = receitaData.atividade_principal[0].text;
-    if (receitaData.porte) updateData.size = receitaData.porte;
 
     // Atualizar empresa no banco
     const { data: updatedCompany, error: updateError } = await supabase
