@@ -528,7 +528,7 @@ serve(async (req) => {
 
     // Salvar resultados na QUARENTENA (icp_analysis_results)
     console.log(`[SAVE] 💾 Salvando em icp_analysis_results (QUARENTENA)`);
-    console.log(`[SAVE] 📊 Status: ${result.status} | Weight: ${total_weight} | Evidências: ${result.total_evidences}`);
+    console.log(`[SAVE] 📊 Status: ${result.status} | Weight: ${totalWeight} | Evidências: ${result.total_evidences}`);
     
     const { error: updateError } = await supabase
       .from('icp_analysis_results')
@@ -537,7 +537,7 @@ serve(async (req) => {
         totvs_check_confidence: result.confidence,
         totvs_check_evidences: result.evidences_by_category,
         totvs_check_date: result.checked_at,
-        totvs_check_total_weight: total_weight,
+        totvs_check_total_weight: totalWeight,
         totvs_check_reasoning: result.reasoning,
         is_cliente_totvs: result.detected_totvs,
         totvs_evidences: result.evidences_by_category
