@@ -475,6 +475,21 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
             const tripleCount = allEvidences.filter(ev => ev.match_type === 'triple').length;
             const doubleCount = allEvidences.filter(ev => ev.match_type === 'double').length;
             
+            // Alerta se dados antigos (sem match_type)
+            if (tripleCount === 0 && doubleCount === 0 && allEvidences.length > 0) {
+              return (
+                <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Dados antigos detectados (cache 24h).</strong>
+                    <p className="text-xs mt-1">
+                      Clique em "Atualizar Verificação" acima para ver os filtros Triple/Double Match e a nova análise.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            
             if (tripleCount === 0 && doubleCount === 0) return null;
             
             return (
