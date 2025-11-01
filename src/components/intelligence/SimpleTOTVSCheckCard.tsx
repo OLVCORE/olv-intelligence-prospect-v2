@@ -69,7 +69,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [autoCheckAttempted, setAutoCheckAttempted] = useState(true);
+  const [autoCheckAttempted] = useState(true); // bloqueia auto-disparo por padrão
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
   // Resultado a exibir: prioriza o retorno imediato da mutação
   const viewCheck = (checkMutation.data as any) || latestCheck as any;
@@ -398,13 +398,10 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
   const isLoading = isLoadingLatest || checkMutation.isPending;
 
-  // Auto-executar uma única vez quando não há resultado anterior
+  // Desabilitado: sem auto-disparo para não consumir créditos
   useEffect(() => {
-    if (!autoCheckAttempted && !isLoadingLatest && !checkMutation.isPending && !latestCheck && companyId && companyName) {
-      setAutoCheckAttempted(true);
-      handleCheck();
-    }
-  }, [autoCheckAttempted, isLoadingLatest, checkMutation.isPending, latestCheck, companyId, companyName]);
+    // Intencionalmente vazio
+  }, []);
 
   return (
     <Card className="p-6">

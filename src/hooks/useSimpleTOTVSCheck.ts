@@ -123,9 +123,10 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       return null;
     },
     enabled: !!companyId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always'
+    staleTime: 5 * 60 * 1000, // 5min para evitar refetchs agressivos
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 }
 
