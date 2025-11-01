@@ -184,17 +184,34 @@ export default function TOTVSCheckCard({
       {filteredEvidences.length > 0 ? (
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {filteredEvidences.map((evidence: any, index: number) => (
-            <div key={index} className="border rounded-lg p-3 hover:bg-accent/50">
+            <div key={index} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'}>
                   {evidence.match_type === 'triple' ? '🎯 TRIPLE' : '🔍 DOUBLE'}
                 </Badge>
                 <Badge variant="outline" className="text-xs">
-                  {evidence.source} ({evidence.weight} pts)
+                  {evidence.source_name || evidence.source} ({evidence.weight} pts)
                 </Badge>
               </div>
+              
+              {/* INTENÇÃO DE COMPRA */}
+              {evidence.has_intent && (
+                <div className="mb-2">
+                  <Badge variant="destructive" className="text-xs">
+                    🔥 INTENÇÃO DE COMPRA
+                  </Badge>
+                  {evidence.intent_keywords && evidence.intent_keywords.length > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {evidence.intent_keywords.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <p className="text-sm font-medium mb-1">{evidence.title}</p>
               <p className="text-sm text-muted-foreground mb-2">{evidence.content}</p>
+              
+              {/* PRODUTOS DETECTADOS */}
               {evidence.detected_products?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {evidence.detected_products.map((product: string) => (
@@ -204,6 +221,7 @@ export default function TOTVSCheckCard({
                   ))}
                 </div>
               )}
+              
               <a
                 href={evidence.url}
                 target="_blank"

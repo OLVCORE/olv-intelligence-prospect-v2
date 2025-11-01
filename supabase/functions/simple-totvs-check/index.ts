@@ -7,20 +7,49 @@ const corsHeaders = {
 };
 
 const TOTVS_PRODUCTS = [
+  // Produtos Principais
   'Protheus', 'RM', 'Datasul', 'Fluig', 'Winthor', 'Microsiga',
   'TOTVS Gestão', 'TOTVS ERP', 'Carol', 'Techfin', 'Logix',
   'TOTVS Backoffice', 'TOTVS Manufatura', 'TOTVS Varejo',
-  'TOTVS Educacional', 'TOTVS Saúde'
+  'TOTVS Educacional', 'TOTVS Saúde',
+  // Fluig (Foco Especial)
+  'Fluig Platform', 'Fluig ECM', 'Fluig BPM',
+  // Variações
+  'ERP TOTVS', 'Sistema TOTVS', 'Solução TOTVS'
+];
+
+// SEGMENTOS ICP (Foco Manufatura e Serviços)
+const ICP_SEGMENTS = [
+  'manufatura', 'indústria', 'fabricante', 'industrial',
+  'serviços', 'distribuidor', 'distribuição', 'logística',
+  'comércio', 'varejo', 'atacado', 'agronegócio'
+];
+
+// KEYWORDS DE INTENÇÃO DE COMPRA
+const INTENT_KEYWORDS = [
+  'implementou', 'implantou', 'adotou', 'contratou',
+  'migrou para', 'substituiu', 'escolheu',
+  'firmou parceria', 'acordo com', 'contrato com',
+  'investimento em', 'modernização', 'transformação digital',
+  'memorando de intenção', 'acordo de intenção'
 ];
 
 const SOURCE_WEIGHTS = {
-  apollo_tech_stack: 100,
-  cvm_ri_docs: 90,
-  judicial: 85,
-  premium_news: 80,
-  linkedin_jobs: 70,
-  google_news: 60,
-  google_search: 40
+  // TIER 1: Documentos Oficiais (Máxima Confiança)
+  cvm_ri_docs: 100,           // Relações com Investidores
+  cvm_balancetes: 95,         // Balanços e demonstrativos
+  apollo_tech_stack: 90,      // Stack tecnológico
+  // TIER 2: Notícias Premium (Alta Confiança)
+  premium_news: 85,           // Valor, Exame, Estadão
+  tech_news: 80,              // Convergência Digital, Canaltech
+  // TIER 3: Documentos Públicos (Média-Alta Confiança)
+  judicial: 75,               // Processos judiciais
+  memorandos: 70,             // Memorandos de intenção
+  // TIER 4: Vagas e Redes Sociais (Média Confiança)
+  linkedin_jobs: 60,          // Vagas LinkedIn
+  google_news: 50,            // Notícias gerais
+  // TIER 5: Busca Geral (Baixa Confiança)
+  google_search: 30           // Busca genérica
 };
 
 // VALIDAÇÃO ULTRA-RESTRITA: Empresa + TOTVS + Produto no MESMO TEXTO
@@ -412,42 +441,277 @@ serve(async (req) => {
           console.error(`[SIMPLE-TOTVS] ❌ Erro em ${source}:`, error);
         }
       }
+
+      // 5. DOCUMENTOS CVM/RI (TIER 1 - Máxima Confiança)
+      console.log('[SIMPLE-TOTVS] 📄 Buscando documentos CVM/RI...');
+      totalQueries++;
+
+      try {
+        const cvmResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: `${shortSearchTerm} TOTVS (site:rad.cvm.gov.br OR site:ri.totvs.com OR filetype:pdf)`,
+            num: 10,
+            gl: 'br',
+            hl: 'pt-br'
+          }),
+        });
+
+        if (cvmResponse.ok) {
+          const cvmData = await cvmResponse.json();
+          const results = cvmData.organic || [];
+
+          for (const result of results) {
+            const snippet = result.snippet || '';
+            const title = result.title || '';
+            
+            const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+            
+            if (!validation.valid) {
+              continue;
+            }
+            
+            // DETECTAR INTENÇÃO DE COMPRA
+            const hasIntent = INTENT_KEYWORDS.some(k => 
+              `${title} ${snippet}`.toLowerCase().includes(k)
+            );
+            
+            evidencias.push({
+              source: result.link.includes('cvm.gov.br') ? 'cvm_ri_docs' : 'cvm_balancetes',
+              source_name: result.link.includes('cvm.gov.br') ? 'CVM/RI' : 'Balanços',
+              weight: result.link.includes('cvm.gov.br') ? 
+                      SOURCE_WEIGHTS.cvm_ri_docs : 
+                      SOURCE_WEIGHTS.cvm_balancetes,
+              match_type: validation.matchType,
+              content: snippet,
+              url: result.link,
+              title: title,
+              detected_products: validation.produtos,
+              has_intent: hasIntent,
+              intent_keywords: hasIntent ? 
+                INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                []
+            });
+            
+            console.log(`[SIMPLE-TOTVS] ✅ CVM/RI: ${validation.matchType.toUpperCase()}`, 
+                        title.substring(0, 50));
+          }
+        }
+      } catch (error) {
+        console.error('[SIMPLE-TOTVS] ❌ Erro CVM/RI:', error);
+      }
+
+      // 6. NOTÍCIAS PREMIUM EXPANDIDAS (TIER 2 - Alta Confiança)
+      console.log('[SIMPLE-TOTVS] 📰 Buscando notícias premium expandidas...');
+
+      const premiumSourcesExpanded = [
+        { domain: 'valor.globo.com', name: 'Valor Econômico' },
+        { domain: 'exame.com', name: 'Exame' },
+        { domain: 'estadao.com.br', name: 'Estadão' },
+        { domain: 'istoedinheiro.com.br', name: 'IstoÉ Dinheiro' },
+        { domain: 'infomoney.com.br', name: 'InfoMoney' },
+        { domain: 'convergenciadigital.com.br', name: 'Convergência Digital' },
+        { domain: 'canaltech.com.br', name: 'Canaltech' }
+      ];
+
+      for (const source of premiumSourcesExpanded) {
+        totalQueries++;
+        
+        try {
+          const premiumResponse = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              q: `${shortSearchTerm} TOTVS site:${source.domain}`,
+              num: 5,
+              gl: 'br',
+              hl: 'pt-br',
+              tbs: 'qdr:y5'  // Últimos 5 anos
+            }),
+          });
+
+          if (premiumResponse.ok) {
+            const premiumData = await premiumResponse.json();
+            const results = premiumData.organic || [];
+
+            for (const result of results) {
+              const snippet = result.snippet || '';
+              const title = result.title || '';
+              
+              const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+              
+              if (!validation.valid) {
+                continue;
+              }
+              
+              // DETECTAR INTENÇÃO DE COMPRA
+              const hasIntent = INTENT_KEYWORDS.some(k => 
+                `${title} ${snippet}`.toLowerCase().includes(k)
+              );
+              
+              evidencias.push({
+                source: source.domain.includes('convergencia') || source.domain.includes('canaltech') ? 
+                        'tech_news' : 'premium_news',
+                source_name: source.name,
+                weight: source.domain.includes('convergencia') || source.domain.includes('canaltech') ? 
+                        SOURCE_WEIGHTS.tech_news : 
+                        SOURCE_WEIGHTS.premium_news,
+                match_type: validation.matchType,
+                content: snippet,
+                url: result.link,
+                title: title,
+                detected_products: validation.produtos,
+                has_intent: hasIntent,
+                intent_keywords: hasIntent ? 
+                  INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                  []
+              });
+              
+              console.log(`[SIMPLE-TOTVS] ✅ ${source.name}: ${validation.matchType.toUpperCase()}`, 
+                          title.substring(0, 50));
+            }
+          }
+        } catch (error) {
+          console.error(`[SIMPLE-TOTVS] ❌ Erro ${source.name}:`, error);
+        }
+      }
+
+      // 7. MEMORANDOS E ACORDOS (TIER 3 - Média-Alta Confiança)
+      console.log('[SIMPLE-TOTVS] 📋 Buscando memorandos e acordos...');
+      totalQueries++;
+
+      try {
+        const memorandoResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: `${shortSearchTerm} TOTVS ("memorando de intenção" OR "acordo de intenção" OR "contrato" OR "parceria")`,
+            num: 10,
+            gl: 'br',
+            hl: 'pt-br',
+            tbs: 'qdr:y3'  // Últimos 3 anos
+          }),
+        });
+
+        if (memorandoResponse.ok) {
+          const memorandoData = await memorandoResponse.json();
+          const results = memorandoData.organic || [];
+
+          for (const result of results) {
+            const snippet = result.snippet || '';
+            const title = result.title || '';
+            
+            const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+            
+            if (!validation.valid) {
+              continue;
+            }
+            
+            // DETECTAR INTENÇÃO DE COMPRA (ALTA PRIORIDADE)
+            const hasIntent = INTENT_KEYWORDS.some(k => 
+              `${title} ${snippet}`.toLowerCase().includes(k)
+            );
+            
+            evidencias.push({
+              source: 'memorandos',
+              source_name: 'Memorandos',
+              weight: SOURCE_WEIGHTS.memorandos,
+              match_type: validation.matchType,
+              content: snippet,
+              url: result.link,
+              title: title,
+              detected_products: validation.produtos,
+              has_intent: hasIntent,
+              intent_keywords: hasIntent ? 
+                INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                []
+            });
+            
+            console.log(`[SIMPLE-TOTVS] ✅ Memorando: ${validation.matchType.toUpperCase()}`, 
+                        title.substring(0, 50));
+          }
+        }
+      } catch (error) {
+        console.error('[SIMPLE-TOTVS] ❌ Erro Memorandos:', error);
+      }
     }
 
     const tripleMatches = evidencias.filter(e => e.match_type === 'triple').length;
     const doubleMatches = evidencias.filter(e => e.match_type === 'double').length;
-    const totalWeight = evidencias.reduce((sum, e) => sum + e.weight, 0);
+    
+    // CALCULAR SCORE PONDERADO
+    let totalScore = 0;
+    let hasHighConfidenceSource = false;
+    let hasIntentEvidence = false;
+
+    for (const evidencia of evidencias) {
+      totalScore += evidencia.weight;
+      
+      // TIER 1 (CVM, RI, Balanços)
+      if (evidencia.weight >= 90) {
+        hasHighConfidenceSource = true;
+      }
+      
+      // TEM INTENÇÃO DE COMPRA?
+      if (evidencia.has_intent) {
+        hasIntentEvidence = true;
+        totalScore += 20;  // BONUS por intenção
+      }
+    }
+
     const numEvidencias = evidencias.length;
 
+    // CLASSIFICAÇÃO INTELIGENTE
     let status: string;
     let confidence: string;
 
-    // NOVA LÓGICA: Baseada no número total de evidências
-    if (numEvidencias >= 3) {
-      status = 'no-go';      // 3+ evidências = USA TOTVS
+    if (hasHighConfidenceSource && numEvidencias >= 2) {
+      // CVM/RI + outra evidência = CERTEZA
+      status = 'no-go';
       confidence = 'high';
-    } else if (numEvidencias >= 2) {
-      status = 'no-go';      // 2 evidências = PROVÁVEL USO
+    } else if (totalScore >= 200) {
+      // Score alto = Cliente TOTVS
+      status = 'no-go';
+      confidence = 'high';
+    } else if (totalScore >= 120) {
+      // Score médio-alto = Provável cliente
+      status = 'no-go';
+      confidence = 'medium';
+    } else if (numEvidencias >= 2 || hasIntentEvidence) {
+      // 2+ evidências OU intenção de compra = Investigar
+      status = 'revisar';
       confidence = 'medium';
     } else if (numEvidencias >= 1) {
-      status = 'revisar';    // 1 evidência = INVESTIGAR
+      // 1 evidência = Revisar
+      status = 'revisar';
       confidence = 'low';
     } else {
-      status = 'go';         // 0 evidências = NÃO USA
+      // 0 evidências = Não usa TOTVS
+      status = 'go';
       confidence = 'low';
     }
+
+    console.log('[SIMPLE-TOTVS] 📊 Classificação:', {
+      status,
+      confidence,
+      totalScore,
+      numEvidencias,
+      hasHighConfidenceSource,
+      hasIntentEvidence
+    });
 
     const executionTime = Date.now() - startTime;
 
     console.log('[SIMPLE-TOTVS] 📊 Resultado:', {
-      status, confidence, tripleMatches, doubleMatches, totalWeight,
+      status, confidence, tripleMatches, doubleMatches, totalScore,
       evidencias: evidencias.length, executionTime: `${executionTime}ms`
     });
 
     const resultado = {
       status,
       confidence,
-      total_weight: totalWeight,
+      total_weight: totalScore,
       triple_matches: tripleMatches,
       double_matches: doubleMatches,
       match_summary: { triple_matches: tripleMatches, double_matches: doubleMatches },
@@ -466,7 +730,7 @@ serve(async (req) => {
         .from('simple_totvs_checks')
         .upsert({
           company_id, company_name, cnpj, domain, status, confidence,
-          total_weight: totalWeight, triple_matches: tripleMatches,
+          total_weight: totalScore, triple_matches: tripleMatches,
           double_matches: doubleMatches, evidences: evidencias,
           checked_at: new Date().toISOString(),
         });
