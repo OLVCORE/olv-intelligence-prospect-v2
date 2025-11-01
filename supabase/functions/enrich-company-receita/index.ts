@@ -160,18 +160,55 @@ serve(async (req) => {
       }
     }
 
-    // Se todas as tentativas falharam
+    // Se todas as tentativas falharam - tentar fallback BrasilAPI antes de falhar
     if (!receitaData) {
-      console.error('[Enrich Receita] ❌ Todas as tentativas falharam');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Erro ao consultar ReceitaWS após múltiplas tentativas',
-          status: lastError?.status || 500,
-          details: lastError?.message || 'Erro desconhecido'
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.warn('[Enrich Receita] Tentando fallback BrasilAPI...');
+      try {
+        const brasilApiUrl = `https://brasilapi.com.br/api/cnpj/v1/${cnpjClean}`;
+        const brasilResp = await fetch(brasilApiUrl, { headers: { 'Content-Type': 'application/json' } });
+        if (brasilResp.ok) {
+          const b = await brasilResp.json();
+          receitaData = {
+            status: b.descricao_situacao_cadastral || 'OK',
+            uf: b.uf || b.estado,
+            municipio: b.municipio || b.cidade,
+            bairro: b.bairro || '',
+            logradouro: b.logradouro || '',
+            numero: b.numero?.toString?.() || '',
+            complemento: b.complemento || '',
+            cep: (b.cep || '').toString(),
+            atividade_principal: b.cnae_fiscal
+              ? [{ code: String(b.cnae_fiscal), text: b.cnae_fiscal_descricao || '' }]
+              : [],
+            atividades_secundarias: Array.isArray(b.cnaes_secundarios)
+              ? b.cnaes_secundarios.map((i: any) => ({ code: String(i.codigo || i.code || ''), text: i.descricao || i.text || '' }))
+              : [],
+            natureza_juridica: b.natureza_juridica || '',
+            porte: b.porte || b.porte_empresa || ''
+          } as ReceitaWSResponse;
+          console.log('[Enrich Receita] ✅ Fallback BrasilAPI bem-sucedido');
+        } else {
+          console.error('[Enrich Receita] Fallback BrasilAPI falhou com status', brasilResp.status);
+          lastError = { status: brasilResp.status, message: 'BrasilAPI falhou' };
+        }
+      } catch (err) {
+        console.error('[Enrich Receita] Erro no fallback BrasilAPI:', err);
+        lastError = err;
+      }
+
+      if (!receitaData) {
+        const statusCode = lastError?.status === 429 ? 429 : 500;
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Erro ao consultar fontes de CNPJ',
+            status: lastError?.status || statusCode,
+            details: lastError?.message || 'Erro desconhecido',
+            provider: 'receitaws|brasilapi'
+          }),
+          { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Se não tem company_id, retornar apenas os dados da ReceitaWS
