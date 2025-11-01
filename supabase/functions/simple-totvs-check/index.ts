@@ -119,6 +119,29 @@ serve(async (req) => {
     }
 
     const searchTerm = company_name || cnpj;
+    
+    // Extrair nome curto (remover sufixos corporativos)
+    const extractShortName = (fullName: string): string => {
+      if (!fullName) return fullName;
+      
+      const corporateSuffixes = [
+        ' S.A.', ' S/A', ' SA ', ' LTDA', ' EIRELI', ' EPP', ' ME',
+        ' Indústrias', ' Indústria', ' Comércio', ' Serviços',
+        ' Participações', ' Holdings'
+      ];
+      
+      let shortName = fullName;
+      for (const suffix of corporateSuffixes) {
+        const regex = new RegExp(suffix + '.*$', 'i');
+        shortName = shortName.replace(regex, '').trim();
+      }
+      
+      return shortName;
+    };
+    
+    const shortSearchTerm = company_name ? extractShortName(company_name) : searchTerm;
+    console.log('[SIMPLE-TOTVS] 🔍 Termo de busca completo:', searchTerm);
+    console.log('[SIMPLE-TOTVS] 🔍 Termo de busca curto:', shortSearchTerm);
 
     if (company_id) {
       const { data: cached } = await supabase
@@ -147,7 +170,7 @@ serve(async (req) => {
       totalQueries++;
 
       try {
-        const linkedinQuery = `${searchTerm} TOTVS site:linkedin.com/jobs`;
+        const linkedinQuery = `${shortSearchTerm} TOTVS site:linkedin.com/jobs`;
         console.log('[SIMPLE-TOTVS] 🔍 Query LinkedIn:', linkedinQuery);
         
         const serperResponse = await fetch('https://google.serper.dev/search', {
@@ -164,6 +187,14 @@ serve(async (req) => {
           const results = serperData.organic || [];
           console.log('[SIMPLE-TOTVS] 📊 LinkedIn - Raw results:', results.length);
           
+          // LOG DETALHADO: Mostrar os primeiros 3 títulos
+          if (results.length > 0) {
+            console.log('[SIMPLE-TOTVS] 🔍 LinkedIn - Sample titles:');
+            results.slice(0, 3).forEach((r: any, i: number) => {
+              console.log(`  ${i + 1}. ${r.title?.substring(0, 80)}`);
+            });
+          }
+          
           let validLinkedInCount = 0;
 
           for (const result of results) {
@@ -176,8 +207,13 @@ serve(async (req) => {
               continue;
             }
 
-            const isTriple = tripleMatch(combined, searchTerm);
-            const isDouble = !isTriple && doubleMatch(combined, searchTerm);
+            const isTriple = tripleMatch(combined, shortSearchTerm);
+            const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
+
+            // LOG: Mostrar por que foi rejeitado
+            if (!isTriple && !isDouble) {
+              console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (sem match): ${title.substring(0, 60)}`);
+            }
 
             if (isTriple || isDouble) {
               validLinkedInCount++;
@@ -203,7 +239,7 @@ serve(async (req) => {
       totalQueries++;
 
       try {
-        const newsQuery = `${searchTerm} TOTVS`;
+        const newsQuery = `${shortSearchTerm} TOTVS`;
         console.log('[SIMPLE-TOTVS] 🔍 Query News:', newsQuery);
         
         const newsResponse = await fetch('https://google.serper.dev/news', {
@@ -217,13 +253,21 @@ serve(async (req) => {
           const news = newsData.news || [];
           console.log('[SIMPLE-TOTVS] 📰 News - Raw results:', news.length);
           
+          // LOG DETALHADO: Mostrar os primeiros 3 títulos
+          if (news.length > 0) {
+            console.log('[SIMPLE-TOTVS] 🔍 News - Sample titles:');
+            news.slice(0, 3).forEach((item: any, i: number) => {
+              console.log(`  ${i + 1}. ${item.title?.substring(0, 80)}`);
+            });
+          }
+          
           let validNewsCount = 0;
           for (const item of news) {
             const title = item.title || '';
             const snippet = item.snippet || '';
             const combined = `${title} ${snippet}`;
-            const isTriple = tripleMatch(combined, searchTerm);
-            const isDouble = !isTriple && doubleMatch(combined, searchTerm);
+            const isTriple = tripleMatch(combined, shortSearchTerm);
+            const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
             if (isTriple || isDouble) {
               validNewsCount++;
@@ -250,7 +294,7 @@ serve(async (req) => {
       for (const source of premiumSources) {
         totalQueries++;
         try {
-          const premiumQuery = `${searchTerm} TOTVS site:${source}`;
+          const premiumQuery = `${shortSearchTerm} TOTVS site:${source}`;
           console.log('[SIMPLE-TOTVS] 🔍 Query Premium:', premiumQuery);
           
           const premiumResponse = await fetch('https://google.serper.dev/search', {
@@ -267,8 +311,8 @@ serve(async (req) => {
               const title = result.title || '';
               const snippet = result.snippet || '';
               const combined = `${title} ${snippet}`;
-              const isTriple = tripleMatch(combined, searchTerm);
-              const isDouble = !isTriple && doubleMatch(combined, searchTerm);
+              const isTriple = tripleMatch(combined, shortSearchTerm);
+              const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
               if (isTriple || isDouble) {
                 evidencias.push({
@@ -294,7 +338,7 @@ serve(async (req) => {
       for (const source of judicialSources) {
         totalQueries++;
         try {
-          const judicialQuery = `${searchTerm} TOTVS site:${source}`;
+          const judicialQuery = `${shortSearchTerm} TOTVS site:${source}`;
           console.log('[SIMPLE-TOTVS] 🔍 Query Judicial:', judicialQuery);
           
           const judicialResponse = await fetch('https://google.serper.dev/search', {
@@ -311,8 +355,8 @@ serve(async (req) => {
               const title = result.title || '';
               const snippet = result.snippet || '';
               const combined = `${title} ${snippet}`;
-              const isTriple = tripleMatch(combined, searchTerm);
-              const isDouble = !isTriple && doubleMatch(combined, searchTerm);
+              const isTriple = tripleMatch(combined, shortSearchTerm);
+              const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
               if (isTriple || isDouble) {
                 evidencias.push({
