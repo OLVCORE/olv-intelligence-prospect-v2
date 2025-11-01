@@ -478,14 +478,17 @@ serve(async (req) => {
 
   try {
     const payload = await req.json().catch(() => ({}));
-    const company_id = payload.company_id ?? payload.analysis_id ?? null;
-    const company_name = payload.company_name ?? payload.name ?? null;
+    const company_id = payload.company_id ?? null;
+    const company_name = payload.company_name ?? null;
     const cnpj = payload.cnpj ?? null;
     const domain = payload.domain ?? null;
     const setor = payload.setor ?? null;
 
     if (!company_name) {
-      return new Response(JSON.stringify({ error: 'company_name é obrigatório' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'company_name é obrigatório' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
     console.log(`[SIMPLE-TOTVS] ========================================`);
