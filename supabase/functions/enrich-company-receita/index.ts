@@ -101,7 +101,7 @@ serve(async (req) => {
       );
     }
 
-    // Buscar na ReceitaWS
+    // Buscar na ReceitaWS com retry automático
     const cnpjClean = cnpj.replace(/\D/g, '');
     const receitaUrl = `https://receitaws.com.br/v1/cnpj/${cnpjClean}`;
     
@@ -113,20 +113,66 @@ serve(async (req) => {
       headers['Authorization'] = `Bearer ${receitaToken}`;
     }
 
-    const receitaResponse = await fetch(receitaUrl, { headers });
+    // Função de retry com exponential backoff
+    let receitaData: ReceitaWSResponse | null = null;
+    let lastError: any = null;
+    const maxRetries = 3;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Delay progressivo: 1s, 3s, 6s
+        if (attempt > 0) {
+          const delay = attempt * 2000 + 1000;
+          console.log(`[Enrich Receita] Aguardando ${delay}ms antes da tentativa ${attempt + 1}/${maxRetries}...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
 
-    if (!receitaResponse.ok) {
+        console.log(`[Enrich Receita] Consultando ReceitaWS (tentativa ${attempt + 1}/${maxRetries})...`);
+        const receitaResponse = await fetch(receitaUrl, { headers });
+
+        if (receitaResponse.status === 429) {
+          console.warn(`[Enrich Receita] Rate limit atingido (429) - tentativa ${attempt + 1}/${maxRetries}`);
+          lastError = { status: 429, message: 'Rate limit atingido' };
+          continue;
+        }
+
+        if (!receitaResponse.ok) {
+          console.error(`[Enrich Receita] Erro HTTP ${receitaResponse.status} na tentativa ${attempt + 1}`);
+          lastError = { 
+            status: receitaResponse.status, 
+            message: `Erro HTTP ${receitaResponse.status}` 
+          };
+          
+          // Não retenta erros 4xx exceto 429
+          if (receitaResponse.status >= 400 && receitaResponse.status < 500 && receitaResponse.status !== 429) {
+            break;
+          }
+          continue;
+        }
+
+        receitaData = await receitaResponse.json();
+        console.log(`[Enrich Receita] ✅ Sucesso na tentativa ${attempt + 1}!`);
+        break;
+        
+      } catch (error) {
+        console.error(`[Enrich Receita] Erro na tentativa ${attempt + 1}:`, error);
+        lastError = error;
+      }
+    }
+
+    // Se todas as tentativas falharam
+    if (!receitaData) {
+      console.error('[Enrich Receita] ❌ Todas as tentativas falharam');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Erro ao consultar ReceitaWS',
-          status: receitaResponse.status
+          message: 'Erro ao consultar ReceitaWS após múltiplas tentativas',
+          status: lastError?.status || 500,
+          details: lastError?.message || 'Erro desconhecido'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const receitaData: ReceitaWSResponse = await receitaResponse.json();
 
     // Se não tem company_id, retornar apenas os dados da ReceitaWS
     if (!company_id) {
