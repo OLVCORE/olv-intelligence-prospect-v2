@@ -82,11 +82,18 @@ export default function ICPQuarantine() {
 
       if (updateError) throw updateError;
 
+      // CRÍTICO: Chamar função SQL para recalcular score após enriquecimento
+      const { error: scoreError } = await supabase.rpc('calculate_icp_score_quarantine', {
+        p_analysis_id: analysisId
+      });
+
+      if (scoreError) console.error('Erro ao recalcular score:', scoreError);
+
       // Se tem company_id, atualizar cnpj_status baseado na situação
-      if (analysis.company_id && data?.situacao) {
-        const cnpjStatus = data.situacao.toLowerCase().includes('ativa') 
+      if (analysis.company_id && data?.data?.situacao) {
+        const cnpjStatus = data.data.situacao.toLowerCase().includes('ativa') 
           ? 'ativa' 
-          : data.situacao.toLowerCase().includes('inapta') 
+          : data.data.situacao.toLowerCase().includes('inapta') 
           ? 'inativo' 
           : 'pendente';
 
@@ -99,7 +106,9 @@ export default function ICPQuarantine() {
       return data;
     },
     onSuccess: () => {
-      toast.success('Dados da Receita Federal atualizados');
+      toast.success('✅ Receita Federal atualizada - Score recalculado', {
+        description: 'Campos UF, Setor e Porte foram atualizados'
+      });
       queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
     },
     onError: (error: any) => {
@@ -127,15 +136,22 @@ export default function ICPQuarantine() {
         body: { 
           type: 'search_organizations',
           name: analysis.razao_social,
-          domain: rawData.domain || '',
+          domain: rawData.domain || analysis.website || '',
         },
       });
 
       if (error) throw error;
 
+      // Extrair website do Apollo se disponível
+      let websiteUpdate = {};
+      if (data?.organization?.website_url) {
+        websiteUpdate = { website: data.organization.website_url };
+      }
+
       await supabase
         .from('icp_analysis_results')
         .update({
+          ...websiteUpdate,
           raw_analysis: {
             ...rawData,
             apollo: data,
@@ -143,10 +159,15 @@ export default function ICPQuarantine() {
         })
         .eq('id', analysisId);
 
+      // Recalcular score após Apollo
+      await supabase.rpc('calculate_icp_score_quarantine', {
+        p_analysis_id: analysisId
+      });
+
       return data;
     },
     onSuccess: () => {
-      toast.success('Dados do Apollo atualizados');
+      toast.success('✅ Apollo atualizado - Website e decisores adicionados');
       queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
     },
     onError: (error: any) => {
@@ -202,6 +223,65 @@ export default function ICPQuarantine() {
     },
   }); */
 
+  // FASE 3: TOTVS Simple Check Mutation
+  const enrichTotvsCheckMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      const { data: analysis } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (!analysis) throw new Error('Empresa não encontrada');
+
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      // Chamar edge function de detecção TOTVS
+      const { data, error } = await supabase.functions.invoke('detect-totvs-usage-v5', {
+        body: { 
+          company_name: analysis.razao_social,
+          cnpj: analysis.cnpj,
+          domain: rawData.domain || analysis.website || '',
+        },
+      });
+
+      if (error) throw error;
+
+      // Atualizar resultados do TOTVS Check
+      await supabase
+        .from('icp_analysis_results')
+        .update({
+          is_cliente_totvs: data?.found || false,
+          totvs_check_date: new Date().toISOString(),
+          totvs_evidences: data?.evidences || [],
+          raw_analysis: {
+            ...rawData,
+            totvs_detection: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      // Recalcular score após TOTVS check
+      await supabase.rpc('calculate_icp_score_quarantine', {
+        p_analysis_id: analysisId
+      });
+
+      return data;
+    },
+    onSuccess: (data) => {
+      const status = data?.found ? '⚠️ Cliente TOTVS detectado' : '✅ NÃO é cliente TOTVS';
+      toast.success(`TOTVS Check concluído - ${status}`);
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro no TOTVS Check', {
+        description: error.message,
+      });
+    },
+  });
+
   const enrich360Mutation = useMutation({
     mutationFn: async (analysisId: string) => {
       const { data: analysis } = await supabase
@@ -216,6 +296,9 @@ export default function ICPQuarantine() {
         ? analysis.raw_analysis as Record<string, any>
         : {};
 
+      // Progresso: 1/5 - Verificando empresa
+      toast.loading('Enriquecimento 360° iniciado...', { id: '360-progress' });
+
       // Se já tem company_id linkado, usar. Senão criar empresa primeiro
       let companyId = analysis.company_id;
       
@@ -229,6 +312,10 @@ export default function ICPQuarantine() {
         
         if (existing) {
           companyId = existing.id;
+          await supabase
+            .from('icp_analysis_results')
+            .update({ company_id: companyId })
+            .eq('id', analysisId);
         } else {
           // Criar empresa
           const { data: newCompany, error: createError } = await supabase
@@ -236,8 +323,8 @@ export default function ICPQuarantine() {
             .insert({
               name: analysis.razao_social,
               cnpj: analysis.cnpj,
-              domain: rawData.domain || null,
-              website: rawData.domain || null,
+              domain: rawData.domain || analysis.website || null,
+              website: rawData.domain || analysis.website || null,
             })
             .select('id')
             .single();
@@ -255,11 +342,17 @@ export default function ICPQuarantine() {
       
       if (!companyId) throw new Error('Impossível criar/encontrar empresa');
 
+      // Progresso: 2/5 - Enriquecendo dados
+      toast.loading('Executando enriquecimento 360°... (2/5)', { id: '360-progress' });
+
       const { data, error } = await supabase.functions.invoke('enrich-company-360', {
         body: { company_id: companyId },
       });
 
       if (error) throw error;
+
+      // Progresso: 3/5 - Salvando dados
+      toast.loading('Salvando dados enriquecidos... (3/5)', { id: '360-progress' });
 
       await supabase
         .from('icp_analysis_results')
@@ -271,13 +364,25 @@ export default function ICPQuarantine() {
         })
         .eq('id', analysisId);
 
+      // Progresso: 4/5 - Recalculando score
+      toast.loading('Recalculando Score ICP... (4/5)', { id: '360-progress' });
+
+      await supabase.rpc('calculate_icp_score_quarantine', {
+        p_analysis_id: analysisId
+      });
+
+      toast.dismiss('360-progress');
+
       return data;
     },
     onSuccess: () => {
-      toast.success('Enriquecimento 360° concluído');
+      toast.success('✅ Enriquecimento 360° concluído com sucesso!', {
+        description: 'Todos os dados foram atualizados e o score foi recalculado'
+      });
       queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
     },
     onError: (error: any) => {
+      toast.dismiss('360-progress');
       toast.error('Erro no enriquecimento 360°', {
         description: error.message,
       });
@@ -325,12 +430,12 @@ export default function ICPQuarantine() {
           bVal = (b as any).cnpj_status || '';
           break;
         case 'setor':
-          aVal = (a as any).setor || aRaw?.setor || '';
-          bVal = (b as any).setor || bRaw?.setor || '';
+          aVal = a.setor || '';
+          bVal = b.setor || '';
           break;
         case 'uf':
-          aVal = (a as any).uf || aRaw?.uf || '';
-          bVal = (b as any).uf || bRaw?.uf || '';
+          aVal = a.uf || '';
+          bVal = b.uf || '';
           break;
         case 'score':
           aVal = a.icp_score || 0;
@@ -491,6 +596,10 @@ export default function ICPQuarantine() {
 
   const handleEnrichApollo = async (id: string) => {
     return enrichApolloMutation.mutateAsync(id);
+  };
+
+  const handleEnrichTotvsCheck = async (id: string) => {
+    return enrichTotvsCheckMutation.mutateAsync(id);
   };
 
   // ECONODATA: Desabilitado - fase 2
@@ -691,98 +800,99 @@ export default function ICPQuarantine() {
       {/* Table */}
       <Card>
         <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedIds.length === filteredCompanies.length && filteredCompanies.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('empresa')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    Empresa
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('cnpj')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    CNPJ
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('cnpj_status')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    Status CNPJ
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('setor')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    Setor
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('uf')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    UF/Região
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('score')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    Score ICP
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>Status Análise</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('status')}
-                    className="h-8 flex items-center gap-1 px-2"
-                  >
-                    Status (STC)
-                    <ArrowUpDown className="h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead>Website</TableHead>
-                <TableHead>Motivo Descarte</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedIds.length === filteredCompanies.length && filteredCompanies.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead className="min-w-[250px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('empresa')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      Empresa
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[150px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('cnpj')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      CNPJ
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[120px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('cnpj_status')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      Status CNPJ
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="min-w-[200px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('setor')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      Setor
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[140px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('uf')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      UF/Região
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[100px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('score')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      Score ICP
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[150px]">Status Análise</TableHead>
+                  <TableHead className="w-[150px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('status')}
+                      className="h-8 flex items-center gap-1 px-2"
+                    >
+                      Status (STC)
+                      <ArrowUpDown className="h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="min-w-[150px]">Website</TableHead>
+                  <TableHead className="min-w-[180px]">Motivo Descarte</TableHead>
+                  <TableHead className="w-[80px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
@@ -837,21 +947,41 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      {(company as any).setor || rawData?.setor || (
-                        <span className="text-xs text-muted-foreground">N/A</span>
-                      )}
+                      <div className="max-w-[200px] truncate" title={company.setor || 'Não identificado'}>
+                        {company.setor ? (
+                          <span className="text-sm">{company.setor}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Não identificado</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {(company as any).uf || rawData?.uf ? (
-                        <Badge variant="secondary">
-                          {(company as any).uf || rawData?.uf}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">N/A</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {company.uf ? (
+                          <>
+                            <Badge variant="secondary" className="w-fit">
+                              {company.uf}
+                            </Badge>
+                            {company.municipio && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={company.municipio}>
+                                {company.municipio}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={company.icp_score >= 70 ? 'default' : 'secondary'}>
+                      <Badge 
+                        variant={
+                          company.icp_score >= 75 ? 'default' : 
+                          company.icp_score >= 50 ? 'secondary' : 
+                          'outline'
+                        }
+                        className="font-semibold"
+                      >
                         {company.icp_score}
                       </Badge>
                     </TableCell>
@@ -868,16 +998,17 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      {rawData?.domain || company.website ? (
+                      {company.website || rawData?.domain ? (
                         <a
-                          href={`https://${(rawData?.domain || company.website).replace(/^https?:\/\//, '')}`}
+                          href={`https://${(company.website || rawData?.domain).replace(/^https?:\/\//, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[150px] truncate"
                           onClick={(e) => e.stopPropagation()}
+                          title={company.website || rawData?.domain}
                         >
-                          {(rawData?.domain || company.website).replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                          <Globe className="h-3 w-3" />
+                          {(company.website || rawData?.domain).replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                          <Globe className="h-3 w-3 flex-shrink-0" />
                         </a>
                       ) : (
                         <span className="text-xs text-muted-foreground">N/A</span>
@@ -903,6 +1034,7 @@ export default function ICPQuarantine() {
                         onEnrichReceita={handleEnrichReceita}
                         onEnrichApollo={handleEnrichApollo}
                         onEnrich360={handleEnrich360}
+                        onEnrichTotvsCheck={handleEnrichTotvsCheck}
                         onDiscoverCNPJ={handleDiscoverCNPJ}
                       />
                     </TableCell>
@@ -912,6 +1044,7 @@ export default function ICPQuarantine() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

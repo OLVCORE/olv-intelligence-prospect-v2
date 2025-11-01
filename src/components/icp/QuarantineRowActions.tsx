@@ -1,4 +1,4 @@
-import { Settings, CheckCircle, XCircle, Eye, Trash2, RefreshCw, Target, Edit, Search, Building2, Sparkles, Zap, ExternalLink, Loader2 } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Eye, Trash2, RefreshCw, Target, Edit, Search, Building2, Sparkles, Zap, ExternalLink, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ interface QuarantineRowActionsProps {
   onEnrichApollo?: (id: string) => Promise<void>;
   onEnrichEconodata?: (id: string) => Promise<void>;
   onEnrich360?: (id: string) => Promise<void>;
+  onEnrichTotvsCheck?: (id: string) => Promise<void>;
   onDiscoverCNPJ?: (id: string) => void;
 }
 
@@ -38,6 +39,7 @@ export function QuarantineRowActions({
   onEnrichApollo,
   onEnrichEconodata,
   onEnrich360,
+  onEnrichTotvsCheck,
   onDiscoverCNPJ,
 }: QuarantineRowActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -146,7 +148,21 @@ export function QuarantineRowActions({
 
         <DropdownMenuSeparator />
 
-        {/* Simple TOTVS Check */}
+        {/* Simple TOTVS Check - Executar na linha */}
+        <DropdownMenuItem 
+          onClick={() => handleEnrich('TOTVS Check', onEnrichTotvsCheck)}
+          disabled={isEnriching}
+          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
+          {enrichingAction === 'TOTVS Check' ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Target className="h-4 w-4 mr-2" />
+          )}
+          Executar TOTVS Check
+        </DropdownMenuItem>
+
+        {/* Ver Relatório TOTVS */}
         <DropdownMenuItem 
           onClick={() => {
             const name = encodeURIComponent(company.razao_social || 'Empresa');
@@ -157,8 +173,8 @@ export function QuarantineRowActions({
           }}
           className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
-          <Target className="h-4 w-4 mr-2" />
-          Simple TOTVS Check
+          <FileText className="h-4 w-4 mr-2" />
+          Ver Relatório Completo
         </DropdownMenuItem>
 
         {/* Atualizar relatório */}

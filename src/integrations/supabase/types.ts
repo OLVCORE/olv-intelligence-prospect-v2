@@ -4062,6 +4062,7 @@ export type Database = {
           raw_data: Json | null
           razao_social: string
           reviewed: boolean | null
+          setor: string | null
           status: string | null
           telefone: string | null
           temperatura: string | null
@@ -4095,6 +4096,7 @@ export type Database = {
           raw_data?: Json | null
           razao_social: string
           reviewed?: boolean | null
+          setor?: string | null
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
@@ -4128,6 +4130,7 @@ export type Database = {
           raw_data?: Json | null
           razao_social?: string
           reviewed?: boolean | null
+          setor?: string | null
           status?: string | null
           telefone?: string | null
           temperatura?: string | null
@@ -8435,6 +8438,10 @@ export type Database = {
       }
       calculate_engagement_score: {
         Args: { p_company_id: string }
+        Returns: number
+      }
+      calculate_icp_score_quarantine: {
+        Args: { p_analysis_id: string }
         Returns: number
       }
       calculate_intent_score: {

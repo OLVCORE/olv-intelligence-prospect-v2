@@ -92,7 +92,7 @@ export function useQuarantineCompanies(filters?: {
           ...item,
           cnpj_status: companyData.cnpj_status,
           domain: companyData.domain || item.domain,
-          website: companyData.website || item.website,
+          website: item.website || companyData.website,
         };
       });
 
