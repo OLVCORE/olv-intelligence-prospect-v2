@@ -647,6 +647,27 @@ serve(async (req) => {
       console.log('[SAVE] ✅ Salvo na QUARENTENA com sucesso');
     }
 
+    // Salvar snapshot no cache oficial (simple_totvs_checks)
+    console.log('[SAVE] 🗂️ Gravando em simple_totvs_checks (cache oficial)');
+    const { error: insertCacheError } = await supabase
+      .from('simple_totvs_checks')
+      .insert({
+        company_id,
+        status: result.status,
+        confidence: result.confidence,
+        detected_totvs: result.detected_totvs,
+        total_evidences: result.total_evidences,
+        evidences: result.evidences_by_category,
+        reasoning: result.reasoning,
+        checked_at: result.checked_at
+      });
+
+    if (insertCacheError) {
+      console.warn('[SAVE] ⚠️ Falha ao gravar cache simple_totvs_checks:', insertCacheError.message);
+    } else {
+      console.log('[SAVE] ✅ Cache gravado em simple_totvs_checks');
+    }
+
     console.log(`[SIMPLE-TOTVS] ⚡ Finalizado em ${executionTime}ms - ${status.toUpperCase()}`);
 
     return new Response(JSON.stringify(result), {

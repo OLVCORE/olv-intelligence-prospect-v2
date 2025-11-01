@@ -53,7 +53,20 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
         throw error;
       }
 
-      if (data) return data;
+      if (data) {
+        const ev = (data as any).evidences || { vagas: [], noticias: [], docs_oficiais: [] };
+        const total = (data as any).total_evidences ?? Object.values(ev).flat().length;
+        return {
+          company_id: companyId,
+          status: (data as any).status,
+          detected_totvs: (data as any).detected_totvs ?? ((data as any).status === 'no-go'),
+          confidence: (data as any).confidence,
+          total_evidences: total,
+          evidences_by_category: ev,
+          reasoning: (data as any).reasoning || '',
+          checked_at: (data as any).checked_at || new Date().toISOString()
+        } as any;
+      }
 
       // 2) Fallback INTELIGENTE para registros da QUARENTENA (icp_analysis_results)
       const { data: q, error: qErr } = await supabase
