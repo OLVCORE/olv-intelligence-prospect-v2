@@ -9,8 +9,8 @@ import { AutoSearchCompetitors } from "@/components/competitive/AutoSearchCompet
 import { CompetitorInsightsIntegration } from "@/components/competitive/CompetitorInsightsIntegration";
 import { useState } from "react";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
-import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCardV3";
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
+import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
 import { SimilarCompaniesCard } from "@/components/competitive/SimilarCompaniesCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { ICPFilters } from "@/components/competitive/ICPFilters";
@@ -266,17 +266,11 @@ export default function CompetitiveIntelligencePage() {
               />
 
               <div className="grid gap-6 md:grid-cols-2">
-                <TOTVSDetectionCardV3 
-                  company={company ? {
-                    id: company.id,
-                    name: company.name,
-                    cnpj: company.cnpj,
-                    domain: company.domain,
-                    state: company.state || filters.region !== 'all' ? filters.region : undefined,
-                    city: company.city,
-                    sector_code: company.sector_code || filters.sector !== 'all' ? filters.sector : undefined,
-                    niche_code: company.niche_code || filters.niche !== 'all' ? filters.niche : undefined,
-                  } : undefined} 
+                <TOTVSCheckCard
+                  companyId={company.id}
+                  companyName={company.name}
+                  cnpj={company.cnpj}
+                  domain={company.domain}
                 />
                 <IntentSignalsCardV3 company={company} />
               </div>

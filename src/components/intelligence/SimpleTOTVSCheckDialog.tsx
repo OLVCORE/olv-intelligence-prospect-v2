@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SimpleTOTVSCheckCard } from "./SimpleTOTVSCheckCard";
+import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
 
 interface SimpleTOTVSCheckDialogProps {
   companyId: string;
@@ -29,7 +29,7 @@ export function SimpleTOTVSCheckDialog({
         <DialogHeader>
           <DialogTitle>TOTVS Check - {companyName}</DialogTitle>
         </DialogHeader>
-        <SimpleTOTVSCheckCard
+        <TOTVSCheckCard
           companyId={companyId}
           companyName={companyName}
           cnpj={cnpj}

@@ -3,12 +3,6 @@ project_id = "ioaxzpwlurpduanzkfrt"
 [functions.web-scraper-totvs]
 verify_jwt = true
 
-[functions.detect-totvs-usage-v3]
-verify_jwt = false
-
-[functions.detect-totvs-usage-v5]
-verify_jwt = false
-
 [functions.detect-intent-signals-v3]
 verify_jwt = false
 
@@ -258,5 +252,8 @@ verify_jwt = false
   [functions.icp-refresh-report]
   verify_jwt = false
 
-  [functions.simple-totvs-check]
+  [functions.totvs-checker]
+  verify_jwt = false
+
+  [functions.enrich-company-receita]
   verify_jwt = false

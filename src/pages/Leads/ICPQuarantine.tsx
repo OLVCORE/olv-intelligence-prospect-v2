@@ -16,8 +16,7 @@ import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { useReverifyAllCompanies } from '@/hooks/useReverifyAllCompanies';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
-import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
-import { UnifiedSTCBadge } from '@/components/icp/UnifiedSTCBadge';
+import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
 import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
 import { ICPScoreTooltip } from '@/components/icp/ICPScoreTooltip';
@@ -1275,10 +1274,9 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      <UnifiedSTCBadge
-                        companyId={company.company_id || company.id}
-                        onViewReport={() => handleOpenTotvsCheck(company)}
-                      />
+                      <Badge variant="secondary">
+                        Verificar
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {editingWebsiteId === company.id ? (

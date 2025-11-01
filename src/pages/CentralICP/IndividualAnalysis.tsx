@@ -7,9 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
-import { TOTVSDetectionCardV3 } from "@/components/competitive/TOTVSDetectionCardV3";
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
-import { SimpleTOTVSCheckCard } from "@/components/intelligence/SimpleTOTVSCheckCard";
+import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
@@ -334,7 +333,7 @@ export default function IndividualAnalysis() {
           </Alert>
 
           <div className="space-y-6">
-            <SimpleTOTVSCheckCard 
+            <TOTVSCheckCard 
               companyId={company.id}
               companyName={company.name}
               cnpj={company.cnpj}
@@ -342,18 +341,6 @@ export default function IndividualAnalysis() {
             />
             
             <div className="grid gap-6 md:grid-cols-2">
-              <TOTVSDetectionCardV3 
-                company={{
-                  id: company.id,
-                  name: company.name,
-                  cnpj: company.cnpj,
-                  domain: company.domain,
-                  state: displayState,
-                  city: displayCity,
-                  sector_code: company.sector_code,
-                  niche_code: company.niche_code,
-                }}
-              />
               <IntentSignalsCardV3 company={{
                 id: company.id,
                 name: company.name,

@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { useState } from 'react';
-import { BatchTOTVSCheckDialog } from './BatchTOTVSCheckDialog';
 
 interface QuarantineActionsMenuProps {
   selectedCount: number;
@@ -64,7 +63,6 @@ export function QuarantineActionsMenu({
   totalCompanies = []
 }: QuarantineActionsMenuProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showBatchTOTVS, setShowBatchTOTVS] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -167,20 +165,6 @@ export function QuarantineActionsMenu({
             Atualizar Relatórios
           </DropdownMenuItem>
 
-          <DropdownMenuItem 
-            onClick={() => {
-              if (selectedCount === 0) {
-                return;
-              }
-              setShowBatchTOTVS(true);
-            }}
-            disabled={selectedCount === 0 || isDeleting}
-            data-testid="action-totvs-check"
-            className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
-          >
-            <Target className="h-4 w-4 mr-2" />
-            TOTVS Check em Lote
-          </DropdownMenuItem>
 
           {/* 🔄 RE-VERIFICAR TUDO V2 - Botão Principal */}
           {onReverifyAllV2 && totalCompanies.length > 0 && (
@@ -306,12 +290,6 @@ export function QuarantineActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
-      
-      <BatchTOTVSCheckDialog
-        open={showBatchTOTVS}
-        onOpenChange={setShowBatchTOTVS}
-        selectedItems={selectedItems}
-      />
     </DropdownMenu>
   );
 }

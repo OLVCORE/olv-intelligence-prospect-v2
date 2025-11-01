@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
-import { SimpleTOTVSCheckStatusBadge } from '@/components/icp/SimpleTOTVSCheckStatusBadge';
 import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
 import {
   Table,
@@ -1127,14 +1126,10 @@ export default function CompaniesManagementPage() {
                           <EnrichmentStatusBadge companyId={company.id} showProgress />
                         </TableCell>
                        <TableCell>
-                         <SimpleTOTVSCheckStatusBadge 
-                           companyId={company.id}
-                           onViewReport={() => {
-                             setStcCompany(company);
-                             setStcDialogOpen(true);
-                           }}
-                         />
-                       </TableCell>
+                       <Badge variant="secondary">
+                         Verificar
+                       </Badge>
+                     </TableCell>
                         <TableCell>
                           {editingWebsiteId === company.id ? (
                             <div className="flex items-center gap-2 max-w-[180px]">
