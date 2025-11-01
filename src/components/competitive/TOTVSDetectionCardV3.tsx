@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, BarChart3, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useTOTVSDetectionV5 } from "@/hooks/useTOTVSDetectionV5";
+import { useSimpleTOTVSCheck } from "@/hooks/useSimpleTOTVSCheck";
 import { useTOTVSDetectionReports } from "@/hooks/useTOTVSDetectionReports";
 import { EvidenceDialog } from "@/components/intelligence/EvidenceDialog";
 import { TOTVSDetectionHistory } from "./TOTVSDetectionHistory";
@@ -29,7 +29,7 @@ interface TOTVSDetectionCardV3Props {
 }
 
 export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
-  const detectMutation = useTOTVSDetectionV5();
+  const detectMutation = useSimpleTOTVSCheck();
   const { data: reports } = useTOTVSDetectionReports(company?.id);
   const latestDetection = reports?.[0]; // Usar o primeiro relatório da nova tabela
   const [showMethodology, setShowMethodology] = useState(false);
@@ -56,10 +56,6 @@ export function TOTVSDetectionCardV3({ company }: TOTVSDetectionCardV3Props) {
       companyName: company.name,
       cnpj: company.cnpj,
       domain: company.domain,
-      state: company.state,
-      city: company.city,
-      sectorCode: company.sector_code,
-      nicheCode: company.niche_code, // Opcional
     });
   };
 

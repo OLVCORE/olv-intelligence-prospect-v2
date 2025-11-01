@@ -281,27 +281,29 @@ export default function ICPQuarantine() {
         ? analysis.raw_analysis as Record<string, any>
         : {};
 
-      // Chamar edge function de detecção TOTVS com company_id, company_name e state
-      const { data, error } = await supabase.functions.invoke('detect-totvs-usage-v5', {
-        body: { 
-          company_id: analysis.company_id || analysis.id, // Fallback para analysis.id
+      // Executar apenas Simple TOTVS Check (unificado)
+      const simpleDomain = sanitizeDomain(rawData.domain || analysis.website || null);
+      const { data, error } = await supabase.functions.invoke('simple-totvs-check', {
+        body: {
+          company_id: analysis.company_id || analysis.id,
           company_name: analysis.razao_social,
-          state: analysis.uf, // CRÍTICO: UF é obrigatório
+          cnpj: analysis.cnpj,
+          domain: simpleDomain || undefined
         },
       });
 
       if (error) throw error;
 
-      // Atualizar resultados do TOTVS Check
+      // Atualizar campos na quarentena
       await supabase
         .from('icp_analysis_results')
         .update({
-          is_cliente_totvs: data?.found || false,
+          is_cliente_totvs: data?.status === 'no-go',
           totvs_check_date: new Date().toISOString(),
-          totvs_evidences: data?.evidences || [],
+          totvs_evidences: (data?.evidences_by_category ? Object.values(data.evidences_by_category).flat() : []) as any,
           raw_analysis: {
             ...rawData,
-            totvs_detection: data,
+            simple_totvs_check: data,
           },
         })
         .eq('id', analysisId);
@@ -310,21 +312,6 @@ export default function ICPQuarantine() {
       await supabase.rpc('calculate_icp_score_quarantine', {
         p_analysis_id: analysisId
       });
-
-      // Simple TOTVS Check (preenche badge)
-      try {
-        const simpleDomain = sanitizeDomain(rawData.domain || analysis.website || null);
-        await supabase.functions.invoke('simple-totvs-check', {
-          body: {
-            company_id: analysis.company_id || analysis.id,
-            company_name: analysis.razao_social,
-            cnpj: analysis.cnpj,
-            domain: simpleDomain || undefined
-          },
-        });
-      } catch (e) {
-        console.warn('Simple TOTVS Check falhou (não crítico):', e);
-      }
 
       return data;
     },

@@ -1,6 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
+import { useSimpleTOTVSCheck } from '@/hooks/useSimpleTOTVSCheck';
+import { toast } from 'sonner';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -12,6 +17,41 @@ interface QuarantineReportModalProps {
 }
 
 export function QuarantineReportModal({ open, onOpenChange, analysisId, companyName, cnpj, domain }: QuarantineReportModalProps) {
+  const { mutate: approveBatch, isPending: isApproving } = useApproveQuarantineBatch();
+  const { mutate: rejectCompany, isPending: isRejecting } = useRejectQuarantine();
+  const checkMutation = useSimpleTOTVSCheck();
+
+  const handleApprove = () => {
+    approveBatch([analysisId], {
+      onSuccess: () => {
+        toast.success('✅ Empresa aprovada e movida para o Pool');
+        onOpenChange(false);
+      }
+    });
+  };
+
+  const handleReject = () => {
+    rejectCompany({ analysisId, motivo: 'Descartado via modal de verificação' }, {
+      onSuccess: () => {
+        toast.success('❌ Empresa descartada');
+        onOpenChange(false);
+      }
+    });
+  };
+
+  const handleReverify = () => {
+    if (!cnpj && !domain) {
+      toast.error('CNPJ ou domínio necessário para reverificação');
+      return;
+    }
+    checkMutation.mutate({
+      companyId: analysisId,
+      companyName,
+      cnpj,
+      domain
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0">
@@ -30,6 +70,36 @@ export function QuarantineReportModal({ open, onOpenChange, analysisId, companyN
             domain={domain}
           />
         </div>
+        <Separator />
+        <DialogFooter className="px-6 pb-6 flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleReverify}
+            disabled={checkMutation.isPending}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${checkMutation.isPending ? 'animate-spin' : ''}`} />
+            Reverificar
+          </Button>
+          <div className="flex-1" />
+          <Button
+            variant="destructive"
+            onClick={handleReject}
+            disabled={isRejecting || isApproving}
+            className="gap-2"
+          >
+            <XCircle className="h-4 w-4" />
+            Descartar Empresa
+          </Button>
+          <Button
+            onClick={handleApprove}
+            disabled={isApproving || isRejecting}
+            className="gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Aprovar e Mover para Pool
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

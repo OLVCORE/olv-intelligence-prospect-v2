@@ -17,6 +17,8 @@ export interface Evidence {
   snippet: string;
   timestamp: string;
   totvs_products: string[];
+  match_type?: 'triple' | 'double';
+  weight?: number;
 }
 
 export interface SimpleTOTVSCheckResult {

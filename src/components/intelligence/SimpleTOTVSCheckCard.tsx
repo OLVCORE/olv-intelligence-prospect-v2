@@ -70,6 +70,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [autoCheckAttempted, setAutoCheckAttempted] = useState(false);
+  const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
   // Resultado a exibir: prioriza o retorno imediato da mutação
   const viewCheck = (checkMutation.data as any) || latestCheck as any;
 
@@ -245,8 +246,11 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   };
 
   const renderEvidencesList = (evidences: Evidence[], category: keyof typeof CATEGORY_LABELS) => {
-    // Backend já aplica a lógica flexível de correlação
-    const list = evidences || [];
+    // Filtrar por match_type baseado no filterMode
+    let list = evidences || [];
+    if (filterMode === 'triple') {
+      list = list.filter(ev => ev.match_type === 'triple');
+    }
 
     if (list.length === 0) return null;
 
@@ -460,6 +464,59 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
               {viewCheck.reasoning}
             </AlertDescription>
           </Alert>
+
+          {/* Controle Triple/Double Match */}
+          {(() => {
+            const allEvidences = [
+              ...((viewCheck as any).evidences_by_category?.vagas || []),
+              ...((viewCheck as any).evidences_by_category?.noticias || []),
+              ...((viewCheck as any).evidences_by_category?.docs_oficiais || [])
+            ];
+            const tripleCount = allEvidences.filter(ev => ev.match_type === 'triple').length;
+            const doubleCount = allEvidences.filter(ev => ev.match_type === 'double').length;
+            
+            if (tripleCount === 0 && doubleCount === 0) return null;
+            
+            return (
+              <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Filtro de Precisão:</span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={filterMode === 'triple' ? 'default' : 'outline'}
+                      onClick={() => setFilterMode('triple')}
+                      className="text-xs"
+                    >
+                      🎯 Apenas Triple Match
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={filterMode === 'all' ? 'default' : 'outline'}
+                      onClick={() => setFilterMode('all')}
+                      className="text-xs"
+                    >
+                      🔍 Triple + Double Match
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                      {tripleCount}
+                    </Badge>
+                    Triple (Empresa + TOTVS + Produto)
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                      {doubleCount}
+                    </Badge>
+                    Double (Empresa + TOTVS/Produto)
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Legenda dos highlights e lógica de correlação */}
           <div className="space-y-2">

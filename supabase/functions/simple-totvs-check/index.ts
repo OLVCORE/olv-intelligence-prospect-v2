@@ -80,9 +80,9 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
     try {
       const response = await fetch(url, options);
       if (response.ok || response.status === 404) return response;
-      // Log detalhado em falhas
+      // Log detalhado em falhas (build-safe)
       const body = await response.text().catch(() => '');
-      console.log(`[RETRY] HTTP ${response.status} on ${url} | body: ${body?.slice(0, 300)}`);
+      console.log(`[RETRY] HTTP ${response.status} on ${url} | body: ${body.slice(0, 300) || 'N/A'}`);
       if (attempt < maxRetries - 1) {
         const delay = 1000 * Math.pow(2, attempt);
         console.log(`[RETRY] Attempt ${attempt + 1}/${maxRetries} failed. Retrying in ${delay}ms...`);
