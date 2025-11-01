@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isValidUrl, formatWebsiteUrl } from "@/lib/utils/urlHelpers";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SimpleTOTVSCheckCardProps {
   // ID usado para cache/local (pode ser o analysisId)
@@ -77,8 +79,43 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain, rea
     const saved = localStorage.getItem(`stc:filter:${companyId}`);
     return (saved === 'triple' || saved === 'all') ? (saved as any) : 'all';
   });
-  // Resultado a exibir: prioriza o retorno imediato da mutação
-  const viewCheck = (checkMutation.data as any) || latestCheck as any;
+// Fallback: buscar evidências antigas da Quarentena (V1) pelo analysisId
+const { data: quarantineData, isLoading: isLoadingQuarantine } = useQuery({
+  queryKey: ['quarantine-analysis', companyId],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('icp_analysis_results')
+      .select('totvs_check_status, totvs_check_confidence, totvs_check_evidences, totvs_check_reasoning, totvs_check_total_weight, totvs_check_date, totvs_evidences, evidencias_totvs')
+      .eq('id', companyId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!companyId && !latestCheck,
+  staleTime: 60_000
+});
+
+// Montar view do fallback da quarentena
+const quarantineView = quarantineData ? (() => {
+  const evidences = (quarantineData as any).totvs_check_evidences
+    || (quarantineData as any).totvs_evidences
+    || (quarantineData as any).evidencias_totvs
+    || { vagas: [], noticias: [], docs_oficiais: [] };
+  const total = Object.values(evidences).flat().length;
+  return {
+    status: (quarantineData as any).totvs_check_status || 'revisar',
+    detected_totvs: (quarantineData as any).totvs_check_status === 'no-go',
+    confidence: (quarantineData as any).totvs_check_confidence || 'low',
+    total_evidences: total,
+    evidences_by_category: evidences,
+    reasoning: (quarantineData as any).totvs_check_reasoning || 'Evidências anteriores (Quarentena)',
+    checked_at: (quarantineData as any).totvs_check_date || new Date().toISOString(),
+    source: 'quarantine_fallback'
+  } as any;
+})() : null;
+
+// Resultado a exibir: Mutação > Cache V2 > Quarentena (fallback)
+const viewCheck = ((checkMutation.data as any) || (latestCheck as any) || quarantineView) as any;
 
   useEffect(() => {
     // Persistir filtro por empresa
@@ -96,7 +133,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain, rea
 
     setAutoCheckAttempted(true);
     checkMutation.mutate({
-      companyId: realCompanyId ? realCompanyId : undefined,
+      companyId: realCompanyId ? realCompanyId : companyId,
       companyName,
       cnpj,
       domain
@@ -396,7 +433,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain, rea
     );
   };
 
-  const isLoading = isLoadingLatest || checkMutation.isPending;
+  const isLoading = isLoadingLatest || checkMutation.isPending || (isLoadingQuarantine ?? false);
 
   // Auto-disparo apenas se não houver dados V2 válidos
   useEffect(() => {
