@@ -69,7 +69,8 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
           total_evidences: total,
           evidences_by_category: ev,
           reasoning: (data as any).reasoning || '',
-          checked_at: (data as any).checked_at || new Date().toISOString()
+          checked_at: (data as any).checked_at || new Date().toISOString(),
+          source: 'cache_v2'
         } as any;
       }
 
@@ -115,7 +116,8 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
           total_weight: q.totvs_check_total_weight,
           reasoning: q.totvs_check_reasoning,
           checked_at: q.totvs_check_date || new Date().toISOString(),
-          detected_totvs: q.totvs_check_status === 'no-go'
+          detected_totvs: q.totvs_check_status === 'no-go',
+          source: 'quarantine_fallback'
         } as any;
       }
 

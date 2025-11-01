@@ -150,9 +150,13 @@ export function QuarantineRowActions({
 
         <DropdownMenuSeparator />
 
-        {/* Simple TOTVS Check - Executar na linha */}
+        {/* Simple TOTVS Check - Abrir modal (origem única) */}
         <DropdownMenuItem 
-          onClick={() => handleEnrich('TOTVS Check', onEnrichTotvsCheck)}
+          onClick={() => {
+            setShowReport(true);
+            setIsOpen(false);
+            toast.info('Use o botão "Reverificar" dentro do relatório para executar o check (com cooldown).');
+          }}
           disabled={isEnriching}
           className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
         >
@@ -161,7 +165,7 @@ export function QuarantineRowActions({
           ) : (
             <Target className="h-4 w-4 mr-2" />
           )}
-          Executar TOTVS Check
+          Ver Relatório TOTVS (Modal)
         </DropdownMenuItem>
 
         {/* Ver Relatório TOTVS (Modal) */}
@@ -342,6 +346,7 @@ export function QuarantineRowActions({
         open={showReport}
         onOpenChange={setShowReport}
         analysisId={company.id}
+        companyId={company.company_id || undefined}
         companyName={company.razao_social || 'Empresa'}
         cnpj={company.cnpj}
         domain={company.domain || company.website}

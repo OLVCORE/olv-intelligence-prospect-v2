@@ -70,9 +70,17 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [autoCheckAttempted] = useState(true); // bloqueia auto-disparo por padrão
-  const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'triple'>(() => {
+    const saved = localStorage.getItem(`stc:filter:${companyId}`);
+    return (saved === 'triple' || saved === 'all') ? (saved as any) : 'all';
+  });
   // Resultado a exibir: prioriza o retorno imediato da mutação
   const viewCheck = (checkMutation.data as any) || latestCheck as any;
+
+  useEffect(() => {
+    // Persistir filtro por empresa
+    localStorage.setItem(`stc:filter:${companyId}`, filterMode);
+  }, [companyId, filterMode]);
 
   const handleCheck = () => {
     // Validar CNPJ se fornecido
@@ -462,6 +470,13 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
             <div className="space-y-2">
               {renderStatusBadge(viewCheck.status)}
               {renderConfidenceBadge(viewCheck.confidence)}
+              {(viewCheck as any).source && (
+                <div>
+                  <Badge variant="outline" className={(viewCheck as any).source === 'quarantine_fallback' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'bg-muted'}>
+                    Fonte: {(viewCheck as any).source === 'quarantine_fallback' ? 'Quarentena (antigo)' : 'Cache V2'}
+                  </Badge>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold">{viewCheck.total_evidences}</div>

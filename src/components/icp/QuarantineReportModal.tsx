@@ -17,10 +17,11 @@ interface QuarantineReportModalProps {
   companyId?: string;
 }
 
-export function QuarantineReportModal({ open, onOpenChange, analysisId, companyName, cnpj, domain }: QuarantineReportModalProps) {
+export function QuarantineReportModal({ open, onOpenChange, analysisId, companyId, companyName, cnpj, domain }: QuarantineReportModalProps) {
   const { mutate: approveBatch, isPending: isApproving } = useApproveQuarantineBatch();
   const { mutate: rejectCompany, isPending: isRejecting } = useRejectQuarantine();
   const checkMutation = useSimpleTOTVSCheck();
+  const resolvedCompanyId = companyId || analysisId;
 
   const handleApprove = () => {
     approveBatch([analysisId], {
@@ -50,7 +51,7 @@ export function QuarantineReportModal({ open, onOpenChange, analysisId, companyN
       return;
     }
     // Cooldown global por empresa (5 min) para evitar consumo acidental
-    const key = `stc:last:${analysisId}`;
+    const key = `stc:last:${resolvedCompanyId}`;
     const last = Number(localStorage.getItem(key) || '0');
     const COOLDOWN_MS = 5 * 60 * 1000;
     const elapsed = Date.now() - last;
@@ -62,7 +63,7 @@ export function QuarantineReportModal({ open, onOpenChange, analysisId, companyN
     localStorage.setItem(key, String(Date.now()));
 
     checkMutation.mutate({
-      companyId: analysisId,
+      companyId: resolvedCompanyId,
       companyName,
       cnpj,
       domain
@@ -81,7 +82,7 @@ export function QuarantineReportModal({ open, onOpenChange, analysisId, companyN
         <Separator />
         <div className="p-6">
           <SimpleTOTVSCheckCard 
-            companyId={analysisId}
+            companyId={resolvedCompanyId}
             companyName={companyName}
             cnpj={cnpj}
             domain={domain}
