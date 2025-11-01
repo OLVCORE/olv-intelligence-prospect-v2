@@ -331,14 +331,25 @@ serve(async (req) => {
             }
             
             validLinkedInCount++;
+            
+            // DETECTAR INTENÇÃO DE COMPRA
+            const hasIntent = INTENT_KEYWORDS.some(k => 
+              `${title} ${snippet}`.toLowerCase().includes(k)
+            );
+            
             evidencias.push({
               source: 'linkedin_jobs',
+              source_name: 'LinkedIn Jobs',
               weight: SOURCE_WEIGHTS.linkedin_jobs,
               match_type: validation.matchType,
               content: snippet,
               url: result.link,
               title: title,
               detected_products: validation.produtos,
+              has_intent: hasIntent,
+              intent_keywords: hasIntent ? 
+                INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                []
             });
             
             console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
@@ -388,14 +399,25 @@ serve(async (req) => {
             }
             
             validNewsCount++;
+            
+            // DETECTAR INTENÇÃO DE COMPRA
+            const hasIntent = INTENT_KEYWORDS.some(k => 
+              `${title} ${snippet}`.toLowerCase().includes(k)
+            );
+            
             evidencias.push({
               source: 'google_news',
+              source_name: 'Google News',
               weight: SOURCE_WEIGHTS.google_news,
               match_type: validation.matchType,
               content: snippet,
               url: item.link,
               title: title,
               detected_products: validation.produtos,
+              has_intent: hasIntent,
+              intent_keywords: hasIntent ? 
+                INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                []
             });
             
             console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
@@ -436,14 +458,24 @@ serve(async (req) => {
                 continue;
               }
               
+              // DETECTAR INTENÇÃO DE COMPRA
+              const hasIntent = INTENT_KEYWORDS.some(k => 
+                `${title} ${snippet}`.toLowerCase().includes(k)
+              );
+              
               evidencias.push({
                 source: 'premium_news',
+                source_name: source,
                 weight: SOURCE_WEIGHTS.premium_news,
                 match_type: validation.matchType,
                 content: snippet,
                 url: result.link,
                 title: title,
                 detected_products: validation.produtos,
+                has_intent: hasIntent,
+                intent_keywords: hasIntent ? 
+                  INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                  []
               });
               
               console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
@@ -484,14 +516,24 @@ serve(async (req) => {
                 continue;
               }
               
+              // DETECTAR INTENÇÃO DE COMPRA
+              const hasIntent = INTENT_KEYWORDS.some(k => 
+                `${title} ${snippet}`.toLowerCase().includes(k)
+              );
+              
               evidencias.push({
                 source: 'judicial',
+                source_name: 'Processos Judiciais',
                 weight: SOURCE_WEIGHTS.judicial,
                 match_type: validation.matchType,
                 content: snippet,
                 url: result.link,
                 title: title,
                 detected_products: validation.produtos,
+                has_intent: hasIntent,
+                intent_keywords: hasIntent ? 
+                  INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                  []
               });
               
               console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);

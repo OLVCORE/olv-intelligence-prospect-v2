@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSimpleTOTVSCheck } from '@/hooks/useSimpleTOTVSCheck';
+import { toast } from 'sonner';
 import {
   RefreshCw,
   CheckCircle,
@@ -10,7 +11,9 @@ import {
   AlertTriangle,
   ExternalLink,
   Filter,
-  Clock
+  Clock,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface TOTVSCheckCardProps {
@@ -30,6 +33,57 @@ export default function TOTVSCheckCard({
 }: TOTVSCheckCardProps) {
   const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [copiedTerms, setCopiedTerms] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, id: string, type: 'url' | 'terms') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === 'url') {
+        setCopiedUrl(id);
+        setTimeout(() => setCopiedUrl(null), 2000);
+      } else {
+        setCopiedTerms(id);
+        setTimeout(() => setCopiedTerms(null), 2000);
+      }
+      toast.success(type === 'url' ? 'URL copiada!' : 'Termos copiados!');
+    } catch (err) {
+      toast.error('Erro ao copiar');
+    }
+  };
+
+  const highlightTerms = (text: string, products?: string[]) => {
+    if (!text) return text;
+    
+    let highlighted = text;
+    const terms: string[] = [];
+    
+    // Adicionar variações do nome da empresa
+    if (companyName) {
+      const variations = [companyName];
+      const words = companyName.split(' ').filter(w => w.length > 3);
+      if (words.length >= 2) {
+        variations.push(words.slice(0, 2).join(' '));
+      }
+      terms.push(...variations);
+    }
+    
+    // Adicionar "TOTVS"
+    terms.push('TOTVS');
+    
+    // Adicionar produtos detectados
+    if (products && products.length > 0) {
+      terms.push(...products);
+    }
+    
+    // Highlight cada termo
+    terms.forEach(term => {
+      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      highlighted = highlighted.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded font-semibold">$1</mark>');
+    });
+    
+    return highlighted;
+  };
 
   const { data, isLoading, refetch } = useSimpleTOTVSCheck({
     companyId,
@@ -183,55 +237,125 @@ export default function TOTVSCheckCard({
       {/* EVIDÊNCIAS */}
       {filteredEvidences.length > 0 ? (
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {filteredEvidences.map((evidence: any, index: number) => (
-            <div key={index} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'}>
-                  {evidence.match_type === 'triple' ? '🎯 TRIPLE' : '🔍 DOUBLE'}
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {evidence.source_name || evidence.source} ({evidence.weight} pts)
-                </Badge>
-              </div>
-              
-              {/* INTENÇÃO DE COMPRA */}
-              {evidence.has_intent && (
-                <div className="mb-2">
-                  <Badge variant="destructive" className="text-xs">
-                    🔥 INTENÇÃO DE COMPRA
+          {filteredEvidences.map((evidence: any, index: number) => {
+            const evidenceId = `${evidence.source}-${index}`;
+            const allTerms = [
+              companyName || '',
+              'TOTVS',
+              ...(evidence.detected_products || []),
+              ...(evidence.intent_keywords || [])
+            ].filter(Boolean).join(' | ');
+            
+            return (
+              <div key={index} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                <div className="flex justify-between items-start mb-3">
+                  <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'} className="text-sm">
+                    {evidence.match_type === 'triple' ? '🎯 TRIPLE MATCH' : '🔍 DOUBLE MATCH'}
                   </Badge>
-                  {evidence.intent_keywords && evidence.intent_keywords.length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {evidence.intent_keywords.join(', ')}
-                    </div>
-                  )}
+                  <Badge variant="outline" className="text-xs">
+                    {evidence.source_name || evidence.source} ({evidence.weight} pts)
+                  </Badge>
                 </div>
-              )}
-              
-              <p className="text-sm font-medium mb-1">{evidence.title}</p>
-              <p className="text-sm text-muted-foreground mb-2">{evidence.content}</p>
-              
-              {/* PRODUTOS DETECTADOS */}
-              {evidence.detected_products?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {evidence.detected_products.map((product: string) => (
-                    <Badge key={product} variant="outline" className="text-xs">
-                      {product}
+                
+                {/* INTENÇÃO DE COMPRA */}
+                {evidence.has_intent && evidence.intent_keywords?.length > 0 && (
+                  <div className="mb-3 p-2 bg-destructive/10 rounded-md border border-destructive/20">
+                    <Badge variant="destructive" className="text-xs mb-1">
+                      🔥 INTENÇÃO DE COMPRA DETECTADA
                     </Badge>
-                  ))}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <strong>Keywords:</strong> {evidence.intent_keywords.join(', ')}
+                    </div>
+                  </div>
+                )}
+                
+                {/* TÍTULO COM HIGHLIGHT */}
+                <h4 
+                  className="text-sm font-semibold mb-2" 
+                  dangerouslySetInnerHTML={{ 
+                    __html: highlightTerms(evidence.title, evidence.detected_products) 
+                  }}
+                />
+                
+                {/* CONTEÚDO COM HIGHLIGHT */}
+                <p 
+                  className="text-sm text-muted-foreground mb-3"
+                  dangerouslySetInnerHTML={{ 
+                    __html: highlightTerms(evidence.content, evidence.detected_products) 
+                  }}
+                />
+                
+                {/* PRODUTOS DETECTADOS */}
+                {evidence.detected_products?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    <span className="text-xs font-medium mr-2">Produtos:</span>
+                    {evidence.detected_products.map((product: string) => (
+                      <Badge key={product} variant="outline" className="text-xs">
+                        📦 {product}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {/* BOTÕES DE AÇÃO */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => copyToClipboard(evidence.url, evidenceId, 'url')}
+                  >
+                    {copiedUrl === evidenceId ? (
+                      <>
+                        <Check className="w-3 h-3 mr-1" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copiar URL
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => copyToClipboard(allTerms, evidenceId, 'terms')}
+                  >
+                    {copiedTerms === evidenceId ? (
+                      <>
+                        <Check className="w-3 h-3 mr-1" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copiar Termos
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="text-xs h-7"
+                    asChild
+                  >
+                    <a
+                      href={evidence.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Ver Fonte
+                    </a>
+                  </Button>
                 </div>
-              )}
-              
-              <a
-                href={evidence.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-              >
-                Ver fonte <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-6">
