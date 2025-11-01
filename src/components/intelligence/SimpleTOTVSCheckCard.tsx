@@ -9,10 +9,13 @@ import { isValidUrl, formatWebsiteUrl } from "@/lib/utils/urlHelpers";
 import { toast } from "sonner";
 
 interface SimpleTOTVSCheckCardProps {
+  // ID usado para cache/local (pode ser o analysisId)
   companyId: string;
   companyName: string;
   cnpj?: string;
   domain?: string;
+  // ID real da tabela companies (para evitar FK no cache V2). Se ausente, não enviaremos company_id
+  realCompanyId?: string;
 }
 
 const CATEGORY_LABELS = {
@@ -64,7 +67,7 @@ const TOTVS_PRODUCTS = [
   'Email Marketing', 'Landing Pages', 'Marketing Automation'
 ];
 
-export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: SimpleTOTVSCheckCardProps) {
+export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain, realCompanyId }: SimpleTOTVSCheckCardProps) {
   const { data: latestCheck, isLoading: isLoadingLatest } = useLatestSimpleTOTVSCheck(companyId);
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -93,7 +96,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
     setAutoCheckAttempted(true);
     checkMutation.mutate({
-      companyId,
+      companyId: realCompanyId ? realCompanyId : undefined,
       companyName,
       cnpj,
       domain

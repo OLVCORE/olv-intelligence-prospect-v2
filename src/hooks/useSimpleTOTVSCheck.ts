@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface SimpleTOTVSCheckParams {
-  companyId: string;
+  companyId?: string; // pode ser omitido quando não houver company real
   companyName: string;
   cnpj?: string;
   domain?: string;
@@ -60,7 +60,7 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       if (data) {
         const ev = (data as any).evidences || { vagas: [], noticias: [], docs_oficiais: [] };
         const total = (data as any).total_evidences ?? Object.values(ev).flat().length;
-        console.log(`[HOOK] ✅ Verificação V2 encontrada para ${companyId}: ${(data as any).status}`);
+        // console.log(`[HOOK] ✅ Verificação V2 encontrada para ${companyId}: ${(data as any).status}`);
         return {
           company_id: companyId,
           status: (data as any).status,
@@ -75,7 +75,6 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       }
 
       // 2) Sem cache V2 = retornar null (não usar dados V1 da quarentena)
-      console.log(`[HOOK] ❌ Sem cache V2 para ${companyId} - retornando null para forçar nova verificação`);
       return null;
     },
     enabled: !!companyId,

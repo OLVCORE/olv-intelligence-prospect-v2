@@ -71,7 +71,8 @@ export function QuarantineReportModal({ open, onOpenChange, analysisId, companyI
         <Separator />
         <div className="p-6">
           <SimpleTOTVSCheckCard 
-            companyId={resolvedCompanyId}
+            companyId={analysisId}
+            realCompanyId={companyId}
             companyName={companyName}
             cnpj={cnpj}
             domain={domain}
