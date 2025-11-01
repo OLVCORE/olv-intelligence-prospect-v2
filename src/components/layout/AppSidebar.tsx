@@ -168,6 +168,12 @@ const menuGroups: MenuGroup[] = [
         description: "Processe centenas de empresas automaticamente"
       },
       {
+        title: "Empresas em Quarentena",
+        icon: Inbox,
+        url: "/leads/icp-quarantine",
+        description: "Aprove empresas analisadas antes de movê-las para o pool de leads"
+      },
+      {
         title: "Dashboard de Resultados",
         icon: BarChart3,
         url: "/central-icp/dashboard",

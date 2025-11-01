@@ -165,7 +165,7 @@ export function QuarantineRowActions({
           ) : (
             <Target className="h-4 w-4 mr-2" />
           )}
-          Ver Relatório TOTVS (Modal)
+          Simple TOTVS Check (STC)
         </DropdownMenuItem>
 
         {/* Ver Relatório TOTVS (Modal) */}
