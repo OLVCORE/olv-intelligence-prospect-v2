@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanySelectDialog } from "@/components/common/CompanySelectDialog";
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
-import TOTVSVerificationCard from "@/components/totvs/TOTVSVerificationCard";
+import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { useCalculateIntentScore } from "@/hooks/useIntentSignals";
 import { useAutoEnrichCompany } from "@/hooks/useAutoEnrichCompany";
@@ -333,7 +333,7 @@ export default function IndividualAnalysis() {
           </Alert>
 
           <div className="space-y-6">
-            <TOTVSVerificationCard 
+            <TOTVSCheckCard 
               companyId={company.id}
               companyName={company.name}
               cnpj={company.cnpj}

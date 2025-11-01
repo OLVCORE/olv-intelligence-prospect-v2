@@ -10,7 +10,7 @@ import { CompetitorInsightsIntegration } from "@/components/competitive/Competit
 import { useState } from "react";
 import { CompetitorFormDialog } from "@/components/competitive/CompetitorFormDialog";
 import { IntentSignalsCardV3 } from "@/components/competitive/IntentSignalsCardV3";
-import TOTVSVerificationCard from "@/components/totvs/TOTVSVerificationCard";
+import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
 import { SimilarCompaniesCard } from "@/components/competitive/SimilarCompaniesCard";
 import { QualificationRecommendation } from "@/components/competitive/QualificationRecommendation";
 import { ICPFilters } from "@/components/competitive/ICPFilters";
@@ -266,7 +266,7 @@ export default function CompetitiveIntelligencePage() {
               />
 
               <div className="grid gap-6 md:grid-cols-2">
-                <TOTVSVerificationCard
+                <TOTVSCheckCard
                   companyId={company.id}
                   companyName={company.name}
                   cnpj={company.cnpj}

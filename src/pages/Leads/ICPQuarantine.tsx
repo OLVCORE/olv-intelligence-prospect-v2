@@ -16,7 +16,7 @@ import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { useReverifyAllCompanies } from '@/hooks/useReverifyAllCompanies';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
-import TOTVSVerificationCard from '@/components/totvs/TOTVSVerificationCard';
+import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
 import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
 import { ICPScoreTooltip } from '@/components/icp/ICPScoreTooltip';
