@@ -61,7 +61,7 @@ export function useQuarantineCompanies(filters?: {
     queryFn: async () => {
       let query = supabase
         .from('icp_analysis_results')
-        .select('*')
+        .select('*, companies(cnpj_status)')
         .order('icp_score', { ascending: false });
 
       if (filters?.status) {
