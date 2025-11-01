@@ -80,7 +80,9 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
     try {
       const response = await fetch(url, options);
       if (response.ok || response.status === 404) return response;
-      
+      // Log detalhado em falhas
+      const body = await response.text().catch(() => '');
+      console.log(`[RETRY] HTTP ${response.status} on ${url} | body: ${body?.slice(0, 300)}`);
       if (attempt < maxRetries - 1) {
         const delay = 1000 * Math.pow(2, attempt);
         console.log(`[RETRY] Attempt ${attempt + 1}/${maxRetries} failed. Retrying in ${delay}ms...`);
@@ -293,10 +295,12 @@ async function searchGoogleCSE(
   try {
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10&gl=br&hl=pt-br`;
     
-    const response = await fetchWithRetry(url, { method: 'GET' });
+    // Chamada direta (evitar retries em 4xx)
+    const response = await fetch(url, { method: 'GET' });
     
     if (!response.ok) {
-      console.error(`[GOOGLE-CSE] HTTP ${response.status}`);
+      const body = await response.text().catch(() => '');
+      console.error(`[GOOGLE-CSE] HTTP ${response.status} | ${body.slice(0,200)}`);
       return [];
     }
     
