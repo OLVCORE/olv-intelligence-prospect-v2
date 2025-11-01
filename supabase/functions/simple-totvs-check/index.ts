@@ -8,14 +8,14 @@ const corsHeaders = {
 
 interface Evidence {
   source: string;
-  category: 'vagas' | 'noticias' | 'docs_oficiais' | 'judicial' | 'ri_docs' | 'tech_stack';
+  category: 'vagas' | 'noticias' | 'docs_oficiais';
   title: string;
   url: string;
   snippet: string;
   timestamp: string;
   totvs_products: string[];
-  match_type: 'triple' | 'double';
-  weight: number;
+  match_type?: 'triple' | 'double';
+  weight?: number;
 }
 
 interface CheckResult {
@@ -23,26 +23,13 @@ interface CheckResult {
   detected_totvs: boolean;
   confidence: 'high' | 'medium' | 'low';
   total_evidences: number;
-  total_weight: number;
-  match_summary: {
-    triple_matches: number;
-    double_matches: number;
-  };
   evidences_by_category: {
     vagas: Evidence[];
     noticias: Evidence[];
     docs_oficiais: Evidence[];
-    judicial: Evidence[];
-    ri_docs: Evidence[];
-    tech_stack: Evidence[];
   };
   reasoning: string;
   checked_at: string;
-  methodology: {
-    searched_sources: number;
-    total_queries: number;
-    execution_time_ms: number;
-  };
 }
 
 // Sistema de Pesos por Fonte
@@ -242,7 +229,7 @@ async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evi
       console.log(`[APOLLO] ✅ Tech stack TOTVS detectado:`, detectedProducts);
       return [{
         source: 'apollo.io',
-        category: 'tech_stack',
+        category: 'docs_oficiais',
         title: `Tech Stack: ${detectedProducts.join(', ')}`,
         url: `https://apollo.io/companies/${domain}`,
         snippet: `Tecnologias TOTVS detectadas no stack da empresa: ${detectedProducts.join(', ')}`,
@@ -405,7 +392,7 @@ serve(async (req) => {
     // ========== 4. JUDICIAL (Peso 85) ==========
     console.log(`[JUDICIAL] Buscando processos e documentos judiciais...`);
     const judicialQuery = `"${company_name}" "TOTVS" (site:jusbrasil.com.br OR site:esaj.tjsp.jus.br OR site:rad.cvm.gov.br OR site:stf.jus.br OR site:pje.tjmg.jus.br)`;
-    const judicialEvidences = await searchSerper(judicialQuery, SERPER_API_KEY, company_name, 'judicial', SOURCE_WEIGHTS.judicial);
+    const judicialEvidences = await searchSerper(judicialQuery, SERPER_API_KEY, company_name, 'docs_oficiais', SOURCE_WEIGHTS.judicial);
     allEvidences.push(...judicialEvidences);
     queriesExecuted++;
     console.log(`[JUDICIAL] ✅ Encontradas ${judicialEvidences.length} evidências`);
@@ -413,7 +400,7 @@ serve(async (req) => {
     // ========== 5. RELAÇÕES COM INVESTIDORES / PDFs (Peso 90) ==========
     console.log(`[RI-DOCS] Buscando documentos de RI e balanços...`);
     const riQuery = `"${company_name}" ("TOTVS" OR "Protheus" OR "Datasul") filetype:pdf (site:rad.cvm.gov.br OR site:b3.com.br OR site:ri.totvs.com.br)`;
-    const riEvidences = await searchSerper(riQuery, SERPER_API_KEY, company_name, 'ri_docs', SOURCE_WEIGHTS.cvm_ri_docs);
+    const riEvidences = await searchSerper(riQuery, SERPER_API_KEY, company_name, 'docs_oficiais', SOURCE_WEIGHTS.cvm_ri_docs);
     allEvidences.push(...riEvidences);
     queriesExecuted++;
     console.log(`[RI-DOCS] ✅ Encontradas ${riEvidences.length} evidências`);
@@ -429,7 +416,7 @@ serve(async (req) => {
     // ========== ANÁLISE DE RESULTADOS ==========
     const tripleMatches = allEvidences.filter(e => e.match_type === 'triple');
     const doubleMatches = allEvidences.filter(e => e.match_type === 'double');
-    const totalWeight = allEvidences.reduce((sum, e) => sum + e.weight, 0);
+    const totalWeight = allEvidences.reduce((sum, e) => sum + (e.weight || 0), 0);
 
     console.log(`\n[RESULTADO] ========================================`);
     console.log(`[RESULTADO] Triple Matches: ${tripleMatches.length}`);
@@ -469,32 +456,17 @@ serve(async (req) => {
     const evidencesByCategory: CheckResult['evidences_by_category'] = {
       vagas: allEvidences.filter(e => e.category === 'vagas'),
       noticias: allEvidences.filter(e => e.category === 'noticias'),
-      docs_oficiais: allEvidences.filter(e => e.category === 'docs_oficiais'),
-      judicial: allEvidences.filter(e => e.category === 'judicial'),
-      ri_docs: allEvidences.filter(e => e.category === 'ri_docs'),
-      tech_stack: allEvidences.filter(e => e.category === 'tech_stack')
+      docs_oficiais: allEvidences.filter(e => e.category === 'docs_oficiais')
     };
-
-    const executionTime = Date.now() - startTime;
 
     const result: CheckResult = {
       status,
       detected_totvs: allEvidences.length > 0,
       confidence,
       total_evidences: allEvidences.length,
-      total_weight: totalWeight,
-      match_summary: {
-        triple_matches: tripleMatches.length,
-        double_matches: doubleMatches.length
-      },
       evidences_by_category: evidencesByCategory,
       reasoning,
-      checked_at: new Date().toISOString(),
-      methodology: {
-        searched_sources: 6, // Apollo, Vagas, Notícias, Judicial, RI, Docs
-        total_queries: queriesExecuted,
-        execution_time_ms: executionTime
-      }
+      checked_at: new Date().toISOString()
     };
 
     // Salvar no banco
@@ -529,6 +501,7 @@ serve(async (req) => {
       console.log('[SAVE] ✅ Resultado salvo com sucesso');
     }
 
+    const executionTime = Date.now() - startTime;
     console.log(`[SIMPLE-TOTVS] Finalizado em ${executionTime}ms - Status: ${status}`);
 
     return new Response(JSON.stringify(result), {
