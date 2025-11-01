@@ -65,7 +65,6 @@ export function useQuarantineCompanies(filters?: {
           *,
           companies(
             id,
-            cnpj_status,
             domain,
             website
           )
@@ -86,11 +85,11 @@ export function useQuarantineCompanies(filters?: {
       if (error) throw error;
 
       // Flatten companies data into the main object
+      // cnpj_status now comes directly from icp_analysis_results
       const formatted = (data || []).map((item: any) => {
         const companyData = item.companies || {};
         return {
           ...item,
-          cnpj_status: companyData.cnpj_status,
           domain: companyData.domain || item.domain,
           website: item.website || companyData.website,
         };

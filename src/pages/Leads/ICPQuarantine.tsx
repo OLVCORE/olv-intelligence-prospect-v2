@@ -946,17 +946,18 @@ export default function ICPQuarantine() {
       {/* Table */}
       <Card>
         <CardContent className="pt-6">
-          <div className="overflow-x-auto">
+          <ScrollArea className="w-full">
+            <div className="min-w-full">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
+                  <TableHead className="w-[50px]">
                     <Checkbox
                       checked={selectedIds.length === filteredCompanies.length && filteredCompanies.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="min-w-[250px]">
+                  <TableHead className="w-[200px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -967,7 +968,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[150px]">
+                  <TableHead className="w-[130px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -978,7 +979,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[120px]">
+                  <TableHead className="w-[110px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -989,7 +990,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[200px]">
+                  <TableHead className="w-[180px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1000,7 +1001,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[140px]">
+                  <TableHead className="w-[120px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1011,7 +1012,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[100px]">
+                  <TableHead className="w-[90px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1022,8 +1023,8 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[150px]">Status Análise</TableHead>
-                  <TableHead className="w-[150px]">
+                  <TableHead className="w-[130px]">Status Análise</TableHead>
+                  <TableHead className="w-[130px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1034,9 +1035,9 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[150px]">Website</TableHead>
-                  <TableHead className="min-w-[180px]">Motivo Descarte</TableHead>
-                  <TableHead className="w-[80px]">Ações</TableHead>
+                  <TableHead className="w-[140px]">Website</TableHead>
+                  <TableHead className="w-[150px]">Motivo Descarte</TableHead>
+                  <TableHead className="w-[70px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -1089,11 +1090,11 @@ export default function ICPQuarantine() {
                     <TableCell>
                       <QuarantineCNPJStatusBadge 
                         cnpj={company.cnpj} 
-                        cnpjStatus={(company as any).cnpj_status}
+                        cnpjStatus={company.cnpj_status}
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-[200px] truncate" title={company.setor || 'Não identificado'}>
+                      <div className="max-w-[180px] truncate" title={company.setor || 'Não identificado'}>
                         {company.setor ? (
                           <span className="text-sm">{company.setor}</span>
                         ) : (
@@ -1150,7 +1151,7 @@ export default function ICPQuarantine() {
                           href={`https://${(company.website || rawData?.domain).replace(/^https?:\/\//, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[150px] truncate"
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[140px] truncate"
                           onClick={(e) => e.stopPropagation()}
                           title={company.website || rawData?.domain}
                         >
@@ -1191,7 +1192,8 @@ export default function ICPQuarantine() {
               )}
             </TableBody>
           </Table>
-          </div>
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
 

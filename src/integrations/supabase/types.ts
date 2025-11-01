@@ -4044,6 +4044,7 @@ export type Database = {
           breakdown: Json | null
           cnae_principal: string | null
           cnpj: string
+          cnpj_status: string | null
           company_id: string | null
           created_at: string | null
           email: string | null
@@ -4078,6 +4079,7 @@ export type Database = {
           breakdown?: Json | null
           cnae_principal?: string | null
           cnpj: string
+          cnpj_status?: string | null
           company_id?: string | null
           created_at?: string | null
           email?: string | null
@@ -4112,6 +4114,7 @@ export type Database = {
           breakdown?: Json | null
           cnae_principal?: string | null
           cnpj?: string
+          cnpj_status?: string | null
           company_id?: string | null
           created_at?: string | null
           email?: string | null
