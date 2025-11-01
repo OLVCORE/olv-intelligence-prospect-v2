@@ -280,7 +280,76 @@ async function checkApolloTechStack(domain: string, apiKey: string): Promise<Evi
   }
 }
 
-// Busca Serper
+// ⚠️⚠️⚠️ DO NOT CHANGE: Validated search logic with triple/double match ⚠️⚠️⚠️
+// Busca Google Custom Search (Fallback)
+async function searchGoogleCSE(
+  query: string,
+  apiKey: string,
+  searchEngineId: string,
+  companyName: string,
+  category: Evidence['category'],
+  weight: number
+): Promise<Evidence[]> {
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10&gl=br&hl=pt-br`;
+    
+    const response = await fetchWithRetry(url, { method: 'GET' });
+    
+    if (!response.ok) {
+      console.error(`[GOOGLE-CSE] HTTP ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const evidences: Evidence[] = [];
+    
+    if (data.items) {
+      for (const item of data.items) {
+        const fullText = `${item.title || ''} ${item.snippet || ''}`;
+        
+        // Triple Match (Empresa + TOTVS + Produto)
+        const tripleResult = tripleMatch(fullText, companyName);
+        if (tripleResult.matched) {
+          evidences.push({
+            source: new URL(item.link).hostname,
+            category,
+            title: item.title || '',
+            url: item.link || '',
+            snippet: item.snippet || '',
+            timestamp: new Date().toISOString(),
+            totvs_products: tripleResult.detectedProducts,
+            match_type: 'triple',
+            weight
+          });
+          continue;
+        }
+        
+        // Double Match (Empresa + TOTVS/Produto)
+        const doubleResult = doubleMatch(fullText, companyName);
+        if (doubleResult.matched) {
+          evidences.push({
+            source: new URL(item.link).hostname,
+            category,
+            title: item.title || '',
+            url: item.link || '',
+            snippet: item.snippet || '',
+            timestamp: new Date().toISOString(),
+            totvs_products: doubleResult.detectedProducts,
+            match_type: 'double',
+            weight: Math.floor(weight * 0.7) // Reduz peso de double
+          });
+        }
+      }
+    }
+    
+    return evidences;
+  } catch (error) {
+    console.error(`[GOOGLE-CSE] Erro:`, error);
+    return [];
+  }
+}
+
+// Busca Serper (Primária)
 async function searchSerper(
   query: string,
   apiKey: string,
@@ -298,45 +367,48 @@ async function searchSerper(
       body: JSON.stringify({ q: query, num: 10, gl: 'br', hl: 'pt-br' })
     });
     
-    if (!response.ok) return [];
+    if (!response.ok) {
+      console.error(`[SERPER] HTTP ${response.status}`);
+      return [];
+    }
     
     const data = await response.json();
     const evidences: Evidence[] = [];
     
     if (data.organic) {
       for (const item of data.organic) {
-        const text = `${item.title || ''} ${item.snippet || ''}`;
+        const fullText = `${item.title || ''} ${item.snippet || ''}`;
         
-        const hasTotvs = containsTOTVS(text);
-        const hasProduct = containsProduct(text);
-        const hasCompany = containsCompany(text, company_name, company_cnpj);
-        
-        const matchCount = [hasTotvs, hasProduct, hasCompany].filter(Boolean).length;
-        
-        if (matchCount >= 2) {
-          let match_type: 'triple' | 'double';
-          let confidence: 'high' | 'medium';
-          
-          if (matchCount === 3) {
-            match_type = 'triple';
-            confidence = 'high';
-          } else {
-            match_type = 'double';
-            confidence = 'medium';
-          }
-          
+        // Triple Match (Empresa + TOTVS + Produto)
+        const tripleResult = tripleMatch(fullText, companyName);
+        if (tripleResult.matched) {
           evidences.push({
+            source: new URL(item.link).hostname,
             category,
-            text: text.substring(0, 300),
+            title: item.title || '',
             url: item.link || '',
-            match_type,
-            confidence,
-            weight,
-            matched_terms: {
-              totvs: hasTotvs,
-              product: hasProduct,
-              company: hasCompany
-            }
+            snippet: item.snippet || '',
+            timestamp: new Date().toISOString(),
+            totvs_products: tripleResult.detectedProducts,
+            match_type: 'triple',
+            weight
+          });
+          continue;
+        }
+        
+        // Double Match (Empresa + TOTVS/Produto)
+        const doubleResult = doubleMatch(fullText, companyName);
+        if (doubleResult.matched) {
+          evidences.push({
+            source: new URL(item.link).hostname,
+            category,
+            title: item.title || '',
+            url: item.link || '',
+            snippet: item.snippet || '',
+            timestamp: new Date().toISOString(),
+            totvs_products: doubleResult.detectedProducts,
+            match_type: 'double',
+            weight: Math.floor(weight * 0.7) // Reduz peso de double
           });
         }
       }
@@ -347,6 +419,50 @@ async function searchSerper(
     console.error(`[SERPER] Erro:`, error);
     return [];
   }
+}
+
+// Busca com Fallback Automático (Serper → Google CSE)
+async function searchWithFallback(
+  query: string,
+  serperKey: string | undefined,
+  googleKey: string | undefined,
+  googleCseId: string | undefined,
+  companyName: string,
+  category: Evidence['category'],
+  weight: number
+): Promise<Evidence[]> {
+  // 1ª Tentativa: Serper (mais rápido)
+  if (serperKey) {
+    try {
+      const results = await searchSerper(query, serperKey, companyName, category, weight);
+      if (results.length > 0) {
+        console.log(`[FALLBACK] ✅ Serper retornou ${results.length} evidências`);
+        return results;
+      }
+      console.log(`[FALLBACK] ⚠️ Serper vazio, tentando Google CSE...`);
+    } catch (error) {
+      console.warn(`[FALLBACK] Serper falhou:`, error);
+    }
+  } else {
+    console.log(`[FALLBACK] ⚠️ SERPER_API_KEY não configurada, usando Google CSE`);
+  }
+  
+  // 2ª Tentativa: Google CSE (fallback)
+  if (googleKey && googleCseId) {
+    try {
+      const results = await searchGoogleCSE(query, googleKey, googleCseId, companyName, category, weight);
+      if (results.length > 0) {
+        console.log(`[FALLBACK] ✅ Google CSE retornou ${results.length} evidências`);
+        return results;
+      }
+      console.log(`[FALLBACK] ⚠️ Google CSE também vazio`);
+    } catch (error) {
+      console.warn(`[FALLBACK] Google CSE falhou:`, error);
+    }
+  }
+  
+  // Sem resultados de ambas as APIs
+  return [];
 }
 
 serve(async (req) => {
@@ -368,10 +484,22 @@ serve(async (req) => {
     console.log(`[SIMPLE-TOTVS] Domain: ${domain || 'N/A'} | Setor: ${setor || 'N/A'}`);
 
     const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+    const GOOGLE_CSE_ID = Deno.env.get('GOOGLE_CSE_ID');
     const APOLLO_API_KEY = Deno.env.get('APOLLO_API_KEY');
 
+    // ⚠️ Fallback automático: Se Serper não estiver disponível, usa Google CSE
+    if (!SERPER_API_KEY && (!GOOGLE_API_KEY || !GOOGLE_CSE_ID)) {
+      console.error('[API-KEYS] ❌ Nenhuma API de busca configurada (Serper ou Google CSE)');
+      throw new Error('Configure SERPER_API_KEY ou GOOGLE_API_KEY + GOOGLE_CSE_ID');
+    }
+    
     if (!SERPER_API_KEY) {
-      throw new Error('SERPER_API_KEY não configurada');
+      console.warn('[API-KEYS] ⚠️ SERPER_API_KEY indisponível, usando apenas Google CSE');
+    } else if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+      console.warn('[API-KEYS] ⚠️ Google CSE não configurado, usando apenas Serper');
+    } else {
+      console.log('[API-KEYS] ✅ Serper + Google CSE configurados (fallback ativo)');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -442,14 +570,22 @@ serve(async (req) => {
       }
     ];
 
-    console.log(`[PARALLEL] 🚀 Executando ${queries.length + 1} buscas em paralelo...`);
+    console.log(`[PARALLEL] 🚀 Executando ${queries.length + 1} buscas em paralelo com fallback automático...`);
 
-    const [apolloEv, ...serperResults] = await Promise.all([
+    const [apolloEv, ...searchResults] = await Promise.all([
       domain && APOLLO_API_KEY ? checkApolloTechStack(domain, APOLLO_API_KEY) : Promise.resolve([]),
-      ...queries.map(q => searchSerper(q.query, SERPER_API_KEY, company_name, q.category, q.weight))
+      ...queries.map(q => searchWithFallback(
+        q.query, 
+        SERPER_API_KEY, 
+        GOOGLE_API_KEY, 
+        GOOGLE_CSE_ID,
+        company_name, 
+        q.category, 
+        q.weight
+      ))
     ]);
 
-    const allEvidences = [...apolloEv, ...serperResults.flat()];
+    const allEvidences = [...apolloEv, ...searchResults.flat()];
 
     // Boost de peso para setores prioritários
     if (prioritySector) {
