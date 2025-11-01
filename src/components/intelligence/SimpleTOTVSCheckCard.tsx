@@ -70,7 +70,8 @@ const TOTVS_PRODUCTS = [
 ];
 
 export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain, realCompanyId }: SimpleTOTVSCheckCardProps) {
-  const { data: latestCheck, isLoading: isLoadingLatest } = useLatestSimpleTOTVSCheck(companyId);
+  const resolvedIdForCache = realCompanyId || companyId;
+  const { data: latestCheck, isLoading: isLoadingLatest } = useLatestSimpleTOTVSCheck(resolvedIdForCache);
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
