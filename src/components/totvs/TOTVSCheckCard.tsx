@@ -143,6 +143,15 @@ export default function TOTVSCheckCard({
           {' | '}
           Peso total: <strong>{data.total_weight} pontos</strong>
         </p>
+        
+        {/* DEBUG INFO */}
+        <div className="text-xs text-muted-foreground mt-3 p-3 bg-muted/30 rounded-md border border-border/50">
+          <strong className="text-foreground">Debug:</strong>{' '}
+          {data.triple_matches || 0} triple matches |{' '}
+          {data.double_matches || 0} double matches |{' '}
+          {data.evidences?.length || 0} evidências |{' '}
+          {data.methodology?.total_queries || 0} queries executadas
+        </div>
       </div>
 
       {/* FILTROS */}

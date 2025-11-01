@@ -7455,42 +7455,60 @@ export type Database = {
       simple_totvs_checks: {
         Row: {
           checked_at: string
+          cnpj: string | null
           company_id: string
+          company_name: string | null
           confidence: string
           created_at: string
           detected_totvs: boolean
+          domain: string | null
+          double_matches: number | null
           evidences: Json | null
           id: string
           logic_version: number | null
           reasoning: string | null
           status: string
           total_evidences: number
+          total_weight: number | null
+          triple_matches: number | null
         }
         Insert: {
           checked_at?: string
+          cnpj?: string | null
           company_id: string
+          company_name?: string | null
           confidence: string
           created_at?: string
           detected_totvs?: boolean
+          domain?: string | null
+          double_matches?: number | null
           evidences?: Json | null
           id?: string
           logic_version?: number | null
           reasoning?: string | null
           status: string
           total_evidences?: number
+          total_weight?: number | null
+          triple_matches?: number | null
         }
         Update: {
           checked_at?: string
+          cnpj?: string | null
           company_id?: string
+          company_name?: string | null
           confidence?: string
           created_at?: string
           detected_totvs?: boolean
+          domain?: string | null
+          double_matches?: number | null
           evidences?: Json | null
           id?: string
           logic_version?: number | null
           reasoning?: string | null
           status?: string
           total_evidences?: number
+          total_weight?: number | null
+          triple_matches?: number | null
         }
         Relationships: [
           {

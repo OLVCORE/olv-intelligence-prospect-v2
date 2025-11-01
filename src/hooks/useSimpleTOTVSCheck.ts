@@ -39,9 +39,9 @@ export const useSimpleTOTVSCheck = ({
       return data;
     },
     enabled: enabled && (!!companyName || !!cnpj),
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
-    refetchOnMount: false,
+    staleTime: 60 * 1000,      // 1 minuto (balanceado)
+    gcTime: 5 * 60 * 1000,     // 5 minutos
+    refetchOnMount: true,      // Verificar ao abrir
     refetchOnWindowFocus: false,
   });
 };

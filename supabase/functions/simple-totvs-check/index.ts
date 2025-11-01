@@ -9,7 +9,8 @@ const corsHeaders = {
 const TOTVS_PRODUCTS = [
   'Protheus', 'RM', 'Datasul', 'Fluig', 'Winthor', 'Microsiga',
   'TOTVS Gestão', 'TOTVS ERP', 'Carol', 'Techfin', 'Logix',
-  'TOTVS Backoffice', 'TOTVS Manufatura'
+  'TOTVS Backoffice', 'TOTVS Manufatura', 'TOTVS Varejo',
+  'TOTVS Educacional', 'TOTVS Saúde'
 ];
 
 const SOURCE_WEIGHTS = {
@@ -23,7 +24,7 @@ const SOURCE_WEIGHTS = {
 };
 
 function tripleMatch(text: string, companyName: string): boolean {
-  const searchWindow = 80;
+  const searchWindow = 150;
   const textLower = text.toLowerCase();
   const companyLower = companyName.toLowerCase();
   const companyIndex = textLower.indexOf(companyLower);
@@ -46,7 +47,7 @@ function tripleMatch(text: string, companyName: string): boolean {
 }
 
 function doubleMatch(text: string, companyName: string): boolean {
-  const searchWindow = 60;
+  const searchWindow = 120;
   const textLower = text.toLowerCase();
   const companyLower = companyName.toLowerCase();
   const companyIndex = textLower.indexOf(companyLower);
@@ -146,11 +147,14 @@ serve(async (req) => {
       totalQueries++;
 
       try {
+        const linkedinQuery = `${searchTerm} TOTVS site:linkedin.com/jobs`;
+        console.log('[SIMPLE-TOTVS] 🔍 Query LinkedIn:', linkedinQuery);
+        
         const serperResponse = await fetch('https://google.serper.dev/search', {
           method: 'POST',
           headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            q: `"${searchTerm}" "TOTVS" site:linkedin.com/jobs`,
+            q: linkedinQuery,
             num: 20, gl: 'br', hl: 'pt-br',
           }),
         });
@@ -158,7 +162,9 @@ serve(async (req) => {
         if (serperResponse.ok) {
           const serperData = await serperResponse.json();
           const results = serperData.organic || [];
-          console.log('[SIMPLE-TOTVS] 📊 LinkedIn:', results.length, 'resultados');
+          console.log('[SIMPLE-TOTVS] 📊 LinkedIn - Raw results:', results.length);
+          
+          let validLinkedInCount = 0;
 
           for (const result of results) {
             const title = result.title || '';
@@ -174,6 +180,7 @@ serve(async (req) => {
             const isDouble = !isTriple && doubleMatch(combined, searchTerm);
 
             if (isTriple || isDouble) {
+              validLinkedInCount++;
               evidencias.push({
                 source: 'linkedin_jobs',
                 weight: SOURCE_WEIGHTS.linkedin_jobs,
@@ -186,6 +193,7 @@ serve(async (req) => {
               console.log(`[SIMPLE-TOTVS] ✅ ${isTriple ? 'TRIPLE' : 'DOUBLE'} Match:`, title.substring(0, 50));
             }
           }
+          console.log('[SIMPLE-TOTVS] ✅ LinkedIn - Valid evidences:', validLinkedInCount);
         }
       } catch (error) {
         console.error('[SIMPLE-TOTVS] ❌ Erro no Serper LinkedIn:', error);
@@ -195,17 +203,21 @@ serve(async (req) => {
       totalQueries++;
 
       try {
+        const newsQuery = `${searchTerm} TOTVS`;
+        console.log('[SIMPLE-TOTVS] 🔍 Query News:', newsQuery);
+        
         const newsResponse = await fetch('https://google.serper.dev/news', {
           method: 'POST',
           headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q: `"${searchTerm}" "TOTVS"`, num: 10, gl: 'br', hl: 'pt-br' }),
+          body: JSON.stringify({ q: newsQuery, num: 10, gl: 'br', hl: 'pt-br' }),
         });
 
         if (newsResponse.ok) {
           const newsData = await newsResponse.json();
           const news = newsData.news || [];
-          console.log('[SIMPLE-TOTVS] 📰 News:', news.length, 'resultados');
-
+          console.log('[SIMPLE-TOTVS] 📰 News - Raw results:', news.length);
+          
+          let validNewsCount = 0;
           for (const item of news) {
             const title = item.title || '';
             const snippet = item.snippet || '';
@@ -214,6 +226,7 @@ serve(async (req) => {
             const isDouble = !isTriple && doubleMatch(combined, searchTerm);
 
             if (isTriple || isDouble) {
+              validNewsCount++;
               evidencias.push({
                 source: 'google_news',
                 weight: SOURCE_WEIGHTS.google_news,
@@ -225,6 +238,7 @@ serve(async (req) => {
               });
             }
           }
+          console.log('[SIMPLE-TOTVS] ✅ News - Valid evidences:', validNewsCount);
         }
       } catch (error) {
         console.error('[SIMPLE-TOTVS] ❌ Erro no News:', error);
@@ -236,10 +250,13 @@ serve(async (req) => {
       for (const source of premiumSources) {
         totalQueries++;
         try {
+          const premiumQuery = `${searchTerm} TOTVS site:${source}`;
+          console.log('[SIMPLE-TOTVS] 🔍 Query Premium:', premiumQuery);
+          
           const premiumResponse = await fetch('https://google.serper.dev/search', {
             method: 'POST',
             headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: `"${searchTerm}" "TOTVS" site:${source}`, num: 5, gl: 'br', hl: 'pt-br' }),
+            body: JSON.stringify({ q: premiumQuery, num: 5, gl: 'br', hl: 'pt-br' }),
           });
 
           if (premiumResponse.ok) {
@@ -277,10 +294,13 @@ serve(async (req) => {
       for (const source of judicialSources) {
         totalQueries++;
         try {
+          const judicialQuery = `${searchTerm} TOTVS site:${source}`;
+          console.log('[SIMPLE-TOTVS] 🔍 Query Judicial:', judicialQuery);
+          
           const judicialResponse = await fetch('https://google.serper.dev/search', {
             method: 'POST',
             headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: `"${searchTerm}" "TOTVS" site:${source}`, num: 5, gl: 'br', hl: 'pt-br' }),
+            body: JSON.stringify({ q: judicialQuery, num: 5, gl: 'br', hl: 'pt-br' }),
           });
 
           if (judicialResponse.ok) {
@@ -316,27 +336,23 @@ serve(async (req) => {
     const tripleMatches = evidencias.filter(e => e.match_type === 'triple').length;
     const doubleMatches = evidencias.filter(e => e.match_type === 'double').length;
     const totalWeight = evidencias.reduce((sum, e) => sum + e.weight, 0);
+    const numEvidencias = evidencias.length;
 
     let status: string;
     let confidence: string;
 
-    if (tripleMatches >= 5) {
-      status = 'no-go';
+    // NOVA LÓGICA: Baseada no número total de evidências
+    if (numEvidencias >= 3) {
+      status = 'no-go';      // 3+ evidências = USA TOTVS
       confidence = 'high';
-    } else if (tripleMatches >= 3) {
-      status = 'no-go';
+    } else if (numEvidencias >= 2) {
+      status = 'no-go';      // 2 evidências = PROVÁVEL USO
       confidence = 'medium';
-    } else if (tripleMatches >= 1) {
-      status = 'revisar';
-      confidence = 'medium';
-    } else if (doubleMatches >= 5) {
-      status = 'revisar';
-      confidence = 'medium';
-    } else if (doubleMatches >= 2) {
-      status = 'revisar';
+    } else if (numEvidencias >= 1) {
+      status = 'revisar';    // 1 evidência = INVESTIGAR
       confidence = 'low';
     } else {
-      status = 'go';
+      status = 'go';         // 0 evidências = NÃO USA
       confidence = 'low';
     }
 
