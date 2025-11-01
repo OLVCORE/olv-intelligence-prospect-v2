@@ -69,7 +69,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
   const checkMutation = useSimpleTOTVSCheck();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [autoCheckAttempted, setAutoCheckAttempted] = useState(false);
+  const [autoCheckAttempted, setAutoCheckAttempted] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
   // Resultado a exibir: prioriza o retorno imediato da mutação
   const viewCheck = (checkMutation.data as any) || latestCheck as any;
@@ -82,6 +82,18 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
       });
       return;
     }
+
+    // Guarda anti-gasto: cooldown de 5 minutos por empresa
+    const key = `stc:last:${companyId}`;
+    const last = Number(localStorage.getItem(key) || '0');
+    const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutos
+    const elapsed = Date.now() - last;
+    if (elapsed < COOLDOWN_MS) {
+      const mins = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
+      toast.info(`Aguarde ${mins} min para nova verificação`, { duration: 4000 });
+      return;
+    }
+    localStorage.setItem(key, String(Date.now()));
 
     checkMutation.mutate({
       companyId,
@@ -331,8 +343,18 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
 
                   {/* Cross-matching visual */}
                   <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
-                    <span className="text-muted-foreground flex items-center gap-1">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       🔍 {evidence.source}
+                      {evidence.match_type && (
+                        <Badge 
+                          variant="outline" 
+                          className={evidence.match_type === 'triple' 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'}
+                        >
+                          {evidence.match_type === 'triple' ? 'TRIPLE' : 'DOUBLE'}
+                        </Badge>
+                      )}
                     </span>
                     <div className="flex flex-wrap gap-1 justify-end">
                       {evidence.totvs_products.map((product, i) => (
@@ -490,8 +512,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
               );
             }
             
-            if (tripleCount === 0 && doubleCount === 0) return null;
-            
+            const disabled = tripleCount === 0 && doubleCount === 0;
             return (
               <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
                 <div className="flex items-center justify-between">
@@ -502,6 +523,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                       variant={filterMode === 'triple' ? 'default' : 'outline'}
                       onClick={() => setFilterMode('triple')}
                       className="text-xs"
+                      disabled={disabled}
                     >
                       🎯 Apenas Triple Match
                     </Button>
@@ -510,6 +532,7 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                       variant={filterMode === 'all' ? 'default' : 'outline'}
                       onClick={() => setFilterMode('all')}
                       className="text-xs"
+                      disabled={disabled}
                     >
                       🔍 Triple + Double Match
                     </Button>
@@ -529,6 +552,9 @@ export function SimpleTOTVSCheckCard({ companyId, companyName, cnpj, domain }: S
                     Double (Empresa + TOTVS/Produto)
                   </span>
                 </div>
+                {disabled && (
+                  <p className="text-xs text-muted-foreground">Sem evidências no momento — clique em "Atualizar Verificação" para tentar novamente.</p>
+                )}
               </div>
             );
           })()}
