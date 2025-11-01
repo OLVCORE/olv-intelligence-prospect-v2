@@ -23,51 +23,78 @@ const SOURCE_WEIGHTS = {
   google_search: 40
 };
 
-function tripleMatch(text: string, companyName: string): boolean {
-  const searchWindow = 150;
-  const textLower = text.toLowerCase();
-  const companyLower = companyName.toLowerCase();
-  const companyIndex = textLower.indexOf(companyLower);
-  const totvsIndex = textLower.indexOf('totvs');
-
-  if (companyIndex === -1 || totvsIndex === -1) {
-    return false;
-  }
-
-  for (const product of TOTVS_PRODUCTS) {
-    const productIndex = textLower.indexOf(product.toLowerCase());
-    if (productIndex === -1) continue;
-    const indices = [companyIndex, totvsIndex, productIndex].sort((a, b) => a - b);
-    const distance = indices[2] - indices[0];
-    if (distance <= searchWindow) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function doubleMatch(text: string, companyName: string): boolean {
-  const searchWindow = 120;
-  const textLower = text.toLowerCase();
-  const companyLower = companyName.toLowerCase();
-  const companyIndex = textLower.indexOf(companyLower);
+// VALIDAÇÃO ULTRA-RESTRITA: Empresa + TOTVS + Produto no MESMO TEXTO
+function isValidTOTVSEvidence(
+  snippet: string, 
+  title: string, 
+  companyName: string
+): { valid: boolean; matchType: string; produtos: string[] } {
   
-  if (companyIndex === -1) {
-    return false;
-  }
-
-  const totvsIndex = textLower.indexOf('totvs');
-  if (totvsIndex !== -1 && Math.abs(companyIndex - totvsIndex) <= searchWindow) {
-    return true;
-  }
-
-  for (const product of TOTVS_PRODUCTS) {
-    const productIndex = textLower.indexOf(product.toLowerCase());
-    if (productIndex !== -1 && Math.abs(companyIndex - productIndex) <= searchWindow) {
-      return true;
+  // COMBINAR título + snippet (isso é O ANÚNCIO COMPLETO)
+  const fullText = `${title} ${snippet}`;
+  const textLower = fullText.toLowerCase();
+  const companyLower = companyName.toLowerCase();
+  
+  console.log('[SIMPLE-TOTVS] 🔍 Validando:', title.substring(0, 60));
+  
+  // 1. REJEITAR: Vagas NA TOTVS (não cliente)
+  const totvsJobPatterns = [
+    'totvs contratou',
+    'vaga na totvs',
+    'trabalhar na totvs',
+    'oportunidade na totvs',
+    'junte-se à totvs',
+    'totvs está contratando',
+    'carreira na totvs'
+  ];
+  
+  for (const pattern of totvsJobPatterns) {
+    if (textLower.includes(pattern)) {
+      console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Vaga NA TOTVS');
+      return { valid: false, matchType: 'rejected', produtos: [] };
     }
   }
-  return false;
+  
+  // 2. VERIFICAR: Empresa está no texto?
+  if (!textLower.includes(companyLower)) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Empresa não mencionada');
+    return { valid: false, matchType: 'rejected', produtos: [] };
+  }
+  
+  // 3. VERIFICAR: "TOTVS" está no texto?
+  if (!textLower.includes('totvs')) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: TOTVS não mencionada');
+    return { valid: false, matchType: 'rejected', produtos: [] };
+  }
+  
+  // 4. DETECTAR: Produtos TOTVS mencionados
+  const produtosDetectados: string[] = [];
+  
+  for (const produto of TOTVS_PRODUCTS) {
+    if (textLower.includes(produto.toLowerCase())) {
+      produtosDetectados.push(produto);
+    }
+  }
+  
+  // 5. CLASSIFICAR: Triple ou Double Match
+  
+  // TRIPLE MATCH: Empresa + TOTVS + Produto (TUDO NO MESMO TEXTO)
+  if (produtosDetectados.length > 0) {
+    console.log('[SIMPLE-TOTVS] ✅ TRIPLE MATCH:', produtosDetectados.join(', '));
+    return { 
+      valid: true, 
+      matchType: 'triple', 
+      produtos: produtosDetectados 
+    };
+  }
+  
+  // DOUBLE MATCH: Empresa + TOTVS (sem produto específico)
+  console.log('[SIMPLE-TOTVS] ✅ DOUBLE MATCH');
+  return { 
+    valid: true, 
+    matchType: 'double', 
+    produtos: [] 
+  };
 }
 
 function isValidLinkedInJobPosting(text: string): boolean {
@@ -82,42 +109,6 @@ function isValidLinkedInJobPosting(text: string): boolean {
     }
   }
   return true;
-}
-
-function hasValidContext(text: string, companyName: string): boolean {
-  const textLower = text.toLowerCase();
-  
-  // REJEITAR: Listas de valores monetários (padrão de documentos judiciais)
-  const moneyListPattern = /R\$\s*[\d.,]+\s*-.*?-\s*R\$\s*[\d.,]+/i;
-  if (moneyListPattern.test(text)) {
-    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: lista de valores monetários');
-    return false;
-  }
-  
-  // REJEITAR: Múltiplas empresas listadas (padrão: "EMPRESA1 LTDA - R$ ... - EMPRESA2 LTDA")
-  const multipleCompaniesPattern = /(LTDA|S\.A\.|SA|EIRELI).*?-.*?(LTDA|S\.A\.|SA|EIRELI)/i;
-  if (multipleCompaniesPattern.test(text)) {
-    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: lista de múltiplas empresas');
-    return false;
-  }
-  
-  // ACEITAR: Verbos de ação que indicam uso real
-  const actionVerbs = [
-    'utiliza', 'usa', 'implementou', 'adotou', 'contratou', 'renovou',
-    'migrou', 'escolheu', 'implantou', 'utilizar', 'usar', 'implementar',
-    'sistema', 'solução', 'cliente', 'parceiro', 'contrato', 'licença'
-  ];
-  
-  for (const verb of actionVerbs) {
-    if (textLower.includes(verb)) {
-      console.log('[SIMPLE-TOTVS] ✅ Aceito: verbo de ação encontrado:', verb);
-      return true;
-    }
-  }
-  
-  // Se não tem contexto de uso, rejeitar
-  console.log('[SIMPLE-TOTVS] ❌ Rejeitado: sem contexto de uso');
-  return false;
 }
 
 function detectTotvsProducts(text: string): string[] {
@@ -237,39 +228,31 @@ serve(async (req) => {
             const title = result.title || '';
             const snippet = result.snippet || '';
             const combined = `${title} ${snippet}`;
-
+            
+            // Validar LinkedIn job postings
             if (!isValidLinkedInJobPosting(combined)) {
-              console.log('[SIMPLE-TOTVS] ⚠️ Rejeitado (histórico):', title.substring(0, 50));
               continue;
             }
-
-            const isTriple = tripleMatch(combined, shortSearchTerm);
-            const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
-
-            // LOG: Mostrar por que foi rejeitado
-            if (!isTriple && !isDouble) {
-              console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (sem match): ${title.substring(0, 60)}`);
+            
+            // VALIDAÇÃO ULTRA-RESTRITA
+            const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+            
+            if (!validation.valid) {
+              continue;
             }
-
-            if (isTriple || isDouble) {
-              // Validar contexto antes de aceitar
-              if (!hasValidContext(combined, shortSearchTerm)) {
-                console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
-                continue;
-              }
-              
-              validLinkedInCount++;
-              evidencias.push({
-                source: 'linkedin_jobs',
-                weight: SOURCE_WEIGHTS.linkedin_jobs,
-                match_type: isTriple ? 'triple' : 'double',
-                content: snippet,
-                url: result.link,
-                title: title,
-                detected_products: detectTotvsProducts(combined),
-              });
-              console.log(`[SIMPLE-TOTVS] ✅ ${isTriple ? 'TRIPLE' : 'DOUBLE'} Match:`, title.substring(0, 50));
-            }
+            
+            validLinkedInCount++;
+            evidencias.push({
+              source: 'linkedin_jobs',
+              weight: SOURCE_WEIGHTS.linkedin_jobs,
+              match_type: validation.matchType,
+              content: snippet,
+              url: result.link,
+              title: title,
+              detected_products: validation.produtos,
+            });
+            
+            console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
           }
           console.log('[SIMPLE-TOTVS] ✅ LinkedIn - Valid evidences:', validLinkedInCount);
         }
@@ -307,28 +290,26 @@ serve(async (req) => {
           for (const item of news) {
             const title = item.title || '';
             const snippet = item.snippet || '';
-            const combined = `${title} ${snippet}`;
-            const isTriple = tripleMatch(combined, shortSearchTerm);
-            const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
-
-            if (isTriple || isDouble) {
-              // Validar contexto antes de aceitar
-              if (!hasValidContext(combined, shortSearchTerm)) {
-                console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
-                continue;
-              }
-              
-              validNewsCount++;
-              evidencias.push({
-                source: 'google_news',
-                weight: SOURCE_WEIGHTS.google_news,
-                match_type: isTriple ? 'triple' : 'double',
-                content: snippet,
-                url: item.link,
-                title: title,
-                detected_products: detectTotvsProducts(combined),
-              });
+            
+            // VALIDAÇÃO ULTRA-RESTRITA
+            const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+            
+            if (!validation.valid) {
+              continue;
             }
+            
+            validNewsCount++;
+            evidencias.push({
+              source: 'google_news',
+              weight: SOURCE_WEIGHTS.google_news,
+              match_type: validation.matchType,
+              content: snippet,
+              url: item.link,
+              title: title,
+              detected_products: validation.produtos,
+            });
+            
+            console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
           }
           console.log('[SIMPLE-TOTVS] ✅ News - Valid evidences:', validNewsCount);
         }
@@ -358,27 +339,25 @@ serve(async (req) => {
             for (const result of results) {
               const title = result.title || '';
               const snippet = result.snippet || '';
-              const combined = `${title} ${snippet}`;
-              const isTriple = tripleMatch(combined, shortSearchTerm);
-              const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
-
-              if (isTriple || isDouble) {
-                // Validar contexto antes de aceitar
-                if (!hasValidContext(combined, shortSearchTerm)) {
-                  console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
-                  continue;
-                }
-                
-                evidencias.push({
-                  source: 'premium_news',
-                  weight: SOURCE_WEIGHTS.premium_news,
-                  match_type: isTriple ? 'triple' : 'double',
-                  content: snippet,
-                  url: result.link,
-                  title: title,
-                  detected_products: detectTotvsProducts(combined),
-                });
+              
+              // VALIDAÇÃO ULTRA-RESTRITA
+              const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+              
+              if (!validation.valid) {
+                continue;
               }
+              
+              evidencias.push({
+                source: 'premium_news',
+                weight: SOURCE_WEIGHTS.premium_news,
+                match_type: validation.matchType,
+                content: snippet,
+                url: result.link,
+                title: title,
+                detected_products: validation.produtos,
+              });
+              
+              console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
             }
           }
         } catch (error) {
@@ -408,27 +387,25 @@ serve(async (req) => {
             for (const result of results) {
               const title = result.title || '';
               const snippet = result.snippet || '';
-              const combined = `${title} ${snippet}`;
-              const isTriple = tripleMatch(combined, shortSearchTerm);
-              const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
-
-              if (isTriple || isDouble) {
-                // Validar contexto antes de aceitar
-                if (!hasValidContext(combined, shortSearchTerm)) {
-                  console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
-                  continue;
-                }
-                
-                evidencias.push({
-                  source: 'judicial',
-                  weight: SOURCE_WEIGHTS.judicial,
-                  match_type: isTriple ? 'triple' : 'double',
-                  content: snippet,
-                  url: result.link,
-                  title: title,
-                  detected_products: detectTotvsProducts(combined),
-                });
+              
+              // VALIDAÇÃO ULTRA-RESTRITA
+              const validation = isValidTOTVSEvidence(snippet, title, shortSearchTerm);
+              
+              if (!validation.valid) {
+                continue;
               }
+              
+              evidencias.push({
+                source: 'judicial',
+                weight: SOURCE_WEIGHTS.judicial,
+                match_type: validation.matchType,
+                content: snippet,
+                url: result.link,
+                title: title,
+                detected_products: validation.produtos,
+              });
+              
+              console.log(`[SIMPLE-TOTVS] ✅ ${validation.matchType.toUpperCase()} Match: ${title.substring(0, 50)}`);
             }
           }
         } catch (error) {
