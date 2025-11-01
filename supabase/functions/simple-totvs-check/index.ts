@@ -52,7 +52,46 @@ const SOURCE_WEIGHTS = {
   google_search: 30           // Busca genérica
 };
 
+// GERA VARIAÇÕES DO NOME DA EMPRESA para busca mais flexível
+function getCompanyVariations(companyName: string): string[] {
+  if (!companyName) return [];
+  
+  const variations: string[] = [companyName];
+  
+  // Remover sufixos corporativos
+  const corporateSuffixes = [
+    ' S.A.', ' S/A', ' SA', ' LTDA', ' LTDA.', ' Ltda', ' Ltda.',
+    ' EIRELI', ' EPP', ' ME', ' Indústrias', ' Indústria', 
+    ' Comércio', ' Serviços', ' Participações', ' Holdings',
+    ' Transportes', ' Logística', ' e Logística'
+  ];
+  
+  let cleanName = companyName;
+  for (const suffix of corporateSuffixes) {
+    const regex = new RegExp(suffix + '.*$', 'i');
+    cleanName = cleanName.replace(regex, '').trim();
+  }
+  
+  if (cleanName !== companyName && cleanName.length >= 3) {
+    variations.push(cleanName);
+  }
+  
+  // Pegar apenas primeiras 2 palavras (ex: "Golden Cargo Transportes" -> "Golden Cargo")
+  const words = cleanName.split(' ').filter(w => w.length > 0);
+  if (words.length > 2) {
+    variations.push(words.slice(0, 2).join(' '));
+  }
+  
+  // Primeira palavra se for muito longa (pode ser marca única)
+  if (words.length > 0 && words[0].length >= 5) {
+    variations.push(words[0]);
+  }
+  
+  return [...new Set(variations)]; // Remove duplicatas
+}
+
 // VALIDAÇÃO ULTRA-RESTRITA: Empresa + TOTVS + Produto no MESMO TEXTO
+// ACEITA VARIAÇÕES DO NOME (ex: "Golden Cargo" em vez de "Golden Cargo Transportes Ltda")
 function isValidTOTVSEvidence(
   snippet: string, 
   title: string, 
@@ -62,9 +101,12 @@ function isValidTOTVSEvidence(
   // COMBINAR título + snippet (isso é O ANÚNCIO COMPLETO)
   const fullText = `${title} ${snippet}`;
   const textLower = fullText.toLowerCase();
-  const companyLower = companyName.toLowerCase();
   
-  console.log('[SIMPLE-TOTVS] 🔍 Validando:', title.substring(0, 60));
+  // LOG DETALHADO - Debug completo
+  console.log('[SIMPLE-TOTVS] 🔍 === VALIDANDO EVIDÊNCIA ===');
+  console.log('[SIMPLE-TOTVS] 📄 Título:', title.substring(0, 100));
+  console.log('[SIMPLE-TOTVS] 📄 Snippet:', snippet.substring(0, 150));
+  console.log('[SIMPLE-TOTVS] 🏢 Empresa:', companyName);
   
   // 1. REJEITAR: Vagas NA TOTVS (não cliente)
   const totvsJobPatterns = [
@@ -79,22 +121,39 @@ function isValidTOTVSEvidence(
   
   for (const pattern of totvsJobPatterns) {
     if (textLower.includes(pattern)) {
-      console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Vaga NA TOTVS');
+      console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Vaga NA TOTVS (não cliente)');
       return { valid: false, matchType: 'rejected', produtos: [] };
     }
   }
   
-  // 2. VERIFICAR: Empresa está no texto?
-  if (!textLower.includes(companyLower)) {
-    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Empresa não mencionada');
+  // 2. VERIFICAR: "TOTVS" está no texto?
+  if (!textLower.includes('totvs')) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: TOTVS não mencionada no texto');
     return { valid: false, matchType: 'rejected', produtos: [] };
   }
   
-  // 3. VERIFICAR: "TOTVS" está no texto?
-  if (!textLower.includes('totvs')) {
-    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: TOTVS não mencionada');
+  // 3. VERIFICAR: Empresa está no texto? (ACEITA VARIAÇÕES)
+  const companyVariations = getCompanyVariations(companyName);
+  console.log('[SIMPLE-TOTVS] 🔍 Variações do nome:', companyVariations);
+  
+  let companyFound = false;
+  let matchedVariation = '';
+  
+  for (const variation of companyVariations) {
+    if (textLower.includes(variation.toLowerCase())) {
+      companyFound = true;
+      matchedVariation = variation;
+      break;
+    }
+  }
+  
+  if (!companyFound) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: Nenhuma variação do nome encontrada no texto');
+    console.log('[SIMPLE-TOTVS] 📋 Tentou buscar:', companyVariations.join(' | '));
     return { valid: false, matchType: 'rejected', produtos: [] };
   }
+  
+  console.log('[SIMPLE-TOTVS] ✅ Empresa encontrada (variação):', matchedVariation);
   
   // 4. DETECTAR: Produtos TOTVS mencionados
   const produtosDetectados: string[] = [];
@@ -109,7 +168,8 @@ function isValidTOTVSEvidence(
   
   // TRIPLE MATCH: Empresa + TOTVS + Produto (TUDO NO MESMO TEXTO)
   if (produtosDetectados.length > 0) {
-    console.log('[SIMPLE-TOTVS] ✅ TRIPLE MATCH:', produtosDetectados.join(', '));
+    console.log('[SIMPLE-TOTVS] ✅ ✅ ✅ TRIPLE MATCH DETECTADO!');
+    console.log('[SIMPLE-TOTVS] 🎯 Produtos:', produtosDetectados.join(', '));
     return { 
       valid: true, 
       matchType: 'triple', 
@@ -118,7 +178,7 @@ function isValidTOTVSEvidence(
   }
   
   // DOUBLE MATCH: Empresa + TOTVS (sem produto específico)
-  console.log('[SIMPLE-TOTVS] ✅ DOUBLE MATCH');
+  console.log('[SIMPLE-TOTVS] ✅ ✅ DOUBLE MATCH DETECTADO!');
   return { 
     valid: true, 
     matchType: 'double', 
@@ -634,6 +694,70 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error('[SIMPLE-TOTVS] ❌ Erro Memorandos:', error);
+      }
+
+      // 8. BUSCA ADICIONAL POR CNPJ (se disponível)
+      // Útil quando empresa tem pouca presença digital com nome, mas tem documentos oficiais
+      if (cnpj && cnpj !== company_name) {
+        console.log('[SIMPLE-TOTVS] 🔢 Buscando por CNPJ:', cnpj);
+        totalQueries++;
+
+        try {
+          const cnpjResponse = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              q: `${cnpj} TOTVS`,
+              num: 10,
+              gl: 'br',
+              hl: 'pt-br'
+            }),
+          });
+
+          if (cnpjResponse.ok) {
+            const cnpjData = await cnpjResponse.json();
+            const results = cnpjData.organic || [];
+            
+            console.log('[SIMPLE-TOTVS] 📊 Busca CNPJ - resultados:', results.length);
+
+            for (const result of results) {
+              const snippet = result.snippet || '';
+              const title = result.title || '';
+              
+              // Para busca por CNPJ, validamos com nome da empresa se disponível
+              const validation = isValidTOTVSEvidence(snippet, title, company_name || cnpj);
+              
+              if (!validation.valid) {
+                continue;
+              }
+              
+              // DETECTAR INTENÇÃO DE COMPRA
+              const hasIntent = INTENT_KEYWORDS.some(k => 
+                `${title} ${snippet}`.toLowerCase().includes(k)
+              );
+              
+              evidencias.push({
+                source: 'cnpj_search',
+                source_name: 'Busca por CNPJ',
+                weight: SOURCE_WEIGHTS.cvm_ri_docs, // Alta confiança (documentos oficiais usam CNPJ)
+                match_type: validation.matchType,
+                content: snippet,
+                url: result.link,
+                title: title,
+                detected_products: validation.produtos,
+                has_intent: hasIntent,
+                intent_keywords: hasIntent ? 
+                  INTENT_KEYWORDS.filter(k => `${title} ${snippet}`.toLowerCase().includes(k)) : 
+                  []
+              });
+              
+              console.log(`[SIMPLE-TOTVS] ✅ CNPJ: ${validation.matchType.toUpperCase()}`, 
+                          title.substring(0, 50));
+            }
+          }
+        } catch (error) {
+          console.error('[SIMPLE-TOTVS] ❌ Erro busca CNPJ:', error);
+        }
       }
     }
 
