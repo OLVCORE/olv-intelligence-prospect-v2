@@ -16,11 +16,12 @@ export function QuarantineCNPJStatusBadge({ cnpj, cnpjStatus }: QuarantineCNPJSt
     );
   }
 
-  if (cnpjStatus === 'ativo') {
+  // Verde limão quando ATIVA (situação da Receita Federal)
+  if (cnpjStatus === 'ativa' || cnpjStatus === 'ativo') {
     return (
-      <Badge variant="default" className="gap-1 bg-green-500/10 text-green-600 border-green-500/20">
+      <Badge variant="default" className="gap-1 bg-lime-500/10 text-lime-600 border-lime-500/20">
         <CheckCircle className="w-3 h-3" />
-        Ativo
+        Ativa
       </Badge>
     );
   }
@@ -43,10 +44,11 @@ export function QuarantineCNPJStatusBadge({ cnpj, cnpjStatus }: QuarantineCNPJSt
     );
   }
 
+  // Azul quando tem CNPJ mas status ainda não verificado
   return (
     <Badge variant="outline" className="gap-1 bg-blue-500/10 text-blue-600 border-blue-500/20">
       <Clock className="w-3 h-3" />
-      Descoberto
+      Pendente
     </Badge>
   );
 }

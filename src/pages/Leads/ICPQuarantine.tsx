@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ export default function ICPQuarantine() {
   const [searchQuery, setSearchQuery] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewCompany, setPreviewCompany] = useState<any>(null);
+  const [sortColumn, setSortColumn] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -79,6 +81,21 @@ export default function ICPQuarantine() {
         .eq('id', analysisId);
 
       if (updateError) throw updateError;
+
+      // Se tem company_id, atualizar cnpj_status baseado na situação
+      if (analysis.company_id && data?.situacao) {
+        const cnpjStatus = data.situacao.toLowerCase().includes('ativa') 
+          ? 'ativa' 
+          : data.situacao.toLowerCase().includes('inapta') 
+          ? 'inativo' 
+          : 'pendente';
+
+        await supabase
+          .from('companies')
+          .update({ cnpj_status: cnpjStatus })
+          .eq('id', analysis.company_id);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -267,10 +284,79 @@ export default function ICPQuarantine() {
     },
   });
 
-  const filteredCompanies = companies.filter(c => 
-    c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.cnpj?.includes(searchQuery)
-  );
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredCompanies = companies
+    .filter(c => 
+      c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.cnpj?.includes(searchQuery)
+    )
+    .sort((a, b) => {
+      if (!sortColumn) return 0;
+      
+      let aVal: any = '';
+      let bVal: any = '';
+      
+      const aRaw = (a.raw_analysis && typeof a.raw_analysis === 'object' && !Array.isArray(a.raw_analysis)) 
+        ? a.raw_analysis as Record<string, any>
+        : {};
+      const bRaw = (b.raw_analysis && typeof b.raw_analysis === 'object' && !Array.isArray(b.raw_analysis)) 
+        ? b.raw_analysis as Record<string, any>
+        : {};
+      
+      switch (sortColumn) {
+        case 'empresa':
+          aVal = a.razao_social || '';
+          bVal = b.razao_social || '';
+          break;
+        case 'cnpj':
+          aVal = a.cnpj || '';
+          bVal = b.cnpj || '';
+          break;
+        case 'cnpj_status':
+          aVal = (a as any).cnpj_status || '';
+          bVal = (b as any).cnpj_status || '';
+          break;
+        case 'setor':
+          aVal = (a as any).setor || aRaw?.setor || '';
+          bVal = (b as any).setor || bRaw?.setor || '';
+          break;
+        case 'uf':
+          aVal = (a as any).uf || aRaw?.uf || '';
+          bVal = (b as any).uf || bRaw?.uf || '';
+          break;
+        case 'score':
+          aVal = a.icp_score || 0;
+          bVal = b.icp_score || 0;
+          break;
+        case 'status':
+          aVal = a.status || '';
+          bVal = b.status || '';
+          break;
+        default:
+          return 0;
+      }
+      
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      
+      if (sortDirection === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -614,14 +700,84 @@ export default function ICPQuarantine() {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Status CNPJ</TableHead>
-                <TableHead>Setor</TableHead>
-                <TableHead>UF/Região</TableHead>
-                <TableHead>Score ICP</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('empresa')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    Empresa
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('cnpj')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    CNPJ
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('cnpj_status')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    Status CNPJ
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('setor')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    Setor
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('uf')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    UF/Região
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('score')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    Score ICP
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
                 <TableHead>Status Análise</TableHead>
-                <TableHead>Status (STC)</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('status')}
+                    className="h-8 flex items-center gap-1 px-2"
+                  >
+                    Status (STC)
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </TableHead>
                 <TableHead>Website</TableHead>
                 <TableHead>Motivo Descarte</TableHead>
                 <TableHead>Ações</TableHead>

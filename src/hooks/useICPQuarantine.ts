@@ -61,7 +61,16 @@ export function useQuarantineCompanies(filters?: {
     queryFn: async () => {
       let query = supabase
         .from('icp_analysis_results')
-        .select('*, companies(cnpj_status)')
+        .select(`
+          *,
+          companies(
+            id,
+            cnpj_status,
+            status,
+            domain,
+            website
+          )
+        `)
         .order('icp_score', { ascending: false });
 
       if (filters?.status) {
@@ -76,7 +85,20 @@ export function useQuarantineCompanies(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      // Flatten companies data into the main object
+      const formatted = (data || []).map((item: any) => {
+        const companyData = item.companies || {};
+        return {
+          ...item,
+          cnpj_status: companyData.cnpj_status,
+          company_status: companyData.status,
+          domain: companyData.domain || item.domain,
+          website: companyData.website || item.website,
+        };
+      });
+
+      return formatted;
     },
     staleTime: 5 * 1000,
     refetchInterval: 10 * 1000,
