@@ -40,10 +40,12 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       if (!companyId) return null;
 
       // 1) Tenta buscar no histórico oficial (companies)
+      // 🎯 FASE 1: Filtrar apenas verificações V2 (lógica unificada)
       const { data, error } = await supabase
         .from('simple_totvs_checks')
         .select('*')
         .eq('company_id', companyId)
+        .gte('logic_version', 2) // ✅ Apenas lógica V2 ou superior
         .order('checked_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -56,6 +58,7 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
       if (data) {
         const ev = (data as any).evidences || { vagas: [], noticias: [], docs_oficiais: [] };
         const total = (data as any).total_evidences ?? Object.values(ev).flat().length;
+        console.log(`[HOOK] ✅ Verificação V2 encontrada para ${companyId}: ${(data as any).status}`);
         return {
           company_id: companyId,
           status: (data as any).status,
@@ -68,7 +71,8 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
         } as any;
       }
 
-      // 2) Fallback INTELIGENTE para registros da QUARENTENA (icp_analysis_results)
+      // 2) Fallback INTELIGENTE para registros da QUARENTENA (icp_analysis_results) - apenas V2
+      console.log(`[HOOK] Cache V2 não encontrado, tentando fallback quarentena...`);
       const { data: q, error: qErr } = await supabase
         .from('icp_analysis_results')
         .select(`
@@ -81,9 +85,11 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
           totvs_check_reasoning,
           is_cliente_totvs,
           totvs_evidences,
-          updated_at
+          updated_at,
+          logic_version
         `)
         .eq('id', companyId)
+        .gte('logic_version', 2)
         .maybeSingle();
 
       if (qErr) {

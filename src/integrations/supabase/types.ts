@@ -4052,6 +4052,7 @@ export type Database = {
           icp_score: number | null
           id: string
           is_cliente_totvs: boolean | null
+          logic_version: number | null
           motivo_descarte: string | null
           motivos: Json | null
           moved_to_pool: boolean | null
@@ -4092,6 +4093,7 @@ export type Database = {
           icp_score?: number | null
           id?: string
           is_cliente_totvs?: boolean | null
+          logic_version?: number | null
           motivo_descarte?: string | null
           motivos?: Json | null
           moved_to_pool?: boolean | null
@@ -4132,6 +4134,7 @@ export type Database = {
           icp_score?: number | null
           id?: string
           is_cliente_totvs?: boolean | null
+          logic_version?: number | null
           motivo_descarte?: string | null
           motivos?: Json | null
           moved_to_pool?: boolean | null
@@ -7458,6 +7461,7 @@ export type Database = {
           detected_totvs: boolean
           evidences: Json | null
           id: string
+          logic_version: number | null
           reasoning: string | null
           status: string
           total_evidences: number
@@ -7470,6 +7474,7 @@ export type Database = {
           detected_totvs?: boolean
           evidences?: Json | null
           id?: string
+          logic_version?: number | null
           reasoning?: string | null
           status: string
           total_evidences?: number
@@ -7482,6 +7487,7 @@ export type Database = {
           detected_totvs?: boolean
           evidences?: Json | null
           id?: string
+          logic_version?: number | null
           reasoning?: string | null
           status?: string
           total_evidences?: number

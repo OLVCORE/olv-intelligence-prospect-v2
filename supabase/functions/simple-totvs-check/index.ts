@@ -532,71 +532,57 @@ serve(async (req) => {
     const hasWebsite = !!websiteRaw && websiteRaw !== 'N/A' && websiteRaw.length > 3;
     const hasBasicData = !!(companyData?.setor || companyData?.cnpj);
 
-    // ========== LÓGICA UNIFICADA DE CLASSIFICAÇÃO ==========
+    // ========== DECISÃO UNIFICADA V2 (Logic Version 2) ==========
+    console.log(`[DECISÃO-V2] Iniciando com ${tripleMatches.length} triplas, ${doubleMatches.length} duplas, Peso: ${totalWeight}`);
     
-    // TRIPLE MATCHES = Alta confiança
+    // 1️⃣ Triple Matches (Alta Confiança TOTVS)
     if (tripleMatches.length >= 5) {
       status = 'no-go';
       confidence = 'high';
-      reasoning = `❌ NO-GO (Alta) - ${tripleMatches.length} evidências triplas confirmadas (Empresa + TOTVS + Produto). Peso: ${totalWeight}.`;
-    } 
+      reasoning = `❌ NO-GO (Alta) - ${tripleMatches.length} evidências triplas (Empresa+TOTVS+Produto). Peso: ${totalWeight}.`;
+    }
     else if (tripleMatches.length >= 3) {
       status = 'no-go';
       confidence = 'medium';
-      reasoning = `⚠️ NO-GO (Média) - ${tripleMatches.length} evidências triplas (Empresa + TOTVS + Produto). Peso: ${totalWeight}.`;
+      reasoning = `⚠️ NO-GO (Média) - ${tripleMatches.length} evidências triplas. Peso: ${totalWeight}.`;
     }
-    else if (tripleMatches.length >= 2) {
+    else if (tripleMatches.length >= 1) {
       status = 'revisar';
       confidence = 'medium';
-      reasoning = `👁️ REVISAR - ${tripleMatches.length} evidências triplas. SDR deve validar contexto. Peso: ${totalWeight}.`;
-    }
-    else if (tripleMatches.length === 1) {
-      status = 'revisar';
-      confidence = 'medium';
-      reasoning = `👁️ REVISAR - 1 evidência tripla encontrada. Validação manual necessária. Peso: ${totalWeight}.`;
+      reasoning = `👁️ REVISAR - ${tripleMatches.length} evidência(s) tripla(s). SDR deve validar. Peso: ${totalWeight}.`;
     }
     
-    // DOUBLE MATCHES = Precisa análise
+    // 2️⃣ Double Matches (Análise Manual Necessária)
     else if (doubleMatches.length >= 5) {
       status = 'revisar';
       confidence = 'medium';
-      reasoning = `📋 REVISAR - ${doubleMatches.length} evidências duplas (alto volume). SDR deve analisar. Peso: ${totalWeight}.`;
-    }
-    else if (doubleMatches.length >= 3) {
-      status = 'revisar';
-      confidence = 'low';
-      reasoning = `👁️ REVISAR - ${doubleMatches.length} evidências duplas. Análise manual recomendada. Peso: ${totalWeight}.`;
+      reasoning = `📋 REVISAR - ${doubleMatches.length} evidências duplas (alto volume). Peso: ${totalWeight}.`;
     }
     else if (doubleMatches.length >= 2) {
       status = 'revisar';
       confidence = 'low';
       reasoning = `👁️ REVISAR - ${doubleMatches.length} evidências duplas. Verificar contexto. Peso: ${totalWeight}.`;
     }
-    else if (doubleMatches.length === 1) {
-      status = 'go';
-      confidence = 'low';
-      reasoning = `✅ GO - Apenas 1 evidência dupla (insuficiente). Peso: ${totalWeight}. ICP: ${icpScore}/100.`;
-    }
     
-    // SEM MATCHES = Decisão baseada em DADOS + PESO ACUMULADO
-    else if (allEvidences.length === 0) {
-      // NENHUMA evidência TOTVS encontrada
+    // 3️⃣ Sem Evidências TOTVS - Decisão Baseada em Qualidade de Dados
+    else {
+      const hasMinimalData = hasWebsite || icpScore >= 40 || (hasBasicData && icpScore >= 30);
       
-      // Se tem dados mínimos (website OU score > 30 OU CNPJ), aprovar
-      if (hasWebsite || icpScore > 30 || hasBasicData) {
+      if (hasMinimalData) {
         status = 'go';
-        confidence = hasWebsite && icpScore >= 50 ? 'high' : 'medium';
-        reasoning = `✅ GO - Nenhuma evidência TOTVS encontrada. ICP: ${icpScore}/100${hasWebsite ? ', website OK' : ''}${hasBasicData ? ', dados básicos OK' : ''}.`;
-        console.log(`[DECISÃO] GO aprovado (ICP: ${icpScore}, Website: ${hasWebsite}, BasicData: ${hasBasicData})`);
-      } 
-      // Empresa "fantasma" (sem nada) - marcar pra revisar
-      else {
+        confidence = (hasWebsite && icpScore >= 60) ? 'high' : 'medium';
+        reasoning = `✅ GO - Nenhuma evidência TOTVS. ICP: ${icpScore}/100${hasWebsite ? ', website OK' : ''}${hasBasicData ? ', dados básicos OK' : ''}.`;
+        console.log(`[DECISÃO-V2] ✅ GO aprovado (hasWebsite: ${hasWebsite}, ICP: ${icpScore}, BasicData: ${hasBasicData})`);
+      } else {
+        // Empresa "fantasma" ou dados insuficientes
         status = 'revisar';
         confidence = 'low';
-        reasoning = `⚠️ REVISAR - Sem evidências TOTVS, mas empresa sem presença digital (ICP: ${icpScore}, sem website, sem dados). Validar existência.`;
-        console.log(`[DECISÃO] REVISAR por empresa sem presença digital`);
+        reasoning = `⚠️ REVISAR - Sem evidências TOTVS, mas dados insuficientes (ICP: ${icpScore}, ${hasWebsite ? 'website OK' : 'sem website'}, ${hasBasicData ? 'dados básicos OK' : 'sem dados básicos'}). Validar existência.`;
+        console.log(`[DECISÃO-V2] ⚠️ REVISAR por dados insuficientes`);
       }
     }
+    
+    console.log(`[DECISÃO-V2] Final: ${status.toUpperCase()} | Confidence: ${confidence} | Weight: ${totalWeight}`);
 
     const evidencesByCategory: CheckResult['evidences_by_category'] = {
       vagas: allEvidences.filter(e => e.category === 'vagas'),
@@ -647,8 +633,8 @@ serve(async (req) => {
       console.log('[SAVE] ✅ Salvo na QUARENTENA com sucesso');
     }
 
-    // Salvar snapshot no cache oficial (simple_totvs_checks)
-    console.log('[SAVE] 🗂️ Gravando em simple_totvs_checks (cache oficial)');
+    // Salvar snapshot no cache oficial (simple_totvs_checks) COM LOGIC_VERSION = 2
+    console.log('[SAVE] 🗂️ Gravando em simple_totvs_checks (cache oficial V2)');
     const { error: insertCacheError } = await supabase
       .from('simple_totvs_checks')
       .insert({
@@ -659,13 +645,14 @@ serve(async (req) => {
         total_evidences: result.total_evidences,
         evidences: result.evidences_by_category,
         reasoning: result.reasoning,
-        checked_at: result.checked_at
+        checked_at: result.checked_at,
+        logic_version: 2 // 🎯 Marca esta verificação como V2 (lógica unificada)
       });
 
     if (insertCacheError) {
       console.warn('[SAVE] ⚠️ Falha ao gravar cache simple_totvs_checks:', insertCacheError.message);
     } else {
-      console.log('[SAVE] ✅ Cache gravado em simple_totvs_checks');
+      console.log('[SAVE] ✅ Cache V2 gravado em simple_totvs_checks');
     }
 
     console.log(`[SIMPLE-TOTVS] ⚡ Finalizado em ${executionTime}ms - ${status.toUpperCase()}`);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import { useQuarantineCompanies, useApproveQuarantineBatch, useRejectQuarantine, useAutoApprove } from '@/hooks/useICPQuarantine';
 import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
 import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
+import { useReverifyAllCompanies } from '@/hooks/useReverifyAllCompanies';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
 import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
-import { SimpleTOTVSCheckStatusBadge } from '@/components/icp/SimpleTOTVSCheckStatusBadge';
+import { UnifiedSTCBadge } from '@/components/icp/UnifiedSTCBadge';
 import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
 import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
 import { ICPScoreTooltip } from '@/components/icp/ICPScoreTooltip';
@@ -48,6 +49,7 @@ export default function ICPQuarantine() {
   const { mutate: autoApprove, isPending: isAutoApproving } = useAutoApprove();
   const { mutate: deleteBatch, isPending: isDeleting } = useDeleteQuarantineBatch();
   const { mutate: refreshBatch, isPending: isRefreshing } = useRefreshQuarantineBatch();
+  const { mutate: reverifyAll, isPending: isReverifying } = useReverifyAllCompanies();
 
   const queryClient = useQueryClient();
 
@@ -1014,6 +1016,38 @@ export default function ICPQuarantine() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      onClick={() => reverifyAll(filteredCompanies.map(c => ({
+                        id: c.company_id || c.id,
+                        razao_social: c.razao_social,
+                        cnpj: c.cnpj,
+                        website: c.website
+                      })))}
+                      disabled={isReverifying || filteredCompanies.length === 0}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      {isReverifying ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Re-verificando...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4" />
+                          Re-Verificar Tudo (V2)
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-semibold mb-1">🔄 Re-verificação em Massa (Lógica V2)</p>
+                    <p className="text-xs">Invalida TODAS as verificações antigas e executa nova análise unificada.</p>
+                    <p className="text-xs text-amber-500 mt-1">⚠️ Consome créditos API</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
                       onClick={handleApproveBatch}
                       disabled={selectedIds.length === 0 || isApproving}
                       variant="default"
@@ -1278,7 +1312,7 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      <SimpleTOTVSCheckStatusBadge
+                      <UnifiedSTCBadge
                         companyId={company.company_id || company.id}
                         onViewReport={() => handleOpenTotvsCheck(company)}
                       />
