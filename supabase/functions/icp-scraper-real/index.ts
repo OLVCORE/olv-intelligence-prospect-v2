@@ -437,12 +437,12 @@ serve(async (req) => {
     
     // Score >= 70 = DESQUALIFICAR (empresa JÁ USA TOTVS)
     // Score < 70 = QUALIFICAR (empresa NÃO USA TOTVS)
-    const status = scoreICP >= 70 ? 'disqualified' : 'qualified';
+    const status = scoreICP >= 70 ? 'descartado' : 'aprovado';
     const temperatura = scoreICP >= 70 ? 'cold' : scoreICP >= 40 ? 'warm' : 'hot';
     const tempoTotal = Math.round((Date.now() - startTimeTotal) / 1000);
 
     let disqualificationReason = null;
-    if (status === 'disqualified') {
+    if (status === 'descartado') {
       const highestScoreEvidence = evidencias.reduce((max, e) => 
         e.pontos_atribuidos > max.pontos_atribuidos ? e : max, 
         evidencias[0]
@@ -543,7 +543,7 @@ serve(async (req) => {
         fontes_consultadas: platformsScanned.length,
         logs_gerados: logs.length,
         tempo_total_segundos: tempoTotal,
-        message: status === 'disqualified' 
+        message: status === 'descartado' 
           ? `⚠️ DESQUALIFICAR: ${evidencias.length} evidência(s) encontrada(s) - Empresa JÁ USA TOTVS (score: ${scoreICP}/100)`
           : `✅ QUALIFICADO: Nenhuma evidência de TOTVS encontrada - ICP IDEAL (score: ${scoreICP}/100)`,
         evidencias,
