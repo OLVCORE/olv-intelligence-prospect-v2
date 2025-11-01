@@ -1,3 +1,8 @@
+// ⚠️⚠️⚠️ DO NOT CHANGE THIS LOGIC ⚠️⚠️⚠️
+// Validated on: 2025-11-01
+// This implements intelligent CSV mapping with fuzzy matching + synonyms
+// Any changes here must be additive only (behind flags/conditionals)
+
 // Mapeamento direto com prioridade ABSOLUTA
 const DIRECT_MAPPING: Record<string, string> = {
   // CNPJ (PRIORIDADE MÁXIMA)

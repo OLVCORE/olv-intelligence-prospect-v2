@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Upload, CheckCircle, AlertCircle, XCircle, Download, Loader2, Pause, Play, Clock, Flame, Thermometer, Snowflake, RefreshCw, ClipboardList, BarChart3, Star, Ban, ChevronsUpDown, Check, Plus, Pencil, Trash2, Save, FolderOpen, ArrowUp, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { mapAllColumns, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
+import { mapAllColumns, mapColumnToField, getSystemFields, getFieldLabel, type ColumnMapping } from '@/lib/csvMapper';
 import { cn } from '@/lib/utils';
 import { calculateICPScore } from '@/lib/icpCalculator';
 import { useSaveToQuarantine } from '@/hooks/useICPQuarantine';
@@ -41,6 +41,12 @@ import {
 } from '@/components/ui/select';
 
 type Step = 'upload' | 'mapping' | 'preview' | 'analyzing' | 'complete';
+
+// ⚠️⚠️⚠️ DO NOT CHANGE: Batch processing limits ⚠️⚠️⚠️
+const RECOMMENDED_BATCH_SIZE = 50;
+const MAX_BATCH_SIZE = 200;
+const ABSOLUTE_MAX = 1000;
+const CONCURRENCY = 3; // Processar 3 empresas por vez
 
 interface ProcessingCompany {
   index: number;
@@ -79,6 +85,30 @@ export default function ICPBulkAnalysisWithMapping() {
   const { toast } = useToast();
   const { mutateAsync: saveToQuarantine } = useSaveToQuarantine();
   const { templates, saveTemplate, deleteTemplate, markAsUsed } = useICPMappingTemplates();
+
+  // ⚠️⚠️⚠️ DO NOT CHANGE: Restore upload state from sessionStorage ⚠️⚠️⚠️
+  useEffect(() => {
+    try {
+      const sessionData = sessionStorage.getItem('icp_upload_state');
+      if (sessionData) {
+        const data = JSON.parse(sessionData);
+        // Validar timestamp (< 1 hora)
+        if (Date.now() - data.timestamp < 3600000) {
+          setAllData(data.allData);
+          setPreviewData(data.previewData);
+          setMappings(data.mappings);
+          setStep('mapping');
+          console.log('[SESSION-RESTORE] ✅ Estado restaurado do sessionStorage');
+        } else {
+          sessionStorage.removeItem('icp_upload_state');
+          console.log('[SESSION-RESTORE] ⏰ Estado expirado, removido');
+        }
+      }
+    } catch (error) {
+      console.error('[SESSION-RESTORE] Erro ao restaurar:', error);
+      sessionStorage.removeItem('icp_upload_state');
+    }
+  }, []);
 
   // Scroll to top functionality
   useEffect(() => {
@@ -293,6 +323,15 @@ export default function ICPBulkAnalysisWithMapping() {
       const autoMappings = mapAllColumns(headers);
       setMappings(autoMappings);
 
+      // ⚠️⚠️⚠️ DO NOT CHANGE: Auto-save to sessionStorage to prevent double upload ⚠️⚠️⚠️
+      sessionStorage.setItem('icp_upload_state', JSON.stringify({
+        headers,
+        allData: processedData,
+        previewData: processedData.slice(0, 3),
+        mappings: autoMappings,
+        timestamp: Date.now()
+      }));
+
       setStep('mapping');
 
       const mappedCount = autoMappings.filter(m => m.status === 'mapped').length;
@@ -391,38 +430,67 @@ export default function ICPBulkAnalysisWithMapping() {
     }
   };
 
+  // ⚠️⚠️⚠️ DO NOT CHANGE: Validated intelligent template loading with fuzzy matching ⚠️⚠️⚠️
   const handleLoadTemplate = async (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
 
     try {
-      // Aplicar mapeamento do template nas colunas atuais
+      let matched = 0;
+      let pending = 0;
+
+      // PASSO 1: Match exato por csvColumn
+      // PASSO 2: Match por systemField usando fuzzy (confidence >= 60)
       const updatedMappings = mappings.map(currentMapping => {
-        const templateMapping = template.mappings.find(
+        // PASSO 1: Buscar match exato por csvColumn (case-insensitive)
+        let templateMapping = template.mappings.find(
           tm => tm.csvColumn.toLowerCase() === currentMapping.csvColumn.toLowerCase()
         );
+        
+        // PASSO 2: Se não achar, buscar por systemField usando fuzzy
+        if (!templateMapping || !templateMapping.systemField) {
+          const fuzzyResult = mapColumnToField(currentMapping.csvColumn);
+          if (fuzzyResult.field && fuzzyResult.confidence >= 60) {
+            templateMapping = template.mappings.find(
+              tm => tm.systemField === fuzzyResult.field
+            );
+          }
+        }
+
         if (templateMapping && templateMapping.systemField) {
+          matched++;
           return {
             ...currentMapping,
             systemField: templateMapping.systemField,
             status: 'mapped' as const,
+            confidence: 100,
           };
         }
+        
+        pending++;
         return currentMapping;
       });
 
       setMappings(updatedMappings);
       setCustomFields(template.custom_fields || []);
 
-      // Fechar imediatamente para evitar travar a UI caso a marcação "usado" falhe
+      // Fechar imediatamente
       setShowLoadTemplateDialog(false);
 
       toast({
-        title: 'Template carregado!',
-        description: `Mapeamento "${template.nome_template}" aplicado com sucesso`,
+        title: '✅ Template aplicado!',
+        description: `${matched}/${mappings.length} colunas mapeadas`,
       });
 
-      // Marcar como usado (não bloquear a UI se der erro)
+      if (pending > 0) {
+        toast({
+          title: '⚠️ Revisão necessária',
+          description: `${pending} coluna(s) precisam de revisão manual`,
+          variant: 'default',
+        });
+      }
+
+      // Marcar como usado (não bloquear)
       try {
         await markAsUsed(templateId);
       } catch (err) {
@@ -439,6 +507,36 @@ export default function ICPBulkAnalysisWithMapping() {
   };
 
   const handleConfirmAnalysis = () => {
+    const total = allData.length;
+    
+    // ⚠️ Validar limites de lote
+    if (total > ABSOLUTE_MAX) {
+      toast({
+        title: '❌ Limite excedido',
+        description: `Máximo de ${ABSOLUTE_MAX} empresas por vez. Divida em lotes menores.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (total > MAX_BATCH_SIZE) {
+      toast({
+        title: '⚠️ Lote grande detectado',
+        description: `Mais de ${MAX_BATCH_SIZE} empresas pode causar lentidão. Recomendamos lotes de ${RECOMMENDED_BATCH_SIZE}.`,
+      });
+      
+      const confirmed = window.confirm(
+        `Você está enviando ${total} empresas.\n\n` +
+        `Recomendamos lotes de ${RECOMMENDED_BATCH_SIZE} para melhor performance.\n\n` +
+        `Deseja continuar mesmo assim?`
+      );
+      
+      if (!confirmed) return;
+    }
+    
+    // Limpar sessionStorage ao iniciar análise
+    sessionStorage.removeItem('icp_upload_state');
+    
     setStep('analyzing');
     setStartTime(new Date());
   };
@@ -1001,6 +1099,21 @@ export default function ICPBulkAnalysisWithMapping() {
                 <p className="text-sm text-muted-foreground">
                   Formatos aceitos: CSV, Excel (máx. 10MB)
                 </p>
+                
+                <Card className="p-4 bg-muted/50 border-2">
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Limites Recomendados
+                  </h3>
+                  <ul className="text-xs space-y-1 text-muted-foreground">
+                    <li>• <strong>Ideal:</strong> {RECOMMENDED_BATCH_SIZE} empresas por lote</li>
+                    <li>• <strong>Máximo estável:</strong> {MAX_BATCH_SIZE} empresas</li>
+                    <li>• <strong>Limite absoluto:</strong> {ABSOLUTE_MAX} empresas</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ Lotes maiores podem causar lentidão ou erros
+                  </p>
+                </Card>
               </div>
             </div>
           </div>
