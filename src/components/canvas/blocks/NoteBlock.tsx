@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { FileText } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import type { CanvasBlock } from '@/hooks/useCanvasBlocks';
 
 interface NoteBlockProps {
@@ -53,7 +54,12 @@ export const NoteBlock = ({ block, onUpdate }: NoteBlockProps) => {
             <div 
               className="prose prose-sm max-w-none cursor-pointer min-h-[60px]" 
               onClick={() => setIsEditing(true)}
-              dangerouslySetInnerHTML={{ __html: content || '<p class="text-muted-foreground">Clique para adicionar conteúdo...</p>' }}
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(content || '<p class="text-muted-foreground">Clique para adicionar conteúdo...</p>', {
+                  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'blockquote'],
+                  ALLOWED_ATTR: ['class']
+                })
+              }}
             />
           )}
         </div>

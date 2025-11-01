@@ -5,10 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface RevealKeyRequest {
-  envVarName: string;
-  password: string;
-}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -60,23 +56,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { envVarName, password }: RevealKeyRequest = await req.json()
-
-    // Verify password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: password,
-    })
-
-    if (signInError) {
-      return new Response(
-        JSON.stringify({ error: 'Senha incorreta' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
+    const { envVarName }: { envVarName: string } = await req.json()
 
     // Get the actual API key value
     const apiKeyValue = Deno.env.get(envVarName)

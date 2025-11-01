@@ -51,35 +51,9 @@ serve(async (req) => {
       );
     }
 
-    const { action, password, tables } = await req.json();
-
-    // Validar senha re-autenticando o usuário
-    const userEmail = user.email;
+    const { action, tables } = await req.json();
     
-    if (!userEmail || !password) {
-      return new Response(
-        JSON.stringify({ error: 'Email ou senha não fornecidos' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Re-autenticar para validar senha usando cliente anônimo
-    const authClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    const { error: signInError } = await authClient.auth.signInWithPassword({
-      email: userEmail,
-      password: password,
-    });
-
-    if (signInError) {
-      return new Response(
-        JSON.stringify({ error: 'Senha incorreta' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // No password re-authentication needed - user already authenticated via JWT
 
     // Criar cliente com service role para deletar dados
     const supabaseAdmin = createClient(
