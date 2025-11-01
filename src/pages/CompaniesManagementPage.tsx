@@ -1229,20 +1229,20 @@ export default function CompaniesManagementPage() {
            </AlertDialogContent>
          </AlertDialog>
 
-         
-       </div>
-          {stcCompany && (
-            <SimpleTOTVSCheckDialog
-              open={stcDialogOpen}
-              onOpenChange={setStcDialogOpen}
-              companyId={stcCompany.id}
-              companyName={(stcCompany as any).razao_social || stcCompany.name}
-              cnpj={stcCompany.cnpj}
-              domain={stcCompany.domain || stcCompany.website}
-            />
-          )}
+          
         </div>
+
+        {stcCompany && (
+          <SimpleTOTVSCheckDialog
+            open={stcDialogOpen}
+            onOpenChange={setStcDialogOpen}
+            companyId={stcCompany.id}
+            companyName={(stcCompany as any).razao_social || stcCompany.name}
+            cnpj={stcCompany.cnpj}
+            domain={stcCompany.domain || stcCompany.website}
+          />
+        )}
       </AppLayout>
-      </ErrorBoundary>
-    );
- }
+    </ErrorBoundary>
+  );
+}

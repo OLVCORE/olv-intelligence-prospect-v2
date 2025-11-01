@@ -54,7 +54,7 @@ export default function ICPQuarantine() {
   const sanitizeDomain = (value?: string | null): string | null => {
     if (!value) return null;
     const v = String(value).trim();
-    if (!v) return null;
+    if (!v || /\s/.test(v)) return null;
     try {
       const url = v.startsWith('http') ? new URL(v) : new URL(`https://${v}`);
       const host = url.hostname.replace(/^www\./, '');
@@ -85,20 +85,6 @@ export default function ICPQuarantine() {
     setEditingWebsiteId(null);
     setWebsiteInput('');
     queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
-  };
-    if (!value) return null;
-    const v = String(value).trim();
-    if (!v || /\s/.test(v)) return null;
-    try {
-      const url = v.startsWith('http') ? new URL(v) : new URL(`https://${v}`);
-      const host = url.hostname.replace(/^www\./, '');
-      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
-      return domainRegex.test(host) ? host : null;
-    } catch {
-      const cleaned = v.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
-      return domainRegex.test(cleaned) ? cleaned : null;
-    }
   };
 
   // Mutations para enriquecimento na quarentena
@@ -1314,32 +1300,30 @@ export default function ICPQuarantine() {
                           >Cancelar</Button>
                         </div>
                       ) : (
-                        (() => {
-                          const domain = sanitizeDomain(company.website || rawData?.domain || null);
-                          return (
-                            <div className="flex items-center gap-2 max-w-[180px]">
-                              {domain ? (
-                                <a
-                                  href={`https://${domain}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline inline-flex items-center gap-1 truncate"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title={domain}
-                                >
-                                  {domain}
-                                  <Globe className="h-3 w-3 flex-shrink-0" />
-                                </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">N/A</span>
-                              )}
-                              <Button size="sm" variant="ghost" className="h-7 px-2"
-                                onClick={() => { setEditingWebsiteId(company.id); setWebsiteInput(domain || ''); }}
-                              >Editar</Button>
-                            </div>
-                          );
-                        })()
-                      )
+                        <div className="flex items-center gap-2 max-w-[180px]">
+                          {(() => {
+                            const domain = sanitizeDomain(company.website || rawData?.domain || null);
+                            return domain ? (
+                              <a
+                                href={`https://${domain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 truncate"
+                                onClick={(e) => e.stopPropagation()}
+                                title={domain}
+                              >
+                                {domain}
+                                <Globe className="h-3 w-3 flex-shrink-0" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">N/A</span>
+                            );
+                          })()}
+                          <Button size="sm" variant="ghost" className="h-7 px-2"
+                            onClick={() => { setEditingWebsiteId(company.id); setWebsiteInput(sanitizeDomain(company.website || rawData?.domain || null) || ''); }}
+                          >Editar</Button>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       {company.motivo_descarte ? (
@@ -1617,6 +1601,7 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
+      
       <ScrollControls />
     </div>
   );
