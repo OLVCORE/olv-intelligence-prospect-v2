@@ -477,10 +477,15 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { company_id, company_name, cnpj, domain, setor } = await req.json();
+    const payload = await req.json().catch(() => ({}));
+    const company_id = payload.company_id ?? payload.analysis_id ?? null;
+    const company_name = payload.company_name ?? payload.name ?? null;
+    const cnpj = payload.cnpj ?? null;
+    const domain = payload.domain ?? null;
+    const setor = payload.setor ?? null;
 
-    if (!company_id || !company_name) {
-      throw new Error('company_id e company_name são obrigatórios');
+    if (!company_name) {
+      return new Response(JSON.stringify({ error: 'company_name é obrigatório' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     console.log(`[SIMPLE-TOTVS] ========================================`);
@@ -511,25 +516,27 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // ========== CACHE (24h) ==========
-    const oneDayAgo = new Date(Date.now() - 24*60*60*1000).toISOString();
-    const { data: cachedCheck } = await supabase
-      .from('simple_totvs_checks')
-      .select('*')
-      .eq('company_id', company_id)
-      .gte('checked_at', oneDayAgo)
-      .order('checked_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    if (company_id) {
+      const oneDayAgo = new Date(Date.now() - 24*60*60*1000).toISOString();
+      const { data: cachedCheck } = await supabase
+        .from('simple_totvs_checks')
+        .select('*')
+        .eq('company_id', company_id)
+        .gte('checked_at', oneDayAgo)
+        .order('checked_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (cachedCheck) {
-      console.log(`[CACHE] ✅ Cache hit - retornando resultado de ${cachedCheck.checked_at}`);
-      return new Response(JSON.stringify({
-        ...cachedCheck,
-        cache_hit: true,
-        execution_time_ms: Date.now() - startTime
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      if (cachedCheck) {
+        console.log(`[CACHE] ✅ Cache hit - retornando resultado de ${cachedCheck.checked_at}`);
+        return new Response(JSON.stringify({
+          ...cachedCheck,
+          cache_hit: true,
+          execution_time_ms: Date.now() - startTime
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     console.log(`[CACHE] ❌ Cache miss - executando busca completa`);
@@ -631,33 +638,35 @@ serve(async (req) => {
     let companyData: CompanyDataUnified | null = null;
     let dataSource = 'none';
     
-    const { data: quarentenaData } = await supabase
-      .from('icp_analysis_results')
-      .select('icp_score, website, setor, porte, cnpj, nome_empresa')
-      .eq('id', company_id)
-      .maybeSingle();
-    
-    if (quarentenaData) {
-      companyData = quarentenaData as CompanyDataUnified;
-      dataSource = 'quarentena';
-    } else {
-      // Fallback: buscar em companies
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('icp_score, website, industry, headquarters_state, cnpj, name')
+    if (company_id) {
+      const { data: quarentenaData } = await supabase
+        .from('icp_analysis_results')
+        .select('icp_score, website, setor, porte, cnpj, nome_empresa')
         .eq('id', company_id)
         .maybeSingle();
       
-      if (companiesData) {
-        companyData = {
-          icp_score: companiesData.icp_score || null,
-          website: companiesData.website || null,
-          setor: companiesData.industry || null,
-          porte: null, // companies não tem porte
-          cnpj: companiesData.cnpj || null,
-          nome_empresa: companiesData.name || null
-        };
-        dataSource = 'companies';
+      if (quarentenaData) {
+        companyData = quarentenaData as CompanyDataUnified;
+        dataSource = 'quarentena';
+      } else {
+        // Fallback: buscar em companies
+        const { data: companiesData } = await supabase
+          .from('companies')
+          .select('icp_score, website, industry, headquarters_state, cnpj, name')
+          .eq('id', company_id)
+          .maybeSingle();
+        
+        if (companiesData) {
+          companyData = {
+            icp_score: companiesData.icp_score || null,
+            website: companiesData.website || null,
+            setor: companiesData.industry || null,
+            porte: null, // companies não tem porte
+            cnpj: companiesData.cnpj || null,
+            nome_empresa: companiesData.name || null
+          };
+          dataSource = 'companies';
+        }
       }
     }
     
@@ -746,49 +755,64 @@ serve(async (req) => {
     };
 
     // Salvar resultados na QUARENTENA (icp_analysis_results)
-    console.log(`[SAVE] 💾 Salvando em icp_analysis_results (QUARENTENA)`);
-    console.log(`[SAVE] 📊 Status: ${result.status} | Weight: ${totalWeight} | Evidências: ${result.total_evidences}`);
-    
-    const { error: updateError } = await supabase
-      .from('icp_analysis_results')
-      .update({
-        totvs_check_status: result.status,
-        totvs_check_confidence: result.confidence,
-        totvs_check_evidences: result.evidences_by_category,
-        totvs_check_date: result.checked_at,
-        totvs_check_total_weight: totalWeight,
-        totvs_check_reasoning: result.reasoning,
-        is_cliente_totvs: result.detected_totvs,
-        totvs_evidences: result.evidences_by_category
-      })
-      .eq('id', company_id);
+    if (company_id) {
+      console.log(`[SAVE] 💾 Salvando em icp_analysis_results (QUARENTENA)`);
+      console.log(`[SAVE] 📊 Status: ${result.status} | Weight: ${totalWeight} | Evidências: ${result.total_evidences}`);
+      
+      const { error: updateError } = await supabase
+        .from('icp_analysis_results')
+        .update({
+          totvs_check_status: result.status,
+          totvs_check_confidence: result.confidence,
+          totvs_check_evidences: result.evidences_by_category,
+          totvs_check_date: result.checked_at,
+          totvs_check_total_weight: totalWeight,
+          totvs_check_reasoning: result.reasoning,
+          is_cliente_totvs: result.detected_totvs,
+          totvs_evidences: result.evidences_by_category
+        })
+        .eq('id', company_id);
 
-    if (updateError) {
-      console.error('[SAVE] ⚠️ Erro ao atualizar QUARENTENA:', updateError.message);
-    } else {
-      console.log('[SAVE] ✅ Salvo na QUARENTENA com sucesso');
+      if (updateError) {
+        console.error('[SAVE] ⚠️ Erro ao atualizar QUARENTENA:', updateError.message);
+      } else {
+        console.log('[SAVE] ✅ Salvo na QUARENTENA com sucesso');
+      }
     }
 
     // Salvar snapshot no cache oficial (simple_totvs_checks) COM LOGIC_VERSION = 2
-    console.log('[SAVE] 🗂️ Gravando em simple_totvs_checks (cache oficial V2)');
-    const { error: insertCacheError } = await supabase
-      .from('simple_totvs_checks')
-      .insert({
-        company_id,
-        status: result.status,
-        confidence: result.confidence,
-        detected_totvs: result.detected_totvs,
-        total_evidences: result.total_evidences,
-        evidences: result.evidences_by_category,
-        reasoning: result.reasoning,
-        checked_at: result.checked_at,
-        logic_version: 2 // 🎯 Marca esta verificação como V2 (lógica unificada)
-      });
+    if (company_id) {
+      // Verifica se é um company_id válido antes de tentar gravar o cache
+      const { data: companyExists } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('id', company_id)
+        .maybeSingle();
 
-    if (insertCacheError) {
-      console.warn('[SAVE] ⚠️ Falha ao gravar cache simple_totvs_checks:', insertCacheError.message);
-    } else {
-      console.log('[SAVE] ✅ Cache V2 gravado em simple_totvs_checks');
+      if (companyExists) {
+        console.log('[SAVE] 🗂️ Gravando em simple_totvs_checks (cache oficial V2)');
+        const { error: insertCacheError } = await supabase
+          .from('simple_totvs_checks')
+          .insert({
+            company_id,
+            status: result.status,
+            confidence: result.confidence,
+            detected_totvs: result.detected_totvs,
+            total_evidences: result.total_evidences,
+            evidences: result.evidences_by_category,
+            reasoning: result.reasoning,
+            checked_at: result.checked_at,
+            logic_version: 2
+          });
+
+        if (insertCacheError) {
+          console.warn('[SAVE] ⚠️ Falha ao gravar cache simple_totvs_checks:', insertCacheError.message);
+        } else {
+          console.log('[SAVE] ✅ Cache V2 gravado em simple_totvs_checks');
+        }
+      } else {
+        console.log('[SAVE] ⏭️ Ignorando cache V2 (company_id não pertence à tabela companies)');
+      }
     }
 
     console.log(`[SIMPLE-TOTVS] ⚡ Finalizado em ${executionTime}ms - ${status.toUpperCase()}`);
