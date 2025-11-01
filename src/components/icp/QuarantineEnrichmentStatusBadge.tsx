@@ -31,27 +31,40 @@ export function QuarantineEnrichmentStatusBadge({
   const hasAnyEnrichment = completionPercentage > 0;
 
   const getStatusInfo = () => {
-    if (isFullyEnriched) {
+    // >= 70%: verde limão sólido
+    if (completionPercentage >= 70) {
       return {
         icon: <CheckCircle2 className="h-3 w-3" />,
-        label: "Ativo",
-        variant: "default" as const,
-        className: "bg-green-500/10 text-green-600 border-green-500/20",
+        label: `${completionPercentage}%`,
+        variant: "success" as const,
+        className: "",
       };
     }
     
-    if (hasAnyEnrichment) {
+    // 50-65%: amarelo
+    if (completionPercentage >= 50 && completionPercentage < 70) {
       return {
-        icon: <Loader2 className="h-3 w-3" />,
-        label: "Parcial",
-        variant: "secondary" as const,
-        className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+        icon: <Loader2 className="h-3 w-3 animate-spin" />,
+        label: `${completionPercentage}%`,
+        variant: "warning" as const,
+        className: "",
       };
     }
 
+    // < 30%: vermelho
+    if (completionPercentage < 30) {
+      return {
+        icon: <XCircle className="h-3 w-3" />,
+        label: `${completionPercentage}%`,
+        variant: "destructive" as const,
+        className: "",
+      };
+    }
+
+    // 30-49%: laranja (fallback)
     return {
-      icon: <XCircle className="h-3 w-3" />,
-      label: "Pendente",
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      label: `${completionPercentage}%`,
       variant: "outline" as const,
       className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
     };

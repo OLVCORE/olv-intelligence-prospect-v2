@@ -27,26 +27,39 @@ export function EnrichmentStatusBadge({ companyId, showProgress = false }: Enric
   }
 
   const getStatusInfo = () => {
-    if (status.isFullyEnriched) {
+    // >= 70%: verde limão sólido
+    if (status.completionPercentage >= 70) {
       return {
         icon: <CheckCircle2 className="h-3 w-3" />,
-        label: "Completo",
-        variant: "default" as const,
-        className: "bg-green-500/10 text-green-600 border-green-500/20",
+        label: `${status.completionPercentage}%`,
+        variant: "success" as const,
+        className: "",
       };
     }
     
-    if (status.completionPercentage > 50) {
+    // 50-65%: amarelo
+    if (status.completionPercentage >= 50 && status.completionPercentage < 70) {
       return {
         icon: <Loader2 className="h-3 w-3 animate-spin" />,
         label: `${status.completionPercentage}%`,
-        variant: "secondary" as const,
-        className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+        variant: "warning" as const,
+        className: "",
       };
     }
 
+    // < 30%: vermelho
+    if (status.completionPercentage < 30) {
+      return {
+        icon: <AlertCircle className="h-3 w-3" />,
+        label: `${status.completionPercentage}%`,
+        variant: "destructive" as const,
+        className: "",
+      };
+    }
+
+    // 30-49%: laranja (fallback)
     return {
-      icon: <AlertCircle className="h-3 w-3" />,
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
       label: `${status.completionPercentage}%`,
       variant: "outline" as const,
       className: "bg-orange-500/10 text-orange-600 border-orange-500/20",

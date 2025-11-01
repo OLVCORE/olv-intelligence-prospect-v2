@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image, Upload, Database, Target, Users } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, Zap, Plus, Loader2, Eye, Sparkles, ArrowUpDown, CheckCircle, AlertTriangle, XCircle, Clock, RefreshCw, FileText, Download, FileSpreadsheet, Image, Upload, Database, Target, Users, Globe } from 'lucide-react';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -86,9 +86,50 @@ export default function CompaniesManagementPage() {
   const [isApolloImportOpen, setIsApolloImportOpen] = useState(false);
   const hasSelection = selectedCompanies.length > 0;
 
+  // Inline website editing state
+  const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
+  const [websiteInput, setWebsiteInput] = useState<string>('');
+
   // CNPJ Discovery dialog state
   const [cnpjDialogOpen, setCnpjDialogOpen] = useState(false);
   const [cnpjCompany, setCnpjCompany] = useState<any | null>(null);
+
+  // Helper functions for inline website editing
+  const sanitizeDomain = (value?: string | null): string | null => {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v || /\s/.test(v)) return null;
+    try {
+      const url = v.startsWith('http') ? new URL(v) : new URL(`https://${v}`);
+      const host = url.hostname.replace(/^www\./, '');
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(host) ? host : null;
+    } catch {
+      const cleaned = v.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(cleaned) ? cleaned : null;
+    }
+  };
+
+  const saveWebsite = async (companyId: string, value: string) => {
+    const sanitized = sanitizeDomain(value);
+    if (!sanitized) {
+      toast.error('Website inválido', { description: 'Informe um domínio válido, ex: empresa.com.br' });
+      return;
+    }
+    const { error } = await supabase
+      .from('companies')
+      .update({ website: sanitized, domain: sanitized })
+      .eq('id', companyId);
+    if (error) {
+      toast.error('Erro ao salvar website', { description: error.message });
+      return;
+    }
+    toast.success('Website atualizado');
+    setEditingWebsiteId(null);
+    setWebsiteInput('');
+    refetch();
+  };
 
   const handleDelete = async () => {
     if (!companyToDelete) return;
@@ -981,7 +1022,8 @@ export default function CompaniesManagementPage() {
                         <ArrowUpDown className="h-3 w-3" />
                       </Button>
                     </TableHead>
-                    <TableHead>UF/Região</TableHead>
+                     <TableHead>UF/Região</TableHead>
+                     <TableHead>Score ICP</TableHead>
                      <TableHead>Status Análise</TableHead>
                      <TableHead>TOTVS Check</TableHead>
                      <TableHead>Website</TableHead>
@@ -1020,27 +1062,29 @@ export default function CompaniesManagementPage() {
                           <span className="text-xs text-muted-foreground">N/A</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {(company as any).cnpj_status === 'ativo' && (
+                       <TableCell>
+                        {(company as any).cnpj_status === 'ativa' || (company as any).cnpj_status === 'ativo' ? (
                           <Badge variant="success" className="gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Ativo
+                            Ativa
                           </Badge>
-                        )}
-                        {(company as any).cnpj_status === 'inativo' && (
+                        ) : (company as any).cnpj_status === 'inativo' ? (
                           <Badge variant="warning" className="gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             Inativo
                           </Badge>
-                        )}
-                        {(company as any).cnpj_status === 'inexistente' && (
+                        ) : (company as any).cnpj_status === 'inexistente' ? (
                           <Badge variant="destructive" className="gap-1">
                             <XCircle className="w-3 h-3" />
                             Inexistente
                           </Badge>
-                        )}
-                        {(!( company as any).cnpj_status || (company as any).cnpj_status === 'pendente') && (
-                          <Badge variant="secondary" className="gap-1">
+                        ) : !company.cnpj ? (
+                          <Badge variant="secondary" className="gap-1 bg-gray-500/10 text-gray-600 border-gray-500/20">
+                            <Clock className="w-3 h-3" />
+                            Não descoberto
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="gap-1 bg-blue-500/10 text-blue-600 border-blue-500/20">
                             <Clock className="w-3 h-3" />
                             Pendente
                           </Badge>
@@ -1049,16 +1093,39 @@ export default function CompaniesManagementPage() {
                       <TableCell>
                         {company.industry || <span className="text-xs text-muted-foreground">N/A</span>}
                       </TableCell>
-                      <TableCell>
-                        {(company.location as any)?.state ? (
-                          <Badge variant="secondary">{(company.location as any).state}</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">N/A</span>
-                        )}
+                       <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {(company.location as any)?.state ? (
+                            <>
+                              <Badge variant="secondary" className="w-fit">
+                                {(company.location as any).state}
+                              </Badge>
+                              {(company.location as any)?.city && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={(company.location as any).city}>
+                                  {(company.location as any).city}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">N/A</span>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell>
-                         <EnrichmentStatusBadge companyId={company.id} showProgress />
-                       </TableCell>
+                       <TableCell>
+                          {(company as any).icp_score ? (
+                            <Badge 
+                              variant={(company as any).icp_score >= 70 ? 'success' : (company as any).icp_score >= 50 ? 'warning' : 'destructive'}
+                              className="gap-1"
+                            >
+                              {(company as any).icp_score}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">N/A</span>
+                          )}
+                        </TableCell>
+                       <TableCell>
+                          <EnrichmentStatusBadge companyId={company.id} showProgress />
+                        </TableCell>
                        <TableCell>
                          <SimpleTOTVSCheckStatusBadge 
                            companyId={company.id}
@@ -1068,26 +1135,51 @@ export default function CompaniesManagementPage() {
                            }}
                          />
                        </TableCell>
-                       <TableCell>
-                         {company.website || company.domain ? (
-                          isValidUrl(company.website || company.domain) ? (
-                            <a
-                              href={formatWebsiteUrl(company.website || company.domain)!}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {extractDomain(company.website || company.domain)}
-                              <ExternalLinkIcon className="h-3 w-3" />
-                            </a>
+                        <TableCell>
+                          {editingWebsiteId === company.id ? (
+                            <div className="flex items-center gap-2 max-w-[180px]">
+                              <Input
+                                value={websiteInput}
+                                onChange={(e) => setWebsiteInput(e.target.value)}
+                                placeholder="empresa.com.br"
+                                className="h-8 text-xs"
+                              />
+                              <Button size="sm" variant="secondary" className="h-8 px-2"
+                                onClick={() => saveWebsite(company.id, websiteInput)}
+                              >Salvar</Button>
+                              <Button size="sm" variant="ghost" className="h-8 px-2"
+                                onClick={() => { setEditingWebsiteId(null); setWebsiteInput(''); }}
+                              >Cancelar</Button>
+                            </div>
                           ) : (
-                            <span className="text-xs text-amber-600">⚠️ Inválido</span>
-                          )
-                        ) : (
-                          <span className="text-xs text-muted-foreground">N/A</span>
-                        )}
-                      </TableCell>
+                            <div className="flex items-center gap-2 max-w-[180px]">
+                              {(() => {
+                                const domain = sanitizeDomain(company.website || company.domain || null);
+                                return domain ? (
+                                  <a
+                                    href={`https://${domain}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 truncate"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title={domain}
+                                  >
+                                    {domain}
+                                    <Globe className="h-3 w-3 flex-shrink-0" />
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">N/A</span>
+                                );
+                              })()}
+                              <Button size="sm" variant="ghost" className="h-7 px-2"
+                                onClick={() => { 
+                                  setEditingWebsiteId(company.id); 
+                                  setWebsiteInput(sanitizeDomain(company.website || company.domain || null) || ''); 
+                                }}
+                              >Editar</Button>
+                            </div>
+                          )}
+                       </TableCell>
                        <TableCell className="text-right">
                         <CompanyRowActions
                           company={company}

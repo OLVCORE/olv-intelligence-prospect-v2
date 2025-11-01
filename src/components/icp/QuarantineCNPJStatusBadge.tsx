@@ -16,10 +16,10 @@ export function QuarantineCNPJStatusBadge({ cnpj, cnpjStatus }: QuarantineCNPJSt
     );
   }
 
-  // Verde limão quando ATIVA (situação da Receita Federal)
+  // Verde limão sólido quando ATIVA (situação da Receita Federal)
   if (cnpjStatus === 'ativa' || cnpjStatus === 'ativo') {
     return (
-      <Badge variant="default" className="gap-1 bg-lime-500/10 text-lime-600 border-lime-500/20">
+      <Badge variant="success" className="gap-1">
         <CheckCircle className="w-3 h-3" />
         Ativa
       </Badge>
