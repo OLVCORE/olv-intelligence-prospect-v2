@@ -52,6 +52,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[Inbound Email] 📧 Recebendo webhook de e-mail...');
+    console.log('[Inbound Email] Method:', req.method);
+    console.log('[Inbound Email] Content-Type:', req.headers.get('content-type'));
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -60,41 +64,73 @@ serve(async (req) => {
     let payload: InboundEmailPayload = {};
     const contentType = req.headers.get('content-type') || '';
 
-    if (contentType.includes('application/json')) {
-      payload = await req.json();
-    } else if (contentType.includes('application/x-www-form-urlencoded')) {
-      const form = await req.formData();
-      payload = {
-        to: form.get('to')?.toString(),
-        from: form.get('from')?.toString() || undefined,
-        subject: form.get('subject')?.toString() || undefined,
-        text: form.get('text')?.toString() || undefined,
-        html: form.get('html')?.toString() || undefined,
-        messageId: form.get('Message-Id')?.toString() || form.get('messageId')?.toString() || undefined,
-      };
-    } else {
-      // Try best-effort JSON
-      try { payload = await req.json(); } catch { payload = {}; }
+    try {
+      if (contentType.includes('application/json')) {
+        payload = await req.json();
+        console.log('[Inbound Email] ✅ Payload JSON recebido');
+      } else if (contentType.includes('application/x-www-form-urlencoded')) {
+        const form = await req.formData();
+        payload = {
+          to: form.get('to')?.toString(),
+          from: form.get('from')?.toString() || undefined,
+          subject: form.get('subject')?.toString() || undefined,
+          text: form.get('text')?.toString() || undefined,
+          html: form.get('html')?.toString() || undefined,
+          messageId: form.get('Message-Id')?.toString() || form.get('messageId')?.toString() || undefined,
+        };
+        console.log('[Inbound Email] ✅ Form-data recebido');
+      } else {
+        // Try best-effort JSON
+        try { 
+          payload = await req.json(); 
+          console.log('[Inbound Email] ✅ Fallback JSON recebido');
+        } catch (e) { 
+          console.log('[Inbound Email] ⚠️ Não foi possível parsear payload:', e);
+          payload = {}; 
+        }
+      }
+    } catch (parseError: any) {
+      console.error('[Inbound Email] ❌ Erro ao parsear payload:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse payload', details: parseError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    console.log('[Inbound Email] 📋 Payload:', JSON.stringify(payload, null, 2));
 
     const toAddresses = parseAddresses(payload.to);
     const fromAddress = parseAddresses(payload.from)[0] || payload.from || '';
 
+    console.log('[Inbound Email] 📮 To:', toAddresses);
+    console.log('[Inbound Email] 📤 From:', fromAddress);
+
     if (toAddresses.length === 0 || !fromAddress) {
+      console.error('[Inbound Email] ❌ Campos obrigatórios ausentes');
       return new Response(
-        JSON.stringify({ error: 'Invalid payload: missing to/from' }),
+        JSON.stringify({ 
+          error: 'Invalid payload: missing to/from',
+          received: { to: payload.to, from: payload.from },
+          parsed: { toAddresses, fromAddress }
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Load active email integrations (any provider) and try multiple matching strategies
+    console.log('[Inbound Email] 🔍 Buscando integrações ativas...');
     const { data: integrations, error: intError } = await supabase
       .from('integration_configs')
       .select('*')
       .eq('channel', 'email')
       .eq('status', 'active');
 
-    if (intError) throw intError;
+    if (intError) {
+      console.error('[Inbound Email] ❌ Erro ao buscar integrações:', intError);
+      throw intError;
+    }
+    
+    console.log('[Inbound Email] ✅ Integrações encontradas:', integrations?.length || 0);
 
     const toLower = (s?: string) => (typeof s === 'string' ? s.toLowerCase() : undefined);
     const domainOf = (addr?: string) => {
@@ -151,22 +187,29 @@ serve(async (req) => {
     }
 
     if (!match) {
-      console.log('[Inbound Email] No integration matched, proceeding with default flow for', toAddresses);
+      console.log('[Inbound Email] ⚠️ Nenhuma integração encontrada, usando fluxo padrão para', toAddresses);
+    } else {
+      console.log('[Inbound Email] ✅ Integração encontrada:', match.id);
     }
 
     const userId = match?.user_id;
     const channel = 'email';
 
     // Find or create contact by sender email
+    console.log('[Inbound Email] 🔍 Buscando contato:', fromAddress);
     let { data: contact, error: contactErr } = await supabase
       .from('contacts')
       .select('*')
       .eq('email', fromAddress)
       .maybeSingle();
 
-    if (contactErr) throw contactErr;
+    if (contactErr) {
+      console.error('[Inbound Email] ❌ Erro ao buscar contato:', contactErr);
+      throw contactErr;
+    }
 
     if (!contact) {
+      console.log('[Inbound Email] 📝 Criando novo contato...');
       const { data: newContact, error: newContactErr } = await supabase
         .from('contacts')
         .insert({
@@ -176,8 +219,14 @@ serve(async (req) => {
         })
         .select()
         .single();
-      if (newContactErr) throw newContactErr;
+      if (newContactErr) {
+        console.error('[Inbound Email] ❌ Erro ao criar contato:', newContactErr);
+        throw newContactErr;
+      }
       contact = newContact;
+      console.log('[Inbound Email] ✅ Contato criado:', contact.id);
+    } else {
+      console.log('[Inbound Email] ✅ Contato existente:', contact.id);
     }
 
     // Find open conversation for this contact on email
@@ -235,16 +284,30 @@ serve(async (req) => {
 
     if (msgErr) throw msgErr;
 
-    console.log('[Inbound Email] Stored message', message.id);
+    console.log('[Inbound Email] ✅ Mensagem armazenada:', message.id);
+    console.log('[Inbound Email] 🎉 E-mail processado com sucesso!');
 
     return new Response(
-      JSON.stringify({ success: true, conversationId, messageId: message.id }),
+      JSON.stringify({ 
+        success: true, 
+        conversationId, 
+        messageId: message.id,
+        from: fromAddress,
+        to: toAddresses[0],
+        subject: payload.subject
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e: any) {
-    console.error('[Inbound Email] Error', e);
+    console.error('[Inbound Email] ❌ ERRO CRÍTICO:', e);
+    console.error('[Inbound Email] Stack:', e.stack);
     return new Response(
-      JSON.stringify({ success: false, error: e.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: e.message,
+        stack: e.stack,
+        timestamp: new Date().toISOString()
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
