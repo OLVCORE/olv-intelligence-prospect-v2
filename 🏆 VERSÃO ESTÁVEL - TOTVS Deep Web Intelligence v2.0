@@ -1,0 +1,74 @@
+# 🏆 VERSÃO ESTÁVEL - TOTVS Deep Web Intelligence v2.0
+**Data:** 2025-01-21
+**Status:** ✅ PRODUÇÃO APROVADA
+
+## 🎯 Funcionalidades Validadas
+- ✅ Detecção TOTVS com 17 fontes premium
+- ✅ Triple/Double/Single match validation
+- ✅ CNPJ fallback search
+- ✅ Variações de nome da empresa
+- ✅ Highlight de termos encontrados
+- ✅ Botões de cópia (URL + Termos)
+- ✅ Intent detection com keywords
+- ✅ Source weights (CVM: 100pts, Premium News: 85pts)
+- ✅ Golden Cargo detectada com sucesso
+
+## 🔒 PROTOCOLO DE EMERGÊNCIA
+Se regredir, restaurar para este ponto usando:
+1. History → Buscar "2025-01-21" → Restore
+2. OU GitHub → Tag `v2.0-stable` → Checkout
+
+## 📋 Arquivos Críticos
+- `supabase/functions/simple-totvs-check/index.ts`
+- `src/components/totvs/TOTVSCheckCard.tsx`
+- `src/hooks/useSimpleTOTVSCheck.ts`
+
+## ⚠️ NÃO MEXER EM:
+- Lógica de validação triple/double/single match
+- Sistema de pesos das fontes (SOURCE_WEIGHTS)
+- Função getCompanyVariations()
+- highlightTerms() no frontend
+4️⃣ PROTOCOLO DE RECUPERAÇÃO DE EMERGÊNCIA
+Se algo quebrar:
+OPÇÃO A - History (Lovable):
+1.	Abrir History (topo)
+2.	Procurar "2025-01-21" ou última versão estável
+3.	Clicar "Restore"
+OPÇÃO B - GitHub (se conectado):
+1.	Ir para o repositório no GitHub
+2.	Procurar commit com mensagem "Stable v2.0"
+3.	Fazer rollback via GitHub
+OPÇÃO C - Backup Manual (criar agora):
+1.	Copiar conteúdo de simple-totvs-check/index.ts
+2.	Salvar em arquivo .txt localmente
+3.	Copiar conteúdo de TOTVSCheckCard.tsx
+4.	Salvar em arquivo .txt localmente
+5️⃣ BOAS PRÁTICAS DAQUI PRA FRENTE
+SEMPRE que for fazer mudanças:
+1.	Antes de mudar, diga no chat:
+2.	"Antes de implementar, quero criar um snapshot desta versão estável"
+3.	Mudanças incrementais:
+•	Uma funcionalidade por vez
+•	Testar antes de avançar
+•	Se quebrar, voltar imediatamente
+4.	Comunicação clara:
+•	Sempre diga: "NÃO ALTERE a lógica de validação TOTVS"
+•	Seja específico: "Apenas mude a cor do botão X"
+•	Use: "MANTENHA tudo funcionando como está"
+6️⃣ CRIAR DOCUMENTAÇÃO TÉCNICA
+Vou criar um arquivo de referência:
+________________________________________
+✅ CHECKLIST DE BLINDAGEM
+•	 Abrir History e confirmar que versão atual está salva
+•	 Conectar GitHub (recomendado)
+•	 Criar tag v2.0-stable no GitHub (se conectado)
+•	 Fazer backup manual dos 2 arquivos críticos
+•	 Salvar esta mensagem como referência
+________________________________________
+🎯 RESUMO EXECUTIVO:
+Esta versão está BLINDADA no histórico do Lovable. Se algo quebrar, você tem 3 formas de voltar:
+1.	History (mais rápido)
+2.	GitHub (mais profissional)
+3.	Backup manual (emergência)
+Daqui pra frente: Sempre comunique claramente o que quer mudar e peça para preservar a lógica atual. Use frases como "APENAS mude X, MANTENHA Y intacto".
+
