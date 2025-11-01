@@ -18,7 +18,8 @@ import {
   Zap,
   Trash2,
   ExternalLink,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -99,6 +100,14 @@ export function CompanyRowActions({
           Ver Detalhes
         </DropdownMenuItem>
 
+        {/* Relatório Executivo */}
+        <DropdownMenuItem 
+          onClick={() => navigate(`/reports?companyId=${company.id}`)}
+          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Relatório Executivo
+        </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => navigate(`/search?companyId=${company.id}`)}
           className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
