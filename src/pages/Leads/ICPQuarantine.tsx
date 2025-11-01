@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, Newspaper, Target, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,10 @@ import { useDeleteQuarantineBatch } from '@/hooks/useDeleteQuarantineBatch';
 import { useRefreshQuarantineBatch } from '@/hooks/useRefreshQuarantineBatch';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
-import { useMultipleSimpleTOTVSChecks } from '@/hooks/useSimpleTOTVSCheckBatch';
 import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheckCard';
+import { SimpleTOTVSCheckStatusBadge } from '@/components/icp/SimpleTOTVSCheckStatusBadge';
+import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
+import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -73,6 +75,8 @@ export default function ICPQuarantine() {
             ...rawData,
             receita_federal: data,
           },
+          // Atualizar status para ativo se era pendente
+          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
@@ -121,6 +125,8 @@ export default function ICPQuarantine() {
             ...rawData,
             apollo: data,
           },
+          // Atualizar status para ativo se era pendente
+          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
@@ -250,6 +256,8 @@ export default function ICPQuarantine() {
             ...rawData,
             enrichment_360: data,
           },
+          // Atualizar status para ativo se era pendente
+          status: analysis.status === 'pendente' ? 'ativa' : analysis.status,
         })
         .eq('id', analysisId);
 
@@ -270,10 +278,6 @@ export default function ICPQuarantine() {
     c.razao_social?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.cnpj?.includes(searchQuery)
   );
-
-  // Buscar todos os checks de TOTVS para as empresas exibidas
-  const companyIds = filteredCompanies.map(c => c.id);
-  const { data: totvsChecks = {} } = useMultipleSimpleTOTVSChecks(companyIds);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -438,6 +442,7 @@ export default function ICPQuarantine() {
   const selectedCompanies = filteredCompanies.filter(c => selectedIds.includes(c.id));
   const displayCompanies = previewCompany ? [previewCompany] : selectedCompanies;
 
+  // Funções de UI helpers para preview dialog
   const getTempIcon = (temp: string) => {
     switch (temp) {
       case 'hot': return <Flame className="h-4 w-4 text-red-500" />;
@@ -454,15 +459,6 @@ export default function ICPQuarantine() {
       cold: 'secondary',
     };
     return variants[temp] || 'secondary';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; variant: any }> = {
-      pendente: { label: 'Pendente', variant: 'default' },
-      aprovada: { label: 'Aprovada', variant: 'default' },
-      descartada: { label: 'Descartada', variant: 'secondary' },
-    };
-    return config[status] || { label: status, variant: 'default' };
   };
 
   return (
@@ -627,10 +623,13 @@ export default function ICPQuarantine() {
                 </TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>CNPJ</TableHead>
+                <TableHead>Status CNPJ</TableHead>
+                <TableHead>Setor</TableHead>
+                <TableHead>UF/Região</TableHead>
                 <TableHead>Score ICP</TableHead>
-                <TableHead>Temperatura</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>TOTVS Check</TableHead>
+                <TableHead>Status Análise</TableHead>
+                <TableHead>Status (STC)</TableHead>
+                <TableHead>Website</TableHead>
                 <TableHead>Motivo Descarte</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -638,19 +637,22 @@ export default function ICPQuarantine() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredCompanies.map((company) => {
-                  const totvsCheck = totvsChecks[company.id];
+                  const rawData = (company.raw_analysis && typeof company.raw_analysis === 'object' && !Array.isArray(company.raw_analysis)) 
+                    ? company.raw_analysis as Record<string, any>
+                    : {};
+                  
                   return (
                   <TableRow key={company.id}>
                     <TableCell>
@@ -662,73 +664,83 @@ export default function ICPQuarantine() {
                         disabled={company.status !== 'pendente'}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{company.razao_social}</TableCell>
-                    <TableCell className="font-mono text-sm">{company.cnpj}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{company.razao_social}</span>
+                        {rawData?.domain && (
+                          <span className="text-xs text-muted-foreground">{rawData.domain}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {company.cnpj ? (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {company.cnpj}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <QuarantineCNPJStatusBadge 
+                        cnpj={company.cnpj} 
+                        cnpjStatus={(company as any).cnpj_status}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {(company as any).setor || rawData?.setor || (
+                        <span className="text-xs text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(company as any).uf || rawData?.uf ? (
+                        <Badge variant="secondary">
+                          {(company as any).uf || rawData?.uf}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={company.icp_score >= 70 ? 'default' : 'secondary'}>
                         {company.icp_score}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTempIcon(company.temperatura)}
-                        <Badge variant={getTempBadge(company.temperatura)}>
-                          {company.temperatura}
-                        </Badge>
-                      </div>
+                      <QuarantineEnrichmentStatusBadge 
+                        rawAnalysis={rawData}
+                        showProgress
+                      />
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadge(company.status).variant}>
-                        {getStatusBadge(company.status).label}
-                      </Badge>
+                      <SimpleTOTVSCheckStatusBadge
+                        companyId={company.id}
+                        onViewReport={() => handleOpenTotvsCheck(company)}
+                      />
                     </TableCell>
                     <TableCell>
-                      {totvsCheck ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenTotvsCheck(company)}
-                                className="h-8 px-2 gap-1"
-                              >
-                                <Target className="h-4 w-4" />
-                                <Badge 
-                                  variant={
-                                    totvsCheck.status === 'go' ? 'default' : 
-                                    totvsCheck.status === 'no-go' ? 'destructive' : 
-                                    'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {totvsCheck.status === 'go' ? 'GO' : 
-                                   totvsCheck.status === 'no-go' ? 'NO-GO' : 
-                                   'REVISAR'}
-                                </Badge>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-xs">
-                                <p>Verificado em: {new Date(totvsCheck.checked_at).toLocaleString('pt-BR')}</p>
-                                <p className="font-semibold mt-1">{totvsCheck.total_evidences} evidência(s)</p>
-                                <p className="text-muted-foreground">Clique para ver relatório completo</p>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      {rawData?.domain || company.website ? (
+                        <a
+                          href={`https://${(rawData?.domain || company.website).replace(/^https?:\/\//, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {(rawData?.domain || company.website).replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                          <Globe className="h-3 w-3" />
+                        </a>
                       ) : (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Não verificado
-                        </span>
+                        <span className="text-xs text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {company.motivo_descarte && (
-                        <span className="text-sm text-muted-foreground">
+                      {company.motivo_descarte ? (
+                        <span className="text-xs text-muted-foreground">
                           {company.motivo_descarte}
                         </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
