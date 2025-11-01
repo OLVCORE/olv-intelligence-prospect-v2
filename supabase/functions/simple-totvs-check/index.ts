@@ -84,6 +84,42 @@ function isValidLinkedInJobPosting(text: string): boolean {
   return true;
 }
 
+function hasValidContext(text: string, companyName: string): boolean {
+  const textLower = text.toLowerCase();
+  
+  // REJEITAR: Listas de valores monetários (padrão de documentos judiciais)
+  const moneyListPattern = /R\$\s*[\d.,]+\s*-.*?-\s*R\$\s*[\d.,]+/i;
+  if (moneyListPattern.test(text)) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: lista de valores monetários');
+    return false;
+  }
+  
+  // REJEITAR: Múltiplas empresas listadas (padrão: "EMPRESA1 LTDA - R$ ... - EMPRESA2 LTDA")
+  const multipleCompaniesPattern = /(LTDA|S\.A\.|SA|EIRELI).*?-.*?(LTDA|S\.A\.|SA|EIRELI)/i;
+  if (multipleCompaniesPattern.test(text)) {
+    console.log('[SIMPLE-TOTVS] ❌ Rejeitado: lista de múltiplas empresas');
+    return false;
+  }
+  
+  // ACEITAR: Verbos de ação que indicam uso real
+  const actionVerbs = [
+    'utiliza', 'usa', 'implementou', 'adotou', 'contratou', 'renovou',
+    'migrou', 'escolheu', 'implantou', 'utilizar', 'usar', 'implementar',
+    'sistema', 'solução', 'cliente', 'parceiro', 'contrato', 'licença'
+  ];
+  
+  for (const verb of actionVerbs) {
+    if (textLower.includes(verb)) {
+      console.log('[SIMPLE-TOTVS] ✅ Aceito: verbo de ação encontrado:', verb);
+      return true;
+    }
+  }
+  
+  // Se não tem contexto de uso, rejeitar
+  console.log('[SIMPLE-TOTVS] ❌ Rejeitado: sem contexto de uso');
+  return false;
+}
+
 function detectTotvsProducts(text: string): string[] {
   const textLower = text.toLowerCase();
   const detected: string[] = [];
@@ -216,6 +252,12 @@ serve(async (req) => {
             }
 
             if (isTriple || isDouble) {
+              // Validar contexto antes de aceitar
+              if (!hasValidContext(combined, shortSearchTerm)) {
+                console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
+                continue;
+              }
+              
               validLinkedInCount++;
               evidencias.push({
                 source: 'linkedin_jobs',
@@ -270,6 +312,12 @@ serve(async (req) => {
             const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
             if (isTriple || isDouble) {
+              // Validar contexto antes de aceitar
+              if (!hasValidContext(combined, shortSearchTerm)) {
+                console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
+                continue;
+              }
+              
               validNewsCount++;
               evidencias.push({
                 source: 'google_news',
@@ -315,6 +363,12 @@ serve(async (req) => {
               const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
               if (isTriple || isDouble) {
+                // Validar contexto antes de aceitar
+                if (!hasValidContext(combined, shortSearchTerm)) {
+                  console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
+                  continue;
+                }
+                
                 evidencias.push({
                   source: 'premium_news',
                   weight: SOURCE_WEIGHTS.premium_news,
@@ -359,6 +413,12 @@ serve(async (req) => {
               const isDouble = !isTriple && doubleMatch(combined, shortSearchTerm);
 
               if (isTriple || isDouble) {
+                // Validar contexto antes de aceitar
+                if (!hasValidContext(combined, shortSearchTerm)) {
+                  console.log(`[SIMPLE-TOTVS] ❌ Rejeitado (contexto inválido): ${title.substring(0, 60)}`);
+                  continue;
+                }
+                
                 evidencias.push({
                   source: 'judicial',
                   weight: SOURCE_WEIGHTS.judicial,
