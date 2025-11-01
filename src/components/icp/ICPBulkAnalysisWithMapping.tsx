@@ -1038,9 +1038,15 @@ export default function ICPBulkAnalysisWithMapping() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               {templates.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum template salvo ainda
-                </p>
+                <div className="text-center py-8 space-y-3">
+                  <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground/50" />
+                  <div>
+                    <p className="font-medium text-sm">Nenhum template salvo</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Após mapear colunas, salve como template para reutilizar
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <ScrollArea className="h-[300px] pr-4">
                   <div className="space-y-2">
@@ -1482,7 +1488,15 @@ export default function ICPBulkAnalysisWithMapping() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     {templates.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum template salvo ainda</p>
+                      <div className="text-center py-8 space-y-3">
+                        <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground/50" />
+                        <div>
+                          <p className="font-medium text-sm">Nenhum template salvo</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Após mapear colunas, salve como template para reutilizar
+                          </p>
+                        </div>
+                      </div>
                     ) : (
                       <ScrollArea className="h-[300px] pr-4">
                         <div className="space-y-2">

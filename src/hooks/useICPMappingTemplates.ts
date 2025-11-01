@@ -19,16 +19,23 @@ export function useICPMappingTemplates() {
   const queryClient = useQueryClient();
 
   // Listar templates do usuário
-  const { data: templates, isLoading } = useQuery({
+  const { data: templates, isLoading, error: queryError } = useQuery({
     queryKey: ['icp-mapping-templates'],
     queryFn: async () => {
+      console.log('[TEMPLATES] Carregando templates...');
+      
       const { data, error } = await supabase
         .from('icp_mapping_templates')
         .select('*')
         .order('ultima_utilizacao', { ascending: false, nullsFirst: false })
         .order('criado_em', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[TEMPLATES] Erro ao carregar:', error);
+        throw error;
+      }
+      
+      console.log('[TEMPLATES] Templates carregados:', data?.length || 0);
       
       // Converter Json para ColumnMapping[]
       return (data || []).map(item => ({
@@ -37,6 +44,16 @@ export function useICPMappingTemplates() {
       })) as MappingTemplate[];
     },
   });
+
+  // Mostrar erro se houver
+  if (queryError) {
+    console.error('[TEMPLATES] Erro na query:', queryError);
+    toast({
+      title: 'Erro ao carregar templates',
+      description: 'Verifique as permissões de acesso aos templates.',
+      variant: 'destructive',
+    });
+  }
 
   // Salvar novo template
   const saveTemplate = useMutation({
