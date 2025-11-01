@@ -78,48 +78,22 @@ const TOTVS_BRAND_TERMS = ['TOTVS', 'Microsiga'];
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-      
-      const response = await fetch(url, { 
-        ...options, 
-        signal: controller.signal 
-      });
-      
-      clearTimeout(timeoutId);
-      
-      // Log detalhado do status
-      console.log(`[FETCH] Status: ${response.status} | URL: ${url.substring(0, 50)}...`);
-      
+      const response = await fetch(url, options);
       if (response.ok || response.status === 404) return response;
       
-      // Se for 429 (rate limit), esperar mais tempo
-      if (response.status === 429) {
-        const retryAfter = parseInt(response.headers.get('Retry-After') || '60');
-        console.warn(`[RATE-LIMIT] HTTP 429 - Aguardando ${retryAfter}s`);
-        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-        continue;
-      }
-      
-      // Para outros erros, tentar novamente com backoff
       if (attempt < maxRetries - 1) {
         const delay = 1000 * Math.pow(2, attempt);
-        console.log(`[RETRY] Attempt ${attempt + 1}/${maxRetries} failed (${response.status}). Retrying in ${delay}ms...`);
+        console.log(`[RETRY] Attempt ${attempt + 1}/${maxRetries} failed. Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-    } catch (error: any) {
-      console.error(`[FETCH-ERROR] Attempt ${attempt + 1}: ${error.message}`);
-      
-      if (attempt === maxRetries - 1) {
-        throw new Error(`Fetch failed after ${maxRetries} attempts: ${error.message}`);
-      }
-      
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
       const delay = 1000 * Math.pow(2, attempt);
       console.log(`[RETRY] Error on attempt ${attempt + 1}. Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  throw new Error('Max retries reached without successful response');
+  throw new Error('Max retries reached');
 }
 
 function normalizeCompany(name: string): string {
@@ -315,14 +289,6 @@ async function searchSerper(
   weight: number
 ): Promise<Evidence[]> {
   try {
-    // Validar API key antes de fazer request
-    if (!apiKey || apiKey.trim() === '') {
-      console.error('[SERPER] ❌ API KEY não configurada!');
-      return [];
-    }
-    
-    console.log(`[SERPER] 🔍 Query: "${query.substring(0, 60)}..." | Categoria: ${category}`);
-    
     const response = await fetchWithRetry('https://google.serper.dev/search', {
       method: 'POST',
       headers: {
@@ -332,68 +298,53 @@ async function searchSerper(
       body: JSON.stringify({ q: query, num: 10, gl: 'br', hl: 'pt-br' })
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[SERPER] ⚠️ HTTP ${response.status}: ${errorText.substring(0, 200)}`);
-      return [];
-    }
+    if (!response.ok) return [];
     
     const data = await response.json();
     const evidences: Evidence[] = [];
     
     if (data.organic) {
-      console.log(`[SERPER] ✅ ${data.organic.length} resultados orgânicos recebidos`);
-      
       for (const item of data.organic) {
         const text = `${item.title || ''} ${item.snippet || ''}`;
         
-        if (category === 'vagas' && /linkedin\.com/.test(item.link)) {
-          if (!isValidLinkedInJobPosting(text, companyName)) continue;
-        }
+        const hasTotvs = containsTOTVS(text);
+        const hasProduct = containsProduct(text);
+        const hasCompany = containsCompany(text, company_name, company_cnpj);
         
-        const tripleResult = tripleMatch(text, companyName);
+        const matchCount = [hasTotvs, hasProduct, hasCompany].filter(Boolean).length;
         
-        if (tripleResult.matched) {
+        if (matchCount >= 2) {
+          let match_type: 'triple' | 'double';
+          let confidence: 'high' | 'medium';
+          
+          if (matchCount === 3) {
+            match_type = 'triple';
+            confidence = 'high';
+          } else {
+            match_type = 'double';
+            confidence = 'medium';
+          }
+          
           evidences.push({
-            source: new URL(item.link).hostname,
             category,
-            title: item.title,
-            url: item.link,
-            snippet: item.snippet,
-            timestamp: new Date().toISOString(),
-            totvs_products: tripleResult.detectedProducts,
-            match_type: 'triple',
-            weight
-          });
-          continue;
-        }
-        
-        const doubleResult = doubleMatch(text, companyName);
-        
-        if (doubleResult.matched) {
-          evidences.push({
-            source: new URL(item.link).hostname,
-            category,
-            title: item.title,
-            url: item.link,
-            snippet: item.snippet,
-            timestamp: new Date().toISOString(),
-            totvs_products: doubleResult.detectedProducts,
-            match_type: 'double',
-            weight: Math.floor(weight * 0.8)
+            text: text.substring(0, 300),
+            url: item.link || '',
+            match_type,
+            confidence,
+            weight,
+            matched_terms: {
+              totvs: hasTotvs,
+              product: hasProduct,
+              company: hasCompany
+            }
           });
         }
       }
-      
-      console.log(`[SERPER] 📊 ${evidences.length} evidências detectadas (${evidences.filter(e => e.match_type === 'triple').length} triplas, ${evidences.filter(e => e.match_type === 'double').length} duplas)`);
-    } else {
-      console.warn('[SERPER] ⚠️ Nenhum resultado orgânico na resposta');
     }
     
     return evidences;
-  } catch (error: any) {
-    console.error(`[SERPER] 💥 Erro crítico: ${error.message || error}`);
-    console.error(`[SERPER] Stack trace:`, error.stack?.substring(0, 300));
+  } catch (error) {
+    console.error(`[SERPER] Erro:`, error);
     return [];
   }
 }
