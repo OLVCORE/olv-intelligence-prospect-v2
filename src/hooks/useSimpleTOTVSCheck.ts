@@ -98,18 +98,8 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
         } as any;
       }
 
-      // Fallback legado (colunas antigas)
-      const total = Array.isArray(q.totvs_evidences) ? q.totvs_evidences.length : 0;
-      const status = q.is_cliente_totvs ? 'no-go' : (total >= 2 ? 'no-go' : total === 1 ? 'revisar' : 'go');
-      const confidence = q.is_cliente_totvs || total >= 5 ? 'high' : total >= 2 ? 'medium' : 'low';
-
-      return {
-        company_id: companyId,
-        status,
-        confidence,
-        total_evidences: total,
-        checked_at: q.totvs_check_date || q.updated_at || new Date().toISOString(),
-      } as any;
+      // Sem verificação STC = retornar null (não criar status falso)
+      return null;
     },
     enabled: !!companyId,
     staleTime: 0,
