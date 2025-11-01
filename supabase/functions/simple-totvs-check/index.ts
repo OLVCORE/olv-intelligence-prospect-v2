@@ -479,70 +479,122 @@ serve(async (req) => {
     let confidence: CheckResult['confidence'] = 'low';
     let reasoning = '';
 
+    // ========== DECISÃO UNIFICADA (4 pontos de entrada) ==========
+    
     // Buscar dados da empresa para decisão mais inteligente
-    const { data: companyData } = await supabase
+    // Tenta buscar de icp_analysis_results PRIMEIRO, depois companies como fallback
+    interface CompanyDataUnified {
+      icp_score: number | null;
+      website: string | null;
+      setor: string | null;
+      porte: string | null;
+      cnpj: string | null;
+      nome_empresa: string | null;
+    }
+    
+    let companyData: CompanyDataUnified | null = null;
+    let dataSource = 'none';
+    
+    const { data: quarentenaData } = await supabase
       .from('icp_analysis_results')
-      .select('icp_score, website, setor, porte, cnpj')
+      .select('icp_score, website, setor, porte, cnpj, nome_empresa')
       .eq('id', company_id)
       .maybeSingle();
+    
+    if (quarentenaData) {
+      companyData = quarentenaData as CompanyDataUnified;
+      dataSource = 'quarentena';
+    } else {
+      // Fallback: buscar em companies
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('icp_score, website, industry, headquarters_state, cnpj, name')
+        .eq('id', company_id)
+        .maybeSingle();
+      
+      if (companiesData) {
+        companyData = {
+          icp_score: companiesData.icp_score || null,
+          website: companiesData.website || null,
+          setor: companiesData.industry || null,
+          porte: null, // companies não tem porte
+          cnpj: companiesData.cnpj || null,
+          nome_empresa: companiesData.name || null
+        };
+        dataSource = 'companies';
+      }
+    }
+    
+    console.log(`[DADOS] Fonte: ${dataSource} | ICP: ${companyData?.icp_score || 0} | Website: ${companyData?.website || 'N/A'}`);
 
     const icpScore = companyData?.icp_score || 0;
-    const hasWebsite = !!companyData?.website && companyData.website !== 'N/A';
-    const hasBasicData = !!(companyData?.setor && companyData?.porte && companyData?.cnpj);
+    const websiteRaw = companyData?.website || domain || '';
+    const hasWebsite = !!websiteRaw && websiteRaw !== 'N/A' && websiteRaw.length > 3;
+    const hasBasicData = !!(companyData?.setor || companyData?.cnpj);
 
-    if (totalWeight >= 250) {
+    // ========== LÓGICA UNIFICADA DE CLASSIFICAÇÃO ==========
+    
+    // TRIPLE MATCHES = Alta confiança
+    if (tripleMatches.length >= 5) {
       status = 'no-go';
       confidence = 'high';
-      reasoning = `❌ NO-GO (Alta) - Peso: ${totalWeight} pts, ${allEvidences.length} evidências fortes.`;
-    } else if (totalWeight >= 150) {
+      reasoning = `❌ NO-GO (Alta) - ${tripleMatches.length} evidências triplas confirmadas (Empresa + TOTVS + Produto). Peso: ${totalWeight}.`;
+    } 
+    else if (tripleMatches.length >= 3) {
       status = 'no-go';
       confidence = 'medium';
-      reasoning = `⚠️ NO-GO (Média) - Peso: ${totalWeight} pts, ${allEvidences.length} evidências.`;
-    } else if (totalWeight >= 70) {
+      reasoning = `⚠️ NO-GO (Média) - ${tripleMatches.length} evidências triplas (Empresa + TOTVS + Produto). Peso: ${totalWeight}.`;
+    }
+    else if (tripleMatches.length >= 2) {
       status = 'revisar';
       confidence = 'medium';
-      reasoning = `👁️ REVISAR - ${allEvidences.length} evidências (${tripleMatches.length}T + ${doubleMatches.length}D). Peso: ${totalWeight}.`;
-    } else if (allEvidences.length > 0) {
+      reasoning = `👁️ REVISAR - ${tripleMatches.length} evidências triplas. SDR deve validar contexto. Peso: ${totalWeight}.`;
+    }
+    else if (tripleMatches.length === 1) {
+      status = 'revisar';
+      confidence = 'medium';
+      reasoning = `👁️ REVISAR - 1 evidência tripla encontrada. Validação manual necessária. Peso: ${totalWeight}.`;
+    }
+    
+    // DOUBLE MATCHES = Precisa análise
+    else if (doubleMatches.length >= 5) {
+      status = 'revisar';
+      confidence = 'medium';
+      reasoning = `📋 REVISAR - ${doubleMatches.length} evidências duplas (alto volume). SDR deve analisar. Peso: ${totalWeight}.`;
+    }
+    else if (doubleMatches.length >= 3) {
       status = 'revisar';
       confidence = 'low';
-      reasoning = `👁️ REVISAR - Poucas evidências (${allEvidences.length}). Peso: ${totalWeight}.`;
-    } else {
-      // SEM evidências TOTVS - decisão conservadora baseada em QUALIDADE DOS DADOS
+      reasoning = `👁️ REVISAR - ${doubleMatches.length} evidências duplas. Análise manual recomendada. Peso: ${totalWeight}.`;
+    }
+    else if (doubleMatches.length >= 2) {
+      status = 'revisar';
+      confidence = 'low';
+      reasoning = `👁️ REVISAR - ${doubleMatches.length} evidências duplas. Verificar contexto. Peso: ${totalWeight}.`;
+    }
+    else if (doubleMatches.length === 1) {
+      status = 'go';
+      confidence = 'low';
+      reasoning = `✅ GO - Apenas 1 evidência dupla (insuficiente). Peso: ${totalWeight}. ICP: ${icpScore}/100.`;
+    }
+    
+    // SEM MATCHES = Decisão baseada em DADOS + PESO ACUMULADO
+    else if (allEvidences.length === 0) {
+      // NENHUMA evidência TOTVS encontrada
       
-      // Caso 1: Empresa SEM presença digital E score baixo → SUSPEITO, precisa revisão
-      if (!hasWebsite && icpScore < 50) {
-        status = 'revisar';
-        confidence = 'low';
-        reasoning = `⚠️ REVISAR - Sem website e score ICP baixo (${icpScore}). Falta de presença digital impede validação confiável.`;
-        console.log(`[DECISÃO] REVISAR por falta de presença digital (ICP: ${icpScore}, Website: ${hasWebsite})`);
-      }
-      // Caso 2: Empresa sem dados básicos (setor, porte) → precisa revisão
-      else if (!hasBasicData) {
-        status = 'revisar';
-        confidence = 'low';
-        reasoning = `⚠️ REVISAR - Dados incompletos. Necessário completar cadastro para validação confiável.`;
-        console.log(`[DECISÃO] REVISAR por dados incompletos`);
-      }
-      // Caso 3: Score ICP muito baixo (< 40) → precisa revisão mesmo sem TOTVS
-      else if (icpScore < 40) {
-        status = 'revisar';
-        confidence = 'low';
-        reasoning = `⚠️ REVISAR - Score ICP muito baixo (${icpScore}/100). Empresa não atende perfil mínimo do ICP.`;
-        console.log(`[DECISÃO] REVISAR por score ICP muito baixo (${icpScore})`);
-      }
-      // Caso 4: Sem website mas score razoável (50-69) → revisar por precaução
-      else if (!hasWebsite && icpScore < 70) {
-        status = 'revisar';
-        confidence = 'medium';
-        reasoning = `⚠️ REVISAR - Sem website mas score ICP médio (${icpScore}). Validação manual recomendada.`;
-        console.log(`[DECISÃO] REVISAR por ausência de website (ICP: ${icpScore})`);
-      }
-      // Caso 5: OK para GO - tem presença digital OU score alto, e sem evidências TOTVS
-      else {
+      // Se tem dados mínimos (website OU score > 30 OU CNPJ), aprovar
+      if (hasWebsite || icpScore > 30 || hasBasicData) {
         status = 'go';
-        confidence = hasWebsite && icpScore >= 60 ? 'high' : 'medium';
-        reasoning = `✅ GO - Nenhuma evidência TOTVS. ICP: ${icpScore}/100${hasWebsite ? ', website identificado' : ''}.`;
-        console.log(`[DECISÃO] GO aprovado (ICP: ${icpScore}, Website: ${hasWebsite})`);
+        confidence = hasWebsite && icpScore >= 50 ? 'high' : 'medium';
+        reasoning = `✅ GO - Nenhuma evidência TOTVS encontrada. ICP: ${icpScore}/100${hasWebsite ? ', website OK' : ''}${hasBasicData ? ', dados básicos OK' : ''}.`;
+        console.log(`[DECISÃO] GO aprovado (ICP: ${icpScore}, Website: ${hasWebsite}, BasicData: ${hasBasicData})`);
+      } 
+      // Empresa "fantasma" (sem nada) - marcar pra revisar
+      else {
+        status = 'revisar';
+        confidence = 'low';
+        reasoning = `⚠️ REVISAR - Sem evidências TOTVS, mas empresa sem presença digital (ICP: ${icpScore}, sem website, sem dados). Validar existência.`;
+        console.log(`[DECISÃO] REVISAR por empresa sem presença digital`);
       }
     }
 
