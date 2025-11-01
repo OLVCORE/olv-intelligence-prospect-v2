@@ -613,9 +613,59 @@ export default function ICPQuarantine() {
     return enrich360Mutation.mutateAsync(id);
   };
 
-  const handleDiscoverCNPJ = (id: string) => {
-    toast.info('Funcionalidade de descoberta de CNPJ em desenvolvimento');
-    // TODO: Implementar descoberta de CNPJ via APIs
+  const discoverCNPJMutation = useMutation({
+    mutationFn: async (analysisId: string) => {
+      const { data: analysis } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (!analysis) throw new Error('Empresa não encontrada');
+      if (analysis.cnpj) throw new Error('CNPJ já cadastrado');
+
+      const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
+        ? analysis.raw_analysis as Record<string, any>
+        : {};
+
+      // Chamar edge function de descoberta de CNPJ
+      const { data, error } = await supabase.functions.invoke('discover-cnpj', {
+        body: { 
+          company_name: analysis.razao_social,
+          domain: rawData.domain || analysis.website,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.cnpj) throw new Error('CNPJ não encontrado');
+
+      // Atualizar com CNPJ descoberto
+      await supabase
+        .from('icp_analysis_results')
+        .update({
+          cnpj: data.cnpj,
+          raw_analysis: {
+            ...rawData,
+            cnpj_discovery: data,
+          },
+        })
+        .eq('id', analysisId);
+
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`✅ CNPJ descoberto: ${data.cnpj}`);
+      queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao descobrir CNPJ', {
+        description: error.message,
+      });
+    },
+  });
+
+  const handleDiscoverCNPJ = async (id: string) => {
+    return discoverCNPJMutation.mutateAsync(id);
   };
 
   // Handlers de bulk enrichment
@@ -736,7 +786,42 @@ export default function ICPQuarantine() {
   };
 
   const handleBulkDiscoverCNPJ = async () => {
-    toast.info('Funcionalidade de descoberta de CNPJ em massa em desenvolvimento');
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    // Filtrar apenas empresas sem CNPJ
+    const companiesWithoutCNPJ = companies.filter(c => 
+      selectedIds.includes(c.id) && !c.cnpj
+    );
+    
+    if (companiesWithoutCNPJ.length === 0) {
+      toast.info('Todas as empresas selecionadas já possuem CNPJ');
+      return;
+    }
+    
+    toast.loading(`Descobrindo CNPJ de ${companiesWithoutCNPJ.length} empresa(s)...`, { id: 'bulk-cnpj' });
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (const company of companiesWithoutCNPJ) {
+      try {
+        await discoverCNPJMutation.mutateAsync(company.id);
+        success++;
+      } catch (error) {
+        errors++;
+        console.error(`Erro ao descobrir CNPJ de ${company.razao_social}:`, error);
+      }
+    }
+    
+    toast.dismiss('bulk-cnpj');
+    if (errors === 0) {
+      toast.success(`✅ CNPJ descoberto para ${success} empresa(s)!`);
+    } else {
+      toast.warning(`Concluído: ${success} sucesso, ${errors} erro(s)`);
+    }
   };
 
   const handleBulkApprove = async () => {
