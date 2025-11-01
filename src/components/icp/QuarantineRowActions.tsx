@@ -57,13 +57,8 @@ export function QuarantineRowActions({
   };
 
   const handleReject = () => {
-    const confirmed = window.confirm(
-      `Tem certeza que deseja descartar "${company.razao_social}"?`
-    );
-    if (confirmed) {
-      onReject(company.id, 'Descartado manualmente');
-      setIsOpen(false);
-    }
+    onReject(company.id, ''); // Modal vai coletar o motivo
+    setIsOpen(false);
   };
 
   const handleDelete = () => {

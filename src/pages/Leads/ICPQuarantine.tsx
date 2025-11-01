@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown, Loader2, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +45,10 @@ export default function ICPQuarantine() {
   const [websiteInput, setWebsiteInput] = useState<string>('');
   const [executiveReportOpen, setExecutiveReportOpen] = useState(false);
   const [executiveReportCompanyId, setExecutiveReportCompanyId] = useState<string | undefined>();
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectCompanyData, setRejectCompanyData] = useState<{ id: string; name: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
+  const [rejectCustomReason, setRejectCustomReason] = useState<string>('');
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -624,7 +632,36 @@ export default function ICPQuarantine() {
   };
 
   const handleRejectSingle = (id: string, motivo: string) => {
-    rejectCompany({ analysisId: id, motivo });
+    const company = filteredCompanies.find(c => c.id === id);
+    if (!company) return;
+    
+    setRejectCompanyData({ id, name: company.razao_social || 'Empresa' });
+    setRejectReason('');
+    setRejectCustomReason('');
+    setRejectModalOpen(true);
+  };
+
+  const confirmReject = () => {
+    if (!rejectCompanyData) return;
+    
+    const finalReason = rejectReason === 'outro' 
+      ? rejectCustomReason.trim() 
+      : rejectReason;
+    
+    if (!finalReason) {
+      toast.error('Por favor, selecione ou digite um motivo de descarte');
+      return;
+    }
+    
+    rejectCompany({ 
+      analysisId: rejectCompanyData.id, 
+      motivo: finalReason 
+    });
+    
+    setRejectModalOpen(false);
+    setRejectCompanyData(null);
+    setRejectReason('');
+    setRejectCustomReason('');
   };
 
   const handleDeleteSingle = (id: string) => {
@@ -1086,96 +1123,96 @@ export default function ICPQuarantine() {
       <Card>
         <CardContent className="pt-6">
           <div className="overflow-x-auto w-full">
-            <Table className="text-xs table-fixed whitespace-nowrap">
+            <Table className="text-xs">
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[44px]">
                     <Checkbox
                       checked={selectedIds.length === filteredCompanies.length && filteredCompanies.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="w-[180px]">
+                  <TableHead className="min-w-[280px] max-w-[320px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('empresa')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      Empresa
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">Empresa</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'empresa' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[110px]">
+                  <TableHead className="min-w-[140px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('cnpj')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      CNPJ
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">CNPJ</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'cnpj' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[100px]">
+                  <TableHead className="min-w-[120px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('cnpj_status')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      Status CNPJ
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">Status CNPJ</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'cnpj_status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[150px]">
+                  <TableHead className="min-w-[200px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('setor')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      Setor
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">Setor</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'setor' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[90px]">
+                  <TableHead className="min-w-[110px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('uf')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      UF/Região
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">UF/Região</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'uf' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[80px]">
+                  <TableHead className="min-w-[100px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('score')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      Score ICP
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">Score ICP</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'score' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[110px]">Status Análise</TableHead>
-                  <TableHead className="w-[110px]">
+                  <TableHead className="min-w-[120px]"><span className="font-semibold">Status Análise</span></TableHead>
+                  <TableHead className="min-w-[110px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('status')}
-                      className="h-8 flex items-center gap-1 px-2"
+                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      Status (STC)
-                      <ArrowUpDown className="h-3 w-3" />
+                      <span className="font-semibold">Status (STC)</span>
+                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[120px]">Website</TableHead>
-                  <TableHead className="w-[120px] hidden xl:table-cell">Motivo Descarte</TableHead>
-                  <TableHead className="w-[60px]">Ações</TableHead>
+                  <TableHead className="min-w-[180px]"><span className="font-semibold">Website</span></TableHead>
+                  <TableHead className="min-w-[200px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
+                  <TableHead className="w-[60px]"><span className="font-semibold">Ações</span></TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -1208,9 +1245,9 @@ export default function ICPQuarantine() {
                         disabled={company.status !== 'pendente'}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       <div 
-                        className="flex flex-col cursor-pointer hover:text-primary transition-colors"
+                        className="flex flex-col cursor-pointer hover:text-primary transition-colors max-w-[300px]"
                         onClick={() => {
                           if (company.company_id) {
                             setExecutiveReportCompanyId(company.company_id);
@@ -1222,17 +1259,19 @@ export default function ICPQuarantine() {
                           }
                         }}
                       >
-                        <span className="font-medium">{company.razao_social}</span>
+                        <span className="font-medium text-sm leading-snug line-clamp-2" title={company.razao_social}>
+                          {company.razao_social}
+                        </span>
                         {rawData?.domain && (
-                          <span className="text-xs text-muted-foreground">{rawData.domain}</span>
+                          <span className="text-xs text-muted-foreground mt-0.5">{rawData.domain}</span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       {company.cnpj ? (
                         <Badge 
                           variant="outline" 
-                          className="font-mono text-xs cursor-pointer hover:bg-primary/10 transition-colors"
+                          className="font-mono text-xs cursor-pointer hover:bg-primary/10 transition-colors whitespace-nowrap"
                           onClick={() => {
                             if (company.company_id) {
                               setExecutiveReportCompanyId(company.company_id);
@@ -1256,10 +1295,12 @@ export default function ICPQuarantine() {
                         cnpjStatus={company.cnpj_status}
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="max-w-[180px] truncate" title={company.setor || 'Não identificado'}>
+                    <TableCell className="py-4">
+                      <div className="max-w-[190px]">
                         {company.setor ? (
-                          <span className="text-sm">{company.setor}</span>
+                          <span className="text-sm line-clamp-2 leading-snug" title={company.setor}>
+                            {company.setor}
+                          </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">Não identificado</span>
                         )}
@@ -1349,11 +1390,13 @@ export default function ICPQuarantine() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       {company.motivo_descarte ? (
-                        <span className="text-xs text-muted-foreground">
-                          {company.motivo_descarte}
-                        </span>
+                        <div className="max-w-[190px]">
+                          <span className="text-xs text-muted-foreground line-clamp-2 leading-snug" title={company.motivo_descarte}>
+                            {company.motivo_descarte}
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
@@ -1635,6 +1678,117 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
+
+      {/* Reject/Discard Modal */}
+      <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Descartar Empresa
+            </DialogTitle>
+            <DialogDescription>
+              Você está descartando: <strong>{rejectCompanyData?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Selecione o motivo do descarte:</Label>
+              <RadioGroup value={rejectReason} onValueChange={setRejectReason}>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="ja_cliente_totvs" id="ja_cliente" />
+                  <Label htmlFor="ja_cliente" className="flex-1 cursor-pointer">
+                    ⚠️ Já é cliente TOTVS
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="fora_perfil_icp" id="fora_perfil" />
+                  <Label htmlFor="fora_perfil" className="flex-1 cursor-pointer">
+                    ❌ Fora do perfil ICP
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="porte_inadequado" id="porte" />
+                  <Label htmlFor="porte" className="flex-1 cursor-pointer">
+                    📊 Porte inadequado
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="setor_nao_atendido" id="setor" />
+                  <Label htmlFor="setor" className="flex-1 cursor-pointer">
+                    🏭 Setor não atendido
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="regiao_nao_coberta" id="regiao" />
+                  <Label htmlFor="regiao" className="flex-1 cursor-pointer">
+                    🗺️ Região não coberta
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="dados_insuficientes" id="dados" />
+                  <Label htmlFor="dados" className="flex-1 cursor-pointer">
+                    📋 Dados insuficientes
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                  <RadioGroupItem value="outro" id="outro" />
+                  <Label htmlFor="outro" className="flex-1 cursor-pointer">
+                    ✏️ Outro motivo (especificar)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            {rejectReason === 'outro' && (
+              <div className="space-y-2 animate-in fade-in-50 duration-200">
+                <Label htmlFor="custom-reason" className="text-sm font-semibold">
+                  Descreva o motivo:
+                </Label>
+                <Textarea
+                  id="custom-reason"
+                  placeholder="Digite o motivo do descarte..."
+                  value={rejectCustomReason}
+                  onChange={(e) => setRejectCustomReason(e.target.value)}
+                  className="min-h-[100px] resize-none"
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {rejectCustomReason.length}/500 caracteres
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setRejectModalOpen(false);
+                setRejectReason('');
+                setRejectCustomReason('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={confirmReject}
+              disabled={!rejectReason || (rejectReason === 'outro' && !rejectCustomReason.trim())}
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Confirmar Descarte
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Executive Report Modal */}
       <ExecutiveReportModal 
