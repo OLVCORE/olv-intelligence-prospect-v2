@@ -25,6 +25,8 @@ import * as Papa from 'papaparse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollControls } from '@/components/common/ScrollControls';
+import { ExecutiveReportModal } from '@/components/reports/ExecutiveReportModal';
+
 export default function ICPQuarantine() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -37,6 +39,8 @@ export default function ICPQuarantine() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
   const [websiteInput, setWebsiteInput] = useState<string>('');
+  const [executiveReportOpen, setExecutiveReportOpen] = useState(false);
+  const [executiveReportCompanyId, setExecutiveReportCompanyId] = useState<string | undefined>();
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -1205,7 +1209,19 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
+                      <div 
+                        className="flex flex-col cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => {
+                          if (company.company_id) {
+                            setExecutiveReportCompanyId(company.company_id);
+                            setExecutiveReportOpen(true);
+                          } else {
+                            toast.info('Empresa ainda não possui relatório completo', {
+                              description: 'Aprove a empresa primeiro para gerar o relatório executivo'
+                            });
+                          }
+                        }}
+                      >
                         <span className="font-medium">{company.razao_social}</span>
                         {rawData?.domain && (
                           <span className="text-xs text-muted-foreground">{rawData.domain}</span>
@@ -1214,7 +1230,20 @@ export default function ICPQuarantine() {
                     </TableCell>
                     <TableCell>
                       {company.cnpj ? (
-                        <Badge variant="outline" className="font-mono text-xs">
+                        <Badge 
+                          variant="outline" 
+                          className="font-mono text-xs cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => {
+                            if (company.company_id) {
+                              setExecutiveReportCompanyId(company.company_id);
+                              setExecutiveReportOpen(true);
+                            } else {
+                              toast.info('Empresa ainda não possui relatório completo', {
+                                description: 'Aprove a empresa primeiro para gerar o relatório executivo'
+                              });
+                            }
+                          }}
+                        >
                           {company.cnpj}
                         </Badge>
                       ) : (
@@ -1342,6 +1371,16 @@ export default function ICPQuarantine() {
                         onEnrich360={handleEnrich360}
                         onEnrichTotvsCheck={handleEnrichTotvsCheck}
                         onDiscoverCNPJ={handleDiscoverCNPJ}
+                        onOpenExecutiveReport={() => {
+                          if (company.company_id) {
+                            setExecutiveReportCompanyId(company.company_id);
+                            setExecutiveReportOpen(true);
+                          } else {
+                            toast.info('Empresa ainda não possui relatório completo', {
+                              description: 'Aprove a empresa primeiro para gerar o relatório executivo'
+                            });
+                          }
+                        }}
                       />
                     </TableCell>
                   </TableRow>
@@ -1596,6 +1635,13 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
+
+      {/* Executive Report Modal */}
+      <ExecutiveReportModal 
+        open={executiveReportOpen}
+        onOpenChange={setExecutiveReportOpen}
+        companyId={executiveReportCompanyId}
+      />
       
       <ScrollControls />
     </div>

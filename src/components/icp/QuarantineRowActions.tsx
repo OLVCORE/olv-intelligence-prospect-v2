@@ -27,6 +27,7 @@ interface QuarantineRowActionsProps {
   onEnrich360?: (id: string) => Promise<void>;
   onEnrichTotvsCheck?: (id: string) => Promise<void>;
   onDiscoverCNPJ?: (id: string) => void;
+  onOpenExecutiveReport?: () => void;
 }
 
 export function QuarantineRowActions({
@@ -42,6 +43,7 @@ export function QuarantineRowActions({
   onEnrich360,
   onEnrichTotvsCheck,
   onDiscoverCNPJ,
+  onOpenExecutiveReport,
 }: QuarantineRowActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
@@ -171,7 +173,9 @@ export function QuarantineRowActions({
         {/* Ver Relatório TOTVS (Modal) */}
         <DropdownMenuItem 
           onClick={() => {
-            setShowReport(true);
+            if (onOpenExecutiveReport) {
+              onOpenExecutiveReport();
+            }
             setIsOpen(false);
           }}
           className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
