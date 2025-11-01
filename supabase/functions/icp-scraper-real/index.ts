@@ -184,6 +184,11 @@ serve(async (req) => {
     for (const platform of JOB_PLATFORMS) {
       const startTime = Date.now();
       
+      // Delay de 100ms entre requisições para evitar rate limiting
+      if (platformsScanned.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       try {
         // Query: empresa + produtos TOTVS + site específico + período de 5 anos
         const query = `"${variants[0]}" AND (${TOTVS_KEYWORDS.map(k => `"${k}"`).join(' OR ')}) site:${platform.domain}`;
@@ -192,7 +197,13 @@ serve(async (req) => {
         // dateRestrict=y5 = últimos 5 anos
         const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=5&dateRestrict=y5`;
         
-        const response = await fetch(googleUrl);
+        const response = await fetch(googleUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          }
+        });
         const tempo = Date.now() - startTime;
         platformsScanned.push(platform.name);
         let pointsAwarded = 0;
