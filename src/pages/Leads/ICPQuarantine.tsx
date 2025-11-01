@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import * as Papa from 'papaparse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollControls } from '@/components/common/ScrollControls';
 export default function ICPQuarantine() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -47,6 +48,22 @@ export default function ICPQuarantine() {
   const { mutate: refreshBatch, isPending: isRefreshing } = useRefreshQuarantineBatch();
 
   const queryClient = useQueryClient();
+
+  const sanitizeDomain = (value?: string | null): string | null => {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v || /\s/.test(v)) return null;
+    try {
+      const url = v.startsWith('http') ? new URL(v) : new URL(`https://${v}`);
+      const host = url.hostname.replace(/^www\./, '');
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(host) ? host : null;
+    } catch {
+      const cleaned = v.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(cleaned) ? cleaned : null;
+    }
+  };
 
   // Mutations para enriquecimento na quarentena
   const enrichReceitaMutation = useMutation({
@@ -269,6 +286,21 @@ export default function ICPQuarantine() {
       await supabase.rpc('calculate_icp_score_quarantine', {
         p_analysis_id: analysisId
       });
+
+      // Simple TOTVS Check (preenche badge)
+      try {
+        const simpleDomain = sanitizeDomain(rawData.domain || analysis.website || null);
+        await supabase.functions.invoke('simple-totvs-check', {
+          body: {
+            company_id: analysis.company_id || analysis.id,
+            company_name: analysis.razao_social,
+            cnpj: analysis.cnpj,
+            domain: simpleDomain || undefined
+          },
+        });
+      } catch (e) {
+        console.warn('Simple TOTVS Check falhou (não crítico):', e);
+      }
 
       return data;
     },
@@ -1032,16 +1064,16 @@ export default function ICPQuarantine() {
       <Card>
         <CardContent className="pt-6">
           <div className="overflow-x-auto w-full">
-            <Table>
+            <Table className="text-xs table-fixed whitespace-nowrap">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">
+                  <TableHead className="w-[44px]">
                     <Checkbox
                       checked={selectedIds.length === filteredCompanies.length && filteredCompanies.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="w-[200px]">
+                  <TableHead className="w-[180px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1052,7 +1084,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[130px]">
+                  <TableHead className="w-[110px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1063,7 +1095,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[110px]">
+                  <TableHead className="w-[100px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1074,7 +1106,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[180px]">
+                  <TableHead className="w-[150px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1085,7 +1117,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[120px]">
+                  <TableHead className="w-[90px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1096,7 +1128,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[90px]">
+                  <TableHead className="w-[80px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1107,8 +1139,8 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[130px]">Status Análise</TableHead>
-                  <TableHead className="w-[130px]">
+                  <TableHead className="w-[110px]">Status Análise</TableHead>
+                  <TableHead className="w-[110px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1119,9 +1151,9 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[140px]">Website</TableHead>
-                  <TableHead className="w-[150px]">Motivo Descarte</TableHead>
-                  <TableHead className="w-[70px]">Ações</TableHead>
+                  <TableHead className="w-[120px]">Website</TableHead>
+                  <TableHead className="w-[120px] hidden xl:table-cell">Motivo Descarte</TableHead>
+                  <TableHead className="w-[60px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -1225,26 +1257,29 @@ export default function ICPQuarantine() {
                     </TableCell>
                     <TableCell>
                       <SimpleTOTVSCheckStatusBadge
-                        companyId={company.id}
+                        companyId={company.company_id || company.id}
                         onViewReport={() => handleOpenTotvsCheck(company)}
                       />
                     </TableCell>
                     <TableCell>
-                      {company.website || rawData?.domain ? (
-                        <a
-                          href={`https://${(company.website || rawData?.domain).replace(/^https?:\/\//, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[140px] truncate"
-                          onClick={(e) => e.stopPropagation()}
-                          title={company.website || rawData?.domain}
-                        >
-                          {(company.website || rawData?.domain).replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                          <Globe className="h-3 w-3 flex-shrink-0" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">N/A</span>
-                      )}
+                      {(() => {
+                        const domain = sanitizeDomain(company.website || rawData?.domain || null);
+                        return domain ? (
+                          <a
+                            href={`https://${domain}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[120px] truncate"
+                            onClick={(e) => e.stopPropagation()}
+                            title={domain}
+                          >
+                            {domain}
+                            <Globe className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">N/A</span>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {company.motivo_descarte ? (
@@ -1522,6 +1557,7 @@ export default function ICPQuarantine() {
           ))}
         </div>
       </DraggableDialog>
+      <ScrollControls />
     </div>
   );
 }

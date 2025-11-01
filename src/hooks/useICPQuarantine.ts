@@ -43,9 +43,17 @@ export function useSaveToQuarantine() {
       queryClient.invalidateQueries({ queryKey: ['icp-stats'] });
     },
     onError: (error: any) => {
-      toast.error('Erro ao salvar na quarentena', {
-        description: error.message,
-      });
+      const message = String(error?.message || '');
+      const code = (error as any)?.code;
+      if (code === '23505' || /duplicate key value/i.test(message)) {
+        toast.error('CNPJ duplicado', {
+          description: 'Este CNPJ já existe na quarentena. O registro foi ignorado.',
+        });
+      } else {
+        toast.error('Erro ao salvar na quarentena', {
+          description: message,
+        });
+      }
     },
   });
 }
