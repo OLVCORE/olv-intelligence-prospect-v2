@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import {
+import { 
   Trash2,
   Download,
   FileText,
@@ -16,8 +16,13 @@ import {
   MoreHorizontal,
   Eye,
   RefreshCw,
-  Target
+  Target,
+  Building2,
+  Sparkles,
+  Search,
+  CheckCircle
 } from 'lucide-react';
+import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { useState } from 'react';
 import { BatchTOTVSCheckDialog } from './BatchTOTVSCheckDialog';
 
@@ -27,6 +32,12 @@ interface QuarantineActionsMenuProps {
   onExportSelected: () => void;
   onPreviewSelected: () => void;
   onRefreshSelected?: () => void;
+  onBulkEnrichReceita?: () => Promise<void>;
+  onBulkEnrichApollo?: () => Promise<void>;
+  onBulkEnrich360?: () => Promise<void>;
+  onBulkTotvsCheck?: () => Promise<void>;
+  onBulkDiscoverCNPJ?: () => Promise<void>;
+  onBulkApprove?: () => Promise<void>;
   isProcessing?: boolean;
   selectedItems?: any[];
 }
@@ -37,6 +48,12 @@ export function QuarantineActionsMenu({
   onExportSelected,
   onPreviewSelected,
   onRefreshSelected,
+  onBulkEnrichReceita,
+  onBulkEnrichApollo,
+  onBulkEnrich360,
+  onBulkTotvsCheck,
+  onBulkDiscoverCNPJ,
+  onBulkApprove,
   isProcessing = false,
   selectedItems = []
 }: QuarantineActionsMenuProps) {
@@ -158,6 +175,86 @@ export function QuarantineActionsMenu({
             <Target className="h-4 w-4 mr-2" />
             TOTVS Check em Lote
           </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Enriquecimento em Massa</DropdownMenuLabel>
+        
+        <DropdownMenuGroup>
+          {onBulkDiscoverCNPJ && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (selectedCount === 0 || !onBulkDiscoverCNPJ) return;
+                onBulkDiscoverCNPJ();
+              }}
+              disabled={selectedCount === 0 || isProcessing}
+              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Descobrir CNPJ
+            </DropdownMenuItem>
+          )}
+
+          {onBulkEnrichReceita && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (selectedCount === 0 || !onBulkEnrichReceita) return;
+                onBulkEnrichReceita();
+              }}
+              disabled={selectedCount === 0 || isProcessing}
+              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Receita Federal
+            </DropdownMenuItem>
+          )}
+
+          {onBulkEnrichApollo && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (selectedCount === 0 || !onBulkEnrichApollo) return;
+                onBulkEnrichApollo();
+              }}
+              disabled={selectedCount === 0 || isProcessing}
+              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+            >
+              <img src={apolloIcon} alt="Apollo" className="h-4 w-4 mr-2" />
+              Apollo (Decisores)
+            </DropdownMenuItem>
+          )}
+
+          {onBulkEnrich360 && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (selectedCount === 0 || !onBulkEnrich360) return;
+                onBulkEnrich360();
+              }}
+              disabled={selectedCount === 0 || isProcessing}
+              className="transition-all duration-200 cursor-pointer hover:bg-accent hover:shadow-md hover:border-l-2 hover:border-primary"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              360° Completo
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Aprovar/Rejeitar</DropdownMenuLabel>
+        
+        <DropdownMenuGroup>
+          {onBulkApprove && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (selectedCount === 0 || !onBulkApprove) return;
+                onBulkApprove();
+              }}
+              disabled={selectedCount === 0 || isProcessing}
+              className="transition-all duration-200 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 hover:shadow-md hover:border-l-2 hover:border-green-500"
+            >
+              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+              Aprovar e Mover para Pool
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

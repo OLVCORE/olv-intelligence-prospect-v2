@@ -19,6 +19,7 @@ import { SimpleTOTVSCheckCard } from '@/components/intelligence/SimpleTOTVSCheck
 import { SimpleTOTVSCheckStatusBadge } from '@/components/icp/SimpleTOTVSCheckStatusBadge';
 import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
 import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
+import { ICPScoreTooltip } from '@/components/icp/ICPScoreTooltip';
 import { toast } from 'sonner';
 import * as Papa from 'papaparse';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -233,17 +234,18 @@ export default function ICPQuarantine() {
         .single();
 
       if (!analysis) throw new Error('Empresa não encontrada');
+      if (!analysis.uf) throw new Error('UF não disponível. Execute enriquecimento Receita Federal primeiro.');
 
       const rawData = (analysis.raw_analysis && typeof analysis.raw_analysis === 'object' && !Array.isArray(analysis.raw_analysis)) 
         ? analysis.raw_analysis as Record<string, any>
         : {};
 
-      // Chamar edge function de detecção TOTVS
+      // Chamar edge function de detecção TOTVS com company_id, company_name e state
       const { data, error } = await supabase.functions.invoke('detect-totvs-usage-v5', {
         body: { 
+          company_id: analysis.company_id || analysis.id, // Fallback para analysis.id
           company_name: analysis.razao_social,
-          cnpj: analysis.cnpj,
-          domain: rawData.domain || analysis.website || '',
+          state: analysis.uf, // CRÍTICO: UF é obrigatório
         },
       });
 
@@ -616,6 +618,144 @@ export default function ICPQuarantine() {
     // TODO: Implementar descoberta de CNPJ via APIs
   };
 
+  // Handlers de bulk enrichment
+  const handleBulkEnrichReceita = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    toast.loading(`Enriquecendo ${selectedIds.length} empresa(s) com Receita Federal...`, { id: 'bulk-receita' });
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await enrichReceitaMutation.mutateAsync(id);
+        success++;
+      } catch (error) {
+        errors++;
+        console.error(`Erro ao enriquecer ${id}:`, error);
+      }
+    }
+    
+    toast.dismiss('bulk-receita');
+    if (errors === 0) {
+      toast.success(`✅ ${success} empresa(s) enriquecida(s) com sucesso!`);
+    } else {
+      toast.warning(`Concluído: ${success} sucesso, ${errors} erro(s)`);
+    }
+  };
+
+  const handleBulkEnrichApollo = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    toast.loading(`Enriquecendo ${selectedIds.length} empresa(s) com Apollo...`, { id: 'bulk-apollo' });
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await enrichApolloMutation.mutateAsync(id);
+        success++;
+      } catch (error) {
+        errors++;
+        console.error(`Erro ao enriquecer ${id}:`, error);
+      }
+    }
+    
+    toast.dismiss('bulk-apollo');
+    if (errors === 0) {
+      toast.success(`✅ ${success} empresa(s) enriquecida(s) com Apollo!`);
+    } else {
+      toast.warning(`Concluído: ${success} sucesso, ${errors} erro(s)`);
+    }
+  };
+
+  const handleBulkEnrich360 = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    toast.loading(`Enriquecimento 360° em ${selectedIds.length} empresa(s)...`, { id: 'bulk-360' });
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await enrich360Mutation.mutateAsync(id);
+        success++;
+      } catch (error) {
+        errors++;
+        console.error(`Erro ao enriquecer ${id}:`, error);
+      }
+    }
+    
+    toast.dismiss('bulk-360');
+    if (errors === 0) {
+      toast.success(`✅ ${success} empresa(s) enriquecidas 360°!`);
+    } else {
+      toast.warning(`Concluído: ${success} sucesso, ${errors} erro(s)`);
+    }
+  };
+
+  const handleBulkTotvsCheck = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    toast.loading(`Executando TOTVS Check em ${selectedIds.length} empresa(s)...`, { id: 'bulk-totvs' });
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await enrichTotvsCheckMutation.mutateAsync(id);
+        success++;
+      } catch (error) {
+        errors++;
+        console.error(`Erro no TOTVS Check ${id}:`, error);
+      }
+    }
+    
+    toast.dismiss('bulk-totvs');
+    if (errors === 0) {
+      toast.success(`✅ TOTVS Check concluído em ${success} empresa(s)!`);
+    } else {
+      toast.warning(`Concluído: ${success} sucesso, ${errors} erro(s)`);
+    }
+  };
+
+  const handleBulkDiscoverCNPJ = async () => {
+    toast.info('Funcionalidade de descoberta de CNPJ em massa em desenvolvimento');
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Selecione pelo menos uma empresa');
+      return;
+    }
+    
+    const confirmed = window.confirm(
+      `Tem certeza que deseja aprovar ${selectedIds.length} empresa(s) e movê-las para o pool de leads?`
+    );
+    
+    if (!confirmed) return;
+    
+    approveBatch(selectedIds, {
+      onSuccess: () => setSelectedIds([]),
+    });
+  };
+
   const handleOpenTotvsCheck = (company: any) => {
     if (!company?.id) {
       toast.error('ID da empresa não encontrado');
@@ -709,6 +849,12 @@ export default function ICPQuarantine() {
                 onExportSelected={handleExportSelected}
                 onPreviewSelected={handlePreviewSelected}
                 onRefreshSelected={handleRefreshSelected}
+                onBulkEnrichReceita={handleBulkEnrichReceita}
+                onBulkEnrichApollo={handleBulkEnrichApollo}
+                onBulkEnrich360={handleBulkEnrich360}
+                onBulkTotvsCheck={handleBulkTotvsCheck}
+                onBulkDiscoverCNPJ={handleBulkDiscoverCNPJ}
+                onBulkApprove={handleBulkApprove}
                 isProcessing={isApproving || isDeleting || isRefreshing}
                 selectedItems={companies.filter(c => selectedIds.includes(c.id))}
               />
@@ -974,16 +1120,17 @@ export default function ICPQuarantine() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={
-                          company.icp_score >= 75 ? 'default' : 
-                          company.icp_score >= 50 ? 'secondary' : 
-                          'outline'
-                        }
-                        className="font-semibold"
-                      >
-                        {company.icp_score}
-                      </Badge>
+                      <ICPScoreTooltip
+                        score={company.icp_score || 0}
+                        porte={company.porte}
+                        setor={company.setor}
+                        uf={company.uf}
+                        is_cliente_totvs={company.is_cliente_totvs}
+                        hasReceitaData={!!rawData?.receita_federal}
+                        hasApolloData={!!rawData?.apollo || !!rawData?.enrichment_360}
+                        hasWebsite={!!company.website}
+                        hasContact={!!company.email || !!company.telefone}
+                      />
                     </TableCell>
                     <TableCell>
                       <QuarantineEnrichmentStatusBadge 

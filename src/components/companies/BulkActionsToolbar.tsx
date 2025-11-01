@@ -11,7 +11,10 @@ import {
   Download,
   FileSpreadsheet,
   Zap,
-  MoreHorizontal
+  MoreHorizontal,
+  Target,
+  Search,
+  CheckCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -43,6 +46,9 @@ interface BulkActionsToolbarProps {
   onBulkEnrich360: () => Promise<void>;
   onBulkEnrichApollo: () => Promise<void>;
   onBulkEnrichEconodata: () => Promise<void>;
+  onBulkEnrichTotvsCheck?: () => Promise<void>;
+  onBulkDiscoverCNPJ?: () => Promise<void>;
+  onBulkApprove?: () => Promise<void>;
   onExportSelected: () => void;
   isProcessing?: boolean;
 }
@@ -57,6 +63,9 @@ export function BulkActionsToolbar({
   onBulkEnrich360,
   onBulkEnrichApollo,
   onBulkEnrichEconodata,
+  onBulkEnrichTotvsCheck,
+  onBulkDiscoverCNPJ,
+  onBulkApprove,
   onExportSelected,
   isProcessing = false
 }: BulkActionsToolbarProps) {
@@ -132,6 +141,18 @@ export function BulkActionsToolbar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {onBulkDiscoverCNPJ && (
+                  <>
+                    <DropdownMenuItem 
+                      onClick={onBulkDiscoverCNPJ}
+                      disabled={isProcessing}
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Descobrir CNPJ
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem 
                   onClick={onBulkEnrichReceita}
                   disabled={isProcessing}
@@ -153,6 +174,15 @@ export function BulkActionsToolbar({
                   <Zap className="h-4 w-4 mr-2" />
                   Eco-Booster
                 </DropdownMenuItem>
+                {onBulkEnrichTotvsCheck && (
+                  <DropdownMenuItem 
+                    onClick={onBulkEnrichTotvsCheck}
+                    disabled={isProcessing}
+                  >
+                    <Target className="h-4 w-4 mr-2" />
+                    TOTVS Check
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={onBulkEnrich360}
@@ -196,6 +226,15 @@ export function BulkActionsToolbar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {onBulkApprove && (
+                  <>
+                    <DropdownMenuItem onClick={onBulkApprove} disabled={isProcessing}>
+                      <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                      Aprovar e Mover para Pool
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={onExportSelected} disabled={isProcessing}>
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Exportar CSV
