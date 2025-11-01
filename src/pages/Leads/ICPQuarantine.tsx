@@ -996,8 +996,16 @@ export default function ICPQuarantine() {
                 onBulkTotvsCheck={handleBulkTotvsCheck}
                 onBulkDiscoverCNPJ={handleBulkDiscoverCNPJ}
                 onBulkApprove={handleBulkApprove}
+                onReverifyAllV2={() => reverifyAll(filteredCompanies.map(c => ({
+                  id: c.company_id || c.id,
+                  razao_social: c.razao_social,
+                  cnpj: c.cnpj,
+                  website: c.website
+                })))}
                 isProcessing={isApproving || isDeleting || isRefreshing}
+                isReverifying={isReverifying}
                 selectedItems={companies.filter(c => selectedIds.includes(c.id))}
+                totalCompanies={filteredCompanies}
               />
               
               <TooltipProvider>
@@ -1012,38 +1020,6 @@ export default function ICPQuarantine() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Detecta hot leads e aprova automaticamente</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => reverifyAll(filteredCompanies.map(c => ({
-                        id: c.company_id || c.id,
-                        razao_social: c.razao_social,
-                        cnpj: c.cnpj,
-                        website: c.website
-                      })))}
-                      disabled={isReverifying || filteredCompanies.length === 0}
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      {isReverifying ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Re-verificando...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="h-4 w-4" />
-                          Re-Verificar Tudo (V2)
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="font-semibold mb-1">🔄 Re-verificação em Massa (Lógica V2)</p>
-                    <p className="text-xs">Invalida TODAS as verificações antigas e executa nova análise unificada.</p>
-                    <p className="text-xs text-amber-500 mt-1">⚠️ Consome créditos API</p>
-                  </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

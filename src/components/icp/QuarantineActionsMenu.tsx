@@ -38,8 +38,11 @@ interface QuarantineActionsMenuProps {
   onBulkTotvsCheck?: () => Promise<void>;
   onBulkDiscoverCNPJ?: () => Promise<void>;
   onBulkApprove?: () => Promise<void>;
+  onReverifyAllV2?: () => void;
   isProcessing?: boolean;
+  isReverifying?: boolean;
   selectedItems?: any[];
+  totalCompanies?: any[];
 }
 
 export function QuarantineActionsMenu({
@@ -54,8 +57,11 @@ export function QuarantineActionsMenu({
   onBulkTotvsCheck,
   onBulkDiscoverCNPJ,
   onBulkApprove,
+  onReverifyAllV2,
   isProcessing = false,
-  selectedItems = []
+  isReverifying = false,
+  selectedItems = [],
+  totalCompanies = []
 }: QuarantineActionsMenuProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBatchTOTVS, setShowBatchTOTVS] = useState(false);
@@ -175,6 +181,25 @@ export function QuarantineActionsMenu({
             <Target className="h-4 w-4 mr-2" />
             TOTVS Check em Lote
           </DropdownMenuItem>
+
+          {/* 🔄 RE-VERIFICAR TUDO V2 - Botão Principal */}
+          {onReverifyAllV2 && totalCompanies.length > 0 && (
+            <DropdownMenuItem 
+              onClick={() => {
+                if (!onReverifyAllV2 || totalCompanies.length === 0) return;
+                onReverifyAllV2();
+              }}
+              disabled={isReverifying || totalCompanies.length === 0}
+              className="transition-all duration-200 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:shadow-md hover:border-l-2 hover:border-amber-500"
+            >
+              {isReverifying ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isReverifying ? 'Re-verificando...' : `Re-Verificar Tudo (V2) - ${totalCompanies.length}`}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
