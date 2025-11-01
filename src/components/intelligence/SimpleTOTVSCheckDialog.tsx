@@ -1,14 +1,9 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TOTVSVerificationCard from '@/components/totvs/TOTVSVerificationCard';
 
 interface SimpleTOTVSCheckDialogProps {
-  companyId: string;
-  companyName: string;
+  companyId?: string;
+  companyName?: string;
   cnpj?: string;
   domain?: string;
   open: boolean;
@@ -25,15 +20,16 @@ export function SimpleTOTVSCheckDialog({
 }: SimpleTOTVSCheckDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>TOTVS Check - {companyName}</DialogTitle>
+          <DialogTitle>Verificação TOTVS - {companyName}</DialogTitle>
         </DialogHeader>
-        <TOTVSCheckCard
+        <TOTVSVerificationCard
           companyId={companyId}
           companyName={companyName}
           cnpj={cnpj}
           domain={domain}
+          autoVerify={true}
         />
       </DialogContent>
     </Dialog>

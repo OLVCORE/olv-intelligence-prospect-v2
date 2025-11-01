@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
+import TOTVSVerificationCard from "@/components/totvs/TOTVSVerificationCard";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function TOTVSCheckReport() {
@@ -74,11 +74,12 @@ export default function TOTVSCheckReport() {
         </CardHeader>
         <CardContent>
           {resolvedCompanyId && (
-            <TOTVSCheckCard
+            <TOTVSVerificationCard
               companyId={resolvedCompanyId}
               companyName={companyMeta?.name || "Empresa"}
               cnpj={companyMeta?.cnpj}
               domain={companyMeta?.domain}
+              autoVerify={false}
             />
           )}
         </CardContent>

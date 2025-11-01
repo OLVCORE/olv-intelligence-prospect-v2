@@ -2,33 +2,36 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useTOTVSChecker } from '@/hooks/useTOTVSChecker';
+import { useTOTVSVerification } from '@/hooks/useTOTVSVerification';
 import {
   RefreshCw,
   CheckCircle,
   XCircle,
   AlertTriangle,
   ExternalLink,
-  Filter
+  Filter,
+  Clock
 } from 'lucide-react';
 
-interface TOTVSCheckCardProps {
+interface TOTVSVerificationCardProps {
   companyId?: string;
   companyName?: string;
   cnpj?: string;
   domain?: string;
+  autoVerify?: boolean;
 }
 
-export default function TOTVSCheckCard({
+export default function TOTVSVerificationCard({
   companyId,
   companyName,
   cnpj,
   domain,
-}: TOTVSCheckCardProps) {
-  const [enabled, setEnabled] = useState(false);
+  autoVerify = false,
+}: TOTVSVerificationCardProps) {
+  const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
 
-  const { data, isLoading, refetch } = useTOTVSChecker({
+  const { data, isLoading, refetch } = useTOTVSVerification({
     companyId,
     companyName,
     cnpj,
@@ -46,10 +49,10 @@ export default function TOTVSCheckCard({
       <Card className="p-6">
         <div className="text-center">
           <h3 className="text-lg font-semibold mb-2">
-            Verificação TOTVS
+            🔍 Verificação TOTVS
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Clique para verificar se a empresa é cliente TOTVS
+            Verificar se a empresa é cliente TOTVS
           </p>
           <Button onClick={handleVerify}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -65,8 +68,11 @@ export default function TOTVSCheckCard({
       <Card className="p-6">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-2">
             Buscando evidências em múltiplas fontes...
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Isso pode levar 20-30 segundos
           </p>
         </div>
       </Card>
@@ -85,7 +91,6 @@ export default function TOTVSCheckCard({
 
   return (
     <Card className="p-6">
-      {/* HEADER */}
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -94,9 +99,21 @@ export default function TOTVSCheckCard({
             {data.status === 'no-go' && <XCircle className="w-5 h-5 text-red-600" />}
             Verificação TOTVS
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {data.from_cache ? '📦 Cache (24h)' : '🔄 Verificação nova'}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            {data.from_cache ? (
+              <Badge variant="outline" className="text-xs">
+                <Clock className="w-3 h-3 mr-1" />
+                Cache (24h)
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs">
+                🔄 Verificação nova
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {data.methodology?.execution_time}
+            </span>
+          </div>
         </div>
         <Button variant="outline" size="sm" onClick={handleVerify}>
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -104,7 +121,6 @@ export default function TOTVSCheckCard({
         </Button>
       </div>
 
-      {/* STATUS */}
       <div className="mb-4">
         <Badge 
           variant={
@@ -112,15 +128,19 @@ export default function TOTVSCheckCard({
             data.status === 'revisar' ? 'secondary' :
             'destructive'
           }
-          className="text-lg px-4 py-2"
+          className="text-base px-4 py-2"
         >
           {data.status === 'go' && '✅ GO - Não é cliente TOTVS'}
           {data.status === 'revisar' && '⚠️ REVISAR - Evidências encontradas'}
           {data.status === 'no-go' && '❌ NO-GO - Cliente TOTVS confirmado'}
         </Badge>
+        <p className="text-sm text-muted-foreground mt-2">
+          Confiança: <strong>{data.confidence === 'high' ? 'Alta' : data.confidence === 'medium' ? 'Média' : 'Baixa'}</strong>
+          {' | '}
+          Peso total: <strong>{data.total_weight} pontos</strong>
+        </p>
       </div>
 
-      {/* FILTROS */}
       {evidences.length > 0 && (
         <div className="mb-4 space-y-2">
           <div className="flex gap-2">
@@ -146,23 +166,22 @@ export default function TOTVSCheckCard({
         </div>
       )}
 
-      {/* EVIDÊNCIAS */}
       {filteredEvidences.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {filteredEvidences.map((evidence: any, index: number) => (
-            <div key={index} className="border rounded-lg p-3">
+            <div key={index} className="border rounded-lg p-3 hover:bg-muted/50">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'}>
                   {evidence.match_type === 'triple' ? '🎯 TRIPLE' : '🔍 DOUBLE'}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-xs">
                   {evidence.source} ({evidence.weight} pts)
                 </Badge>
               </div>
               <p className="text-sm font-medium mb-1">{evidence.title}</p>
               <p className="text-sm text-muted-foreground mb-2">{evidence.content}</p>
               {evidence.detected_products?.length > 0 && (
-                <div className="flex gap-1 mb-2 flex-wrap">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {evidence.detected_products.map((product: string) => (
                     <Badge key={product} variant="outline" className="text-xs">
                       {product}
@@ -187,8 +206,18 @@ export default function TOTVSCheckCard({
           <p className="text-sm text-muted-foreground">
             Nenhuma evidência de uso de TOTVS encontrada
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {data.methodology?.searched_sources} fontes consultadas
+          </p>
         </div>
       )}
+
+      <div className="mt-4 pt-4 border-t">
+        <p className="text-xs text-muted-foreground">
+          Fontes consultadas: {data.methodology?.searched_sources} | 
+          Queries executadas: {data.methodology?.total_queries}
+        </p>
+      </div>
     </Card>
   );
 }

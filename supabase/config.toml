@@ -252,7 +252,7 @@ verify_jwt = false
   [functions.icp-refresh-report]
   verify_jwt = false
 
-  [functions.totvs-checker]
+  [functions.totvs-verification]
   verify_jwt = false
 
   [functions.enrich-company-receita]

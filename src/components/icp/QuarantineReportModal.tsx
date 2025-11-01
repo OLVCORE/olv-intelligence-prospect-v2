@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
+import TOTVSVerificationCard from '@/components/totvs/TOTVSVerificationCard';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
@@ -62,11 +62,12 @@ export function QuarantineReportModal({
           </DialogDescription>
         </DialogHeader>
         <Separator />
-        <TOTVSCheckCard
+        <TOTVSVerificationCard
           companyId={companyId}
           companyName={companyName}
           cnpj={cnpj}
           domain={domain}
+          autoVerify={false}
         />
         <Separator />
         <DialogFooter className="gap-2">
