@@ -39,6 +39,7 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
     queryFn: async () => {
       if (!companyId) return null;
 
+      // 1) Tenta buscar no histórico oficial (companies)
       const { data, error } = await supabase
         .from('simple_totvs_checks')
         .select('*')
@@ -52,12 +53,38 @@ export function useLatestSimpleTOTVSCheck(companyId?: string) {
         throw error;
       }
 
-      return data;
+      if (data) return data;
+
+      // 2) Fallback inteligente para registros da QUARENTENA
+      const { data: q, error: qErr } = await supabase
+        .from('icp_analysis_results')
+        .select('id, is_cliente_totvs, totvs_evidences, totvs_check_date, updated_at')
+        .eq('id', companyId)
+        .maybeSingle();
+
+      if (qErr) {
+        console.warn('Fallback QUARENTENA falhou:', qErr);
+        return null;
+      }
+
+      if (!q) return null;
+
+      const total = Array.isArray(q.totvs_evidences) ? q.totvs_evidences.length : 0;
+      const status = q.is_cliente_totvs ? 'no-go' : (total >= 2 ? 'no-go' : total === 1 ? 'revisar' : 'go');
+      const confidence = q.is_cliente_totvs || total >= 5 ? 'high' : total >= 2 ? 'medium' : 'low';
+
+      return {
+        company_id: companyId,
+        status,
+        confidence,
+        total_evidences: total,
+        checked_at: q.totvs_check_date || q.updated_at || new Date().toISOString(),
+      } as any;
     },
     enabled: !!companyId,
-    staleTime: 0, // Sempre buscar dados frescos
-    gcTime: 0, // Não manter em cache
-    refetchOnMount: 'always' // Sempre refetch ao montar
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always'
   });
 }
 

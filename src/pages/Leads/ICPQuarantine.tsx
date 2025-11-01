@@ -35,6 +35,8 @@ export default function ICPQuarantine() {
   const [previewCompany, setPreviewCompany] = useState<any>(null);
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
+  const [websiteInput, setWebsiteInput] = useState<string>('');
 
   const { data: companies = [], isLoading, refetch } = useQuarantineCompanies({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -50,6 +52,40 @@ export default function ICPQuarantine() {
   const queryClient = useQueryClient();
 
   const sanitizeDomain = (value?: string | null): string | null => {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    try {
+      const url = v.startsWith('http') ? new URL(v) : new URL(`https://${v}`);
+      const host = url.hostname.replace(/^www\./, '');
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(host) ? host : null;
+    } catch {
+      const cleaned = v.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+      const domainRegex = /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$/i;
+      return domainRegex.test(cleaned) ? cleaned : null;
+    }
+  };
+
+  const saveWebsite = async (analysisId: string, value: string) => {
+    const sanitized = sanitizeDomain(value);
+    if (!sanitized) {
+      toast.error('Website inválido', { description: 'Informe um domínio válido, ex: empresa.com.br' });
+      return;
+    }
+    const { error } = await supabase
+      .from('icp_analysis_results')
+      .update({ website: sanitized })
+      .eq('id', analysisId);
+    if (error) {
+      toast.error('Erro ao salvar website', { description: error.message });
+      return;
+    }
+    toast.success('Website atualizado');
+    setEditingWebsiteId(null);
+    setWebsiteInput('');
+    queryClient.invalidateQueries({ queryKey: ['icp-quarantine'] });
+  };
     if (!value) return null;
     const v = String(value).trim();
     if (!v || /\s/.test(v)) return null;
@@ -1262,24 +1298,48 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      {(() => {
-                        const domain = sanitizeDomain(company.website || rawData?.domain || null);
-                        return domain ? (
-                          <a
-                            href={`https://${domain}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 max-w-[120px] truncate"
-                            onClick={(e) => e.stopPropagation()}
-                            title={domain}
-                          >
-                            {domain}
-                            <Globe className="h-3 w-3 flex-shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">N/A</span>
-                        );
-                      })()}
+                      {editingWebsiteId === company.id ? (
+                        <div className="flex items-center gap-2 max-w-[180px]">
+                          <Input
+                            value={websiteInput}
+                            onChange={(e) => setWebsiteInput(e.target.value)}
+                            placeholder="empresa.com.br"
+                            className="h-8 text-xs"
+                          />
+                          <Button size="sm" variant="secondary" className="h-8 px-2"
+                            onClick={() => saveWebsite(company.id, websiteInput)}
+                          >Salvar</Button>
+                          <Button size="sm" variant="ghost" className="h-8 px-2"
+                            onClick={() => { setEditingWebsiteId(null); setWebsiteInput(''); }}
+                          >Cancelar</Button>
+                        </div>
+                      ) : (
+                        (() => {
+                          const domain = sanitizeDomain(company.website || rawData?.domain || null);
+                          return (
+                            <div className="flex items-center gap-2 max-w-[180px]">
+                              {domain ? (
+                                <a
+                                  href={`https://${domain}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline inline-flex items-center gap-1 truncate"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title={domain}
+                                >
+                                  {domain}
+                                  <Globe className="h-3 w-3 flex-shrink-0" />
+                                </a>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">N/A</span>
+                              )}
+                              <Button size="sm" variant="ghost" className="h-7 px-2"
+                                onClick={() => { setEditingWebsiteId(company.id); setWebsiteInput(domain || ''); }}
+                              >Editar</Button>
+                            </div>
+                          );
+                        })()
+                      )
                     </TableCell>
                     <TableCell>
                       {company.motivo_descarte ? (

@@ -422,11 +422,24 @@ serve(async (req) => {
       checked_at: new Date().toISOString()
     };
 
-    // Salvar no banco
+    // Salvar no banco (tolerante a registros sem company na tabela companies)
+    let companyIdToSave: string | null = company_id;
+    // Verificar existência do company_id para evitar violação de FK
+    if (company_id) {
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('id', company_id)
+        .maybeSingle();
+      if (!existingCompany) {
+        companyIdToSave = null; // evita erro de FK quando ainda está na quarentena
+      }
+    }
+
     const { error: insertError } = await supabase
       .from('simple_totvs_checks')
       .insert({
-        company_id,
+        company_id: companyIdToSave,
         status: result.status,
         detected_totvs: result.detected_totvs,
         confidence: result.confidence,

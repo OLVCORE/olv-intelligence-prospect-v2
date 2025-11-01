@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
+import { SimpleTOTVSCheckStatusBadge } from '@/components/icp/SimpleTOTVSCheckStatusBadge';
+import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
 import {
   Table,
   TableBody,
@@ -697,6 +699,9 @@ export default function CompaniesManagementPage() {
     toast.success('Dados atualizados!');
   };
 
+  const [stcDialogOpen, setStcDialogOpen] = useState(false);
+  const [stcCompany, setStcCompany] = useState<any | null>(null);
+
   if (loading) {
     return (
       <AppLayout>
@@ -977,8 +982,9 @@ export default function CompaniesManagementPage() {
                       </Button>
                     </TableHead>
                     <TableHead>UF/Região</TableHead>
-                    <TableHead>Status Análise</TableHead>
-                    <TableHead>Website</TableHead>
+                     <TableHead>Status Análise</TableHead>
+                     <TableHead>TOTVS Check</TableHead>
+                     <TableHead>Website</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1051,10 +1057,19 @@ export default function CompaniesManagementPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <EnrichmentStatusBadge companyId={company.id} showProgress />
-                      </TableCell>
-                      <TableCell>
-                        {company.website || company.domain ? (
+                         <EnrichmentStatusBadge companyId={company.id} showProgress />
+                       </TableCell>
+                       <TableCell>
+                         <SimpleTOTVSCheckStatusBadge 
+                           companyId={company.id}
+                           onViewReport={() => {
+                             setStcCompany(company);
+                             setStcDialogOpen(true);
+                           }}
+                         />
+                       </TableCell>
+                       <TableCell>
+                         {company.website || company.domain ? (
                           isValidUrl(company.website || company.domain) ? (
                             <a
                               href={formatWebsiteUrl(company.website || company.domain)!}
@@ -1216,7 +1231,18 @@ export default function CompaniesManagementPage() {
 
          
        </div>
-     </AppLayout>
-     </ErrorBoundary>
-   );
+          {stcCompany && (
+            <SimpleTOTVSCheckDialog
+              open={stcDialogOpen}
+              onOpenChange={setStcDialogOpen}
+              companyId={stcCompany.id}
+              companyName={(stcCompany as any).razao_social || stcCompany.name}
+              cnpj={stcCompany.cnpj}
+              domain={stcCompany.domain || stcCompany.website}
+            />
+          )}
+        </div>
+      </AppLayout>
+      </ErrorBoundary>
+    );
  }
