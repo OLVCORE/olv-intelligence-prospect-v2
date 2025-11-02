@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { XCircle, Search, Filter, TrendingDown, BarChart3, FileText, RotateCcw, MoreVertical } from 'lucide-react';
+import { XCircle, Search, Filter, TrendingDown, BarChart3, FileText, RotateCcw, MoreVertical, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ export default function DiscardedCompanies() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const { mutate: restoreCompany, isPending: isRestoring } = useRestoreToQuarantine();
 
-  const { data: discarded, isLoading } = useQuery({
+  const { data: discarded, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['discarded-companies', categoryFilter],
     queryFn: async () => {
       let query = supabase
@@ -120,6 +120,16 @@ export default function DiscardedCompanies() {
             Histórico completo de empresas descartadas com motivos e analytics
           </p>
         </div>
+        <Button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
 
       {/* Analytics Cards */}

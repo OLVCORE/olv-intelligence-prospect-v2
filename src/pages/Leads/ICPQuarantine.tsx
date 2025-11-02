@@ -1068,12 +1068,13 @@ export default function ICPQuarantine() {
                       variant="ghost"
                       size="icon"
                       onClick={() => refetch()}
+                      disabled={isLoading}
                       aria-label="Atualizar"
                     >
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Atualizar</TooltipContent>
+                  <TooltipContent>Forçar atualização da página</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>

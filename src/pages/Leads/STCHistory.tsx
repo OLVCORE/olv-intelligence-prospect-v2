@@ -27,7 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Target, Search, Filter, BarChart3, Clock, ExternalLink, Eye } from 'lucide-react';
+import { Target, Search, Filter, BarChart3, Clock, ExternalLink, Eye, RefreshCw } from 'lucide-react';
 
 export default function STCHistory() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +35,7 @@ export default function STCHistory() {
   const [confidenceFilter, setConfidenceFilter] = useState('all');
   const [selectedVerification, setSelectedVerification] = useState<any | null>(null);
 
-  const { data: verifications, isLoading } = useQuery({
+  const { data: verifications, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['stc-history', statusFilter, confidenceFilter],
     queryFn: async () => {
       let query = supabase
@@ -106,6 +106,16 @@ export default function STCHistory() {
             Registro completo de todas as verificações TOTVS realizadas
           </p>
         </div>
+        <Button
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
 
       {/* Analytics Cards */}
