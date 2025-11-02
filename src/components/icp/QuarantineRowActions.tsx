@@ -182,19 +182,20 @@ export function QuarantineRowActions({
                   toast.info('Use o botão "Reverificar" dentro do relatório para executar o check (com cooldown).');
                 }}
                 disabled={isEnriching}
-                className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+                className="relative animate-pulse bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 hover:from-primary/30 hover:via-primary/20 hover:to-primary/30 border-l-4 border-primary font-semibold cursor-pointer transition-all dark:from-primary/30 dark:via-primary/20 dark:to-primary/30 dark:hover:from-primary/40 dark:hover:via-primary/30 dark:hover:to-primary/40"
               >
                 {enrichingAction === 'TOTVS Check' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
                 ) : (
-                  <Target className="h-4 w-4 mr-2" />
+                  <Target className="h-4 w-4 mr-2 text-primary" />
                 )}
-                Simple TOTVS Check (STC)
+                <span className="text-primary">Simple TOTVS Check (STC)</span>
+                <Sparkles className="h-3 w-3 ml-auto text-primary animate-pulse" />
               </DropdownMenuItem>
             </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs">
-              <p className="font-semibold text-sm">STC - TOTVS Checker</p>
-              <p className="text-xs text-muted-foreground mt-1">Verifica em 17 fontes premium (CVM, notícias, deep web) se empresa já é cliente TOTVS. Detecta triple/double/single match com highlight de termos encontrados</p>
+            <TooltipContent side="right" className="max-w-xs bg-primary text-primary-foreground">
+              <p className="font-semibold text-sm">⭐ STC - TOTVS Checker (Prioritário)</p>
+              <p className="text-xs mt-1">Verifica em 17 fontes premium (CVM, notícias, deep web) se empresa já é cliente TOTVS. Detecta triple/double/single match com highlight de termos encontrados</p>
             </TooltipContent>
           </Tooltip>
 
