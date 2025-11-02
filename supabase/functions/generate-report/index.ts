@@ -140,6 +140,24 @@ async function verificarTOTVS(companyName: string, cnpj?: string) {
 
   log('INFO', 'TOTVS', `✅ Score: ${totalScore} | Triple: ${tripleMatches} | Double: ${doubleMatches}`);
 
+  // Se não há evidências, criar links de busca manual como fallback
+  if (evidences.length === 0) {
+    evidences.push({
+      text: `Não foram encontradas evidências automáticas. Clique para buscar manualmente "${companyName}" TOTVS no Google`,
+      source: `https://www.google.com/search?q=${encodeURIComponent(`"${companyName}" TOTVS`)}`,
+      matchType: 'single',
+      score: 0,
+    });
+    if (cnpj) {
+      evidences.push({
+        text: `Busca alternativa por CNPJ + TOTVS no Google`,
+        source: `https://www.google.com/search?q=${encodeURIComponent(`${cnpj} TOTVS`)}`,
+        matchType: 'single', 
+        score: 0,
+      });
+    }
+  }
+
   return {
     status: isClienteTOTVS ? 'cliente_totvs' : 'nao_cliente_totvs',
     confidence,
