@@ -41,17 +41,35 @@ export default function DiscardedCompanies() {
     queryKey: ['discarded-companies', categoryFilter],
     queryFn: async () => {
       let query = supabase
-        .from('discarded_companies')
-        .select('*')
-        .order('discarded_at', { ascending: false });
-
-      if (categoryFilter !== 'all') {
-        query = query.eq('discard_category', categoryFilter);
-      }
+        .from('icp_analysis_results')
+        .select(`
+          *,
+          companies(
+            id,
+            domain,
+            website
+          )
+        `)
+        .eq('status', 'descartada')
+        .order('created_at', { ascending: false });
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      
+      // Map para formato esperado pela UI
+      return (data || []).map(item => ({
+        id: item.id,
+        company_name: item.razao_social,
+        cnpj: item.cnpj,
+        discard_reason_label: item.motivo_descarte || 'Não especificado',
+        discard_reason_description: item.motivo_descarte || '',
+        discard_reason_id: item.motivo_descarte || 'unknown',
+        discard_category: 'qualification', // Default category
+        stc_status: item.totvs_check_status,
+        original_icp_score: item.icp_score,
+        original_icp_temperature: item.temperatura,
+        discarded_at: item.created_at,
+      }));
     }
   });
 
@@ -59,18 +77,21 @@ export default function DiscardedCompanies() {
     queryKey: ['discarded-analytics'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('discarded_companies')
-        .select('discard_category, discard_reason_id');
+        .from('icp_analysis_results')
+        .select('motivo_descarte, temperatura')
+        .eq('status', 'descartada');
 
       if (error) throw error;
 
       // Calcular estatísticas
-      const byCategory: Record<string, number> = {};
+      const byCategory: Record<string, number> = {
+        qualification: data.length, // Todas são de qualificação por enquanto
+      };
       const byReason: Record<string, number> = {};
 
       data.forEach(item => {
-        byCategory[item.discard_category] = (byCategory[item.discard_category] || 0) + 1;
-        byReason[item.discard_reason_id] = (byReason[item.discard_reason_id] || 0) + 1;
+        const reason = item.motivo_descarte || 'Não especificado';
+        byReason[reason] = (byReason[reason] || 0) + 1;
       });
 
       return {
