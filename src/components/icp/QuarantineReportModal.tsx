@@ -693,7 +693,9 @@ export default function QuarantineReportModal({
                     data={stcResult?.totvs
                       ? {
                           ...stcResult.totvs,
-                          evidences: stcResult?.totvs?.evidences ?? stcResult?.evidences ?? [],
+                          evidences: (Array.isArray(stcResult?.totvs?.evidences) && stcResult.totvs.evidences.length > 0)
+                            ? stcResult.totvs.evidences
+                            : (stcResult?.evidences || []),
                           methodology: stcResult?.totvs?.methodology ?? stcResult?.methodology,
                           status: stcResult?.totvs?.status ?? stcResult?.status,
                           confidence: stcResult?.totvs?.confidence ?? stcResult?.confidence,
