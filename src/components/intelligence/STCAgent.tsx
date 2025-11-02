@@ -38,11 +38,13 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
   // Auto-scroll para o final quando novas mensagens aparecerem
   useEffect(() => {
     setTimeout(() => {
-      if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
+      try {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } catch {}
+      const viewport = (scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null)
+        ?? (document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null);
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
       }
     }, 100);
   }, [messages]);
