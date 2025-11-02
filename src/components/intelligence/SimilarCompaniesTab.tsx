@@ -139,7 +139,6 @@ export function SimilarCompaniesTab({
         .from('suggested_companies')
         .select('*')
         .neq('id', companyId)
-        .eq('is_disqualified', false)
         .limit(20);
 
       if (dbError) {
@@ -271,7 +270,6 @@ export function SimilarCompaniesTab({
         discovered_from_company_id: companyId,
         similarity_score: company.similarity_score,
         enrichment_status: 'pending',
-        is_disqualified: false,
         discovered_at: new Date().toISOString(),
         user_id: (await supabase.auth.getUser()).data.user?.id
       };
