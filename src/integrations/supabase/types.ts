@@ -7604,6 +7604,39 @@ export type Database = {
           },
         ]
       }
+      stc_agent_memory: {
+        Row: {
+          answer: string
+          company_id: string
+          company_name: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          mode: string
+          question: string
+        }
+        Insert: {
+          answer: string
+          company_id: string
+          company_name: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mode: string
+          question: string
+        }
+        Update: {
+          answer?: string
+          company_id?: string
+          company_name?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          question?: string
+        }
+        Relationships: []
+      }
       suggested_companies: {
         Row: {
           added_to_bank_at: string | null

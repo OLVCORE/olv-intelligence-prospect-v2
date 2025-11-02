@@ -21,6 +21,7 @@ import { useReverifyAllCompanies } from '@/hooks/useReverifyAllCompanies';
 import { QuarantineActionsMenu } from '@/components/icp/QuarantineActionsMenu';
 import { QuarantineRowActions } from '@/components/icp/QuarantineRowActions';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
+import { STCAgent } from '@/components/intelligence/STCAgent';
 import { QuarantineEnrichmentStatusBadge } from '@/components/icp/QuarantineEnrichmentStatusBadge';
 import { QuarantineCNPJStatusBadge } from '@/components/icp/QuarantineCNPJStatusBadge';
 import { ICPScoreTooltip } from '@/components/icp/ICPScoreTooltip';
@@ -1402,29 +1403,36 @@ export default function ICPQuarantine() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <QuarantineRowActions
-                        company={company}
-                        onApprove={handleApproveSingle}
-                        onReject={handleRejectSingle}
-                        onDelete={handleDeleteSingle}
-                        onPreview={handlePreviewSingle}
-                        onRefresh={handleRefreshSingle}
-                        onEnrichReceita={handleEnrichReceita}
-                        onEnrichApollo={handleEnrichApollo}
-                        onEnrich360={handleEnrich360}
-                        onEnrichTotvsCheck={handleEnrichTotvsCheck}
-                        onDiscoverCNPJ={handleDiscoverCNPJ}
-                        onOpenExecutiveReport={() => {
-                          if (company.company_id) {
-                            setExecutiveReportCompanyId(company.company_id);
-                            setExecutiveReportOpen(true);
-                          } else {
-                            toast.info('Empresa ainda não possui relatório completo', {
-                              description: 'Aprove a empresa primeiro para gerar o relatório executivo'
-                            });
-                          }
-                        }}
-                      />
+                      <div className="flex items-center gap-2">
+                        <STCAgent
+                          companyId={company.id}
+                          companyName={company.razao_social}
+                          cnpj={company.cnpj}
+                        />
+                        <QuarantineRowActions
+                          company={company}
+                          onApprove={handleApproveSingle}
+                          onReject={handleRejectSingle}
+                          onDelete={handleDeleteSingle}
+                          onPreview={handlePreviewSingle}
+                          onRefresh={handleRefreshSingle}
+                          onEnrichReceita={handleEnrichReceita}
+                          onEnrichApollo={handleEnrichApollo}
+                          onEnrich360={handleEnrich360}
+                          onEnrichTotvsCheck={handleEnrichTotvsCheck}
+                          onDiscoverCNPJ={handleDiscoverCNPJ}
+                          onOpenExecutiveReport={() => {
+                            if (company.company_id) {
+                              setExecutiveReportCompanyId(company.company_id);
+                              setExecutiveReportOpen(true);
+                            } else {
+                              toast.info('Empresa ainda não possui relatório completo', {
+                                description: 'Aprove a empresa primeiro para gerar o relatório executivo'
+                              });
+                            }
+                          }}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
