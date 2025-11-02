@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink, Filter, X, Award, Flame, Star, AlertCircle, BarChart3 } from 'lucide-react';
+import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink, Filter, X, Award, Flame, Star, AlertCircle, BarChart3, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SimilarCompaniesTabProps {
   companyId: string;
@@ -1401,7 +1402,20 @@ export function SimilarCompaniesTab({
           {/* PAINEL DE FILTROS ESCALONADOS */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Filtrar por Pontuação ICP</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Filtrar por Pontuação ICP</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold mb-2">Sistema de Pontuação ICP</p>
+                      <p className="text-sm">Clique em cada categoria para ver empresas com aquele score e entender os critérios de qualificação.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               {activeScoreFilter && (
                 <Button
                   variant="outline"
@@ -1416,124 +1430,213 @@ export function SimilarCompaniesTab({
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {/* CARD: 90-100 (Excelente) */}
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  activeScoreFilter === '90-100' 
-                    ? 'ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950' 
-                    : 'hover:border-yellow-500'
-                }`}
-                onClick={() => setActiveScoreFilter(activeScoreFilter === '90-100' ? null : '90-100')}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                    <Badge className="bg-yellow-500 text-white">90-100</Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {similar_companies.filter(c => (c.icp_score || 0) >= 90).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Excelente</p>
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">
-                    ICP Perfeito
-                  </p>
-                </CardContent>
-              </Card>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        activeScoreFilter === '90-100' 
+                          ? 'ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950' 
+                          : 'hover:border-yellow-500'
+                      }`}
+                      onClick={() => setActiveScoreFilter(activeScoreFilter === '90-100' ? null : '90-100')}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <Award className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                          <Badge className="bg-yellow-500 text-white">90-100</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {similar_companies.filter(c => (c.icp_score || 0) >= 90).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Excelente</p>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">
+                          ICP Perfeito
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-semibold mb-2">🏆 ICP Perfeito (90-100)</p>
+                    <p className="text-sm mb-2">Empresas com todos os critérios ideais:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>✓ Setor altamente compatível</li>
+                      <li>✓ Porte e faturamento adequados</li>
+                      <li>✓ Localização estratégica</li>
+                      <li>✓ Dados completos (CNPJ, site, LinkedIn)</li>
+                      <li>✓ Alta maturidade digital</li>
+                    </ul>
+                    <p className="text-xs mt-2 text-muted-foreground">Prioridade máxima para abordagem</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* CARD: 70-89 (Ótimo) */}
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  activeScoreFilter === '70-89' 
-                    ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' 
-                    : 'hover:border-green-500'
-                }`}
-                onClick={() => setActiveScoreFilter(activeScoreFilter === '70-89' ? null : '70-89')}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Flame className="w-8 h-8 text-green-600 dark:text-green-400" />
-                    <Badge className="bg-green-500 text-white">70-89</Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {similar_companies.filter(c => (c.icp_score || 0) >= 70 && (c.icp_score || 0) < 90).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Ótimo</p>
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
-                    Alta Qualificação
-                  </p>
-                </CardContent>
-              </Card>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        activeScoreFilter === '70-89' 
+                          ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' 
+                          : 'hover:border-green-500'
+                      }`}
+                      onClick={() => setActiveScoreFilter(activeScoreFilter === '70-89' ? null : '70-89')}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <Flame className="w-8 h-8 text-green-600 dark:text-green-400" />
+                          <Badge className="bg-green-500 text-white">70-89</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {similar_companies.filter(c => (c.icp_score || 0) >= 70 && (c.icp_score || 0) < 90).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Ótimo</p>
+                        <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
+                          Alta Qualificação
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-semibold mb-2">🔥 Alta Qualificação (70-89)</p>
+                    <p className="text-sm mb-2">Empresas muito boas, com pequenos pontos de melhoria:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>✓ Perfil bem alinhado ao ICP</li>
+                      <li>✓ Maioria dos dados disponíveis</li>
+                      <li>✓ Setor e porte compatíveis</li>
+                      <li>⚠ Pode faltar alguns detalhes secundários</li>
+                    </ul>
+                    <p className="text-xs mt-2 text-muted-foreground">Excelentes candidatos para prospecção</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* CARD: 50-69 (Bom) */}
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  activeScoreFilter === '50-69' 
-                    ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
-                    : 'hover:border-blue-500'
-                }`}
-                onClick={() => setActiveScoreFilter(activeScoreFilter === '50-69' ? null : '50-69')}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Star className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                    <Badge className="bg-blue-500 text-white">50-69</Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {similar_companies.filter(c => (c.icp_score || 0) >= 50 && (c.icp_score || 0) < 70).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Bom</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
-                    Qualificado
-                  </p>
-                </CardContent>
-              </Card>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        activeScoreFilter === '50-69' 
+                          ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                          : 'hover:border-blue-500'
+                      }`}
+                      onClick={() => setActiveScoreFilter(activeScoreFilter === '50-69' ? null : '50-69')}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <Star className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                          <Badge className="bg-blue-500 text-white">50-69</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {similar_companies.filter(c => (c.icp_score || 0) >= 50 && (c.icp_score || 0) < 70).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Bom</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                          Qualificado
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-semibold mb-2">⭐ Bom Potencial (50-69)</p>
+                    <p className="text-sm mb-2">Empresas qualificadas que precisam de nutrição:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>✓ Perfil compatível</li>
+                      <li>✓ Dados básicos completos</li>
+                      <li>⚠ Faltam informações secundárias</li>
+                      <li>⚠ Precisa enriquecimento adicional</li>
+                      <li>⚠ Pode estar fora da região prioritária</li>
+                    </ul>
+                    <p className="text-xs mt-2 text-muted-foreground">Bom para campanha de aquecimento</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* CARD: 30-49 (Regular) */}
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  activeScoreFilter === '30-49' 
-                    ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950' 
-                    : 'hover:border-orange-500'
-                }`}
-                onClick={() => setActiveScoreFilter(activeScoreFilter === '30-49' ? null : '30-49')}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <AlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                    <Badge className="bg-orange-500 text-white">30-49</Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    {similar_companies.filter(c => (c.icp_score || 0) >= 30 && (c.icp_score || 0) < 50).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Regular</p>
-                  <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">
-                    Precisa Enriquecer
-                  </p>
-                </CardContent>
-              </Card>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        activeScoreFilter === '30-49' 
+                          ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950' 
+                          : 'hover:border-orange-500'
+                      }`}
+                      onClick={() => setActiveScoreFilter(activeScoreFilter === '30-49' ? null : '30-49')}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <AlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                          <Badge className="bg-orange-500 text-white">30-49</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {similar_companies.filter(c => (c.icp_score || 0) >= 30 && (c.icp_score || 0) < 50).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Regular</p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">
+                          Precisa Enriquecer
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-semibold mb-2">⚠️ Precisa Enriquecer (30-49)</p>
+                    <p className="text-sm mb-2">Empresas com perfil incompleto:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>⚠ Setor compatível mas dados limitados</li>
+                      <li>⚠ Falta informações sobre porte/faturamento</li>
+                      <li>⚠ Sem website ou LinkedIn</li>
+                      <li>⚠ Localização desconhecida ou não prioritária</li>
+                      <li>⚠ Precisa validação manual</li>
+                    </ul>
+                    <p className="text-xs mt-2 text-muted-foreground">Requer enriquecimento antes de abordar</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* CARD: 0-29 (Baixo) */}
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-lg ${
-                  activeScoreFilter === '0-29' 
-                    ? 'ring-2 ring-gray-500 bg-gray-50 dark:bg-gray-900' 
-                    : 'hover:border-gray-500'
-                }`}
-                onClick={() => setActiveScoreFilter(activeScoreFilter === '0-29' ? null : '0-29')}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <BarChart3 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-                    <Badge variant="outline" className="border-gray-400">0-29</Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                    {similar_companies.filter(c => (c.icp_score || 0) < 30).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Baixo</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">
-                    Dados Mínimos
-                  </p>
-                </CardContent>
-              </Card>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card 
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        activeScoreFilter === '0-29' 
+                          ? 'ring-2 ring-gray-500 bg-gray-50 dark:bg-gray-900' 
+                          : 'hover:border-gray-500'
+                      }`}
+                      onClick={() => setActiveScoreFilter(activeScoreFilter === '0-29' ? null : '0-29')}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <BarChart3 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+                          <Badge variant="outline" className="border-gray-400">0-29</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                          {similar_companies.filter(c => (c.icp_score || 0) < 30).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Baixo</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">
+                          Dados Mínimos
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="font-semibold mb-2">📊 Dados Mínimos (0-29)</p>
+                    <p className="text-sm mb-2">Empresas com informações muito limitadas:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>✗ Poucos dados disponíveis</li>
+                      <li>✗ Setor incerto ou incompatível</li>
+                      <li>✗ Sem informações de contato</li>
+                      <li>✗ Porte/faturamento desconhecido</li>
+                      <li>✗ Baixa prioridade para abordagem</li>
+                    </ul>
+                    <p className="text-xs mt-2 text-muted-foreground">Desconsiderar ou buscar mais dados</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {/* INDICADOR DE FILTRO ATIVO */}
