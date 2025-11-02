@@ -36,6 +36,33 @@ export const useSimpleTOTVSCheck = ({
       }
 
       console.log('[HOOK] Resultado:', data);
+      
+      // AUTO-SALVAR NO HISTÓRICO STC
+      if (data?.data && companyId) {
+        try {
+          const result = data.data;
+          await supabase.from('stc_verification_history').insert({
+            company_id: companyId,
+            company_name: companyName || 'N/A',
+            cnpj: cnpj || null,
+            status: result.status || 'unknown',
+            confidence: result.confidence || 'low',
+            triple_matches: result.tripleMatches || 0,
+            double_matches: result.doubleMatches || 0,
+            single_matches: result.singleMatches || 0,
+            total_score: result.totalScore || 0,
+            evidences: result.evidences || [],
+            sources_consulted: result.sourcesConsulted || 0,
+            queries_executed: result.queriesExecuted || 0,
+            verification_duration_ms: result.verificationDurationMs || 0
+          });
+          console.log('[STC] ✅ Verificação salva no histórico');
+        } catch (historyError: any) {
+          console.warn('[STC] ⚠️ Erro ao salvar histórico (não crítico):', historyError.message);
+          // Não falha a verificação se salvar histórico falhar
+        }
+      }
+      
       return data;
     },
     enabled: enabled && (!!companyName || !!cnpj),

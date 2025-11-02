@@ -1201,7 +1201,6 @@ export default function ICPQuarantine() {
                   </TableHead>
                   <TableHead className="min-w-[90px]"><span className="font-semibold">Status Análise</span></TableHead>
                   <TableHead className="min-w-[110px]"><span className="font-semibold">Website</span></TableHead>
-                  <TableHead className="min-w-[120px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
                   <TableHead className="min-w-[60px]"><span className="font-semibold">Agent</span></TableHead>
                   <TableHead className="w-[50px]"><span className="font-semibold">Ações</span></TableHead>
                 </TableRow>
@@ -1209,13 +1208,13 @@ export default function ICPQuarantine() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
@@ -1374,17 +1373,6 @@ export default function ICPQuarantine() {
                             onClick={() => { setEditingWebsiteId(company.id); setWebsiteInput(sanitizeDomain(company.website || rawData?.domain || null) || ''); }}
                           >Editar</Button>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      {company.motivo_descarte ? (
-                        <div className="max-w-[120px]">
-                          <span className="text-xs text-muted-foreground line-clamp-2 leading-snug" title={company.motivo_descarte}>
-                            {company.motivo_descarte}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>

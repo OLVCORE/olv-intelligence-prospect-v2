@@ -3231,6 +3231,77 @@ export type Database = {
         }
         Relationships: []
       }
+      discarded_companies: {
+        Row: {
+          cnpj: string | null
+          company_id: string | null
+          company_name: string
+          discard_category: string
+          discard_reason_description: string | null
+          discard_reason_id: string
+          discard_reason_label: string
+          discarded_at: string | null
+          discarded_by: string | null
+          id: string
+          notes: string | null
+          original_icp_score: number | null
+          original_icp_temperature: string | null
+          stc_confidence: string | null
+          stc_double_matches: number | null
+          stc_status: string | null
+          stc_total_score: number | null
+          stc_triple_matches: number | null
+        }
+        Insert: {
+          cnpj?: string | null
+          company_id?: string | null
+          company_name: string
+          discard_category: string
+          discard_reason_description?: string | null
+          discard_reason_id: string
+          discard_reason_label: string
+          discarded_at?: string | null
+          discarded_by?: string | null
+          id?: string
+          notes?: string | null
+          original_icp_score?: number | null
+          original_icp_temperature?: string | null
+          stc_confidence?: string | null
+          stc_double_matches?: number | null
+          stc_status?: string | null
+          stc_total_score?: number | null
+          stc_triple_matches?: number | null
+        }
+        Update: {
+          cnpj?: string | null
+          company_id?: string | null
+          company_name?: string
+          discard_category?: string
+          discard_reason_description?: string | null
+          discard_reason_id?: string
+          discard_reason_label?: string
+          discarded_at?: string | null
+          discarded_by?: string | null
+          id?: string
+          notes?: string | null
+          original_icp_score?: number | null
+          original_icp_temperature?: string | null
+          stc_confidence?: string | null
+          stc_double_matches?: number | null
+          stc_status?: string | null
+          stc_total_score?: number | null
+          stc_triple_matches?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discarded_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discovery_batches: {
         Row: {
           added_to_bank: number
@@ -7636,6 +7707,71 @@ export type Database = {
           question?: string
         }
         Relationships: []
+      }
+      stc_verification_history: {
+        Row: {
+          cnpj: string | null
+          company_id: string | null
+          company_name: string
+          confidence: string
+          created_at: string | null
+          double_matches: number | null
+          evidences: Json | null
+          id: string
+          queries_executed: number | null
+          single_matches: number | null
+          sources_consulted: number | null
+          status: string
+          total_score: number | null
+          triple_matches: number | null
+          verification_duration_ms: number | null
+          verified_by: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          company_id?: string | null
+          company_name: string
+          confidence: string
+          created_at?: string | null
+          double_matches?: number | null
+          evidences?: Json | null
+          id?: string
+          queries_executed?: number | null
+          single_matches?: number | null
+          sources_consulted?: number | null
+          status: string
+          total_score?: number | null
+          triple_matches?: number | null
+          verification_duration_ms?: number | null
+          verified_by?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          company_id?: string | null
+          company_name?: string
+          confidence?: string
+          created_at?: string | null
+          double_matches?: number | null
+          evidences?: Json | null
+          id?: string
+          queries_executed?: number | null
+          single_matches?: number | null
+          sources_consulted?: number | null
+          status?: string
+          total_score?: number | null
+          triple_matches?: number | null
+          verification_duration_ms?: number | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stc_verification_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suggested_companies: {
         Row: {
