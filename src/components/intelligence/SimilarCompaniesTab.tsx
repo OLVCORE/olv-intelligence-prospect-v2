@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SimilarCompaniesTabProps {
   companyId: string;
@@ -18,21 +18,25 @@ interface SimilarCompaniesTabProps {
 }
 
 interface WebDiscoveredCompany {
+  id: string;
   name: string;
-  cnpj?: string;
-  setor?: string;
-  uf?: string;
-  employees?: number;
-  revenue?: string;
-  website?: string;
-  linkedin_url?: string;
+  cnpj: string | null;
+  setor: string;
+  uf: string;
+  city?: string;
+  employees?: number | null;
+  revenue?: number | null;
+  website?: string | null;
+  linkedin_url?: string | null;
   source: string;
+  discovery_method: string;
   discovered_at: string;
   similarity_score: number;
   needs_enrichment: boolean;
   enrichment_status: string;
+  keywords?: string[];
   already_in_database: boolean;
-  existing_id?: string;
+  existing_id?: string | null;
   raw_data?: any;
 }
 
@@ -43,11 +47,14 @@ interface SimilarCompaniesData {
     new_companies: number;
     already_in_database: number;
     needs_enrichment: number;
+    by_discovery_method: Record<string, number>;
   };
   insights: string[];
   search_criteria: {
+    cnae?: string;
     sector?: string;
     state?: string;
+    keywords: string;
   };
 }
 
@@ -104,6 +111,7 @@ export function SimilarCompaniesTab({
   size 
 }: SimilarCompaniesTabProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
   
   const { data, isLoading, error, refetch } = useQuery({
@@ -236,10 +244,15 @@ export function SimilarCompaniesTab({
           total,
           new_companies: newCompanies,
           already_in_database: existingCompanies,
-          needs_enrichment: newCompanies
+          needs_enrichment: newCompanies,
+          by_discovery_method: {}
         },
         insights,
-        search_criteria: { sector, state }
+        search_criteria: { 
+          sector, 
+          state,
+          keywords: ''
+        }
       };
     },
     enabled: !!companyId && !!companyName,
