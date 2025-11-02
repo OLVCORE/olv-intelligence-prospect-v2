@@ -42,6 +42,47 @@ export function QuarantineReportModal({
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // NORMALIZAR ESTRUTURA DO stcResult (compatibilidade com formatos antigos e novos)
+  const normalizeStcResult = useCallback((data: any) => {
+    if (!data) return null;
+    
+    // Se já está no formato novo com as 3 seções separadas, retornar como está
+    if (data.totvs && data.similares && data.analysis360) {
+      return data;
+    }
+
+    // Se está no formato antigo (flat), converter para o novo formato
+    return {
+      totvs: {
+        status: data.status,
+        confidence: data.confidence,
+        evidences: data.evidences,
+        methodology: data.methodology,
+        tripleMatches: data.tripleMatches,
+        doubleMatches: data.doubleMatches,
+        singleMatches: data.singleMatches,
+        totalScore: data.totalScore,
+      },
+      similares: {
+        companies: data.similarCompanies || [],
+        total: data.similarCompanies?.length || 0,
+        criteria: data.criteria || {},
+      },
+      analysis360: {
+        icpScore: data.icpScore,
+        temperatura: data.temperatura,
+        insights: data.insights || [],
+        swot: data.swot || {},
+        porter: data.porter || {},
+        redesSociais: data.redesSociais || [],
+        marketplaces: data.marketplaces || [],
+        produtos: data.produtos || [],
+        concorrentes: data.concorrentes || [],
+        fontes: data.fontes || [],
+      },
+    };
+  }, []);
+
   // VERIFICAR SE JÁ EXISTE RELATÓRIO SALVO
   useEffect(() => {
     if (!open) return;
@@ -72,7 +113,7 @@ export function QuarantineReportModal({
           
           setHasExistingReport(true);
           setReportDate(quarantineData.relatorio_gerado_em);
-          setStcResult(quarantineData.stc_result);
+          setStcResult(normalizeStcResult(quarantineData.stc_result));
 
           toast.success('📄 Relatório Salvo Carregado', {
             description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')} • Sem consumo de créditos`,
@@ -80,7 +121,7 @@ export function QuarantineReportModal({
         } else {
           console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo. Aguardando ação do usuário...');
           setHasExistingReport(false);
-          setStcResult(null); // Garantir que não tem dados
+          setStcResult(null);
         }
       } catch (error: any) {
         console.error('[RELATÓRIO] Erro ao verificar:', error);
@@ -93,7 +134,7 @@ export function QuarantineReportModal({
     };
 
     verificarRelatorioExistente();
-  }, [open, analysisId]);
+  }, [open, analysisId, normalizeStcResult]);
 
   const handleReject = useCallback(() => {
     setShowDiscard(true);
@@ -394,8 +435,8 @@ export function QuarantineReportModal({
             </div>
             
             <div className="flex items-center gap-2 shrink-0 ml-4">
-              {/* Botão Atualizar (só aparece se já tem relatório) */}
-              {hasExistingReport && (
+              {/* Botão Atualizar (SEMPRE VISÍVEL quando tem relatório) */}
+              {stcResult && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -416,7 +457,7 @@ export function QuarantineReportModal({
                   className="bg-green-600 hover:bg-green-700 gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  Salvar 3 Abas
+                  Salvar Completo (3 Abas)
                 </Button>
               )}
 
@@ -450,8 +491,8 @@ export function QuarantineReportModal({
           <div 
             id="totvs-report-content"
             ref={contentRef}
-            className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6"
-            style={{ minHeight: 0 }}
+            className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 bg-gray-50"
+            style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
