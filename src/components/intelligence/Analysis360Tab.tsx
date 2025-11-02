@@ -56,6 +56,25 @@ export function Analysis360Tab({
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['360-analysis', companyId],
     queryFn: async () => {
+      // Se já é cliente TOTVS (NO-GO), zera o score e não segue com cálculo
+      if (stcResult?.status === 'no-go') {
+        const zeroData: Analysis360Data = {
+          opportunity_score: 0,
+          score_breakdown: {
+            stc_status: {
+              points: 0,
+              max: 100,
+              description: '❌ Empresa JÁ É CLIENTE TOTVS - Não é oportunidade de nova venda',
+            },
+          },
+          timing: 'not_applicable',
+          recommended_products: [],
+          insights: ['❌ Empresa JÁ É CLIENTE TOTVS - Não é oportunidade de nova venda'],
+          generated_at: new Date().toISOString(),
+        };
+        return zeroData;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-360-analysis', {
         body: {
           companyId,
@@ -145,7 +164,8 @@ export function Analysis360Tab({
       immediate: { label: 'Imediato', icon: '⚡', color: 'destructive' },
       short_term: { label: '1-3 meses', icon: '🎯', color: 'default' },
       medium_term: { label: '3-6 meses', icon: '📅', color: 'secondary' },
-      long_term: { label: '6-12 meses', icon: '📆', color: 'outline' }
+      long_term: { label: '6-12 meses', icon: '📆', color: 'outline' },
+      not_applicable: { label: 'N/A', icon: '🚫', color: 'outline' },
     };
     return labels[timing] || labels.long_term;
   };

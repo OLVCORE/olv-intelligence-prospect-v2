@@ -194,7 +194,7 @@ export default function TOTVSCheckCard({
         </TabsList>
 
         {/* ABA 1: DETECÇÃO TOTVS (CONTEÚDO ATUAL) */}
-        <TabsContent value="detection" className="mt-0">
+        <TabsContent value="detection" className="mt-0 max-h-[600px] overflow-y-auto">
           {/* HEADER */}
           <div className="flex justify-between items-start mb-4">
             <div>
