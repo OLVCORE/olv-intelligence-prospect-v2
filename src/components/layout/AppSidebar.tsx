@@ -38,7 +38,8 @@ import {
   LineChart,
   Award,
   DollarSign,
-  History
+  History,
+  XCircle
 } from "lucide-react";
 import {
   Sidebar,
@@ -172,6 +173,18 @@ const menuGroups: MenuGroup[] = [
         icon: Inbox,
         url: "/leads/icp-quarantine",
         description: "Aprove empresas analisadas antes de movê-las para o pool de leads"
+      },
+      {
+        title: "Empresas Descartadas",
+        icon: XCircle,
+        url: "/leads/discarded",
+        description: "Histórico de empresas descartadas com motivos e analytics"
+      },
+      {
+        title: "Histórico STC",
+        icon: Target,
+        url: "/leads/stc-history",
+        description: "Registro completo de todas as verificações TOTVS realizadas"
       },
       {
         title: "Dashboard de Resultados",

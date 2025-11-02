@@ -82,6 +82,7 @@ const LeadsPoolPage = lazy(() => import("./pages/LeadsPoolPage"));
 const LeadsQualifiedPage = lazy(() => import("./pages/LeadsQualifiedPage"));
 const ICPQuarantinePage = lazy(() => import("./pages/Leads/ICPQuarantine"));
 const DiscardedCompaniesPage = lazy(() => import("./pages/Leads/DiscardedCompanies"));
+const STCHistoryPage = lazy(() => import("./pages/Leads/STCHistory"));
 const SystemHealthPage = lazy(() => import("./pages/Leads/SystemHealth"));
 const EmailSequencesPage = lazy(() => import("./pages/EmailSequencesPage"));
 const SmartTasksPage = lazy(() => import("./pages/SmartTasksPage"));
@@ -767,6 +768,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <DiscardedCompaniesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leads/stc-history"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <STCHistoryPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
