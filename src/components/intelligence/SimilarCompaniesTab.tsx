@@ -1458,7 +1458,7 @@ export function SimilarCompaniesTab({
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-w-xs z-50">
+                    <TooltipContent side="bottom" align="start" className="max-w-xs z-[9999] relative">
                       <p className="font-semibold mb-2">🏆 ICP Perfeito (90-100)</p>
                       <p className="text-sm mb-2">Empresas com todos os critérios ideais:</p>
                       <ul className="text-xs space-y-1">
@@ -1500,7 +1500,7 @@ export function SimilarCompaniesTab({
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-w-xs z-50">
+                    <TooltipContent side="bottom" align="start" className="max-w-xs z-[9999] relative">
                       <p className="font-semibold mb-2">🔥 Alta Qualificação (70-89)</p>
                       <p className="text-sm mb-2">Empresas muito boas, com pequenos pontos de melhoria:</p>
                       <ul className="text-xs space-y-1">
@@ -1541,7 +1541,7 @@ export function SimilarCompaniesTab({
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-w-xs z-50">
+                    <TooltipContent side="bottom" align="start" className="max-w-xs z-[9999] relative">
                       <p className="font-semibold mb-2">⭐ Bom Potencial (50-69)</p>
                       <p className="text-sm mb-2">Empresas qualificadas que precisam de nutrição:</p>
                       <ul className="text-xs space-y-1">
@@ -1583,7 +1583,7 @@ export function SimilarCompaniesTab({
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="center" className="max-w-xs z-50">
+                    <TooltipContent side="bottom" align="center" className="max-w-xs z-[9999] relative">
                       <p className="font-semibold mb-2">⚠️ Precisa Enriquecer (30-49)</p>
                       <p className="text-sm mb-2">Empresas com perfil incompleto:</p>
                       <ul className="text-xs space-y-1">
@@ -1625,7 +1625,7 @@ export function SimilarCompaniesTab({
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" align="end" className="max-w-xs z-50">
+                    <TooltipContent side="bottom" align="end" className="max-w-xs z-[9999] relative">
                       <p className="font-semibold mb-2">📊 Dados Mínimos (0-29)</p>
                       <p className="text-sm mb-2">Empresas com informações muito limitadas:</p>
                       <ul className="text-xs space-y-1">
