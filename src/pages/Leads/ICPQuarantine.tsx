@@ -1200,17 +1200,6 @@ export default function ICPQuarantine() {
                     </Button>
                   </TableHead>
                   <TableHead className="min-w-[100px]"><span className="font-semibold">Status Análise</span></TableHead>
-                  <TableHead className="min-w-[90px]">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('status')}
-                      className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
-                    >
-                      <span className="font-semibold">TOTVS</span>
-                      <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
-                    </Button>
-                  </TableHead>
                   <TableHead className="min-w-[140px]"><span className="font-semibold">Website</span></TableHead>
                   <TableHead className="min-w-[150px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
                   <TableHead className="min-w-[70px]"><span className="font-semibold">Agent</span></TableHead>
@@ -1220,13 +1209,13 @@ export default function ICPQuarantine() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
@@ -1343,12 +1332,6 @@ export default function ICPQuarantine() {
                       <QuarantineEnrichmentStatusBadge 
                         rawAnalysis={rawData}
                         showProgress
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TOTVSCheckCard 
-                        companyId={company.id}
-                        companyName={company.razao_social}
                       />
                     </TableCell>
                     <TableCell>
