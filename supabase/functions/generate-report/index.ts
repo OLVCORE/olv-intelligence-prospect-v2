@@ -119,14 +119,8 @@ async function verificarTOTVS(companyName: string, cnpj?: string) {
             matchType: 'double',
             score: 2,
           });
-        } else if (matchType === 'single') {
+        } else {
           singleMatches++;
-          evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
-            matchType: 'single',
-            score: 1,
-          });
         }
       }
     } catch (error: any) {

@@ -594,7 +594,7 @@ export default function QuarantineReportModal({
           </div>
 
           <div className="flex items-center gap-2 ml-4">
-            {/* Botão Analisar Empresa - SEMPRE VISÍVEL */}
+            {/* Botão Analisar - Unificado */}
             <Button
               onClick={handleAnalyzeCompany}
               disabled={loading}
@@ -610,23 +610,10 @@ export default function QuarantineReportModal({
               ) : (
                 <>
                   <Search className="w-4 h-4 mr-2" />
-                  Analisar Empresa
+                  Analisar
                 </>
               )}
             </Button>
-
-            {/* Botão Atualizar - SEMPRE VISÍVEL quando tem relatório */}
-            {stcResult && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAtualizarAnalise}
-                className="text-orange-600 border-orange-600 hover:bg-orange-50"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
-            )}
 
             {/* Botão Salvar - só aparece se ainda não salvou */}
             {!hasExistingReport && stcResult && (
@@ -637,7 +624,7 @@ export default function QuarantineReportModal({
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Salvar (3 Abas)
+                Salvar
               </Button>
             )}
 

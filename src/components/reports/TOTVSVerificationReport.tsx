@@ -346,7 +346,7 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                           </div>
                         )}
 
-                        {/* Ações */}
+                        {/* Ações com ícones minimalistas */}
                         <div className="flex items-center gap-2 pt-2 border-t border-border/50">
                           {evidence.source && (
                             <>
@@ -354,20 +354,20 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                                 variant="outline"
                                 size="sm"
                                 onClick={() => window.open(evidence.source, '_blank')}
-                                className="h-7 text-xs gap-1.5"
+                                className="h-8 text-xs gap-1.5 flex-1"
                               >
-                                <ExternalLink className="w-3 h-3" />
-                                Abrir Fonte
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Ver Fonte
                               </Button>
                               
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => copyToClipboard(evidence.source, 'URL')}
-                                className="h-7 text-xs gap-1.5"
+                                className="h-8 w-8"
+                                title="Copiar URL"
                               >
-                                <Copy className="w-3 h-3" />
-                                Copiar URL
+                                <Copy className="w-3.5 h-3.5" />
                               </Button>
                             </>
                           )}
@@ -375,12 +375,12 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                           {evidence.terms && (
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => copyToClipboard(evidence.terms.join(' '), 'Termos de busca')}
-                              className="h-7 text-xs gap-1.5"
+                              className="h-8 w-8"
+                              title="Copiar termos (Ctrl+F)"
                             >
-                              <FileText className="w-3 h-3" />
-                              Copiar Termos
+                              <Search className="w-3.5 h-3.5" />
                             </Button>
                           )}
                         </div>
