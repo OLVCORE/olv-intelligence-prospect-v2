@@ -96,7 +96,7 @@ export default function QuarantineReportModal({
               .eq('company_id', companyId)
               .order('created_at', { ascending: false })
               .limit(1)
-              .single();
+              .maybeSingle();
             
             if (!totvsError && totvsReport) {
               const evidences = (totvsReport.evidences as any[]) || [];
@@ -142,7 +142,7 @@ export default function QuarantineReportModal({
               .eq('company_id', companyId)
               .order('created_at', { ascending: false })
               .limit(1)
-              .single();
+              .maybeSingle();
             
             if (!totvsError && totvsReport) {
               const evidences = (totvsReport.evidences as any[]) || [];
@@ -280,7 +280,7 @@ export default function QuarantineReportModal({
           .eq('company_id', companyId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         if (!totvsError && totvsReport) {
           const evidences = (totvsReport.evidences as any[]) || [];

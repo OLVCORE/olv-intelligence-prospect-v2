@@ -50,7 +50,7 @@ export const useLatestTOTVSReport = (companyId: string | undefined) => {
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data as TOTVSDetectionReport | null;
