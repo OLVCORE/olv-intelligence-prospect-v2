@@ -1,13 +1,14 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { collect50Sources } from './sources.ts';
+import { Evidence } from './matching.ts';
+import { generateSwot, generatePorter, generateInsights } from './analysis.ts';
+import { detectCompetitors } from './competitive.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY')!;
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
 
 function log(level: string, module: string, message: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -23,23 +24,75 @@ serve(async (req) => {
   }
 
   try {
-    const { companyName, cnpj } = await req.json();
+    const { companyName, cnpj, website } = await req.json();
     log('INFO', 'REPORT', `🚀 Gerando relatório: ${companyName}`);
-    log('INFO', 'ENV', `SERPER:${SERPER_API_KEY ? 'set' : 'missing'} | OPENAI:${OPENAI_API_KEY ? 'set' : 'missing'}`);
 
     const startTime = Date.now();
 
-    // ABA 1: TOTVS
-    log('INFO', 'REPORT', '📋 Aba 1: Verificação TOTVS...');
-    const totvsResult = await verificarTOTVS(companyName, cnpj);
+    // NOVA IMPLEMENTAÇÃO: 50 FONTES
+    log('INFO', 'REPORT', '📋 Aba 1: Verificação TOTVS (50 fontes)...');
+    const allEvidences = await collect50Sources(companyName, cnpj || '', website || '');
+    
+    // Calcular estatísticas
+    const quintuple = allEvidences.filter(e => e.matchLevel === 5);
+    const quadruple = allEvidences.filter(e => e.matchLevel === 4);
+    const triple = allEvidences.filter(e => e.matchLevel === 3);
+    const double = allEvidences.filter(e => e.matchLevel === 2);
+    
+    const totalScore = (quintuple.length * 5) + (quadruple.length * 4) + (triple.length * 3) + (double.length * 2);
+    const isClienteTOTVS = quintuple.length > 0 || totalScore > 20;
+    const confidence = quintuple.length > 0 ? 98 : 
+                      quadruple.length > 2 ? 90 : 
+                      triple.length > 5 ? 75 : 50;
+    
+    const totvsResult = {
+      status: isClienteTOTVS ? 'cliente_totvs' : 'nao_cliente_totvs',
+      confidence,
+      evidences: allEvidences,
+      methodology: {
+        sources_checked: 50,
+        total_searches: allEvidences.length,
+        total_matches: allEvidences.length,
+      },
+      quintupleMatches: quintuple.length,
+      quadrupleMatches: quadruple.length,
+      tripleMatches: triple.length,
+      doubleMatches: double.length,
+      totalScore,
+    };
+    
+    log('INFO', 'REPORT', `✅ TOTVS Complete: ${allEvidences.length} evidências | Score: ${totalScore} | Confidence: ${confidence}%`);
 
     // ABA 2: SIMILARES
     log('INFO', 'REPORT', '👥 Aba 2: Empresas similares...');
     const similarCompanies = await buscarEmpresasSimilares(companyName);
 
-    // ABA 3: 360°
-    log('INFO', 'REPORT', '🎯 Aba 3: Análise 360°...');
-    const analysis360 = await analisar360(companyName, totvsResult, similarCompanies);
+    // ABA 3: 360° COM NOVAS ANÁLISES AI
+    log('INFO', 'REPORT', '🎯 Aba 3: Análise 360° (GPT-4o-mini)...');
+    const swot = await generateSwot({ name: companyName }, allEvidences);
+    const porter = await generatePorter({ name: companyName }, allEvidences);
+    const insights = await generateInsights({ name: companyName }, allEvidences);
+    
+    const analysis360 = {
+      icpScore: Math.min(100, Math.round(totalScore * 1.5)),
+      temperatura: totalScore >= 30 ? 'hot' : totalScore >= 15 ? 'warm' : 'cold',
+      swot,
+      porter,
+      insights,
+      redesSociais: {
+        linkedin: { followers: 0 },
+        facebook: { followers: 0 },
+        instagram: { followers: 0 },
+        twitter: { followers: 0 },
+      },
+      marketplaces: [],
+      produtos: [],
+      fontes: ['Serper', 'Jina AI', 'GitHub API', 'YouTube API', 'OpenAI GPT-4o-mini'],
+    };
+
+    // ABA 4: INTELIGÊNCIA COMPETITIVA (NOVA)
+    log('INFO', 'REPORT', '🔍 Aba 4: Inteligência Competitiva...');
+    const competitors = await detectCompetitors({ name: companyName }, allEvidences);
 
     const executionTime = Date.now() - startTime;
 
@@ -48,12 +101,14 @@ serve(async (req) => {
       confidence: totvsResult.confidence,
       evidences: totvsResult.evidences,
       methodology: totvsResult.methodology,
+      quintupleMatches: totvsResult.quintupleMatches,
+      quadrupleMatches: totvsResult.quadrupleMatches,
       tripleMatches: totvsResult.tripleMatches,
       doubleMatches: totvsResult.doubleMatches,
-      singleMatches: totvsResult.singleMatches,
       totalScore: totvsResult.totalScore,
       similarCompanies: similarCompanies,
       analysis360: analysis360,
+      competitors: competitors,
       icpScore: analysis360.icpScore,
       temperatura: analysis360.temperatura,
       insights: analysis360.insights,
@@ -63,11 +118,11 @@ serve(async (req) => {
       metadata: {
         analyzed_at: new Date().toISOString(),
         execution_time_ms: executionTime,
-        total_sources: 17,
+        total_sources: 50,
       }
     };
 
-    log('INFO', 'REPORT', `✅ Relatório gerado em ${executionTime}ms`);
+    log('INFO', 'REPORT', `✅ Relatório completo gerado em ${executionTime}ms`);
 
     return new Response(JSON.stringify(resultado), {
       status: 200,
