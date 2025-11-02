@@ -265,6 +265,14 @@ export default function CompetitiveIntelligencePage() {
                 onFilterChange={handleFilterChange}
               />
 
+              {/* Debug Info */}
+              <Alert className="bg-yellow-500/10 border-yellow-500/20">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-sm">
+                  <strong>🔍 Debug Info:</strong> Empresa selecionada: {company.name} | ID: {company.id?.slice(0, 8)}
+                </AlertDescription>
+              </Alert>
+
               <div className="grid gap-6 md:grid-cols-2">
                 <TOTVSCheckCard
                   companyId={company.id}
