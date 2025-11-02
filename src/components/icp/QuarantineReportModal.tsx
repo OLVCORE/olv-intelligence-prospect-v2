@@ -119,7 +119,7 @@ export function QuarantineReportModal({
     setLoading(false);
   }, []);
 
-  // FUNÇÃO PARA SALVAR RELATÓRIO
+  // FUNÇÃO PARA SALVAR RELATÓRIO (3 ABAS SIMULTANEAMENTE)
   const handleSalvarRelatorio = useCallback(async () => {
     if (!stcResult) {
       toast.error('Nenhum relatório para salvar');
@@ -127,8 +127,145 @@ export function QuarantineReportModal({
     }
 
     try {
-      console.log('[RELATÓRIO] 💾 Salvando relatório no banco...');
+      console.log('[RELATÓRIO] 💾 Salvando relatório completo (3 abas)...');
+      
+      toast.info('💾 Salvando Relatório Completo', {
+        description: 'Gerando PDFs das 3 abas...',
+      });
 
+      // ======================================== 
+      // GERAR PDF DE CADA ABA SEPARADAMENTE
+      // ========================================
+      const generateTabPDF = async (tabId: string, tabName: string, reportType: string) => {
+        const element = document.getElementById(tabId);
+        if (!element) {
+          console.warn(`[PDF] Elemento ${tabId} não encontrado, pulando...`);
+          return null;
+        }
+
+        // Importar html2pdf
+        const html2pdf = (await import('html2pdf.js')).default;
+
+        // Criar elemento temporário com conteúdo formatado
+        const tempElement = document.createElement('div');
+        tempElement.style.position = 'absolute';
+        tempElement.style.left = '-9999px';
+        tempElement.style.width = '210mm';
+        tempElement.style.padding = '20px';
+        tempElement.style.backgroundColor = 'white';
+        tempElement.style.color = 'black';
+
+        // Adicionar cabeçalho
+        tempElement.innerHTML = `
+          <div style="margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+            <h1 style="font-size: 24px; margin: 0 0 10px 0; color: #000;">${companyName}</h1>
+            <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #666;">${tabName}</h2>
+            <p style="margin: 5px 0; color: #666;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
+        `;
+
+        // Clonar e adicionar conteúdo da aba
+        const clonedContent = element.cloneNode(true) as HTMLElement;
+        tempElement.appendChild(clonedContent);
+
+        // Adicionar ao DOM temporariamente
+        document.body.appendChild(tempElement);
+
+        try {
+          // Gerar PDF
+          const opt = {
+            margin: 10,
+            filename: `${reportType}.pdf`,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: { 
+              scale: 2, 
+              useCORS: true, 
+              scrollY: 0, 
+              scrollX: 0,
+              windowHeight: tempElement.scrollHeight,
+            },
+            jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          };
+
+          const blob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
+
+          // Converter para base64
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+              const base64 = reader.result as string;
+              resolve(base64.split(',')[1]);
+            };
+            reader.readAsDataURL(blob);
+          });
+
+          const base64PDF = await base64Promise;
+
+          return {
+            tipo: reportType,
+            titulo: tabName,
+            file_name: `${reportType}-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
+            file_url: `data:application/pdf;base64,${base64PDF}`,
+            file_size: blob.size,
+            content_text: element.innerText.substring(0, 5000),
+          };
+        } finally {
+          // Remover elemento temporário
+          document.body.removeChild(tempElement);
+        }
+      };
+
+      // ======================================== 
+      // GERAR PDFs DAS 3 ABAS EM PARALELO
+      // ========================================
+      const [pdf1, pdf2, pdf3] = await Promise.all([
+        generateTabPDF('totvs-detection-tab', 'Verificação TOTVS', 'totvs_verification'),
+        generateTabPDF('totvs-similar-tab', 'Empresas Similares', 'similar_companies'),
+        generateTabPDF('totvs-analysis-tab', 'Análise 360°', 'analysis_360'),
+      ]);
+
+      console.log('[RELATÓRIO] PDFs gerados:', { 
+        pdf1: !!pdf1, 
+        pdf2: !!pdf2, 
+        pdf3: !!pdf3 
+      });
+
+      // ======================================== 
+      // SALVAR OS 3 PDFs NO BANCO
+      // ========================================
+      const documentsToInsert = [pdf1, pdf2, pdf3]
+        .filter(pdf => pdf !== null)
+        .map(pdf => ({
+          quarantine_id: analysisId,
+          company_id: companyId || null,
+          tipo: pdf!.tipo,
+          titulo: pdf!.titulo,
+          descricao: `Relatório gerado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`,
+          file_name: pdf!.file_name,
+          file_url: pdf!.file_url,
+          file_size: pdf!.file_size,
+          mime_type: 'application/pdf',
+          content_text: pdf!.content_text,
+          status: 'active',
+        }));
+
+      if (documentsToInsert.length === 0) {
+        throw new Error('Nenhum PDF foi gerado com sucesso');
+      }
+
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('company_documents')
+        .insert(documentsToInsert)
+        .select();
+
+      if (documentsError) throw documentsError;
+
+      console.log('[RELATÓRIO] Documentos salvos:', documentsData.length);
+
+      // ======================================== 
+      // MARCAR RELATÓRIO COMO SALVO
+      // ========================================
       const { error: updateError } = await supabase
         .from('icp_analysis_results')
         .update({
@@ -140,13 +277,13 @@ export function QuarantineReportModal({
 
       if (updateError) throw updateError;
 
-      console.log('[RELATÓRIO] ✅ Relatório salvo com sucesso!');
+      console.log('[RELATÓRIO] ✅ Relatório completo salvo com sucesso!');
 
       setHasExistingReport(true);
       setReportDate(new Date().toISOString());
 
-      toast.success('✓ Relatório Salvo', {
-        description: 'O relatório foi salvo e não será reprocessado',
+      toast.success('✓ Relatório Completo Salvo', {
+        description: `${documentsData.length} documentos salvos no sistema`,
       });
 
     } catch (error: any) {
@@ -155,7 +292,7 @@ export function QuarantineReportModal({
         description: error.message,
       });
     }
-  }, [stcResult, analysisId]);
+  }, [stcResult, analysisId, companyName, companyId]);
 
   const handleActivatePipeline = useCallback(async () => {
     setActivating(true);
@@ -278,7 +415,7 @@ export function QuarantineReportModal({
                   className="bg-green-600 hover:bg-green-700 gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  Salvar
+                  Salvar 3 Abas
                 </Button>
               )}
 
@@ -330,10 +467,10 @@ export function QuarantineReportModal({
                 <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                   <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
                     <CheckCircle className="w-5 h-5" />
-                    <span className="font-semibold">Relatório em Cache</span>
+                    <span className="font-semibold">Relatório em Cache - 3 Documentos Salvos</span>
                   </div>
                   <p className="text-sm text-green-700 dark:text-green-300 mt-2">
-                    Este relatório foi salvo anteriormente. Use o botão "Atualizar" se precisar de dados mais recentes.
+                    Este relatório foi salvo anteriormente com todas as 3 abas (TOTVS + Similares + 360°). Use o botão "Atualizar" se precisar de dados mais recentes.
                   </p>
                 </div>
                 <TOTVSCheckCard
@@ -353,13 +490,7 @@ export function QuarantineReportModal({
                 cnpj={cnpj}
                 domain={domain}
                 autoVerify={true}
-                onResult={(result) => {
-                  setStcResult(result);
-                  // Auto-salvar após primeira análise
-                  if (result && !hasExistingReport) {
-                    setTimeout(() => handleSalvarRelatorio(), 1000);
-                  }
-                }}
+                onResult={setStcResult}
               />
             )}
           </div>

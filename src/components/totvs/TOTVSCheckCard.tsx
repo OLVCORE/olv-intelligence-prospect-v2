@@ -194,7 +194,7 @@ export default function TOTVSCheckCard({
         </TabsList>
 
         {/* ABA 1: DETECÇÃO TOTVS (CONTEÚDO ATUAL) */}
-        <TabsContent value="detection" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="detection" id="totvs-detection-tab" className="mt-0 max-h-[600px] overflow-y-auto">
           {/* HEADER */}
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -463,7 +463,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 2: EMPRESAS SIMILARES (NOVO) */}
-        <TabsContent value="similar" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="similar" id="totvs-similar-tab" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <SimilarCompaniesTab
               companyId={companyId}
@@ -480,7 +480,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 3: ANÁLISE 360° (NOVO) */}
-        <TabsContent value="analysis" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="analysis" id="totvs-analysis-tab" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <Analysis360Tab
               companyId={companyId}
