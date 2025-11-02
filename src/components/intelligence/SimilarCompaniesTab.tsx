@@ -94,8 +94,8 @@ export function SimilarCompaniesTab({
 
       if (!companies || companies.length === 0) {
         console.log('[SIMILAR] Nenhuma empresa encontrada mesmo com filtros. Tentando somente por setor...');
-        let alt = supabase
-          .from('quarantine_companies')
+        let alt: any = sb
+          .from('quarantine_companies' as any)
           .select('id, name, cnpj, setor, uf, employees, revenue, is_disqualified')
           .neq('id', companyId)
           .eq('is_disqualified', false);

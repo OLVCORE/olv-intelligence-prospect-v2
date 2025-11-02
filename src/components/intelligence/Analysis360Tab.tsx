@@ -56,8 +56,45 @@ export function Analysis360Tab({
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['360-analysis', companyId],
     queryFn: async () => {
-      // Se já é cliente TOTVS (NO-GO), zera o score e não segue com cálculo
+      // Se já é cliente TOTVS (NO-GO), insights de upsell/cross-sell
       if (stcResult?.status === 'no-go') {
+        const insights: string[] = [];
+        
+        insights.push('❌ CLIENTE EXISTENTE - Não é oportunidade de NOVO contrato.');
+        insights.push('');
+        insights.push('💰 ESTRATÉGIA DE UPSELL/CROSS-SELL:');
+
+        if (similarCompanies?.statistics?.using_totvs > 0) {
+          const clientsWithTotvs = (similarCompanies.similar_companies || [])
+            .filter((c: any) => c.uses_totvs)
+            .slice(0, 3);
+
+          if (clientsWithTotvs.length > 0) {
+            insights.push('');
+            insights.push('🎯 BENCHMARKING - Analise o que OUTROS CLIENTES TOTVS do mesmo setor estão usando:');
+            clientsWithTotvs.forEach((client: any) => {
+              insights.push(`   • ${client.name} (${client.employees || '?'} funcionários)`);
+            });
+            insights.push('');
+            insights.push('📞 AÇÃO: Contatar gerente de contas e comparar produtos:');
+            insights.push('   • Se concorrentes têm Fluig e cliente não → CROSS-SELL');
+            insights.push('   • Se concorrentes têm módulos adicionais → UPSELL');
+            insights.push('   • Se concorrentes migraram para cloud → UPGRADE');
+          }
+        }
+
+        insights.push('');
+        insights.push('💡 PRODUTOS PARA EXPLORAR:');
+        insights.push('   • TOTVS Fluig (automação de processos)');
+        insights.push('   • TOTVS Techfin (gestão financeira avançada)');
+        insights.push('   • TOTVS Carol (IA e analytics)');
+        insights.push('   • Migração para TOTVS Cloud');
+        insights.push('');
+        insights.push('🔥 PITCH: "Seus concorrentes estão expandindo o uso de TOTVS. Vamos garantir que você não fique para trás?"');
+        insights.push('');
+        insights.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        insights.push('📞 PRÓXIMO PASSO: Contatar gerente de contas para explorar upsell/cross-sell');
+
         const zeroData: Analysis360Data = {
           opportunity_score: 0,
           score_breakdown: {
@@ -69,25 +106,159 @@ export function Analysis360Tab({
           },
           timing: 'not_applicable',
           recommended_products: [],
-          insights: ['❌ Empresa JÁ É CLIENTE TOTVS - Não é oportunidade de nova venda'],
+          insights,
           generated_at: new Date().toISOString(),
         };
         return zeroData;
       }
 
-      const { data, error } = await supabase.functions.invoke('generate-360-analysis', {
-        body: {
-          companyId,
-          companyName,
-          stcResult,
-          similarCompanies
-        }
-      });
+      // Calcular score localmente (não usar edge function)
+      let opportunityScore = 0;
+      const scoreBreakdown: Record<string, ScoreBreakdownItem> = {};
+      let timing = 'medium_term';
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Erro ao gerar análise 360°');
-      
-      return data.data as Analysis360Data;
+      // 1. STATUS STC (0-30 pts)
+      if (stcResult?.status === 'go') {
+        opportunityScore += 30;
+        scoreBreakdown['stc_status'] = {
+          points: 30,
+          max: 30,
+          description: '✅ NÃO é cliente TOTVS - Oportunidade confirmada'
+        };
+      } else if (stcResult?.status === 'revisar') {
+        opportunityScore += 15;
+        scoreBreakdown['stc_status'] = {
+          points: 15,
+          max: 30,
+          description: '⚠️ Status inconclusivo - Requer validação manual'
+        };
+      } else {
+        opportunityScore += 5;
+        scoreBreakdown['stc_status'] = {
+          points: 5,
+          max: 30,
+          description: '⚠️ Verificação TOTVS não realizada'
+        };
+      }
+
+      // 2. CONTEXTO DE MERCADO (0-30 pts) - baseado em penetração TOTVS
+      const marketPenetration = similarCompanies?.statistics?.percentage_totvs || 0;
+      let marketPoints = 0;
+
+      if (marketPenetration >= 50) {
+        marketPoints = 30; // Mercado maduro = alta urgência
+      } else if (marketPenetration >= 30) {
+        marketPoints = 20; // Penetração moderada
+      } else if (marketPenetration >= 10) {
+        marketPoints = 10; // Mercado em expansão
+      } else {
+        marketPoints = 5; // Oceano azul
+      }
+
+      opportunityScore += marketPoints;
+      scoreBreakdown['market_context'] = {
+        points: marketPoints,
+        max: 30,
+        description: `${marketPenetration.toFixed(0)}% dos concorrentes usam TOTVS`,
+        factors: [
+          `Total de similares: ${similarCompanies?.statistics?.total || 0}`,
+          `Clientes TOTVS: ${similarCompanies?.statistics?.using_totvs || 0}`
+        ]
+      };
+
+      // 3. TAMANHO DA EMPRESA (0-20 pts)
+      opportunityScore += 15;
+      scoreBreakdown['company_size'] = {
+        points: 15,
+        max: 20,
+        description: 'Porte médio - fit com soluções TOTVS'
+      };
+
+      // 4. ENGAGEMENT (0-20 pts)
+      opportunityScore += 10;
+      scoreBreakdown['engagement'] = {
+        points: 10,
+        max: 20,
+        description: 'Engajamento em análise - requer prospecção ativa'
+      };
+
+      // DEFINIR TIMING
+      if (opportunityScore >= 70) {
+        timing = 'immediate';
+      } else if (opportunityScore >= 50) {
+        timing = 'short_term';
+      } else if (opportunityScore >= 30) {
+        timing = 'medium_term';
+      } else {
+        timing = 'long_term';
+      }
+
+      // INSIGHTS COM VISÃO DE HUNTER
+      const finalInsights: string[] = [];
+
+      if (opportunityScore >= 70) {
+        finalInsights.push('🔥 LEAD ULTRA-QUENTE! PRIORIDADE MÁXIMA!');
+        finalInsights.push('⚡ AÇÃO: Ligar AGORA e agendar reunião presencial');
+        finalInsights.push('💰 Usar URGÊNCIA e mostrar PROVA SOCIAL dos concorrentes');
+      } else if (opportunityScore >= 50) {
+        finalInsights.push('🔥 LEAD QUENTE! Alta probabilidade de conversão.');
+        finalInsights.push('🎯 PLANO: Contato inicial em 7 dias via Email + LinkedIn + Telefone');
+        finalInsights.push('💡 Enviar case de sucesso de empresa similar');
+      } else if (opportunityScore >= 30) {
+        finalInsights.push('⚠️ LEAD MORNO. Requer nurturing estratégico.');
+        finalInsights.push('📅 ESTRATÉGIA: Adicionar em sequência de email marketing (30-60 dias)');
+        finalInsights.push('📊 Monitorar sinais de intenção de compra');
+      } else {
+        finalInsights.push('❄️ LEAD FRIO. Nurturing de longo prazo.');
+        finalInsights.push('📆 ESTRATÉGIA: Manter em newsletter e reavaliar trimestralmente');
+      }
+
+      // CONTEXTO DE MERCADO
+      if (similarCompanies?.statistics) {
+        const { percentage_totvs, using_totvs } = similarCompanies.statistics;
+
+        finalInsights.push('');
+        finalInsights.push('📊 CONTEXTO DE MERCADO:');
+
+        if (percentage_totvs >= 50) {
+          finalInsights.push(`   • ${percentage_totvs.toFixed(0)}% dos concorrentes JÁ USAM TOTVS`);
+          finalInsights.push(`   • ARGUMENTO: "Você está perdendo competitividade"`);
+        } else if (percentage_totvs >= 30) {
+          finalInsights.push(`   • ${percentage_totvs.toFixed(0)}% do mercado já migrou para TOTVS`);
+          finalInsights.push(`   • ARGUMENTO: "Seja parte da transformação digital do setor"`);
+        } else {
+          finalInsights.push(`   • Apenas ${percentage_totvs.toFixed(0)}% do mercado usa TOTVS`);
+          finalInsights.push(`   • ARGUMENTO: "Ganhe vantagem competitiva sendo early adopter"`);
+        }
+
+        if (using_totvs > 0) {
+          finalInsights.push('');
+          finalInsights.push('🎯 PROVA SOCIAL DISPONÍVEL:');
+          finalInsights.push(`   • ${using_totvs} concorrentes diretos já são clientes`);
+        }
+      }
+
+      // CALL-TO-ACTION FINAL
+      finalInsights.push('');
+      finalInsights.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      if (opportunityScore >= 50) {
+        finalInsights.push('📞 PRÓXIMO PASSO: LIGAR AGORA e agendar reunião');
+      } else if (opportunityScore >= 30) {
+        finalInsights.push('📧 PRÓXIMO PASSO: Iniciar sequência de nurturing');
+      } else {
+        finalInsights.push('📊 PRÓXIMO PASSO: Monitorar e reavaliar trimestralmente');
+      }
+
+      console.log('[360] Análise concluída:', { opportunityScore, timing });
+
+      return {
+        opportunity_score: opportunityScore,
+        score_breakdown: scoreBreakdown,
+        timing,
+        recommended_products: [],
+        insights: finalInsights,
+        generated_at: new Date().toISOString()
+      } as Analysis360Data;
     },
     enabled: !!companyId,
     staleTime: 5 * 60 * 1000,
