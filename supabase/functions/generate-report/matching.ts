@@ -13,92 +13,109 @@ export interface Evidence {
   timestamp: string;
 }
 
-export function analyzeMatchLevel(text: string, companyName: string): {
+// ============================================
+// LÓGICA CORRETA DE MATCHING - VERSÃO FINAL
+// ============================================
+export function analyzeMatchLevel(
+  text: string,
+  companyName: string
+): {
   matchLevel: 2 | 3 | 4 | 5;
   components: string[];
   confidence: number;
 } {
   const lowerText = text.toLowerCase();
   const lowerCompany = companyName.toLowerCase();
-  
-  // Extrair palavras-chave do nome da empresa (ignorar "ltda", "sa", etc)
+
+  // Extrair palavras-chave da empresa (remover stopwords/termos curtos)
   const companyKeywords = lowerCompany
     .replace(/\s*-\s*/g, ' ')
-    .replace(/\b(ltda|sa|s\.a\.|industria|de|produtos|e|do|da|dos|das)\b/g, '')
     .trim()
     .split(/\s+/)
-    .filter(w => w.length > 3);
-  
-  // Verificar presença de TOTVS
-  const hasTOTVS = lowerText.includes('totvs') || 
-                   lowerText.includes('protheus') || 
-                   lowerText.includes('rm totvs') ||
-                   lowerText.includes('datasul') ||
-                   lowerText.includes('fluig');
-  
-  // Verificar presença da empresa (match parcial)
-  const hasCompany = companyKeywords.some(kw => lowerText.includes(kw));
-  
-  // ⚠️ CRUCIAL: NÃO REJEITAR EVIDÊNCIAS!
-  // O Serper só retorna resultados relacionados à query (que já inclui TOTVS)
-  // Aceitar qualquer evidência que tenha TOTVS OU empresa
-  
-  if (!hasTOTVS && !hasCompany) {
-    // Apenas rejeitar se não tem NADA
-    return { matchLevel: 2, components: [], confidence: 0 };
+    .filter((w) => w.length > 3);
+
+  // Produtos TOTVS e variações comuns
+  const totvsProducts = ['totvs', 'protheus', 'rm totvs', 'datasul', 'fluig', 'winthor'];
+  const hasTOTVS = totvsProducts.some((p) => lowerText.includes(p));
+
+  // Empresa presente (match parcial por palavras-chave)
+  const hasCompany = companyKeywords.some((kw) => lowerText.includes(kw));
+
+  // Termos de uso/implementação
+  const usageTerms = [
+    'cliente',
+    'usa',
+    'utiliza',
+    'implementou',
+    'adotou',
+    'implantou',
+    'contratou',
+    'escolheu',
+    'migrou',
+    'sistema',
+    'erp',
+    'gestão',
+    'solução',
+    'software',
+    'plataforma',
+  ];
+  const hasUsage = usageTerms.some((t) => lowerText.includes(t));
+
+  // Termos de confirmação forte
+  const strongTerms = ['cliente totvs', 'usa totvs', 'utiliza totvs', 'implementou totvs'];
+  const hasStrong = strongTerms.some((t) => lowerText.includes(t));
+
+  // ========================================
+  // CLASSIFICAÇÃO (5 níveis)
+  // ========================================
+
+  // QUINTUPLE (5 pontos): Empresa + TOTVS + Confirmação Forte
+  if (hasCompany && hasTOTVS && hasStrong) {
+    return {
+      matchLevel: 5,
+      components: [companyName, 'TOTVS', 'Confirmação Forte'],
+      confidence: 98,
+    };
   }
-  
-  // Iniciar classificação
-  let matchLevel: 2 | 3 | 4 | 5 = 2;
-  const components: string[] = [];
-  
-  if (hasCompany) components.push(companyName);
-  if (hasTOTVS) components.push('TOTVS');
-  
-  // TRIPLE: Solução mencionada?
-  const solutions = ['protheus', 'rm', 'datasul', 'fluig', 'winthor', 'logix'];
-  if (solutions.some(sol => lowerText.includes(sol))) {
-    matchLevel = 3;
-    components.push('Solução');
+
+  // QUADRUPLE (4 pontos): Empresa + TOTVS + Uso
+  if (hasCompany && hasTOTVS && hasUsage) {
+    return {
+      matchLevel: 4,
+      components: [companyName, 'TOTVS', 'Contexto de Uso'],
+      confidence: 90,
+    };
   }
-  
-  // QUADRUPLE: Módulo mencionado?
-  const modules = ['financeiro', 'controladoria', 'estoque', 'compras', 'produção', 'fiscal', 'contábil', 'rh', 'folha'];
-  if (modules.some(mod => lowerText.includes(mod))) {
-    matchLevel = 4;
-    components.push('Módulo');
+
+  // TRIPLE (3 pontos): Empresa + TOTVS (ambos presentes)
+  if (hasCompany && hasTOTVS) {
+    return {
+      matchLevel: 3,
+      components: [companyName, 'TOTVS'],
+      confidence: 75,
+    };
   }
-  
-  // QUINTUPLE: Detalhes técnicos?
-  const technical = ['advpl', 'sql', 'integração', 'customização', 'versão', 'implementação', 'api'];
-  if (technical.some(tech => lowerText.includes(tech))) {
-    matchLevel = 5;
-    components.push('Técnico');
+
+  // DOUBLE (2 pontos): Apenas um dos dois
+  if (hasCompany || hasTOTVS) {
+    return {
+      matchLevel: 2,
+      components: hasTOTVS ? ['TOTVS'] : [companyName],
+      confidence: 50,
+    };
   }
-  
-  // Calcular confiança base
-  let baseConfidence = 40; // mínimo para aceitar
-  
-  if (hasTOTVS && hasCompany) {
-    // Match completo: empresa + TOTVS no mesmo texto
-    baseConfidence = 70;
-  } else if (hasTOTVS) {
-    // Apenas TOTVS (mas Serper já filtrou por relevância)
-    baseConfidence = 50;
-  } else if (hasCompany) {
-    // Apenas empresa (mas query tinha TOTVS)
-    baseConfidence = 40;
-  }
-  
-  // Aplicar multiplicador do matchLevel
-  const confidence = matchLevel === 5 ? Math.min(98, baseConfidence + 30) : 
-                     matchLevel === 4 ? Math.min(90, baseConfidence + 20) : 
-                     matchLevel === 3 ? Math.min(75, baseConfidence + 10) : 
-                     baseConfidence;
-  
-  return { matchLevel, components, confidence };
+
+  // Rejeitar se não tem nada relacionado
+  return {
+    matchLevel: 2,
+    components: [],
+    confidence: 0,
+  };
 }
 
+// ============================================
+// PROCESSAR EVIDÊNCIA
+// ============================================
 export function processEvidence(
   rawText: string,
   companyName: string,
@@ -107,28 +124,24 @@ export function processEvidence(
   type: Evidence['type']
 ): Evidence | null {
   const analysis = analyzeMatchLevel(rawText, companyName);
-  
-  // Só retornar se for match válido (matchLevel >= 2 e confidence > 0)
+
+  // Aceitar apenas se confidence > 0
   if (analysis.confidence === 0) {
     return null;
   }
-  
-  // Extrair snippet inteligente
-  let snippet = '';
+
+  // Extrair snippet (200 chars ao redor do contexto mais relevante)
   const lowerText = rawText.toLowerCase();
-  
-  // Tentar encontrar contexto ao redor de TOTVS
-  const totvsPos = lowerText.indexOf('totvs');
-  if (totvsPos >= 0) {
-    const start = Math.max(0, totvsPos - 80);
-    snippet = rawText.slice(start, totvsPos + 120);
-  } else {
-    // Fallback: primeiros 200 chars
-    snippet = rawText.slice(0, 200);
-  }
-  
-  snippet = snippet.trim() + '...';
-  
+  const lowerCompany = companyName.toLowerCase();
+
+  let contextPos = lowerText.indexOf(lowerCompany);
+  if (contextPos === -1) contextPos = lowerText.indexOf('totvs');
+  if (contextPos === -1) contextPos = 0;
+
+  const start = Math.max(0, contextPos - 50);
+  const end = Math.min(rawText.length, start + 200);
+  const snippet = rawText.slice(start, end) + (end < rawText.length ? '...' : '');
+
   return {
     id: `${source}-${Date.now()}-${Math.random()}`,
     source,
@@ -139,6 +152,6 @@ export function processEvidence(
     matchLevel: analysis.matchLevel,
     components: analysis.components,
     confidence: analysis.confidence,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 }
