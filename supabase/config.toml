@@ -257,3 +257,9 @@ verify_jwt = false
 
   [functions.enrich-company-receita]
   verify_jwt = false
+
+  [functions.discover-similar-companies]
+  verify_jwt = false
+
+  [functions.generate-360-analysis]
+  verify_jwt = false
