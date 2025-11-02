@@ -915,7 +915,7 @@ export default function ICPQuarantine() {
     }
     
     const confirmed = window.confirm(
-      `Tem certeza que deseja aprovar ${selectedIds.length} empresa(s) e movê-las para o pool de leads?`
+      `Tem certeza que deseja ativar ${selectedIds.length} empresa(s) diretamente no pipeline de vendas?`
     );
     
     if (!confirmed) return;
@@ -968,7 +968,7 @@ export default function ICPQuarantine() {
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Empresas em Quarentena ICP</h1>
           <p className="text-muted-foreground">
-            Revise e aprove empresas analisadas antes de movê-las para o pool de leads
+            Revise e ative empresas qualificadas diretamente no pipeline de vendas
           </p>
         </div>
       </div>
@@ -1055,12 +1055,13 @@ export default function ICPQuarantine() {
                       onClick={handleApproveBatch}
                       disabled={selectedIds.length === 0 || isApproving}
                       variant="default"
+                      className="bg-green-600 hover:bg-green-700"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      {isApproving ? 'Aprovando...' : `Aprovar ${selectedIds.length || ''}`}
+                      {isApproving ? 'Ativando...' : `Ativar no Pipeline (${selectedIds.length || 0})`}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Aprovar selecionadas e mover para o Pool</TooltipContent>
+                  <TooltipContent>Ativar empresas diretamente no pipeline de vendas</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

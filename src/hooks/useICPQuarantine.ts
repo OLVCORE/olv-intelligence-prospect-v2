@@ -148,30 +148,36 @@ export function useApproveQuarantineBatch() {
         throw new Error('Nenhuma empresa possui dados válidos (CNPJ e Razão Social são obrigatórios)');
       }
 
-      // 3. Inserir no leads_pool apenas empresas válidas
-      const leadsToInsert = validCompanies.map(q => ({
-        company_id: q.company_id || null,
+      // 3. INSERIR DIRETO EM COMPANIES (PIPELINE) - SEM POOL
+      const rawAnalysisMap = new Map(validCompanies.map(q => [q.id, q.raw_analysis]));
+      
+      const companiesToInsert = validCompanies.map(q => ({
+        quarantine_id: q.id,
+        name: q.razao_social!,
         cnpj: q.cnpj!,
-        razao_social: q.razao_social!,
+        domain: q.website || (rawAnalysisMap.get(q.id) as any)?.domain || null,
         icp_score: q.icp_score || 0,
         temperatura: q.temperatura || 'cold',
-        status: 'pool',
-        source: 'icp_batch_analysis',
-        origem: 'icp_massa',
+        pipeline_status: 'ativo',
+        activated_at: new Date().toISOString(),
         raw_data: q.raw_analysis || {},
       }));
 
-      const { error: insertError } = await supabase
-        .from('leads_pool')
-        .insert(leadsToInsert);
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .insert(companiesToInsert)
+        .select();
 
-      if (insertError) throw insertError;
+      if (companiesError) throw companiesError;
 
-      // 4. Atualizar status na quarentena para empresas válidas
+      // 4. Atualizar status na quarentena e linkar company_id
       const validIds = validCompanies.map(q => q.id);
       const { error: updateError } = await supabase
         .from('icp_analysis_results')
-        .update({ status: 'aprovada' })
+        .update({ 
+          status: 'ativado',
+          moved_to_pool: true // Manter flag por histórico
+        })
         .in('id', validIds);
 
       if (updateError) throw updateError;
@@ -191,24 +197,37 @@ export function useApproveQuarantineBatch() {
       // 6. Para hot leads (score >= 75), criar deals automaticamente
       const hotLeads = validCompanies.filter(q => (q.icp_score || 0) >= 75);
       
-      if (hotLeads.length > 0) {
-        const dealsToCreate = hotLeads.map(lead => ({
-          company_id: lead.company_id || null,
-          title: `Oportunidade - ${lead.razao_social}`,
-          stage: 'discovery',
-          priority: 'high',
-          status: 'open',
-          value: (lead.icp_score || 0) >= 85 ? 100000 : 50000,
-          probability: Math.round((lead.icp_score || 0) * 0.8),
-          source: 'icp_hot_lead_auto',
-          lead_score: lead.icp_score || 0,
-        }));
+      if (hotLeads.length > 0 && companiesData) {
+        const companyIdMap = new Map(
+          companiesData.map(c => [c.quarantine_id, c.id])
+        );
 
-        const { error: dealsError } = await supabase
-          .from('sdr_deals')
-          .insert(dealsToCreate);
+        const dealsToCreate = hotLeads
+          .map(lead => {
+            const companyId = companyIdMap.get(lead.id);
+            if (!companyId) return null;
+            
+            return {
+              company_id: companyId,
+              title: `Oportunidade - ${lead.razao_social}`,
+              stage: 'discovery',
+              priority: 'high',
+              status: 'open',
+              value: (lead.icp_score || 0) >= 85 ? 100000 : 50000,
+              probability: Math.round((lead.icp_score || 0) * 0.8),
+              source: 'icp_hot_lead_auto',
+              lead_score: lead.icp_score || 0,
+            };
+          })
+          .filter((d): d is NonNullable<typeof d> => d !== null);
 
-        if (dealsError) console.error('Erro ao criar deals:', dealsError);
+        if (dealsToCreate.length > 0) {
+          const { error: dealsError } = await supabase
+            .from('sdr_deals')
+            .insert(dealsToCreate);
+
+          if (dealsError) console.error('Erro ao criar deals:', dealsError);
+        }
       }
 
       return {
@@ -220,14 +239,14 @@ export function useApproveQuarantineBatch() {
     },
     onSuccess: (data) => {
       const mainMessage = data.hotLeads > 0 
-        ? `${data.approved} aprovadas | ${data.hotLeads} hot leads com deals criados`
-        : `${data.approved} empresas movidas para o pool de leads`;
+        ? `${data.approved} ativadas no pipeline | ${data.hotLeads} hot leads com deals criados`
+        : `${data.approved} empresas ativadas no pipeline de vendas`;
       
       const warningMessage = data.invalid > 0
         ? ` | ⚠️ ${data.invalid} empresas com dados incompletos (não aprovadas)`
         : '';
 
-      toast.success('Empresas aprovadas com sucesso!', {
+      toast.success('✓ Empresas Ativadas no Pipeline', {
         description: mainMessage + warningMessage,
         duration: 5000,
       });
@@ -240,11 +259,11 @@ export function useApproveQuarantineBatch() {
       }
       
       queryClient.invalidateQueries({ queryKey: ICP_QUARANTINE_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['leads-pool'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['sdr-deals'] });
     },
     onError: (error: any) => {
-      toast.error('Erro ao aprovar empresas', {
+      toast.error('Erro ao ativar empresas', {
         description: error.message,
       });
     },
