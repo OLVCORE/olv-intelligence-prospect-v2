@@ -81,7 +81,40 @@ export default function QuarantineReportModal({
 
           setHasExistingReport(true);
           setReportDate(quarantineData.relatorio_gerado_em);
-          setStcResult(quarantineData.stc_result);
+          
+          const savedReport = quarantineData.stc_result as any;
+          console.log('[RELATÓRIO] 🔍 Estrutura do relatório salvo:', savedReport);
+          console.log('[RELATÓRIO] 🔍 Keys:', Object.keys(savedReport || {}));
+          console.log('[RELATÓRIO] 🔍 TOTVS evidences:', savedReport?.totvs?.evidences);
+          
+          // Buscar evidências da tabela totvs_detection_reports se tiver companyId
+          if (companyId) {
+            console.log('[RELATÓRIO] 🔍 Buscando evidências do banco totvs_detection_reports...');
+            const { data: totvsReport, error: totvsError } = await supabase
+              .from('totvs_detection_reports')
+              .select('*')
+              .eq('company_id', companyId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (!totvsError && totvsReport) {
+              const evidences = (totvsReport.evidences as any[]) || [];
+              console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
+              console.log('[RELATÓRIO] 📊 Evidências completas:', evidences);
+              
+              // Mesclar evidências no relatório
+              if (!savedReport.totvs) savedReport.totvs = {};
+              savedReport.totvs.evidences = evidences;
+              savedReport.totvs.methodology = totvsReport.methodology;
+              savedReport.totvs.score = totvsReport.score;
+              savedReport.totvs.confidence = totvsReport.confidence;
+              savedReport.totvs.detection_status = totvsReport.detection_status;
+              savedReport.totvs.status = totvsReport.detection_status;
+            }
+          }
+          
+          setStcResult(savedReport);
           setLoading(false);
 
           toast.success('📄 Relatório Salvo Carregado', {
@@ -97,7 +130,36 @@ export default function QuarantineReportModal({
         // Tentar usar raw_data existente
         if (quarantineData.raw_data) {
           console.log('[RELATÓRIO] 📦 Usando dados existentes da análise ICP...');
-          setStcResult(quarantineData.raw_data);
+          
+          const rawData = quarantineData.raw_data as any;
+          
+          // Buscar evidências da tabela totvs_detection_reports se tiver companyId
+          if (companyId) {
+            console.log('[RELATÓRIO] 🔍 Buscando evidências do banco totvs_detection_reports...');
+            const { data: totvsReport, error: totvsError } = await supabase
+              .from('totvs_detection_reports')
+              .select('*')
+              .eq('company_id', companyId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (!totvsError && totvsReport) {
+              const evidences = (totvsReport.evidences as any[]) || [];
+              console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
+              
+              // Mesclar evidências no relatório
+              if (!rawData.totvs) rawData.totvs = {};
+              rawData.totvs.evidences = evidences;
+              rawData.totvs.methodology = totvsReport.methodology;
+              rawData.totvs.score = totvsReport.score;
+              rawData.totvs.confidence = totvsReport.confidence;
+              rawData.totvs.detection_status = totvsReport.detection_status;
+              rawData.totvs.status = totvsReport.detection_status;
+            }
+          }
+          
+          setStcResult(rawData);
           setHasExistingReport(false);
           setLoading(false);
           return;
@@ -193,9 +255,57 @@ export default function QuarantineReportModal({
       console.log('[MODAL] 📊 Estrutura TOTVS:', data?.totvs);
       console.log('[MODAL] 📊 Metodologia TOTVS:', data?.totvs?.methodology);
       console.log('[MODAL] 📊 Evidências TOTVS:', data?.totvs?.evidences);
+      console.log('[MODAL] 🔍 Verificando TODOS os campos do data.totvs:');
+      console.log('[MODAL] 🔍 Keys do data:', Object.keys(data || {}));
+      console.log('[MODAL] 🔍 Keys do data.totvs:', Object.keys(data?.totvs || {}));
+      console.log('[MODAL] 🔍 Tipo de data.totvs.evidences:', typeof data?.totvs?.evidences);
+      console.log('[MODAL] 🔍 É array?', Array.isArray(data?.totvs?.evidences));
+      console.log('[MODAL] 🔍 Length:', data?.totvs?.evidences?.length);
+      
+      // Verificar se evidences está em outro lugar
+      if (data?.evidences) console.log('[MODAL] 🔍 data.evidences encontrado:', data.evidences);
+      if (data?.totvs?.evidence) console.log('[MODAL] 🔍 data.totvs.evidence encontrado:', data.totvs.evidence);
+      if (data?.totvs?.detections) console.log('[MODAL] 🔍 data.totvs.detections encontrado:', data.totvs.detections);
 
       if (!data) {
         throw new Error('Relatório vazio');
+      }
+
+      // Buscar evidências da tabela totvs_detection_reports se tiver companyId
+      if (companyId) {
+        console.log('[MODAL] 🔍 Buscando evidências adicionais do banco totvs_detection_reports...');
+        const { data: totvsReport, error: totvsError } = await supabase
+          .from('totvs_detection_reports')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (!totvsError && totvsReport) {
+          const evidences = (totvsReport.evidences as any[]) || [];
+          console.log('[MODAL] ✅ Evidências do banco encontradas:', evidences.length);
+          console.log('[MODAL] 📊 Evidências completas:', evidences);
+          
+          // Mesclar evidências no relatório (priorizar evidências do banco se existirem)
+          if (evidences.length > 0) {
+            if (!data.totvs) data.totvs = {};
+            data.totvs.evidences = evidences;
+            data.totvs.methodology = totvsReport.methodology;
+            data.totvs.score = totvsReport.score;
+            data.totvs.confidence = totvsReport.confidence;
+            data.totvs.detection_status = totvsReport.detection_status;
+            data.totvs.status = totvsReport.detection_status;
+            
+            console.log('[MODAL] ✅ Evidências mescladas no relatório!');
+          }
+        } else if (totvsError) {
+          console.log('[MODAL] ⚠️ Erro ao buscar evidências:', totvsError.message);
+        } else {
+          console.log('[MODAL] ⚠️ Nenhum registro encontrado em totvs_detection_reports');
+        }
+      } else {
+        console.log('[MODAL] ⚠️ companyId não disponível para buscar evidências');
       }
 
       setStcResult(data);
