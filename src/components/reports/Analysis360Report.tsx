@@ -11,7 +11,8 @@ import {
   Linkedin,
   Facebook,
   Instagram,
-  Twitter
+  Twitter,
+  TrendingUp
 } from 'lucide-react';
 
 interface Analysis360ReportProps {
@@ -23,39 +24,60 @@ export default function Analysis360Report({ data, companyName }: Analysis360Repo
   
   if (!data) {
     return (
-      <Card className="p-12 text-center">
+      <Card className="p-12 text-center border-2 border-dashed">
         <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-xl font-semibold mb-2 text-foreground">Dados não disponíveis</h3>
+        <p className="text-muted-foreground">Execute a análise para gerar o relatório</p>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20">
-        <div className="flex items-center gap-3 mb-2">
-          <Target className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">Análise 360° - {companyName}</h1>
+      <Card className="p-8 bg-gradient-to-br from-primary/20 via-primary/10 to-background border-2 border-primary/30 shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-primary/20 rounded-xl">
+            <Target className="w-10 h-10 text-primary" />
+          </div>
+          <h1 className="text-4xl font-bold text-foreground">Análise 360° - {companyName}</h1>
         </div>
       </Card>
 
       {/* Score ICP */}
-      <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground">
-          <Award className="w-6 h-6 text-primary" />
-          Score ICP
+      <Card className="p-8 bg-gradient-to-br from-primary/15 via-primary/8 to-background border-2 border-primary/30 shadow-lg">
+        <h2 className="text-3xl font-bold mb-8 flex items-center gap-3 text-foreground">
+          <div className="p-3 bg-primary/20 rounded-xl">
+            <Award className="w-8 h-8 text-primary" />
+          </div>
+          Score ICP (Ideal Customer Profile)
         </h2>
-        <div className="flex items-center gap-6">
-          <div className="text-6xl font-bold text-primary">
-            {data.icpScore || 0}
+        <div className="flex items-center gap-8">
+          <div className="flex flex-col items-center justify-center w-40 h-40 rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-2xl">
+            <p className="text-7xl font-bold text-primary-foreground mb-1">
+              {data.icpScore || 0}
+            </p>
+            <p className="text-sm font-semibold text-primary-foreground/80 uppercase tracking-wide">
+              Pontos
+            </p>
           </div>
           <div className="flex-1">
-            <div className="w-full bg-muted rounded-full h-6">
+            <div className="w-full bg-muted rounded-full h-8 shadow-inner border-2 border-border overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-primary to-primary/70 h-6 rounded-full transition-all"
+                className="h-8 rounded-full transition-all duration-1000 ease-out flex items-center justify-end pr-4 bg-gradient-to-r from-primary via-primary/90 to-primary/80 shadow-lg"
                 style={{ width: `${data.icpScore || 0}%` }}
-              />
+              >
+                <span className="text-sm font-bold text-primary-foreground">
+                  {data.icpScore || 0}%
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between mt-3 text-xs font-semibold text-muted-foreground">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
             </div>
           </div>
         </div>
@@ -63,100 +85,134 @@ export default function Analysis360Report({ data, companyName }: Analysis360Repo
 
       {/* SWOT */}
       {data.swot && (
-        <Card className="p-6">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground">
-            <Shield className="w-6 h-6 text-primary" />
+        <Card className="p-8 border-2 border-border shadow-lg bg-card">
+          <h2 className="text-3xl font-bold mb-8 flex items-center gap-3 text-foreground">
+            <div className="p-3 bg-primary/20 rounded-xl">
+              <Shield className="w-8 h-8 text-primary" />
+            </div>
             Análise SWOT
           </h2>
           <div className="grid grid-cols-2 gap-6">
-            <div className="bg-green-500/10 p-5 rounded-lg border-2 border-green-500/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-foreground">
-                <CheckCircle className="w-5 h-5 text-green-500" />Forças
+            <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 border-2 border-green-500/30 shadow-md">
+              <h3 className="font-bold mb-5 flex items-center gap-2 text-foreground text-xl">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                Forças
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {data.swot.strengths?.map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-green-500 font-bold">•</span>
-                    <span className="text-sm text-foreground">{item}</span>
+                  <li key={i} className="flex items-start gap-3 p-3 bg-card/50 rounded-lg border border-green-500/20">
+                    <span className="text-green-600 font-bold text-lg flex-shrink-0">•</span>
+                    <span className="text-sm text-foreground leading-relaxed">{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="bg-red-500/10 p-5 rounded-lg border-2 border-red-500/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-foreground">
-                <XCircle className="w-5 h-5 text-red-500" />Fraquezas
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-red-500/10 to-red-500/5 border-2 border-red-500/30 shadow-md">
+              <h3 className="font-bold mb-5 flex items-center gap-2 text-foreground text-xl">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <XCircle className="w-6 h-6 text-red-600" />
+                </div>
+                Fraquezas
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {data.swot.weaknesses?.map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-red-500 font-bold">•</span>
-                    <span className="text-sm text-foreground">{item}</span>
+                  <li key={i} className="flex items-start gap-3 p-3 bg-card/50 rounded-lg border border-red-500/20">
+                    <span className="text-red-600 font-bold text-lg flex-shrink-0">•</span>
+                    <span className="text-sm text-foreground leading-relaxed">{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="bg-blue-500/10 p-5 rounded-lg border-2 border-blue-500/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-foreground">
-                <Lightbulb className="w-5 h-5 text-blue-500" />Oportunidades
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-2 border-blue-500/30 shadow-md">
+              <h3 className="font-bold mb-5 flex items-center gap-2 text-foreground text-xl">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-blue-600" />
+                </div>
+                Oportunidades
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {data.swot.opportunities?.map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-blue-500 font-bold">•</span>
-                    <span className="text-sm text-foreground">{item}</span>
+                  <li key={i} className="flex items-start gap-3 p-3 bg-card/50 rounded-lg border border-blue-500/20">
+                    <span className="text-blue-600 font-bold text-lg flex-shrink-0">•</span>
+                    <span className="text-sm text-foreground leading-relaxed">{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="bg-yellow-500/10 p-5 rounded-lg border-2 border-yellow-500/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-foreground">
-                <AlertTriangle className="w-5 h-5 text-yellow-500" />Ameaças
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-2 border-amber-500/30 shadow-md">
+              <h3 className="font-bold mb-5 flex items-center gap-2 text-foreground text-xl">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-amber-600" />
+                </div>
+                Ameaças
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {data.swot.threats?.map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-yellow-500 font-bold">•</span>
-                    <span className="text-sm text-foreground">{item}</span>
+                  <li key={i} className="flex items-start gap-3 p-3 bg-card/50 rounded-lg border border-amber-500/20">
+                    <span className="text-amber-600 font-bold text-lg flex-shrink-0">•</span>
+                    <span className="text-sm text-foreground leading-relaxed">{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           </div>
         </Card>
       )}
 
       {/* Redes Sociais */}
       {data.redesSociais && (
-        <Card className="p-6">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">Presença Digital</h2>
-          <div className="grid grid-cols-4 gap-4">
+        <Card className="p-8 border-2 border-border shadow-lg bg-card">
+          <h2 className="text-3xl font-bold mb-8 text-foreground flex items-center gap-3">
+            <div className="p-3 bg-primary/20 rounded-xl">
+              <TrendingUp className="w-8 h-8 text-primary" />
+            </div>
+            Presença Digital
+          </h2>
+          <div className="grid grid-cols-4 gap-6">
             {data.redesSociais.linkedin && (
-              <div className="bg-blue-500/10 p-5 rounded-lg text-center border-2 border-blue-500/20">
-                <Linkedin className="w-10 h-10 mx-auto mb-3 text-blue-500" />
-                <p className="font-semibold mb-1 text-foreground">LinkedIn</p>
-                <p className="text-2xl font-bold text-blue-500">{data.redesSociais.linkedin.followers || 0}</p>
-              </div>
+              <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-2 border-blue-500/30 text-center shadow-md hover:shadow-xl transition-shadow">
+                <div className="p-4 bg-blue-500/20 rounded-full w-fit mx-auto mb-4">
+                  <Linkedin className="w-12 h-12 text-blue-600" />
+                </div>
+                <p className="font-semibold mb-2 text-foreground">LinkedIn</p>
+                <p className="text-4xl font-bold text-blue-600 mb-1">{data.redesSociais.linkedin.followers || 0}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Seguidores</p>
+              </Card>
             )}
             {data.redesSociais.facebook && (
-              <div className="bg-blue-500/10 p-5 rounded-lg text-center border-2 border-blue-500/20">
-                <Facebook className="w-10 h-10 mx-auto mb-3 text-blue-600" />
-                <p className="font-semibold mb-1 text-foreground">Facebook</p>
-                <p className="text-2xl font-bold text-blue-600">{data.redesSociais.facebook.followers || 0}</p>
-              </div>
+              <Card className="p-6 bg-gradient-to-br from-blue-600/10 to-blue-600/5 border-2 border-blue-600/30 text-center shadow-md hover:shadow-xl transition-shadow">
+                <div className="p-4 bg-blue-600/20 rounded-full w-fit mx-auto mb-4">
+                  <Facebook className="w-12 h-12 text-blue-700" />
+                </div>
+                <p className="font-semibold mb-2 text-foreground">Facebook</p>
+                <p className="text-4xl font-bold text-blue-700 mb-1">{data.redesSociais.facebook.followers || 0}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Seguidores</p>
+              </Card>
             )}
             {data.redesSociais.instagram && (
-              <div className="bg-pink-500/10 p-5 rounded-lg text-center border-2 border-pink-500/20">
-                <Instagram className="w-10 h-10 mx-auto mb-3 text-pink-500" />
-                <p className="font-semibold mb-1 text-foreground">Instagram</p>
-                <p className="text-2xl font-bold text-pink-500">{data.redesSociais.instagram.followers || 0}</p>
-              </div>
+              <Card className="p-6 bg-gradient-to-br from-pink-500/10 to-pink-500/5 border-2 border-pink-500/30 text-center shadow-md hover:shadow-xl transition-shadow">
+                <div className="p-4 bg-pink-500/20 rounded-full w-fit mx-auto mb-4">
+                  <Instagram className="w-12 h-12 text-pink-600" />
+                </div>
+                <p className="font-semibold mb-2 text-foreground">Instagram</p>
+                <p className="text-4xl font-bold text-pink-600 mb-1">{data.redesSociais.instagram.followers || 0}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Seguidores</p>
+              </Card>
             )}
             {data.redesSociais.twitter && (
-              <div className="bg-sky-500/10 p-5 rounded-lg text-center border-2 border-sky-500/20">
-                <Twitter className="w-10 h-10 mx-auto mb-3 text-sky-500" />
-                <p className="font-semibold mb-1 text-foreground">Twitter</p>
-                <p className="text-2xl font-bold text-sky-500">{data.redesSociais.twitter.followers || 0}</p>
-              </div>
+              <Card className="p-6 bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-2 border-sky-500/30 text-center shadow-md hover:shadow-xl transition-shadow">
+                <div className="p-4 bg-sky-500/20 rounded-full w-fit mx-auto mb-4">
+                  <Twitter className="w-12 h-12 text-sky-600" />
+                </div>
+                <p className="font-semibold mb-2 text-foreground">Twitter</p>
+                <p className="text-4xl font-bold text-sky-600 mb-1">{data.redesSociais.twitter.followers || 0}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Seguidores</p>
+              </Card>
             )}
           </div>
         </Card>
@@ -164,17 +220,23 @@ export default function Analysis360Report({ data, companyName }: Analysis360Repo
 
       {/* Insights */}
       {data.insights && data.insights.length > 0 && (
-        <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground">
-            <Lightbulb className="w-6 h-6 text-primary" />
-            Insights
+        <Card className="p-8 bg-gradient-to-br from-primary/15 via-primary/8 to-background border-2 border-primary/30 shadow-lg">
+          <h2 className="text-3xl font-bold mb-8 flex items-center gap-3 text-foreground">
+            <div className="p-3 bg-primary/20 rounded-xl">
+              <Lightbulb className="w-8 h-8 text-primary" />
+            </div>
+            Insights Estratégicos
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {data.insights.map((insight: string, index: number) => (
-              <div key={index} className="flex items-start gap-3 p-4 bg-card rounded-lg border-2 border-border">
-                <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-foreground">{insight}</p>
-              </div>
+              <Card key={index} className="p-6 bg-card/80 border-2 border-border hover:border-primary/50 transition-all duration-200 shadow-md hover:shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/20 rounded-full flex-shrink-0">
+                    <Lightbulb className="w-6 h-6 text-primary" />
+                  </div>
+                  <p className="text-base text-foreground leading-relaxed font-medium">{insight}</p>
+                </div>
+              </Card>
             ))}
           </div>
         </Card>

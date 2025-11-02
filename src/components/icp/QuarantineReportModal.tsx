@@ -190,6 +190,9 @@ export default function QuarantineReportModal({
       }
 
       console.log('[MODAL] ✅ Relatório recebido:', data);
+      console.log('[MODAL] 📊 Estrutura TOTVS:', data?.totvs);
+      console.log('[MODAL] 📊 Metodologia TOTVS:', data?.totvs?.methodology);
+      console.log('[MODAL] 📊 Evidências TOTVS:', data?.totvs?.evidences);
 
       if (!data) {
         throw new Error('Relatório vazio');
@@ -578,7 +581,7 @@ export default function QuarantineReportModal({
                 {/* ABA 1: TOTVS */}
                 <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
                   <TOTVSVerificationReport 
-                    data={stcResult}
+                    data={stcResult?.totvs || stcResult}
                     companyName={companyName}
                     cnpj={cnpj}
                   />
@@ -595,7 +598,7 @@ export default function QuarantineReportModal({
                 {/* ABA 3: 360° */}
                 <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
                   <Analysis360Report 
-                    data={stcResult}
+                    data={stcResult?.analysis360 || stcResult}
                     companyName={companyName}
                   />
                 </TabsContent>
