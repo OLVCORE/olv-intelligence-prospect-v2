@@ -228,7 +228,7 @@ export function QuarantineReportModal({
   const modalSize = useMemo(() => {
     return isExpanded 
       ? 'max-w-[98vw] w-[98vw] h-[98vh]' 
-      : 'max-w-7xl w-[90vw] max-h-[90vh]';
+      : 'max-w-7xl w-[90vw] h-[85vh]';
   }, [isExpanded]);
 
   return (
@@ -236,9 +236,9 @@ export function QuarantineReportModal({
       <DialogContent 
         className={`${modalSize} overflow-hidden p-0 flex flex-col`}
       >
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col min-h-0">
           {/* Header com controles */}
-          <div className="shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
+          <div className="flex-shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-lg font-semibold truncate">
@@ -312,7 +312,8 @@ export function QuarantineReportModal({
           <div 
             id="totvs-report-content"
             ref={contentRef}
-            className="flex-1 overflow-y-auto p-6 space-y-6"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6"
+            style={{ minHeight: 0 }}
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -363,7 +364,7 @@ export function QuarantineReportModal({
           </div>
 
           {/* Footer fixo */}
-          <div className="shrink-0 border-t bg-muted/30 p-4">
+          <div className="flex-shrink-0 border-t bg-muted/30 p-4">
             <DialogFooter className="gap-2 sm:gap-2">
               <Button 
                 variant="destructive" 
