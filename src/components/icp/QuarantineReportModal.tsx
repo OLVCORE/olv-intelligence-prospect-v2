@@ -613,19 +613,28 @@ export default function QuarantineReportModal({
         </div>
 
         {/* Footer Fixo */}
-        <div className="flex-shrink-0 border-t bg-white p-6">
+        <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-6">
           <div className="flex justify-between items-center">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="border-border hover:bg-accent hover:text-accent-foreground"
+            >
               Fechar
             </Button>
             <div className="flex gap-3">
-              <Button variant="destructive" onClick={handleReject} disabled={!stcResult}>
+              <Button 
+                variant="destructive" 
+                onClick={handleReject} 
+                disabled={!stcResult}
+                className="bg-red-600 hover:bg-red-700 text-white shadow-md"
+              >
                 <XCircle className="w-4 h-4 mr-2" />
                 Descartar
               </Button>
               <Button
                 onClick={handleActivatePipeline}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white shadow-md"
                 disabled={activating}
               >
                 {activating ? (

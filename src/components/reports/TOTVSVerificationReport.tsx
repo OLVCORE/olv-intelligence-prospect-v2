@@ -1,7 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Shield, CheckCircle, XCircle, ExternalLink, AlertTriangle, Globe, Search, Clock, CheckSquare, Info } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, ExternalLink, AlertTriangle, Globe, Search, Clock, CheckSquare, Info, Copy, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TOTVSVerificationReportProps {
   data: any;
@@ -13,6 +15,25 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
   console.log('[TOTVS REPORT] 📊 Dados recebidos:', data);
   console.log('[TOTVS REPORT] 📊 Metodologia:', data?.methodology);
   console.log('[TOTVS REPORT] 📊 Evidências:', data?.evidences);
+
+  // Função para destacar termos-chave nas evidências
+  const highlightTerms = (text: string, terms?: string[]) => {
+    if (!terms || terms.length === 0) return text;
+    
+    let highlightedText = text;
+    terms.forEach(term => {
+      const regex = new RegExp(`(${term})`, 'gi');
+      highlightedText = highlightedText.replace(regex, '<mark class="bg-primary/30 text-primary font-semibold px-1 rounded">$1</mark>');
+    });
+    
+    return highlightedText;
+  };
+
+  // Copiar URL para área de transferência
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  };
 
   if (!data) {
     return (
@@ -30,22 +51,21 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Header Compacto */}
-        <Card className="p-6 bg-gradient-to-br from-primary/10 to-background border border-primary/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Shield className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Verificação TOTVS</h1>
-              <p className="text-sm text-muted-foreground">{companyName}</p>
+        {/* Header Compacto em uma linha */}
+        <Card className="p-4 bg-gradient-to-br from-primary/10 to-background border border-primary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">Verificação TOTVS • {companyName}</h1>
+                {cnpj && (
+                  <p className="text-xs font-mono text-muted-foreground">CNPJ: {cnpj}</p>
+                )}
+              </div>
             </div>
           </div>
-          {cnpj && (
-            <div className="mt-3 text-xs font-mono text-muted-foreground">
-              CNPJ: {cnpj}
-            </div>
-          )}
         </Card>
 
         {/* Status Cards Compactos */}
@@ -129,27 +149,27 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
           </Card>
         </div>
 
-        {/* Metodologia Compacta */}
+        {/* Metodologia com Lista de Fontes */}
         {data.methodology && (
           <Card className="p-5 border border-border bg-card">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-bold text-foreground">Metodologia de Verificação</h2>
+              <h2 className="text-base font-bold text-foreground">Metodologia de Verificação</h2>
               <Tooltip>
-                <TooltipTrigger>
-                  <Info className="w-4 h-4 text-muted-foreground ml-auto" />
+                <TooltipTrigger className="ml-auto">
+                  <Info className="w-4 h-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs max-w-xs">Busca em 17 fontes: LinkedIn, Google, Sites corporativos, Marketplaces, Portais de notícias, etc.</p>
+                  <p className="text-xs max-w-xs">Busca automatizada em 17 fontes diferentes para garantir máxima cobertura</p>
                 </TooltipContent>
               </Tooltip>
             </div>
             
-            <div className="grid grid-cols-4 gap-3">
-              <Card className="p-4 bg-blue-500/5 border border-blue-500/20">
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              <Card className="p-3 bg-blue-500/5 border border-blue-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-blue-500/20 rounded">
-                    <Globe className="w-4 h-4 text-blue-600" />
+                    <Globe className="w-3.5 h-3.5 text-blue-600" />
                   </div>
                   <Tooltip>
                     <TooltipTrigger>
@@ -160,16 +180,16 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-xl font-bold text-blue-600">
                   {data.methodology.sources_checked || 0}
                 </p>
-                <p className="text-xs text-muted-foreground uppercase">Fontes</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Fontes</p>
               </Card>
 
-              <Card className="p-4 bg-purple-500/5 border border-purple-500/20">
+              <Card className="p-3 bg-purple-500/5 border border-purple-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-purple-500/20 rounded">
-                    <Search className="w-4 h-4 text-purple-600" />
+                    <Search className="w-3.5 h-3.5 text-purple-600" />
                   </div>
                   <Tooltip>
                     <TooltipTrigger>
@@ -180,36 +200,36 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-xl font-bold text-purple-600">
                   {data.methodology.total_searches || 0}
                 </p>
-                <p className="text-xs text-muted-foreground uppercase">Buscas</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Buscas</p>
               </Card>
 
-              <Card className="p-4 bg-green-500/5 border border-green-500/20">
+              <Card className="p-3 bg-green-500/5 border border-green-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-green-500/20 rounded">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
                   </div>
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="w-3 h-3 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="text-xs">Referências positivas encontradas</p>
+                      <p className="text-xs">Evidências com double/triple matching encontradas</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-xl font-bold text-green-600">
                   {data.methodology.total_matches || 0}
                 </p>
-                <p className="text-xs text-muted-foreground uppercase">Matches</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Matches</p>
               </Card>
 
-              <Card className="p-4 bg-orange-500/5 border border-orange-500/20">
+              <Card className="p-3 bg-orange-500/5 border border-orange-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-orange-500/20 rounded">
-                    <Clock className="w-4 h-4 text-orange-600" />
+                    <Clock className="w-3.5 h-3.5 text-orange-600" />
                   </div>
                   <Tooltip>
                     <TooltipTrigger>
@@ -220,28 +240,47 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-xl font-bold text-orange-600">
                   {data.methodology.execution_time_ms || 0}ms
                 </p>
-                <p className="text-xs text-muted-foreground uppercase">Tempo</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Tempo</p>
               </Card>
             </div>
+
+            {/* Lista das 17 Fontes */}
+            <Card className="p-4 bg-muted/30 border border-border">
+              <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                Fontes Analisadas ({data.methodology.sources_checked || 17})
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {['LinkedIn', 'Google Search', 'Sites Corporativos', 'Marketplaces B2B', 'Portais de Notícias', 'Redes Sociais', 'GitHub', 'Stack Overflow', 'Medium', 'Blog TOTVS', 'Portal do Cliente', 'Case Studies', 'Vagas de Emprego', 'YouTube', 'SlideShare', 'Comunidades Tech', 'Fóruns Especializados'].map((source, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-card rounded border border-border/50">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span className="text-xs text-foreground">{source}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </Card>
         )}
 
-        {/* Evidências Compactas */}
+        {/* Evidências com Highlights e Ações */}
         {data.evidences && data.evidences.length > 0 && (
           <Card className="p-5 border border-border bg-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Search className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">Evidências</h2>
+                <h2 className="text-base font-bold text-foreground">Evidências com Matching</h2>
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="w-4 h-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-xs max-w-xs">Trechos específicos encontrados nas fontes consultadas</p>
+                    <p className="text-xs max-w-xs">
+                      Trechos com double/triple matching (TOTVS + Produto + Empresa)
+                      <br />Termos destacados para fácil identificação
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -251,38 +290,105 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
             </div>
 
             <div className="space-y-3">
-              {data.evidences.map((evidence: any, index: number) => (
-                <Card 
-                  key={index} 
-                  className="p-4 border border-border hover:border-primary/30 transition-colors bg-card/50"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">
-                          {index + 1}
-                        </span>
+              {data.evidences.map((evidence: any, index: number) => {
+                const matchType = evidence.matchType || (evidence.terms?.length >= 3 ? 'triple' : evidence.terms?.length === 2 ? 'double' : 'single');
+                const matchColor = matchType === 'triple' ? 'emerald' : matchType === 'double' ? 'blue' : 'purple';
+                
+                return (
+                  <Card 
+                    key={index} 
+                    className="p-4 border border-border hover:border-primary/30 transition-all duration-200 bg-card/50"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className={`w-8 h-8 rounded-lg bg-${matchColor}-500/10 flex items-center justify-center border border-${matchColor}-500/20`}>
+                          <span className={`text-sm font-bold text-${matchColor}-600`}>
+                            {index + 1}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0 space-y-3">
+                        {/* Badge de Tipo de Match */}
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[10px] px-2 py-0.5 bg-${matchColor}-500/5 border-${matchColor}-500/30 text-${matchColor}-700`}
+                          >
+                            {matchType === 'triple' && '🎯 Triple Match'}
+                            {matchType === 'double' && '✓✓ Double Match'}
+                            {matchType === 'single' && '✓ Single Match'}
+                          </Badge>
+                          {evidence.source_name && (
+                            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                              {evidence.source_name}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Texto com Highlights */}
+                        <div 
+                          className="text-sm leading-relaxed text-foreground"
+                          dangerouslySetInnerHTML={{ 
+                            __html: highlightTerms(evidence.text, evidence.terms || ['TOTVS', 'Protheus', 'RM', companyName]) 
+                          }}
+                        />
+
+                        {/* Termos Encontrados */}
+                        {evidence.terms && evidence.terms.length > 0 && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground">Termos:</span>
+                            {evidence.terms.map((term: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-[10px] px-2 py-0.5">
+                                {term}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Ações */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                          {evidence.source && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(evidence.source, '_blank')}
+                                className="h-7 text-xs gap-1.5"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                Abrir Fonte
+                              </Button>
+                              
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(evidence.source, 'URL')}
+                                className="h-7 text-xs gap-1.5"
+                              >
+                                <Copy className="w-3 h-3" />
+                                Copiar URL
+                              </Button>
+                            </>
+                          )}
+                          
+                          {evidence.terms && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(evidence.terms.join(' '), 'Termos de busca')}
+                              className="h-7 text-xs gap-1.5"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Copiar Termos
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <p className="text-sm leading-relaxed text-foreground">
-                        {evidence.text}
-                      </p>
-                      {evidence.source && (
-                        <a 
-                          href={evidence.source} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Ver fonte
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           </Card>
         )}
