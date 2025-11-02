@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   ExternalLink,
   Lightbulb,
+  Search,
 } from 'lucide-react';
 import SaveReportPDF from '@/components/reports/SaveReportPDF';
 import TOTVSVerificationReport from '@/components/reports/TOTVSVerificationReport';
@@ -159,6 +160,64 @@ export default function QuarantineReportModal({
       setLoading(false);
     }
   };
+
+  // ========================================
+  // ANALISAR EMPRESA (FORÇAR NOVA ANÁLISE)
+  // ========================================
+  const handleAnalyzeCompany = useCallback(async () => {
+    if (!companyName) return;
+
+    console.log('[MODAL] 🚀 Iniciando análise FORÇADA (ignorando cache)...');
+    console.log('[MODAL] Empresa:', companyName);
+    console.log('[MODAL] CNPJ:', cnpj);
+
+    setLoading(true);
+    setStcResult(null); // Limpar resultado anterior
+    setHasExistingReport(false);
+
+    try {
+      // FORÇAR CHAMADA DA EDGE FUNCTION (ignorar cache temporariamente)
+      console.log('[MODAL] 📡 Chamando Edge Function stc-agent...');
+      
+      const { data, error } = await supabase.functions.invoke('stc-agent', {
+        body: {
+          companyName: companyName,
+          cnpj: cnpj,
+          analysisId: `analysis_${Date.now()}`, // ID único
+        },
+      });
+
+      if (error) {
+        console.error('[MODAL] ❌ Erro na Edge Function:', error);
+        throw error;
+      }
+
+      console.log('[MODAL] ✅ Resposta recebida da Edge Function:', data);
+
+      if (!data) {
+        throw new Error('Edge Function retornou dados vazios');
+      }
+
+      // Validar dados recebidos
+      if (!data.status || !data.methodology) {
+        console.warn('[MODAL] ⚠️ Dados incompletos recebidos:', data);
+      }
+
+      setStcResult(data);
+
+      toast.success('✅ Análise concluída!', {
+        description: `Empresa analisada com sucesso. Status: ${data.status}`,
+      });
+
+    } catch (error: any) {
+      console.error('[MODAL] ❌ Erro fatal:', error);
+      toast.error('❌ Erro na análise', {
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [companyName, cnpj]);
 
   // ========================================
   // ATUALIZAR ANÁLISE (COM CONFIRMAÇÃO)
@@ -430,6 +489,27 @@ export default function QuarantineReportModal({
           </div>
 
           <div className="flex items-center gap-2 ml-4">
+            {/* Botão Analisar Empresa - SEMPRE VISÍVEL */}
+            <Button
+              onClick={handleAnalyzeCompany}
+              disabled={loading}
+              variant="default"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Analisando...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  Analisar Empresa
+                </>
+              )}
+            </Button>
+
             {/* Botão Atualizar - SEMPRE VISÍVEL quando tem relatório */}
             {stcResult && (
               <Button
