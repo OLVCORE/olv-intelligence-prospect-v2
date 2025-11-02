@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Maximize2, Minimize2, Printer, UserPlus } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, UserPlus } from "lucide-react";
 import TOTVSCheckCard from "@/components/totvs/TOTVSCheckCard";
+import SaveReportPDF from "@/components/reports/SaveReportPDF";
 import { supabase } from "@/integrations/supabase/client";
 import { DraggableDialog } from "@/components/ui/draggable-dialog";
 import { toast } from "sonner";
@@ -58,11 +59,6 @@ export default function TOTVSCheckReport() {
 
   const headerTitle = useMemo(() => companyMeta?.name || "Relatório TOTVS Check", [companyMeta]);
 
-  const handlePrint = () => {
-    window.print();
-    toast.success("Preparando relatório para impressão...");
-  };
-
   const handleAssign = () => {
     setShowAssignDialog(true);
     toast.info("Funcionalidade de atribuição em breve!");
@@ -77,7 +73,7 @@ export default function TOTVSCheckReport() {
   };
 
   const reportContent = (
-    <>
+    <div id="totvs-check-report">
       {resolvedCompanyId && (
         <TOTVSCheckCard
           companyId={resolvedCompanyId}
@@ -87,7 +83,7 @@ export default function TOTVSCheckReport() {
           autoVerify={false}
         />
       )}
-    </>
+    </div>
   );
 
   // Modo Fullscreen
@@ -106,10 +102,14 @@ export default function TOTVSCheckReport() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir PDF
-              </Button>
+              <SaveReportPDF
+                contentId="totvs-check-report"
+                fileName={`relatorio-totvs-${companyMeta?.cnpj || companyMeta?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'empresa'}`}
+                reportType="totvs_verification"
+                reportTitle={`Verificação TOTVS - ${companyMeta?.name || 'Empresa'}`}
+                quarantineId={resolvedCompanyId || ''}
+                allTabs
+              />
               <Button variant="outline" size="sm" onClick={handleAssign}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Atribuir
@@ -167,10 +167,14 @@ export default function TOTVSCheckReport() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
+          <SaveReportPDF
+            contentId="totvs-check-report"
+            fileName={`relatorio-totvs-${companyMeta?.cnpj || companyMeta?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'empresa'}`}
+            reportType="totvs_verification"
+            reportTitle={`Verificação TOTVS - ${companyMeta?.name || 'Empresa'}`}
+            quarantineId={resolvedCompanyId || ''}
+            allTabs
+          />
           <Button variant="outline" size="sm" onClick={handleAssign}>
             <UserPlus className="h-4 w-4 mr-2" />
             Atribuir
