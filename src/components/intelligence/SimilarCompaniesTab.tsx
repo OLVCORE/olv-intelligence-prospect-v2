@@ -108,6 +108,47 @@ function calculateSimilarity(result: any, target: { companyName: string; sector?
   return Math.min(score, 100);
 }
 
+// Função para validar e limpar estados brasileiros
+function validateAndCleanState(state: string | null | undefined): string | null {
+  if (!state) return null;
+  
+  const validStates = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 
+    'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 
+    'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  ];
+  
+  const normalized = state.toUpperCase().trim();
+  
+  if (validStates.includes(normalized)) {
+    return normalized;
+  }
+  
+  // Tentar mapear nomes completos para UF
+  const stateMap: Record<string, string> = {
+    'SÃO PAULO': 'SP',
+    'SAO PAULO': 'SP',
+    'RIO DE JANEIRO': 'RJ',
+    'MINAS GERAIS': 'MG',
+    'PARANÁ': 'PR',
+    'PARANA': 'PR',
+    'SANTA CATARINA': 'SC',
+    'RIO GRANDE DO SUL': 'RS',
+    'BAHIA': 'BA',
+    'PERNAMBUCO': 'PE',
+    'CEARÁ': 'CE',
+    'CEARA': 'CE',
+    'GOIÁS': 'GO',
+    'GOIAS': 'GO'
+  };
+  
+  const mapped = stateMap[normalized];
+  if (mapped) return mapped;
+  
+  console.log('[VALIDATE-STATE] Estado inválido:', state);
+  return null;
+}
+
 // Função para inferir regime tributário baseado em porte e capital social
 function inferRegimeTributario(porte: string, capitalSocial: number | null): string {
   // Regras simplificadas (baseado em legislação brasileira)
@@ -927,9 +968,14 @@ export function SimilarCompaniesTab({
         }
         
         // CRITÉRIO 8: Localização? (+5 pontos)
-        if (company.uf) {
+        const cleanedState = validateAndCleanState(company.uf);
+        if (cleanedState) {
+          company.uf = cleanedState; // Atualizar com estado limpo
           icpScore += 5;
-          icpReasons.push(`+ Estado: ${company.uf} (+5)`);
+          icpReasons.push(`+ Estado: ${cleanedState} (+5)`);
+        } else if (company.uf) {
+          icpReasons.push(`- Estado inválido: ${company.uf} (0)`);
+          company.uf = null; // Limpar estado inválido
         }
         
         // CRITÉRIO 9: Website? (+5 pontos)
@@ -958,39 +1004,274 @@ export function SimilarCompaniesTab({
         };
       });
 
-      // FILTRO MÍNIMO: Apenas remover lixo óbvio
-      console.log('[DEBUG] ===== APLICANDO FILTROS =====');
+      // FILTRO RIGOROSO: Remover artigos, notícias, PDFs, perfis
+      console.log('[DEBUG] ===== APLICANDO FILTROS RIGOROSOS =====');
       console.log('[DEBUG] Empresas antes dos filtros:', scoredCompanies.length);
       
-      // Filtrar apenas lixo óbvio (não rejeitar por score)
       const filteredCompanies = scoredCompanies.filter((company, index) => {
         const titleLower = company.name.toLowerCase();
-        const isInvalid = 
-          titleLower.startsWith('as ') || 
-          titleLower.startsWith('os ') || 
-          titleLower.startsWith('top ') ||
-          titleLower.startsWith('associação') ||
-          titleLower.startsWith('sindicato') ||
-          titleLower.startsWith('federação') ||
-          titleLower.includes('maiores') ||
-          titleLower.includes('melhores') ||
-          titleLower.includes('ranking') ||
-          titleLower.includes('lista de');
+        const urlLower = (company.website || '').toLowerCase();
         
-        if (isInvalid) {
-          console.log('[ICP-FILTER] ❌ Rejeitado (não é empresa):', company.name);
+        // REJEITAR: Títulos que começam com artigos/palavras de lista
+        const invalidStarts = ['as ', 'os ', 'top ', 'associação', 'sindicato', 'federação', 'confederação'];
+        if (invalidStarts.some(start => titleLower.startsWith(start))) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (lista/artigo):', company.name);
           return false;
         }
         
-        // NÃO REJEITAR POR SCORE - Mostrar todas
+        // REJEITAR: Artigos, notícias, posts, PDFs
+        const isArticle = titleLower.includes('relatório') ||
+                         titleLower.includes('relatorio') ||
+                         titleLower.includes('balanço') ||
+                         titleLower.includes('balanco') ||
+                         titleLower.includes('anuário') ||
+                         titleLower.includes('anuario') ||
+                         urlLower.includes('.pdf') ||
+                         urlLower.includes('/post/') ||
+                         urlLower.includes('/artigo/') ||
+                         urlLower.includes('/noticia/');
+        
+        if (isArticle) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (artigo/PDF):', company.name);
+          return false;
+        }
+        
+        // REJEITAR: Perfis de pessoas no LinkedIn/Instagram
+        const isPerson = urlLower.includes('linkedin.com/in/') ||
+                        urlLower.includes('instagram.com/p/') ||
+                        titleLower.includes(' - gerente ') ||
+                        titleLower.includes(' - diretor ');
+        
+        if (isPerson) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (perfil pessoa):', company.name);
+          return false;
+        }
+        
+        // REJEITAR: Associações/Sindicatos/Federações/Rankings
+        const isAssociation = titleLower.includes('maiores') ||
+                            titleLower.includes('melhores') ||
+                            titleLower.includes('ranking') ||
+                            titleLower.includes('lista de') ||
+                            titleLower.includes('associação') ||
+                            titleLower.includes('sindicato') ||
+                            titleLower.includes('federação') ||
+                            titleLower.includes('confederação');
+        
+        if (isAssociation) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (associação/ranking):', company.name);
+          return false;
+        }
+        
+        console.log('[ICP-FILTER] ✅ APROVADO:', company.name);
         return true;
       });
+      // ENRIQUECIMENTO AUTOMÁTICO AGRESSIVO
+      console.log('[ENRICHMENT] ===== ENRIQUECIMENTO AGRESSIVO =====');
+      console.log('[ENRICHMENT] Total de empresas para enriquecer:', filteredCompanies.length);
       
-      console.log('[DEBUG] Empresas após filtros:', filteredCompanies.length);
+      const enrichedResults = await Promise.all(
+        filteredCompanies.map(async (company) => {
+          try {
+            // ESTRATÉGIA 1: Buscar CNPJ via Google (se não tem)
+            if (!company.cnpj && company.name) {
+              console.log('[ENRICHMENT] Buscando CNPJ via Google:', company.name);
+              
+              try {
+                const searchQuery = `"${company.name}" CNPJ`;
+                const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
+                  body: { query: searchQuery, limit: 3 }
+                });
+                
+                if (searchData?.success && searchData.results) {
+                  for (const result of searchData.results) {
+                    const text = `${result.title} ${result.snippet || ''} ${result.description || ''}`;
+                    const cnpjRegex = /\b\d{2}\.?\d{3}\.?\d{3}[\/\-]?\d{4}[\-]?\d{2}\b/g;
+                    const cnpjMatch = text.match(cnpjRegex);
+                    
+                    if (cnpjMatch) {
+                      company.cnpj = cnpjMatch[0].replace(/\D/g, '');
+                      console.log('[ENRICHMENT] ✅ CNPJ encontrado via Google:', company.cnpj);
+                      break;
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('[ENRICHMENT] Erro busca Google CNPJ:', error);
+              }
+              
+              // Pequeno delay para evitar rate limit
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // ESTRATÉGIA 2: Se encontrou CNPJ, buscar na Receita Federal
+            if (company.cnpj && company.cnpj.length === 14) {
+              console.log('[ENRICHMENT] Consultando Receita Federal:', company.cnpj);
+              
+              try {
+                const receitaResponse = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${company.cnpj}`);
+                
+                if (receitaResponse.ok) {
+                  const receitaData = await receitaResponse.json();
+                  
+                  // Atualizar dados da empresa
+                  if (!company.setor && receitaData.cnae_fiscal_descricao) {
+                    company.setor = receitaData.cnae_fiscal_descricao;
+                  }
+                  if (!company.cnae && receitaData.cnae_fiscal) {
+                    company.cnae = receitaData.cnae_fiscal.toString();
+                  }
+                  if (!company.porte && receitaData.porte) {
+                    company.porte = receitaData.porte;
+                  }
+                  if (!company.uf && receitaData.uf) {
+                    company.uf = receitaData.uf;
+                  }
+                  if (!company.city && receitaData.municipio) {
+                    company.city = receitaData.municipio;
+                  }
+                  if (!company.capital_social && receitaData.capital_social) {
+                    company.capital_social = parseFloat(receitaData.capital_social);
+                  }
+                  
+                  console.log('[ENRICHMENT] ✅ Dados da Receita Federal obtidos');
+                }
+              } catch (error) {
+                console.error('[ENRICHMENT] Erro Receita Federal:', error);
+              }
+            }
+            
+            // ESTRATÉGIA 3: Scraping do website (se tem)
+            if (company.website && !company.website.includes('wikipedia') && !company.website.includes('instagram')) {
+              console.log('[ENRICHMENT] Fazendo scraping de:', company.website);
+              
+              try {
+                const { data: scrapedData } = await supabase.functions.invoke('enrich-company', {
+                  body: { 
+                    website: company.website,
+                    companyName: company.name
+                  }
+                });
+                
+                if (scrapedData?.success && scrapedData.data) {
+                  console.log('[ENRICHMENT] ✅ Scraping bem-sucedido');
+                  
+                  // Atualizar dados que estão faltando
+                  if (!company.cnpj && scrapedData.data.cnpj) {
+                    company.cnpj = scrapedData.data.cnpj;
+                  }
+                  if (!company.linkedin_url && scrapedData.data.linkedin_url) {
+                    company.linkedin_url = scrapedData.data.linkedin_url;
+                  }
+                  if (!company.uf && scrapedData.data.state) {
+                    company.uf = scrapedData.data.state;
+                  }
+                }
+              } catch (error) {
+                console.error('[ENRICHMENT] Erro no scraping:', error);
+              }
+            }
+            
+            return company;
+            
+          } catch (error) {
+            console.error('[ENRICHMENT] Erro geral:', company.name, error);
+            return company;
+          }
+        })
+      );
+      
+      console.log('[ENRICHMENT] Enriquecimento concluído');
+      
+      // RECALCULAR ICP SCORE APÓS ENRIQUECIMENTO
+      console.log('[ICP-SCORE] ===== RECALCULANDO SCORES APÓS ENRIQUECIMENTO =====');
+      
+      const rescoredCompanies = enrichedResults.map(company => {
+        let icpScore = 30; // Base
+        const icpReasons = ['🎯 Score base (+30)'];
+        
+        // CNPJ? (+20) - CRÍTICO
+        if (company.cnpj && company.cnpj.length === 14) {
+          icpScore += 20;
+          icpReasons.push('✅ CNPJ (+20)');
+        } else {
+          icpReasons.push('❌ Sem CNPJ (0) - PRECISA ENRIQUECER');
+        }
+        
+        // Funcionários? (+15)
+        if (company.employees) {
+          icpScore += 15;
+          icpReasons.push(`✅ ${company.employees} funcionários (+15)`);
+        } else {
+          icpReasons.push('❌ Funcionários desconhecidos (0) - PRECISA ENRIQUECER');
+        }
+        
+        // Regime tributário? (+10)
+        if (company.regime_tributario) {
+          icpScore += 10;
+          icpReasons.push(`✅ Regime: ${company.regime_tributario} (+10)`);
+        }
+        
+        // Porte RF? (+10)
+        if (company.porte && (company.porte === 'DEMAIS' || company.porte === 'EPP')) {
+          icpScore += 10;
+          icpReasons.push(`✅ Porte RF: ${company.porte} (+10)`);
+        }
+        
+        // CNAE? (+15)
+        if (company.cnae) {
+          icpScore += 15;
+          icpReasons.push(`✅ CNAE: ${company.cnae} (+15)`);
+        }
+        
+        // Setor? (+10)
+        if (company.setor) {
+          icpScore += 10;
+          icpReasons.push(`✅ Setor (+10)`);
+        } else {
+          icpReasons.push('❌ Setor desconhecido (0) - PRECISA ENRIQUECER');
+        }
+        
+        // Estado válido? (+5)
+        const cleanedState = validateAndCleanState(company.uf);
+        if (cleanedState) {
+          company.uf = cleanedState;
+          icpScore += 5;
+          icpReasons.push(`✅ Estado: ${cleanedState} (+5)`);
+        } else if (company.uf) {
+          icpReasons.push(`❌ Estado inválido: ${company.uf} (0)`);
+          company.uf = null;
+        }
+        
+        // Website? (+5)
+        if (company.website) {
+          icpScore += 5;
+          icpReasons.push('✅ Website (+5)');
+        }
+        
+        // Determinar tier após enriquecimento
+        const icp_tier = icpScore >= 90 ? 'excellent' : 
+                        icpScore >= 70 ? 'premium' : 
+                        icpScore >= 50 ? 'qualified' : 
+                        icpScore >= 30 ? 'potential' : 'low';
+        
+        const needs_enrichment = icpScore < 50;
+        
+        console.log('[ICP-RESCORE]', company.name, '→ Score:', icpScore);
+        
+        return {
+          ...company,
+          icp_score: Math.min(100, icpScore),
+          icp_tier,
+          icp_reasons: icpReasons,
+          needs_enrichment
+        };
+      });
+      
+      console.log('[ICP-RESCORE] Recálculo concluído');
       console.log('[DEBUG] ========================');
 
       // ORDENAR por ICP score (maior primeiro), depois por similaridade
-      const sortedCompanies = filteredCompanies
+      const sortedCompanies = rescoredCompanies
         .filter((company, index, self) =>
           // Remover duplicatas por CNPJ ou nome
           index === self.findIndex(c => 
