@@ -8,6 +8,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -105,157 +111,230 @@ export function QuarantineRowActions({
   };
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          data-testid="quarantine-row-actions"
-          aria-label="Ações da empresa"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-popover z-[100]">
-        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {/* Ver Detalhes (mesclado com Preview) */}
-        <DropdownMenuItem 
-          onClick={handlePreview}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          <Eye className="h-4 w-4 mr-2" />
-          Ver Detalhes
-        </DropdownMenuItem>
-
-        {/* Editar/Salvar Dados */}
-        <DropdownMenuItem 
-          onClick={() => {
-            // Se já tem company_id vinculado, vai para edição
-            if (company.company_id) {
-              navigate(`/search?companyId=${company.company_id}`);
-            } else {
-              toast.info('Complete a aprovação para editar dados completos');
-            }
-            setIsOpen(false);
-          }}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Editar/Salvar Dados
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        {/* Simple TOTVS Check - Abrir modal (origem única) */}
-        <DropdownMenuItem 
-          onClick={() => {
-            setShowReport(true);
-            setIsOpen(false);
-            toast.info('Use o botão "Reverificar" dentro do relatório para executar o check (com cooldown).');
-          }}
-          disabled={isEnriching}
-          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          {enrichingAction === 'TOTVS Check' ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Target className="h-4 w-4 mr-2" />
-          )}
-          Simple TOTVS Check (STC)
-        </DropdownMenuItem>
-
-        {/* Ver Relatório TOTVS (Modal) */}
-        <DropdownMenuItem 
-          onClick={() => {
-            if (onOpenExecutiveReport) {
-              onOpenExecutiveReport();
-            }
-            setIsOpen(false);
-          }}
-          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Ver Relatório Completo
-        </DropdownMenuItem>
-
-        {/* Atualizar relatório */}
-        <DropdownMenuItem 
-          onClick={() => {
-            if (onRefresh) onRefresh(company.id);
-          }}
-          className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar relatório
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        {/* Criar Estratégia */}
-        <DropdownMenuItem 
-          onClick={() => {
-            if (company.company_id) {
-              navigate(`/account-strategy?company=${company.company_id}`);
-            } else {
-              toast.info('Aprove a empresa primeiro para criar estratégia');
-            }
-            setIsOpen(false);
-          }}
-          disabled={!company.cnpj}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          <Target className="h-4 w-4 mr-2" />
-          {company.cnpj ? 'Criar Estratégia' : 'Criar Estratégia (requer CNPJ)'}
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Enriquecimento</DropdownMenuLabel>
-
-        {/* Descobrir CNPJ */}
-        {!company.cnpj && onDiscoverCNPJ && (
-          <DropdownMenuItem 
-            onClick={() => {
-              onDiscoverCNPJ(company.id);
-              setIsOpen(false);
-            }}
-            className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+    <TooltipProvider>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            data-testid="quarantine-row-actions"
+            aria-label="Ações da empresa"
           >
-            <Search className="h-4 w-4 mr-2" />
-            Descobrir CNPJ
-          </DropdownMenuItem>
-        )}
+            <Settings className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72 bg-popover z-[100]">
+          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {/* Ver Detalhes (mesclado com Preview) */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={handlePreview}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Ver Detalhes
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Visualizar Análise Completa</p>
+              <p className="text-xs text-muted-foreground mt-1">Abre modal com todos os dados ICP, scores, temperatura e análise detalhada da empresa</p>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* Receita Federal */}
-        <DropdownMenuItem
-          onClick={() => handleEnrich('Receita Federal', onEnrichReceita)}
-          disabled={isDisabled('receita') || isEnriching}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          {enrichingAction === 'Receita Federal' ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Building2 className="h-4 w-4 mr-2" />
-          )}
-          Receita Federal
-          {getTooltip('receita') && <span className="ml-auto text-xs text-muted-foreground">{getTooltip('receita')}</span>}
-        </DropdownMenuItem>
+          {/* Editar/Salvar Dados */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={() => {
+                  // Se já tem company_id vinculado, vai para edição
+                  if (company.company_id) {
+                    navigate(`/search?companyId=${company.company_id}`);
+                  } else {
+                    toast.info('Complete a aprovação para editar dados completos');
+                  }
+                  setIsOpen(false);
+                }}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar/Salvar Dados
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Editar Cadastro da Empresa</p>
+              <p className="text-xs text-muted-foreground mt-1">Abre tela de busca/edição para atualizar manualmente dados cadastrais, contatos e informações complementares</p>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* Apollo */}
-        <DropdownMenuItem
-          onClick={() => handleEnrich('Apollo', onEnrichApollo)}
-          disabled={isEnriching}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          {enrichingAction === 'Apollo' ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <img src={apolloIcon} alt="Apollo" className="h-4 w-4 mr-2" />
+          <DropdownMenuSeparator />
+
+          {/* Simple TOTVS Check - Abrir modal (origem única) */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setShowReport(true);
+                  setIsOpen(false);
+                  toast.info('Use o botão "Reverificar" dentro do relatório para executar o check (com cooldown).');
+                }}
+                disabled={isEnriching}
+                className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                {enrichingAction === 'TOTVS Check' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Target className="h-4 w-4 mr-2" />
+                )}
+                Simple TOTVS Check (STC)
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">STC - TOTVS Checker</p>
+              <p className="text-xs text-muted-foreground mt-1">Verifica em 17 fontes premium (CVM, notícias, deep web) se empresa já é cliente TOTVS. Detecta triple/double/single match com highlight de termos encontrados</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Ver Relatório TOTVS (Modal) */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={() => {
+                  if (onOpenExecutiveReport) {
+                    onOpenExecutiveReport();
+                  }
+                  setIsOpen(false);
+                }}
+                className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Ver Relatório Completo
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Relatório Executivo ICP</p>
+              <p className="text-xs text-muted-foreground mt-1">Exibe análise completa consolidada: ICP score, temperatura, fit TOTVS, maturidade digital, diagnóstico 360° e recomendações de abordagem</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Atualizar relatório */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={() => {
+                  if (onRefresh) onRefresh(company.id);
+                }}
+                className="hover:bg-accent hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar relatório
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Refresh Análise ICP</p>
+              <p className="text-xs text-muted-foreground mt-1">Re-executa análise ICP completa com dados atualizados da empresa para refletir mudanças recentes no score e temperatura</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <DropdownMenuSeparator />
+
+          {/* Criar Estratégia */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={() => {
+                  if (company.company_id) {
+                    navigate(`/account-strategy?company=${company.company_id}`);
+                  } else {
+                    toast.info('Aprove a empresa primeiro para criar estratégia');
+                  }
+                  setIsOpen(false);
+                }}
+                disabled={!company.cnpj}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                <Target className="h-4 w-4 mr-2" />
+                {company.cnpj ? 'Criar Estratégia' : 'Criar Estratégia (requer CNPJ)'}
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">ROI-Labs: Estratégia de Conta</p>
+              <p className="text-xs text-muted-foreground mt-1">Abre central estratégica com ROI Calculator, CPQ, análise de cenários best/expected/worst, propostas visuais e value realization</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Enriquecimento</DropdownMenuLabel>
+
+          {/* Descobrir CNPJ */}
+          {!company.cnpj && onDiscoverCNPJ && (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    onDiscoverCNPJ(company.id);
+                    setIsOpen(false);
+                  }}
+                  className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Descobrir CNPJ
+                </DropdownMenuItem>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <p className="font-semibold text-sm">Busca Automática de CNPJ</p>
+                <p className="text-xs text-muted-foreground mt-1">Pesquisa CNPJ através de APIs públicas e motores de busca usando razão social e domínio da empresa</p>
+              </TooltipContent>
+            </Tooltip>
           )}
-          Apollo (Decisores)
-        </DropdownMenuItem>
+
+          {/* Receita Federal */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem
+                onClick={() => handleEnrich('Receita Federal', onEnrichReceita)}
+                disabled={isDisabled('receita') || isEnriching}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                {enrichingAction === 'Receita Federal' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Building2 className="h-4 w-4 mr-2" />
+                )}
+                Receita Federal
+                {getTooltip('receita') && <span className="ml-auto text-xs text-muted-foreground">{getTooltip('receita')}</span>}
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Consulta Receita Federal</p>
+              <p className="text-xs text-muted-foreground mt-1">Busca dados oficiais da empresa: situação cadastral, atividade econômica (CNAE), porte, endereço completo e sócios diretamente da base da Receita Federal (requer CNPJ)</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Apollo */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem
+                onClick={() => handleEnrich('Apollo', onEnrichApollo)}
+                disabled={isEnriching}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                {enrichingAction === 'Apollo' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <img src={apolloIcon} alt="Apollo" className="h-4 w-4 mr-2" />
+                )}
+                Apollo (Decisores)
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Apollo.io - Pessoas Decisoras</p>
+              <p className="text-xs text-muted-foreground mt-1">Identifica contatos C-Level, diretores e decisores com nome, cargo, e-mail, telefone e perfil LinkedIn usando base Apollo.io</p>
+            </TooltipContent>
+          </Tooltip>
 
         {/* ECONODATA: Desabilitado - fase 2 */}
         {/* Eco-Booster
@@ -274,101 +353,142 @@ export function QuarantineRowActions({
         </DropdownMenuItem>
         */}
 
-        {/* 360° Completo */}
-        <DropdownMenuItem
-          onClick={() => handleEnrich('360° Completo', onEnrich360)}
-          disabled={isEnriching}
-          className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
-        >
-          {enrichingAction === '360° Completo' ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
+          {/* 360° Completo */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem
+                onClick={() => handleEnrich('360° Completo', onEnrich360)}
+                disabled={isEnriching}
+                className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+              >
+                {enrichingAction === '360° Completo' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                360° Completo
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm">Intelligence 360° - Análise Completa</p>
+              <p className="text-xs text-muted-foreground mt-1">Executa diagnóstico completo com IA: análise de site, redes sociais, notícias, tech stack, maturidade digital, saúde online, benchmark setorial e recomendações estratégicas personalizadas</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <DropdownMenuSeparator />
+
+          {/* Abrir Website */}
+          {company.website && (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <DropdownMenuItem asChild>
+                  <a
+                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Abrir Website
+                  </a>
+                </DropdownMenuItem>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <p className="font-semibold text-sm">Visitar Site da Empresa</p>
+                <p className="text-xs text-muted-foreground mt-1">Abre o website oficial da empresa em nova aba para análise manual de produtos, serviços e presença digital</p>
+              </TooltipContent>
+            </Tooltip>
           )}
-          360° Completo
-        </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+          {company.status === 'pendente' && (
+            <>
+              <DropdownMenuSeparator />
+              
+              {/* Aprovar */}
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem 
+                    onClick={handleApprove}
+                    className="hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-l-4 hover:border-green-500 transition-all cursor-pointer"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                    Aprovar e Mover para Pool
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="font-semibold text-sm">Aprovar Lead Qualificado</p>
+                  <p className="text-xs text-muted-foreground mt-1">Move empresa aprovada da quarentena para o pool ativo de leads, disponível para equipe de vendas trabalhar na prospecção</p>
+                </TooltipContent>
+              </Tooltip>
 
-        {/* Abrir Website */}
-        {company.website && (
-          <DropdownMenuItem asChild>
-            <a
-              href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cursor-pointer hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Abrir Website
-            </a>
-          </DropdownMenuItem>
-        )}
+              {/* Descartar */}
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem 
+                    onClick={handleReject}
+                    className="hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-l-4 hover:border-orange-500 transition-all cursor-pointer"
+                  >
+                    <XCircle className="h-4 w-4 mr-2 text-orange-600" />
+                    Descartar (Não qualificado)
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="font-semibold text-sm">Descartar Lead</p>
+                  <p className="text-xs text-muted-foreground mt-1">Remove empresa da quarentena por não atender critérios ICP. Move para histórico de descartados com motivo registrado para auditoria</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
 
-        {company.status === 'pendente' && (
-          <>
-            <DropdownMenuSeparator />
-            
-            {/* Aprovar */}
-            <DropdownMenuItem 
-              onClick={handleApprove}
-              className="hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-l-4 hover:border-green-500 transition-all cursor-pointer"
-            >
-              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-              Aprovar e Mover para Pool
-            </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Ação Perigosa</DropdownMenuLabel>
+          
+          {/* Deletar */}
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <DropdownMenuItem 
+                onClick={handleDelete}
+                className="text-destructive hover:bg-destructive/10 hover:border-l-4 hover:border-destructive transition-all cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Deletar Permanentemente
+              </DropdownMenuItem>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="font-semibold text-sm text-destructive">⚠️ Exclusão Permanente</p>
+              <p className="text-xs text-muted-foreground mt-1">Remove definitivamente todos os dados da empresa do sistema. Esta ação é irreversível e não pode ser desfeita</p>
+            </TooltipContent>
+          </Tooltip>
+        </DropdownMenuContent>
 
-            {/* Descartar */}
-            <DropdownMenuItem 
-              onClick={handleReject}
-              className="hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-l-4 hover:border-orange-500 transition-all cursor-pointer"
-            >
-              <XCircle className="h-4 w-4 mr-2 text-orange-600" />
-              Descartar (Não qualificado)
-            </DropdownMenuItem>
-          </>
-        )}
+        {/* Modal de Relatório (Quarentena) */}
+        <QuarantineReportModal 
+          open={showReport}
+          onOpenChange={setShowReport}
+          analysisId={company.id}
+          companyId={company.company_id || undefined}
+          companyName={company.razao_social || 'Empresa'}
+          cnpj={company.cnpj}
+          domain={company.domain || company.website}
+        />
 
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Ação Perigosa</DropdownMenuLabel>
-        
-        {/* Deletar */}
-        <DropdownMenuItem 
-          onClick={handleDelete}
-          className="text-destructive hover:bg-destructive/10 hover:border-l-4 hover:border-destructive transition-all cursor-pointer"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Deletar Permanentemente
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-
-      {/* Modal de Relatório (Quarentena) */}
-      <QuarantineReportModal 
-        open={showReport}
-        onOpenChange={setShowReport}
-        analysisId={company.id}
-        companyId={company.company_id || undefined}
-        companyName={company.razao_social || 'Empresa'}
-        cnpj={company.cnpj}
-        domain={company.domain || company.website}
-      />
-
-      {/* Modal de Descarte com motivos */}
-      <DiscardCompanyModal
-        open={showDiscardModal}
-        onOpenChange={setShowDiscardModal}
-        company={{
-          id: company.company_id || company.id,
-          name: company.razao_social || 'Empresa',
-          cnpj: company.cnpj,
-          icp_score: company.icp_score,
-          icp_temperature: company.temperatura,
-        }}
-        analysisId={company.id}
-        onSuccess={() => {
-          onReject(company.id, 'Descartado via modal');
-        }}
-      />
-    </DropdownMenu>
+        {/* Modal de Descarte com motivos */}
+        <DiscardCompanyModal
+          open={showDiscardModal}
+          onOpenChange={setShowDiscardModal}
+          company={{
+            id: company.company_id || company.id,
+            name: company.razao_social || 'Empresa',
+            cnpj: company.cnpj,
+            icp_score: company.icp_score,
+            icp_temperature: company.temperatura,
+          }}
+          analysisId={company.id}
+          onSuccess={() => {
+            onReject(company.id, 'Descartado via modal');
+          }}
+        />
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
