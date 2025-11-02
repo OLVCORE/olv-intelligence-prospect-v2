@@ -39,28 +39,21 @@ export function analyzeMatchLevel(text: string, companyName: string): {
   // Verificar presença da empresa (match parcial)
   const hasCompany = companyKeywords.some(kw => lowerText.includes(kw));
   
-  // Se não tem nem empresa nem TOTVS, rejeitar
+  // ⚠️ CRUCIAL: NÃO REJEITAR EVIDÊNCIAS!
+  // O Serper só retorna resultados relacionados à query (que já inclui TOTVS)
+  // Aceitar qualquer evidência que tenha TOTVS OU empresa
+  
   if (!hasTOTVS && !hasCompany) {
+    // Apenas rejeitar se não tem NADA
     return { matchLevel: 2, components: [], confidence: 0 };
   }
   
-  // Se tem apenas TOTVS mas não a empresa, aceitar mas com confiança baixa
-  if (hasTOTVS && !hasCompany) {
-    return { 
-      matchLevel: 2, 
-      components: ['TOTVS'], 
-      confidence: 30 
-    };
-  }
-  
-  // Se tem empresa mas não TOTVS, rejeitar
-  if (!hasTOTVS && hasCompany) {
-    return { matchLevel: 2, components: [], confidence: 0 };
-  }
-  
-  // Match completo: empresa + TOTVS
+  // Iniciar classificação
   let matchLevel: 2 | 3 | 4 | 5 = 2;
-  const components = [companyName, 'TOTVS'];
+  const components: string[] = [];
+  
+  if (hasCompany) components.push(companyName);
+  if (hasTOTVS) components.push('TOTVS');
   
   // TRIPLE: Solução mencionada?
   const solutions = ['protheus', 'rm', 'datasul', 'fluig', 'winthor', 'logix'];
@@ -83,10 +76,25 @@ export function analyzeMatchLevel(text: string, companyName: string): {
     components.push('Técnico');
   }
   
-  // Calcular confiança
-  const confidence = matchLevel === 5 ? 98 : 
-                     matchLevel === 4 ? 90 : 
-                     matchLevel === 3 ? 75 : 60;
+  // Calcular confiança base
+  let baseConfidence = 40; // mínimo para aceitar
+  
+  if (hasTOTVS && hasCompany) {
+    // Match completo: empresa + TOTVS no mesmo texto
+    baseConfidence = 70;
+  } else if (hasTOTVS) {
+    // Apenas TOTVS (mas Serper já filtrou por relevância)
+    baseConfidence = 50;
+  } else if (hasCompany) {
+    // Apenas empresa (mas query tinha TOTVS)
+    baseConfidence = 40;
+  }
+  
+  // Aplicar multiplicador do matchLevel
+  const confidence = matchLevel === 5 ? Math.min(98, baseConfidence + 30) : 
+                     matchLevel === 4 ? Math.min(90, baseConfidence + 20) : 
+                     matchLevel === 3 ? Math.min(75, baseConfidence + 10) : 
+                     baseConfidence;
   
   return { matchLevel, components, confidence };
 }
