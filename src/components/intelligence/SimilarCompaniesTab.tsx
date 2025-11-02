@@ -213,6 +213,8 @@ export function SimilarCompaniesTab({
 }: SimilarCompaniesTabProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // ===== TODOS OS HOOKS NO TOPO (NUNCA CONDICIONAIS) =====
   const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
   const [activeScoreFilter, setActiveScoreFilter] = useState<string | null>(null);
   
@@ -1131,6 +1133,32 @@ export function SimilarCompaniesTab({
     staleTime: 5 * 60 * 1000,
   });
 
+  // ===== USEMEMO SEMPRE APÓS USEQUERY, NUNCA APÓS RETURNS =====
+  // Filtrar empresas por score ativo (sempre chamar, nunca condicionalmente)
+  const filteredCompaniesByScore = useMemo(() => {
+    // Se não há dados, retornar array vazio
+    if (!data?.similar_companies) {
+      return [];
+    }
+    
+    // Se não há filtro ativo, retornar todas
+    if (!activeScoreFilter) {
+      return data.similar_companies;
+    }
+    
+    // Aplicar filtro de score
+    const [min, max] = activeScoreFilter.split('-').map(Number);
+    
+    return data.similar_companies.filter(company => {
+      const score = company.icp_score || 0;
+      if (max === 100) {
+        return score >= min && score <= max;
+      }
+      return score >= min && score < max;
+    });
+  }, [data?.similar_companies, activeScoreFilter]);
+
+
   const handleAddToQuarantine = async (company: WebDiscoveredCompany) => {
     try {
       setIsAddingCompany(company.name);
@@ -1289,21 +1317,6 @@ export function SimilarCompaniesTab({
   }
 
   const { similar_companies, statistics, insights } = data;
-
-  // Filtrar empresas por score ativo
-  const filteredCompaniesByScore = useMemo(() => {
-    if (!activeScoreFilter) return similar_companies;
-    
-    const [min, max] = activeScoreFilter.split('-').map(Number);
-    
-    return similar_companies.filter(company => {
-      const score = company.icp_score || 0;
-      if (max === 100) {
-        return score >= min && score <= max;
-      }
-      return score >= min && score < max;
-    });
-  }, [similar_companies, activeScoreFilter]);
 
   console.log('[FILTER] Filtro ativo:', activeScoreFilter);
   console.log('[FILTER] Empresas filtradas:', filteredCompaniesByScore.length);
