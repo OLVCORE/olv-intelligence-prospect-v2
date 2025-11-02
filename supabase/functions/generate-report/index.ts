@@ -230,7 +230,7 @@ LinkedIn: ${redesSociais.linkedin?.followers || 0} seguidores
     redesSociais,
   });
 
-  const temperatura = icpScore >= 85 ? 'quente' : icpScore >= 70 ? 'morno' : 'frio';
+  const temperatura = icpScore >= 85 ? 'hot' : icpScore >= 70 ? 'warm' : 'cold';
 
   log('INFO', '360', `✅ ICP Score: ${icpScore} | Temperatura: ${temperatura}`);
 
