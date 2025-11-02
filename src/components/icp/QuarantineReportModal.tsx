@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
 import { useState, useRef, useCallback, useMemo } from 'react';
@@ -159,17 +159,23 @@ export function QuarantineReportModal({
             
             <div className="flex items-center gap-2 shrink-0 ml-4">
               <Button
-                variant="outline"
-                size="icon"
+                variant="default"
+                size="sm"
                 onClick={handlePrintPDF}
                 disabled={isGeneratingPDF}
                 title="Exportar como PDF"
-                className="h-9 w-9"
+                className="h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {isGeneratingPDF ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm font-medium">Gerando...</span>
+                  </>
                 ) : (
-                  <Download className="w-4 h-4" />
+                  <>
+                    <FileDown className="w-4 h-4" />
+                    <span className="text-sm font-medium">Exportar PDF</span>
+                  </>
                 )}
               </Button>
               

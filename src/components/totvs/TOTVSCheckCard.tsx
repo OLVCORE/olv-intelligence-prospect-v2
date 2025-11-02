@@ -21,7 +21,12 @@ import {
   Check,
   Building2,
   BarChart3,
-  Search
+  Search,
+  Target,
+  Flame,
+  Package,
+  Sparkles,
+  Circle
 } from 'lucide-react';
 
 interface TOTVSCheckCardProps {
@@ -120,14 +125,17 @@ export default function TOTVSCheckCard({
     return (
       <Card className="p-6">
         <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+            <Search className="w-8 h-8 text-primary" />
+          </div>
           <h3 className="text-lg font-semibold mb-2">
-            🔍 Verificação TOTVS
+            Verificação TOTVS
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
             Verificar se a empresa é cliente TOTVS
           </p>
           <Button onClick={handleVerify}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <Sparkles className="w-4 h-4 mr-2" />
             Verificar Agora
           </Button>
         </div>
@@ -199,7 +207,8 @@ export default function TOTVSCheckCard({
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-xs">
-                    🔄 Verificação nova
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Verificação nova
                   </Badge>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -221,11 +230,26 @@ export default function TOTVSCheckCard({
                 data.status === 'revisar' ? 'secondary' :
                 'destructive'
               }
-              className="text-base px-4 py-2"
+              className="text-base px-4 py-2 flex items-center gap-2"
             >
-              {data.status === 'go' && '✅ GO - Não é cliente TOTVS'}
-              {data.status === 'revisar' && '⚠️ REVISAR - Evidências encontradas'}
-              {data.status === 'no-go' && '❌ NO-GO - Cliente TOTVS confirmado'}
+              {data.status === 'go' && (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  GO - Não é cliente TOTVS
+                </>
+              )}
+              {data.status === 'revisar' && (
+                <>
+                  <AlertTriangle className="w-4 h-4" />
+                  REVISAR - Evidências encontradas
+                </>
+              )}
+              {data.status === 'no-go' && (
+                <>
+                  <XCircle className="w-4 h-4" />
+                  NO-GO - Cliente TOTVS confirmado
+                </>
+              )}
             </Badge>
             <p className="text-sm text-muted-foreground mt-2">
               Confiança: <strong>{data.confidence === 'high' ? 'Alta' : data.confidence === 'medium' ? 'Média' : 'Baixa'}</strong>
@@ -260,11 +284,19 @@ export default function TOTVSCheckCard({
                   size="sm"
                   onClick={() => setFilterMode('triple')}
                 >
-                  🎯 Apenas Triple
+                  <Target className="w-4 h-4 mr-2" />
+                  Apenas Triple
                 </Button>
               </div>
-              <div className="text-sm text-muted-foreground">
-                🟢 {tripleMatches.length} Triple | 🔵 {doubleMatches.length} Double
+              <div className="text-sm text-muted-foreground flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <Circle className="w-3 h-3 fill-green-600 text-green-600" />
+                  {tripleMatches.length} Triple
+                </span>
+                <span className="flex items-center gap-1">
+                  <Circle className="w-3 h-3 fill-blue-600 text-blue-600" />
+                  {doubleMatches.length} Double
+                </span>
               </div>
             </div>
           )}
@@ -284,8 +316,18 @@ export default function TOTVSCheckCard({
                 return (
                   <div key={index} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
                     <div className="flex justify-between items-start mb-3">
-                      <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'} className="text-sm">
-                        {evidence.match_type === 'triple' ? '🎯 TRIPLE MATCH' : '🔍 DOUBLE MATCH'}
+                      <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'} className="text-sm flex items-center gap-1">
+                        {evidence.match_type === 'triple' ? (
+                          <>
+                            <Target className="w-3 h-3" />
+                            TRIPLE MATCH
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-3 h-3" />
+                            DOUBLE MATCH
+                          </>
+                        )}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         {evidence.source_name || evidence.source} ({evidence.weight} pts)
@@ -295,8 +337,9 @@ export default function TOTVSCheckCard({
                     {/* INTENÇÃO DE COMPRA */}
                     {evidence.has_intent && evidence.intent_keywords?.length > 0 && (
                       <div className="mb-3 p-2 bg-destructive/10 rounded-md border border-destructive/20">
-                        <Badge variant="destructive" className="text-xs mb-1">
-                          🔥 INTENÇÃO DE COMPRA DETECTADA
+                        <Badge variant="destructive" className="text-xs mb-1 flex items-center gap-1 w-fit">
+                          <Flame className="w-3 h-3" />
+                          INTENÇÃO DE COMPRA DETECTADA
                         </Badge>
                         <div className="text-xs text-muted-foreground mt-1">
                           <strong>Keywords:</strong> {evidence.intent_keywords.join(', ')}
@@ -322,11 +365,12 @@ export default function TOTVSCheckCard({
                     
                     {/* PRODUTOS DETECTADOS */}
                     {evidence.detected_products?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <div className="flex flex-wrap gap-1 mb-3 items-center">
                         <span className="text-xs font-medium mr-2">Produtos:</span>
                         {evidence.detected_products.map((product: string) => (
-                          <Badge key={product} variant="outline" className="text-xs">
-                            📦 {product}
+                          <Badge key={product} variant="outline" className="text-xs flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            {product}
                           </Badge>
                         ))}
                       </div>
