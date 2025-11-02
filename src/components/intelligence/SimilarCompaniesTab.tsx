@@ -221,6 +221,9 @@ export function SimilarCompaniesTab({
       console.log('[DEEP-SEARCH] ===== BUSCA PROFUNDA 15 CAMADAS =====');
       
       // PASSO 1: Buscar dados da empresa alvo
+      console.log('[DEBUG] ===== EMPRESA ALVO =====');
+      console.log('[DEBUG] ID:', companyId);
+      
       let targetCompany: any = {
         company_name: companyName,
         cnpj: cnpj,
@@ -229,11 +232,18 @@ export function SimilarCompaniesTab({
         sector: sector
       };
       
-      const { data: sc } = await (supabase as any)
+      const { data: sc, error: fetchError } = await (supabase as any)
         .from('suggested_companies')
         .select('*')
         .eq('id', companyId)
         .maybeSingle();
+
+      console.log('[DEBUG] Erro ao buscar:', fetchError);
+      
+      if (fetchError) {
+        console.error('[DEBUG] ❌ Erro ao buscar empresa:', fetchError);
+        throw new Error(`Erro ao buscar empresa: ${fetchError.message}`);
+      }
 
       if (sc) {
         targetCompany = {
@@ -243,6 +253,19 @@ export function SimilarCompaniesTab({
           city: sc.city,
           sector: sc.sector || sector
         };
+      }
+
+      console.log('[DEBUG] Nome:', targetCompany.company_name);
+      console.log('[DEBUG] CNPJ:', targetCompany.cnpj);
+      console.log('[DEBUG] Setor:', targetCompany.sector);
+      console.log('[DEBUG] CNAE:', sc?.cnae_principal);
+      console.log('[DEBUG] Estado:', targetCompany.state);
+      console.log('[DEBUG] Funcionários:', sc?.employees_count);
+      console.log('[DEBUG] ========================');
+      
+      if (!targetCompany.company_name) {
+        console.error('[DEBUG] ❌ Empresa não encontrada ou sem nome');
+        throw new Error('Empresa não encontrada');
       }
 
       console.log('[DEEP-SEARCH] Dados da empresa alvo:', {
@@ -359,38 +382,63 @@ export function SimilarCompaniesTab({
 
       // ==================== CAMADA 1: SETOR ====================
       if (inferredSector && totalQueries < MAX_TOTAL_QUERIES) {
-        console.log('[DEEP-SEARCH] 🔍 CAMADA 1: Setor');
+        console.log('[DEBUG] 🔍 CAMADA 1: Setor -', inferredSector);
         try {
           const queries = [
             targetState ? `empresas ${inferredSector} ${targetState} Brasil` : `empresas ${inferredSector} Brasil`,
             `indústria ${inferredSector} CNPJ`
           ].slice(0, MAX_QUERIES_PER_LAYER);
           
+          console.log('[DEBUG] Queries da CAMADA 1:', queries);
+          
           for (const query of queries) {
             if (totalQueries >= MAX_TOTAL_QUERIES) break;
             
             try {
-              const { data: searchData } = await supabase.functions.invoke('web-search', {
+              console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 10)');
+              
+              const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
                 body: { query, limit: 10, country: 'BR', language: 'pt' }
               });
               
-              if (searchData?.success && searchData.results) {
-                allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'sector', score: 100 })));
+              if (searchError) {
+                console.error('[SEARCH-WEB] ❌ Erro Edge Function:', searchError);
+              } else if (!searchData?.success) {
+                console.error('[SEARCH-WEB] ❌ API retornou erro:', searchData?.error);
+              } else {
+                console.log('[SEARCH-WEB] ✅ Resultados:', searchData.results?.length || 0);
+                
+                // LOG DETALHADO DOS PRIMEIROS 3 RESULTADOS
+                if (searchData.results && searchData.results.length > 0) {
+                  console.log('[SEARCH-WEB] Primeiros resultados:');
+                  searchData.results.slice(0, 3).forEach((r: any, i: number) => {
+                    console.log(`  ${i+1}. ${r.title}`);
+                    console.log(`     URL: ${r.url}`);
+                    console.log(`     Snippet: ${r.snippet?.substring(0, 100)}...`);
+                  });
+                  allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'sector', score: 100 })));
+                }
               }
+              
+              console.log('[DEBUG] CAMADA 1 - Query:', query, '- Resultados:', searchData?.results?.length || 0);
               totalQueries++;
               await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
             } catch (err) {
-              console.error('[DEEP-SEARCH] Erro query CAMADA 1:', query, err);
+              console.error('[DEBUG] ❌ Erro na query:', query, err);
             }
           }
+          
+          console.log('[DEBUG] CAMADA 1 concluída. Total de resultados até agora:', allResults.length);
         } catch (err) {
           console.error('[DEEP-SEARCH] Erro CAMADA 1:', err);
         }
+      } else {
+        console.log('[DEBUG] ⏭️ CAMADA 1 pulada (sem setor ou limite atingido)');
       }
 
       // ==================== CAMADA 2: PALAVRAS-CHAVE ====================
       if (keywords.length > 0 && totalQueries < MAX_TOTAL_QUERIES) {
-        console.log('[DEEP-SEARCH] 🔍 CAMADA 2: Palavras-chave');
+        console.log('[DEBUG] 🔍 CAMADA 2: Palavras-chave -', keywords);
         try {
           for (const keyword of keywords.slice(0, 2)) {
             if (totalQueries >= MAX_TOTAL_QUERIES) break;
@@ -400,72 +448,101 @@ export function SimilarCompaniesTab({
               : `fabricantes ${keyword} Brasil`;
             
             try {
-              const { data: searchData } = await supabase.functions.invoke('web-search', {
+              console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 5)');
+              const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
                 body: { query, limit: 5, country: 'BR', language: 'pt' }
               });
               
-              if (searchData?.success && searchData.results) {
+              if (searchError) {
+                console.error('[SEARCH-WEB] ❌ Erro:', searchError);
+              } else if (searchData?.success && searchData.results) {
+                console.log('[SEARCH-WEB] ✅ Resultados:', searchData.results.length);
                 allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'keyword', score: 80 })));
               }
+              
+              console.log('[DEBUG] CAMADA 2 - Query:', query, '- Resultados:', searchData?.results?.length || 0);
               totalQueries++;
               await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
             } catch (err) {
-              console.error('[DEEP-SEARCH] Erro query CAMADA 2:', query, err);
+              console.error('[DEBUG] ❌ Erro na query:', query, err);
             }
           }
+          console.log('[DEBUG] CAMADA 2 concluída. Total de resultados até agora:', allResults.length);
         } catch (err) {
           console.error('[DEEP-SEARCH] Erro CAMADA 2:', err);
         }
+      } else {
+        console.log('[DEBUG] ⏭️ CAMADA 2 pulada (sem keywords ou limite atingido)');
       }
 
       // ==================== CAMADA 3: LINKEDIN ====================
       if (inferredSector && totalQueries < MAX_TOTAL_QUERIES) {
-        console.log('[DEEP-SEARCH] 🔍 CAMADA 3: LinkedIn');
+        console.log('[DEBUG] 🔍 CAMADA 3: LinkedIn');
         try {
           const query = `empresas ${inferredSector} Brasil site:linkedin.com`;
           
-          const { data: searchData } = await supabase.functions.invoke('web-search', {
+          console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 5)');
+          const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
             body: { query, limit: 5, country: 'BR', language: 'pt' }
           });
           
-          if (searchData?.success && searchData.results) {
+          if (searchError) {
+            console.error('[SEARCH-WEB] ❌ Erro:', searchError);
+          } else if (searchData?.success && searchData.results) {
+            console.log('[SEARCH-WEB] ✅ Resultados:', searchData.results.length);
             allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'linkedin', score: 85 })));
           }
+          
+          console.log('[DEBUG] CAMADA 3 concluída. Total de resultados até agora:', allResults.length);
           totalQueries++;
           await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
         } catch (err) {
           console.error('[DEEP-SEARCH] Erro CAMADA 3:', err);
         }
+      } else {
+        console.log('[DEBUG] ⏭️ CAMADA 3 pulada');
       }
 
       // ==================== CAMADA 4: CONCORRENTES ====================
       if (totalQueries < MAX_TOTAL_QUERIES) {
-        console.log('[DEEP-SEARCH] 🔍 CAMADA 4: Concorrentes');
+        console.log('[DEBUG] 🔍 CAMADA 4: Concorrentes');
         try {
           const query = `concorrentes ${targetCompany.company_name}`;
           
-          const { data: searchData } = await supabase.functions.invoke('web-search', {
+          console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 5)');
+          const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
             body: { query, limit: 5, country: 'BR', language: 'pt' }
           });
           
-          if (searchData?.success && searchData.results) {
+          if (searchError) {
+            console.error('[SEARCH-WEB] ❌ Erro:', searchError);
+          } else if (searchData?.success && searchData.results) {
+            console.log('[SEARCH-WEB] ✅ Resultados:', searchData.results.length);
             allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'competitors', score: 90 })));
           }
+          
+          console.log('[DEBUG] CAMADA 4 concluída. Total de resultados até agora:', allResults.length);
           totalQueries++;
         } catch (err) {
           console.error('[DEEP-SEARCH] Erro CAMADA 4:', err);
         }
+      } else {
+        console.log('[DEBUG] ⏭️ CAMADA 4 pulada (limite atingido)');
       }
 
-      console.log('[DEEP-SEARCH] Total de queries executadas:', totalQueries);
-      console.log('[DEEP-SEARCH] Total de resultados brutos:', allResults.length);
-      
       console.log('[DEEP-SEARCH] Total de queries executadas:', totalQueries);
       console.log('[DEEP-SEARCH] Total de resultados brutos:', allResults.length);
       
       // FALLBACK: Se nenhum resultado da web, buscar no banco
       if (allResults.length === 0) {
-        console.log('[DEEP-SEARCH] Sem resultados da web, usando fallback (banco de dados)');
+        console.error('[DEBUG] ❌ NENHUM RESULTADO DA WEB!');
+        console.log('[DEBUG] Possíveis causas:');
+        console.log('[DEBUG] 1. Edge Function web-search não está funcionando');
+        console.log('[DEBUG] 2. API Serper sem créditos ou com erro');
+        console.log('[DEBUG] 3. Queries muito específicas (nenhum resultado)');
+        console.log('[DEBUG] 4. Timeout nas requisições');
+        console.log('[DEBUG] Tentando FALLBACK no banco de dados...');
+        console.log('[DEBUG] Keywords extraídas:', keywords);
         
         try {
           let query = (supabase as any)
@@ -498,11 +575,22 @@ export function SimilarCompaniesTab({
       }
 
       // Processar e limpar resultados com filtro rigoroso
+      console.log('[DEBUG] ===== PROCESSANDO RESULTADOS =====');
+      console.log('[DEBUG] Total de resultados brutos:', allResults.length);
       console.log('[PROCESSING] Processando', allResults.length, 'resultados brutos...');
       
       const processedCompanies: WebDiscoveredCompany[] = allResults
-        .map(result => {
+        .map((result, index) => {
+          console.log(`[DEBUG] Processando resultado ${index + 1}/${allResults.length}:`, result.title);
+          
           const parsed = parseWebResult(result);
+          console.log('[DEBUG] Parsed:', {
+            name: parsed.name,
+            cnpj: parsed.cnpj,
+            setor: parsed.setor,
+            uf: parsed.uf
+          });
+          
           const similarity_score = calculateSimilarity(result, { 
             companyName: targetCompany.company_name, 
             sector: inferredSector, 
@@ -715,7 +803,14 @@ export function SimilarCompaniesTab({
       });
 
       // FILTRO MÍNIMO: Apenas remover lixo óbvio
-      const filteredCompanies = scoredCompanies.filter(company => {
+      console.log('[DEBUG] ===== APLICANDO FILTROS =====');
+      console.log('[DEBUG] Empresas antes dos filtros:', scoredCompanies.length);
+      
+      const filteredCompanies = scoredCompanies.filter((company, index) => {
+        console.log(`\n[DEBUG] Filtrando ${index + 1}/${scoredCompanies.length}:`, company.name);
+        console.log('[DEBUG] ICP Score:', company.icp_score);
+        console.log('[DEBUG] ICP Tier:', company.icp_tier);
+        
         // Rejeitar apenas artigos/listas/associações
         const titleLower = company.name.toLowerCase();
         const isInvalid = 
@@ -731,18 +826,24 @@ export function SimilarCompaniesTab({
           titleLower.includes('lista de');
         
         if (isInvalid) {
+          console.log('[DEBUG] ❌ Rejeitado: Artigo/Lista');
           console.log('[ICP-FILTER] ❌ Rejeitado (artigo):', company.name);
           return false;
         }
         
         // Rejeitar se ICP score muito baixo (< 20)
         if ((company.icp_score || 0) < 20) {
+          console.log('[DEBUG] ❌ Rejeitado: ICP score muito baixo (<20)');
           console.log('[ICP-FILTER] ❌ Rejeitado (ICP score muito baixo):', company.name, company.icp_score);
           return false;
         }
         
+        console.log('[DEBUG] ✅ APROVADO');
         return true;
       });
+      
+      console.log('[DEBUG] Empresas após filtros:', filteredCompanies.length);
+      console.log('[DEBUG] ========================');
 
       // ORDENAR por ICP score (maior primeiro), depois por similaridade
       const sortedCompanies = filteredCompanies
@@ -1048,10 +1149,63 @@ export function SimilarCompaniesTab({
                 </CardDescription>
               </div>
             </div>
-            <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Atualizar
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={async () => {
+                  console.log('[TEST] ===== TESTE MANUAL =====');
+                  
+                  try {
+                    // Teste 1: Busca web direta
+                    console.log('[TEST] Teste 1: Busca web direta');
+                    const { data: testData1, error: testError1 } = await supabase.functions.invoke('web-search', {
+                      body: { query: 'empresas plástico Brasil CNPJ', limit: 5 }
+                    });
+                    console.log('[TEST] Resultados:', testData1?.results?.length || 0);
+                    console.log('[TEST] Error:', testError1);
+                    console.log('[TEST] Data:', testData1);
+                    
+                    // Teste 2: Edge Function status
+                    console.log('[TEST] Teste 2: Edge Function web-search');
+                    const { data: testData2, error: testError2 } = await supabase.functions.invoke('web-search', {
+                      body: { query: 'empresas Brasil', limit: 5 }
+                    });
+                    console.log('[TEST] Data:', testData2);
+                    console.log('[TEST] Error:', testError2);
+                    
+                    // Teste 3: Banco de dados
+                    console.log('[TEST] Teste 3: Banco de dados');
+                    const { data: dbData, error: dbError } = await supabase
+                      .from('suggested_companies')
+                      .select('company_name, cnpj')
+                      .limit(5);
+                    console.log('[TEST] DB Data:', dbData?.length);
+                    console.log('[TEST] DB Error:', dbError);
+                    
+                    console.log('[TEST] ========================');
+                    
+                    toast({
+                      title: '🔧 Teste Debug Concluído',
+                      description: 'Veja os logs no console (F12)',
+                    });
+                  } catch (error) {
+                    console.error('[TEST] Erro:', error);
+                    toast({
+                      title: '❌ Erro no Teste',
+                      description: String(error),
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+                variant="outline"
+                size="sm"
+              >
+                🔧 Teste Debug
+              </Button>
+              <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Atualizar
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
