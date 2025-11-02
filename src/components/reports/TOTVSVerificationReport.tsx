@@ -18,10 +18,11 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
 
   // Função para destacar termos-chave nas evidências
   const highlightTerms = (text: string, terms?: string[]) => {
-    if (!terms || terms.length === 0) return text;
+    if (!text || !terms || terms.length === 0) return text || '';
     
     let highlightedText = text;
     terms.forEach(term => {
+      if (!term) return; // Skip undefined/null terms
       const regex = new RegExp(`(${term})`, 'gi');
       highlightedText = highlightedText.replace(regex, '<mark class="bg-primary/30 text-primary font-semibold px-1 rounded">$1</mark>');
     });
