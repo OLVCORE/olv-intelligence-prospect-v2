@@ -155,22 +155,37 @@ export function SimilarCompaniesTab({
     queryFn: async (): Promise<SimilarCompaniesData> => {
       console.log('[DEEP-SEARCH] ===== BUSCA PROFUNDA 15 CAMADAS =====');
       
-      // PASSO 1: Buscar dados completos da empresa alvo
-      const { data: targetCompany } = await (supabase as any)
+      // PASSO 1: Buscar dados completos da empresa alvo (sem 406)
+      let targetCompany: any = null;
+      const { data: sc } = await (supabase as any)
         .from('suggested_companies')
-        .select('*')
+        .select('company_name, state, city, cnpj')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
+
+      if (sc) targetCompany = sc;
 
       if (!targetCompany) {
-        throw new Error('Empresa não encontrada');
+        const { data: comp } = await (supabase as any)
+          .from('companies')
+          .select('name, state, city, cnpj')
+          .eq('id', companyId)
+          .maybeSingle();
+        if (comp) {
+          targetCompany = {
+            company_name: comp.name,
+            state: comp.state,
+            city: comp.city,
+            cnpj: comp.cnpj,
+          };
+        }
       }
 
       console.log('[DEEP-SEARCH] Dados da empresa alvo:', {
-        name: targetCompany.company_name,
-        cnpj: targetCompany.cnpj,
-        state: targetCompany.state || state,
-        city: targetCompany.city
+        name: targetCompany?.company_name || companyName,
+        cnpj: targetCompany?.cnpj || cnpj,
+        state: targetCompany?.state || state,
+        city: targetCompany?.city
       });
 
       // Inferir setor se não existir
