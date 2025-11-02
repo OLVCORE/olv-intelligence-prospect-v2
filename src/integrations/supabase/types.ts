@@ -7675,6 +7675,47 @@ export type Database = {
           },
         ]
       }
+      stc_agent_conversations: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          data: Json | null
+          id: string
+          metadata: Json | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          metadata?: Json | null
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stc_agent_conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "suggested_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stc_agent_memory: {
         Row: {
           answer: string

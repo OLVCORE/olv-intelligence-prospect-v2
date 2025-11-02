@@ -34,6 +34,63 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
   const [costInfo, setCostInfo] = useState<{ tokens: any; cost: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Carregar histórico ao abrir modal
+  useEffect(() => {
+    if (open && messages.length === 0) {
+      loadConversationHistory();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const loadConversationHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('stc_agent_conversations')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedMessages: Message[] = data.map(msg => ({
+          role: msg.role as 'user' | 'agent',
+          content: msg.content,
+          data: msg.data,
+          timestamp: new Date(msg.created_at)
+        }));
+        setMessages(loadedMessages);
+        setInitialCheckDone(true);
+      } else {
+        // Se não tem histórico, fazer check inicial
+        startInitialCheck();
+      }
+    } catch (err) {
+      console.error('Error loading history:', err);
+      startInitialCheck();
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const saveMessage = async (role: 'user' | 'agent', content: string, data?: any, metadata?: any) => {
+    try {
+      await supabase
+        .from('stc_agent_conversations')
+        .insert({
+          company_id: companyId,
+          role,
+          content,
+          data,
+          metadata
+        });
+    } catch (err) {
+      console.error('Error saving message:', err);
+    }
+  };
 
   // Auto-scroll para o final quando novas mensagens aparecerem
   useEffect(() => {
@@ -141,6 +198,9 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
         timestamp: new Date()
       }]);
       
+      // Salvar mensagem do agente
+      await saveMessage('agent', responseText, result, metadata);
+      
       setInitialCheckDone(true);
     } catch (err: any) {
       setMessages([{
@@ -165,6 +225,9 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
       content: userMessage,
       timestamp: new Date()
     }]);
+    
+    // Salvar mensagem do usuário
+    await saveMessage('user', userMessage);
     
     setLoading(true);
     
@@ -214,6 +277,9 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
         data: result,
         timestamp: new Date()
       }]);
+      
+      // Salvar resposta do agente
+      await saveMessage('agent', result.answer || 'Resposta não disponível', result, metadata);
     } catch (err: any) {
       // Remover mensagem de loading
       setMessages(prev => prev.slice(0, -1));
@@ -508,6 +574,13 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
           {/* Mensagens */}
           <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 pr-4 [&_[data-radix-scroll-area-viewport]]:overflow-y-auto">
             <div className="space-y-4">
+              {loadingHistory && (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                  <span className="ml-2 text-sm text-muted-foreground">Carregando histórico...</span>
+                </div>
+              )}
+              
               {messages.map((msg, i) => (
                 <div
                   key={i}
