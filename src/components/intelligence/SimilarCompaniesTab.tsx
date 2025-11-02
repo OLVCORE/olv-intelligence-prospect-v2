@@ -18,7 +18,7 @@ interface SimilarCompaniesTabProps {
 }
 
 interface WebDiscoveredCompany {
-  id: string;
+  id?: string;
   name: string;
   cnpj: string | null;
   setor: string;
@@ -87,17 +87,53 @@ function calculateSimilarity(result: any, target: { companyName: string; sector?
   return Math.min(score, 100);
 }
 
-// Função para extrair dados da web
+// Parser inteligente de dados da web
 function parseWebResult(result: any): Partial<WebDiscoveredCompany> {
+  // Extrair CNPJ (formato: 00.000.000/0000-00 ou 00000000000000)
+  const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+  const textToSearch = `${result.snippet || ''} ${result.title || ''} ${result.url || ''}`;
+  const cnpjMatches = textToSearch.match(cnpjRegex);
+  const cnpj = cnpjMatches?.[0]?.replace(/\D/g, '') || result.cnpj || result.document;
+  
+  // Extrair número de funcionários
+  const employeesRegex = /(\d+(?:\.\d+)?)\s*(?:funcionários|colaboradores|empregados)/i;
+  const employeesMatch = textToSearch.match(employeesRegex);
+  const employees = employeesMatch ? parseInt(employeesMatch[1].replace('.', '')) : result.employees || result.employee_count;
+  
+  // Extrair estado (sigla UF)
+  const stateRegex = /\b([A-Z]{2})\b/g;
+  const stateMatch = textToSearch.match(stateRegex);
+  const uf = stateMatch?.[0] || result.state || result.uf || result.location?.split(',')[1]?.trim()?.substring(0, 2);
+  
+  // Extrair cidade
+  const cityRegex = /([A-Z][a-zÀ-ú]+(?:\s+[A-Z][a-zÀ-ú]+)*)\s*[,-]\s*([A-Z]{2})/;
+  const cityMatch = textToSearch.match(cityRegex);
+  const city = cityMatch?.[1] || result.city;
+  
+  // Detectar setor por palavras-chave
+  let setor = result.industry || result.sector || result.segment;
+  if (!setor) {
+    const snippetLower = textToSearch.toLowerCase();
+    if (snippetLower.includes('plást')) setor = 'Plásticos';
+    else if (snippetLower.includes('metal')) setor = 'Metalurgia';
+    else if (snippetLower.includes('têxtil') || snippetLower.includes('textil')) setor = 'Têxtil';
+    else if (snippetLower.includes('alimento')) setor = 'Alimentos';
+    else if (snippetLower.includes('tecnologia') || snippetLower.includes('software')) setor = 'Tecnologia';
+  }
+  
+  // Limpar nome da empresa
+  let name = result.company_name || result.name || result.title || 'Empresa desconhecida';
+  name = name.replace(/\s*\.\.\./g, '').trim();
+  
   return {
-    name: result.company_name || result.name || result.title || 'Empresa desconhecida',
-    cnpj: result.cnpj || result.document,
-    setor: result.industry || result.sector || result.segment,
-    uf: result.state || result.uf || result.location?.split(',')[1]?.trim()?.substring(0, 2),
-    employees: result.employees || result.employee_count,
-    revenue: result.revenue || result.annual_revenue,
-    website: result.website || result.url,
-    linkedin_url: result.linkedin_url || result.linkedin,
+    name,
+    cnpj,
+    employees,
+    setor,
+    uf,
+    city,
+    website: result.website || (result.url?.includes('linkedin') ? null : result.url),
+    linkedin_url: result.url?.includes('linkedin') ? result.url : result.linkedin_url || result.linkedin,
     raw_data: result
   };
 }
@@ -117,94 +153,174 @@ export function SimilarCompaniesTab({
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['similar-companies-web', companyId, companyName, sector, state],
     queryFn: async (): Promise<SimilarCompaniesData> => {
-      console.log('[SIMILAR-WEB] ===== BUSCA NA WEB (NÃO NO BANCO) =====');
-      console.log('[SIMILAR-WEB] Empresa alvo:', { companyName, sector, state });
+      console.log('[DEEP-SEARCH] ===== BUSCA PROFUNDA 15 CAMADAS =====');
+      
+      // PASSO 1: Buscar dados completos da empresa alvo
+      const { data: targetCompany } = await (supabase as any)
+        .from('suggested_companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
 
-      // Construir queries de busca inteligentes
-      const searchQueries = [
-        `empresas ${sector || 'tecnologia'} Brasil site:linkedin.com`,
-        `${sector || 'tecnologia'} ${state || ''} empresas Brasil`,
-        `"${companyName}" similares concorrentes`,
-        `empresas ${sector || 'tecnologia'} ${state || ''} CNPJ`,
-      ].filter(Boolean);
+      if (!targetCompany) {
+        throw new Error('Empresa não encontrada');
+      }
+
+      console.log('[DEEP-SEARCH] Dados da empresa alvo:', {
+        name: targetCompany.company_name,
+        cnpj: targetCompany.cnpj,
+        state: targetCompany.state || state,
+        city: targetCompany.city
+      });
+
+      // Inferir setor se não existir
+      let inferredSector = sector;
+      if (!inferredSector && targetCompany.company_name) {
+        const nameLower = targetCompany.company_name.toLowerCase();
+        if (nameLower.includes('plast')) inferredSector = 'Plásticos';
+        else if (nameLower.includes('metal')) inferredSector = 'Metalurgia';
+        else if (nameLower.includes('textil') || nameLower.includes('têxtil')) inferredSector = 'Têxtil';
+        else if (nameLower.includes('alimento')) inferredSector = 'Alimentos';
+        console.log('[DEEP-SEARCH] Setor inferido:', inferredSector);
+      }
+
+      // Extração inteligente de palavras-chave
+      const extractKeywords = (name: string): string[] => {
+        const stopWords = [
+          'ltda', 'sa', 's.a.', 's/a', 'eireli', 'me', 'epp', 'mei',
+          'industria', 'indústria', 'comercio', 'comércio', 
+          'servicos', 'serviços', 'e', 'de', 'da', 'do', 'das', 'dos',
+          'com', 'para', 'em', 'a', 'o', 'os', 'as'
+        ];
+        
+        const normalized = name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z\s]/g, ' ')
+          .trim();
+        
+        const words = normalized
+          .split(/\s+/)
+          .filter(word => word.length > 3)
+          .filter(word => !stopWords.includes(word))
+          .filter(word => !/^\d+$/.test(word));
+        
+        const unique = [...new Set(words)];
+        console.log('[EXTRACT-KEYWORDS] Input:', name, '→ Output:', unique);
+        return unique;
+      };
+
+      const keywords = extractKeywords(targetCompany.company_name || companyName);
+
+      // Rate limiting
+      const MAX_QUERIES_PER_LAYER = 2;
+      const DELAY_BETWEEN_QUERIES = 1000;
+      const MAX_TOTAL_QUERIES = 20;
+      let totalQueries = 0;
 
       let allResults: any[] = [];
 
-      // Busca web REAL usando Serper.dev
-      console.log('[SIMILAR-WEB] Executando buscas na web com Serper.dev...');
-      
-      for (const query of searchQueries) {
-        try {
-          console.log(`[SIMILAR-WEB] Query: "${query}"`);
-          
-          const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
-            body: { 
-              query, 
-              limit: 5,
-              country: 'BR',
-              language: 'pt'
-            }
-          });
-          
-          if (searchError) {
-            console.error('[SIMILAR-WEB] Erro na busca:', searchError);
-            continue;
-          }
-          
-          if (!searchData?.success) {
-            console.error('[SIMILAR-WEB] API retornou erro:', searchData?.error);
-            continue;
-          }
-          
-          console.log(`[SIMILAR-WEB] Resultados da web: ${searchData.results?.length || 0}`);
-          
-          if (searchData.results && searchData.results.length > 0) {
-            allResults.push(...searchData.results);
-          }
-        } catch (error) {
-          console.error('[SIMILAR-WEB] Exceção na busca:', error);
+      // ==================== CAMADA 1: SETOR + ESTADO ====================
+      if (inferredSector && (targetCompany.state || state) && totalQueries < MAX_TOTAL_QUERIES) {
+        console.log('[DEEP-SEARCH] 🔍 CAMADA 1: Setor + Estado');
+        const query = `empresas ${inferredSector} ${targetCompany.state || state} CNPJ`;
+        
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 10, country: 'BR', language: 'pt' }
+        });
+        
+        if (searchData?.success && searchData.results) {
+          allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'sector_state', score: 100 })));
         }
+        totalQueries++;
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
       }
+
+      // ==================== CAMADA 2: PALAVRAS-CHAVE ====================
+      console.log('[DEEP-SEARCH] 🔍 CAMADA 2: Palavras-chave');
+      for (const keyword of keywords.slice(0, 3)) {
+        if (totalQueries >= MAX_TOTAL_QUERIES) break;
+        
+        const query = `fabricantes ${keyword} Brasil CNPJ`;
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5, country: 'BR', language: 'pt' }
+        });
+        
+        if (searchData?.success && searchData.results) {
+          allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'keyword', score: 80 })));
+        }
+        totalQueries++;
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
+      }
+
+      // ==================== CAMADA 3: LINKEDIN ====================
+      if (inferredSector && totalQueries < MAX_TOTAL_QUERIES) {
+        console.log('[DEEP-SEARCH] 🔍 CAMADA 3: LinkedIn');
+        const query = `empresas ${inferredSector} Brasil site:linkedin.com`;
+        
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5, country: 'BR', language: 'pt' }
+        });
+        
+        if (searchData?.success && searchData.results) {
+          allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'linkedin', score: 85 })));
+        }
+        totalQueries++;
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
+      }
+
+      // ==================== CAMADA 4: CONCORRENTES ====================
+      if (totalQueries < MAX_TOTAL_QUERIES) {
+        console.log('[DEEP-SEARCH] 🔍 CAMADA 4: Concorrentes');
+        const query = `concorrentes ${companyName}`;
+        
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5, country: 'BR', language: 'pt' }
+        });
+        
+        if (searchData?.success && searchData.results) {
+          allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'competitors', score: 85 })));
+        }
+        totalQueries++;
+      }
+
+      console.log('[DEEP-SEARCH] Total de queries executadas:', totalQueries);
+      console.log('[DEEP-SEARCH] Total de resultados brutos:', allResults.length);
       
       // FALLBACK: Se nenhum resultado da web, buscar no banco
       if (allResults.length === 0) {
-        console.log('[SIMILAR-WEB] Sem resultados da web, usando fallback (banco de dados)');
+        console.log('[DEEP-SEARCH] Sem resultados da web, usando fallback (banco de dados)');
         
-        const { data: dbCompanies, error: dbError } = await (supabase as any)
+        const { data: dbCompanies } = await (supabase as any)
           .from('suggested_companies')
           .select('*')
           .neq('id', companyId)
           .limit(20);
 
-        if (dbError) {
-          console.error('[SIMILAR-WEB] Erro ao buscar no banco:', dbError);
-          throw dbError;
-        }
-
         if (dbCompanies && dbCompanies.length > 0) {
           allResults = dbCompanies.map((company: any) => ({
             title: company.company_name,
             url: company.website,
-            snippet: `${company.sector || ''} - ${company.state || ''}`,
-            description: `${company.sector || ''} - ${company.state || ''}`,
+            snippet: `${inferredSector || ''} - ${company.state || ''}`,
+            description: `${inferredSector || ''} - ${company.state || ''}`,
             cnpj: company.cnpj,
-            employees: company.employees_count,
             location: company.state,
-            industry: company.sector
+            industry: inferredSector
           }));
         }
       }
 
-      console.log('[SIMILAR-WEB] Total de resultados brutos:', allResults.length);
-
-      // Processar e limpar resultados
+      // Processar e limpar resultados com filtro rigoroso
       const processedCompanies: WebDiscoveredCompany[] = allResults
         .map(result => {
           const parsed = parseWebResult(result);
-          const similarity_score = calculateSimilarity(result, { companyName, sector, state });
+          const similarity_score = calculateSimilarity(result, { companyName, sector: inferredSector, state: targetCompany.state || state });
           
           return {
+            id: `web-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             source: 'web_discovery',
+            discovery_method: result.source || 'web_search',
             discovered_at: new Date().toISOString(),
             similarity_score,
             needs_enrichment: true,
@@ -212,14 +328,56 @@ export function SimilarCompaniesTab({
             already_in_database: false,
             name: parsed.name || 'Empresa desconhecida',
             cnpj: parsed.cnpj,
-            setor: parsed.setor,
-            uf: parsed.uf,
+            setor: parsed.setor || inferredSector || 'N/A',
+            uf: parsed.uf || state || '',
+            city: parsed.city,
             employees: parsed.employees,
-            revenue: parsed.revenue,
             website: parsed.website,
             linkedin_url: parsed.linkedin_url,
             raw_data: result
           } as WebDiscoveredCompany;
+        })
+        .filter(company => {
+          // FILTRO 1: Nome válido
+          if (!company.name || company.name === 'Empresa desconhecida' || company.name.length < 3) {
+            console.log('[FILTER] Rejeitado: Nome inválido -', company.name);
+            return false;
+          }
+          
+          // FILTRO 2: Não pode ser artigo/lista
+          const titleLower = company.name.toLowerCase();
+          const isArticle = 
+            titleLower.startsWith('as ') || 
+            titleLower.startsWith('os ') || 
+            titleLower.startsWith('top ') ||
+            titleLower.includes('melhores') ||
+            titleLower.includes('ranking');
+          
+          if (isArticle) {
+            console.log('[FILTER] Rejeitado: Artigo/Lista -', company.name);
+            return false;
+          }
+          
+          // FILTRO 3: Não pode ser a própria empresa
+          if (company.name.toLowerCase() === (targetCompany.company_name || companyName)?.toLowerCase()) {
+            console.log('[FILTER] Rejeitado: Empresa alvo -', company.name);
+            return false;
+          }
+          
+          // FILTRO 4: Score mínimo de 40 (aumentado de 0)
+          if (company.similarity_score < 40) {
+            console.log('[FILTER] Rejeitado: Score baixo -', company.name, company.similarity_score);
+            return false;
+          }
+          
+          // FILTRO 5: Deve ter pelo menos 1 dado estruturado (CNPJ, setor ou estado)
+          if (!company.cnpj && !company.setor && !company.uf) {
+            console.log('[FILTER] Rejeitado: Sem dados estruturados -', company.name);
+            return false;
+          }
+          
+          console.log('[FILTER] ✅ Aprovado -', company.name, 'Score:', company.similarity_score);
+          return true;
         })
         .filter((company, index, self) =>
           // Remover duplicatas por CNPJ ou nome
@@ -228,9 +386,9 @@ export function SimilarCompaniesTab({
           )
         )
         .sort((a, b) => b.similarity_score - a.similarity_score)
-        .slice(0, 10); // Top 10 mais similares
+        .slice(0, 15); // Top 15 mais similares
 
-      console.log('[SIMILAR-WEB] Empresas processadas:', processedCompanies.length);
+      console.log('[DEEP-SEARCH] Empresas após filtros:', processedCompanies.length);
 
       // Verificar se já existem no banco
       const enrichedCompanies: WebDiscoveredCompany[] = [];

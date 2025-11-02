@@ -54,13 +54,13 @@ serve(async (req) => {
 
     const data = await response.json();
     
-    const results = (data.organic || []).map((result: any) => ({
-      title: result.title,
-      url: result.link,
-      description: result.snippet,
-      snippet: result.snippet,
-      position: result.position,
-      date: result.date
+    const results = (data.organic || []).map((item: any) => ({
+      title: item.title,
+      url: item.link,
+      description: item.snippet,
+      snippet: item.snippet,
+      position: item.position,
+      date: item.date
     }));
 
     console.log('[WEB-SEARCH] Resultados encontrados:', results.length);
