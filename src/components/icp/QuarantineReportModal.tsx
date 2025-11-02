@@ -462,18 +462,18 @@ export default function QuarantineReportModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("p-0 gap-0 flex flex-col overflow-hidden", modalSize)}>
         {/* Header Fixo */}
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b bg-white">
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b bg-card">
           <div className="flex-1">
-            <DialogTitle className="text-2xl font-bold">
+            <DialogTitle className="text-2xl font-bold text-foreground">
               Relatório de Verificação - {companyName}
             </DialogTitle>
             {hasExistingReport && reportDate && (
               <div className="flex items-center gap-2 mt-2">
-                <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                <Badge variant="default" className="bg-green-500/10 text-green-600 border-green-500/20 border-2">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Relatório Salvo
                 </Badge>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   {new Date(reportDate).toLocaleString('pt-BR')}
                 </span>
               </div>
@@ -544,23 +544,23 @@ export default function QuarantineReportModal({
 
         {/* Conteúdo Scrollável */}
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50"
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-background"
           style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
         >
           <div className="p-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <RefreshCw className="w-16 h-16 animate-spin text-primary mb-6" />
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="text-xl font-semibold mb-2 text-foreground">
                   {hasExistingReport ? 'Carregando relatório salvo...' : 'Analisando empresa...'}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {hasExistingReport ? '📄 Sem consumo de créditos' : '🔍 Consultando múltiplas fontes'}
                 </p>
               </div>
             ) : stcResult ? (
               <Tabs defaultValue="totvs" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-white sticky top-0 z-10 shadow-sm">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-card sticky top-0 z-10 shadow-sm border">
                   <TabsTrigger value="totvs">
                     <Shield className="w-4 h-4 mr-2" />
                     Verificação TOTVS
