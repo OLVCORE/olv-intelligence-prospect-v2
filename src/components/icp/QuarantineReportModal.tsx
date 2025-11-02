@@ -634,6 +634,7 @@ export default function QuarantineReportModal({
               reportType="totvs_verification"
               reportTitle="Relatório Completo"
               quarantineId={analysisId}
+              allTabs
             />
 
             <Button variant="ghost" size="icon" onClick={handleToggleExpand}>

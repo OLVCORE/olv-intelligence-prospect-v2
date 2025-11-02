@@ -47,7 +47,10 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
 
   const isClienteTOTVS = data.status === 'cliente_totvs';
   const confidence = data.confidence || 'low';
-
+  // Fallbacks robustos para contagens
+  const sourcesWithResults = (data?.methodology?.sources_with_results ?? data?.methodology?.total_matches ?? (Array.isArray(data?.evidences) ? data.evidences.length : 0)) as number;
+  const executionMs = (data?.methodology?.execution_time_ms ?? data?.metadata?.execution_time_ms ?? 0) as number;
+ 
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -142,7 +145,7 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                   {confidence === 'low' && 'Baixa'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {data.methodology?.sources_with_results || 0} fontes
+                  {sourcesWithResults} fontes
                 </p>
               </div>
             </div>
@@ -241,7 +244,7 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                   </Tooltip>
                 </div>
                 <p className="text-xl font-bold text-orange-600">
-                  {data.methodology.execution_time_ms || 0}ms
+                  {executionMs}ms
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase">Tempo</p>
               </Card>
