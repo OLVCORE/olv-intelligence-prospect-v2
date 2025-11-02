@@ -97,20 +97,51 @@ export default function QuarantineReportModal({
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
-            
+
+            let merged = false;
             if (!totvsError && totvsReport) {
               const evidences = (totvsReport.evidences as any[]) || [];
               console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
               console.log('[RELATÓRIO] 📊 Evidências completas:', evidences);
-              
-              // Mesclar evidências no relatório
-              if (!savedReport.totvs) savedReport.totvs = {};
-              savedReport.totvs.evidences = evidences;
-              savedReport.totvs.methodology = totvsReport.methodology;
-              savedReport.totvs.score = totvsReport.score;
-              savedReport.totvs.confidence = totvsReport.confidence;
-              savedReport.totvs.detection_status = totvsReport.detection_status;
-              savedReport.totvs.status = totvsReport.detection_status;
+
+              if (evidences.length > 0) {
+                // Mesclar evidências no relatório
+                if (!savedReport.totvs) savedReport.totvs = {};
+                savedReport.totvs.evidences = evidences;
+                savedReport.totvs.methodology = totvsReport.methodology;
+                savedReport.totvs.score = totvsReport.score;
+                savedReport.totvs.confidence = totvsReport.confidence;
+                savedReport.totvs.detection_status = totvsReport.detection_status;
+                savedReport.totvs.status = totvsReport.detection_status;
+                merged = true;
+              }
+            }
+
+            // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
+            if (!merged) {
+              console.log('[RELATÓRIO] 🔎 Fallback: buscando em totvs_usage_detection...');
+              const { data: usageReport, error: usageError } = await supabase
+                .from('totvs_usage_detection')
+                .select('*')
+                .eq('company_id', companyId)
+                .order('checked_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (!usageError && usageReport?.evidences?.length > 0) {
+                const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
+                  source: ev.url || ev.source,
+                  source_name: ev.platform || 'Web',
+                  text: ev.snippet || ev.title || '',
+                  terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
+                  matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
+                }));
+                if (!savedReport.totvs) savedReport.totvs = {};
+                savedReport.totvs.evidences = mapped;
+                console.log(`[RELATÓRIO] ✅ Evidências fallback aplicadas: ${mapped.length}`);
+              } else {
+                console.log('[RELATÓRIO] ⚠️ Sem evidências em totvs_usage_detection');
+              }
             }
           }
           
@@ -143,19 +174,50 @@ export default function QuarantineReportModal({
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
-            
+
+            let merged = false;
             if (!totvsError && totvsReport) {
               const evidences = (totvsReport.evidences as any[]) || [];
               console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
-              
-              // Mesclar evidências no relatório
-              if (!rawData.totvs) rawData.totvs = {};
-              rawData.totvs.evidences = evidences;
-              rawData.totvs.methodology = totvsReport.methodology;
-              rawData.totvs.score = totvsReport.score;
-              rawData.totvs.confidence = totvsReport.confidence;
-              rawData.totvs.detection_status = totvsReport.detection_status;
-              rawData.totvs.status = totvsReport.detection_status;
+
+              if (evidences.length > 0) {
+                // Mesclar evidências no relatório
+                if (!rawData.totvs) rawData.totvs = {};
+                rawData.totvs.evidences = evidences;
+                rawData.totvs.methodology = totvsReport.methodology;
+                rawData.totvs.score = totvsReport.score;
+                rawData.totvs.confidence = totvsReport.confidence;
+                rawData.totvs.detection_status = totvsReport.detection_status;
+                rawData.totvs.status = totvsReport.detection_status;
+                merged = true;
+              }
+            }
+
+            // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
+            if (!merged) {
+              console.log('[RELATÓRIO] 🔎 Fallback: buscando em totvs_usage_detection...');
+              const { data: usageReport, error: usageError } = await supabase
+                .from('totvs_usage_detection')
+                .select('*')
+                .eq('company_id', companyId)
+                .order('checked_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (!usageError && usageReport?.evidences?.length > 0) {
+                const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
+                  source: ev.url || ev.source,
+                  source_name: ev.platform || 'Web',
+                  text: ev.snippet || ev.title || '',
+                  terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
+                  matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
+                }));
+                if (!rawData.totvs) rawData.totvs = {};
+                rawData.totvs.evidences = mapped;
+                console.log(`[RELATÓRIO] ✅ Evidências fallback aplicadas: ${mapped.length}`);
+              } else {
+                console.log('[RELATÓRIO] ⚠️ Sem evidências em totvs_usage_detection');
+              }
             }
           }
           
@@ -281,12 +343,13 @@ export default function QuarantineReportModal({
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
+        let merged = false;
         if (!totvsError && totvsReport) {
           const evidences = (totvsReport.evidences as any[]) || [];
           console.log('[MODAL] ✅ Evidências do banco encontradas:', evidences.length);
           console.log('[MODAL] 📊 Evidências completas:', evidences);
-          
+
           // Mesclar evidências no relatório (priorizar evidências do banco se existirem)
           if (evidences.length > 0) {
             if (!data.totvs) data.totvs = {};
@@ -296,13 +359,40 @@ export default function QuarantineReportModal({
             data.totvs.confidence = totvsReport.confidence;
             data.totvs.detection_status = totvsReport.detection_status;
             data.totvs.status = totvsReport.detection_status;
-            
+            merged = true;
             console.log('[MODAL] ✅ Evidências mescladas no relatório!');
           }
         } else if (totvsError) {
           console.log('[MODAL] ⚠️ Erro ao buscar evidências:', totvsError.message);
         } else {
           console.log('[MODAL] ⚠️ Nenhum registro encontrado em totvs_detection_reports');
+        }
+
+        // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
+        if (!merged) {
+          console.log('[MODAL] 🔎 Fallback: buscando em totvs_usage_detection...');
+          const { data: usageReport, error: usageError } = await supabase
+            .from('totvs_usage_detection')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('checked_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!usageError && usageReport?.evidences?.length > 0) {
+            const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
+              source: ev.url || ev.source,
+              source_name: ev.platform || 'Web',
+              text: ev.snippet || ev.title || '',
+              terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
+              matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
+            }));
+            if (!data.totvs) data.totvs = {};
+            data.totvs.evidences = mapped;
+            console.log(`[MODAL] ✅ Evidências fallback aplicadas: ${mapped.length}`);
+          } else {
+            console.log('[MODAL] ⚠️ Sem evidências em totvs_usage_detection');
+          }
         }
       } else {
         console.log('[MODAL] ⚠️ companyId não disponível para buscar evidências');
