@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink, Filter, X } from 'lucide-react';
+import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink, Filter, X, Award, Flame, Star, AlertCircle, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SimilarCompaniesTabProps {
@@ -686,64 +686,64 @@ export function SimilarCompaniesTab({
       
       const scoredCompanies = enrichedCompanies.map(company => {
         let icpScore = 30; // SCORE BASE
-        const icpReasons: string[] = ['🎯 Score base (+30)'];
+        const icpReasons: string[] = ['+ Score base (+30)'];
         
         console.log('\n[ICP-SCORE] ===== Avaliando:', company.name, '=====');
         
         // CRITÉRIO 1: Tem CNPJ? (+20 pontos)
         if (company.cnpj && company.cnpj.replace(/\D/g, '').length === 14) {
           icpScore += 20;
-          icpReasons.push('✅ CNPJ válido (+20)');
+          icpReasons.push('+ CNPJ válido (+20)');
         } else {
-          icpReasons.push('❌ Sem CNPJ (0) - PRECISA ENRIQUECER');
+          icpReasons.push('- Sem CNPJ (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 2: Número de funcionários conhecido? (+15 pontos)
         if (company.employees) {
           icpScore += 15;
-          icpReasons.push(`✅ ${company.employees} funcionários (+15)`);
+          icpReasons.push(`+ ${company.employees} funcionários (+15)`);
           
           // CRITÉRIO 3: Porte adequado? (+25 pontos BÔNUS)
           if (icpProfile.minEmployees && icpProfile.maxEmployees) {
             if (company.employees >= icpProfile.minEmployees && company.employees <= icpProfile.maxEmployees) {
               icpScore += 25;
-              icpReasons.push(`🎯 Porte ideal (+25)`);
+              icpReasons.push(`+ Porte ideal (+25)`);
             } else if (company.employees >= icpProfile.minEmployees * 0.3 && company.employees <= icpProfile.maxEmployees * 2) {
               icpScore += 10;
-              icpReasons.push(`⚠️ Porte aceitável (+10)`);
+              icpReasons.push(`+ Porte aceitável (+10)`);
             }
           }
         } else {
-          icpReasons.push('❌ Funcionários desconhecidos (0) - PRECISA ENRIQUECER');
+          icpReasons.push('- Funcionários desconhecidos (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 4: Regime tributário conhecido? (+10 pontos)
         if (company.regime_tributario) {
           icpScore += 10;
-          icpReasons.push(`✅ Regime: ${company.regime_tributario} (+10)`);
+          icpReasons.push(`+ Regime: ${company.regime_tributario} (+10)`);
           
           // BÔNUS: Lucro Real? (+10 pontos)
           if (company.regime_tributario.includes('Lucro Real')) {
             icpScore += 10;
-            icpReasons.push('🔥 Lucro Real (+10)');
+            icpReasons.push('+ Lucro Real (+10)');
           }
         } else {
-          icpReasons.push('⚠️ Regime desconhecido (0)');
+          icpReasons.push('- Regime desconhecido (0)');
         }
         
         // CRITÉRIO 5: Porte Receita Federal? (+10 pontos)
         if (company.porte) {
           if (company.porte === 'DEMAIS' || company.porte === 'EPP') {
             icpScore += 10;
-            icpReasons.push(`✅ Porte RF: ${company.porte} (+10)`);
+            icpReasons.push(`+ Porte RF: ${company.porte} (+10)`);
           } else if (company.porte === 'ME') {
             icpScore += 5;
-            icpReasons.push(`⚠️ Porte RF: ME (+5)`);
+            icpReasons.push(`+ Porte RF: ME (+5)`);
           } else {
-            icpReasons.push(`❌ Porte RF muito pequeno: ${company.porte} (0)`);
+            icpReasons.push(`- Porte RF muito pequeno: ${company.porte} (0)`);
           }
         } else {
-          icpReasons.push('⚠️ Porte RF desconhecido (0)');
+          icpReasons.push('- Porte RF desconhecido (0)');
         }
         
         // CRITÉRIO 6: CNAE similar? (+15 pontos)
@@ -753,15 +753,15 @@ export function SimilarCompaniesTab({
           
           if (companyCnaePrefix === targetCnaePrefix) {
             icpScore += 15;
-            icpReasons.push(`✅ CNAE idêntico (+15)`);
+            icpReasons.push(`+ CNAE idêntico (+15)`);
           } else if (company.cnae.substring(0, 2) === icpProfile.targetCnae.substring(0, 2)) {
             icpScore += 8;
-            icpReasons.push(`⚠️ CNAE similar (+8)`);
+            icpReasons.push(`+ CNAE similar (+8)`);
           } else {
-            icpReasons.push(`❌ CNAE diferente (0)`);
+            icpReasons.push(`- CNAE diferente (0)`);
           }
         } else {
-          icpReasons.push('⚠️ CNAE desconhecido (0)');
+          icpReasons.push('- CNAE desconhecido (0)');
         }
         
         // CRITÉRIO 7: Setor correto? (+10 pontos)
@@ -771,22 +771,22 @@ export function SimilarCompaniesTab({
           
           if (companySetor.includes(targetSetor) || targetSetor.includes(companySetor)) {
             icpScore += 10;
-            icpReasons.push(`✅ Setor (+10)`);
+            icpReasons.push(`+ Setor (+10)`);
           }
         } else {
-          icpReasons.push('❌ Setor desconhecido (0) - PRECISA ENRIQUECER');
+          icpReasons.push('- Setor desconhecido (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 8: Localização? (+5 pontos)
         if (company.uf) {
           icpScore += 5;
-          icpReasons.push(`✅ Estado: ${company.uf} (+5)`);
+          icpReasons.push(`+ Estado: ${company.uf} (+5)`);
         }
         
         // CRITÉRIO 9: Website? (+5 pontos)
         if (company.website) {
           icpScore += 5;
-          icpReasons.push(`✅ Website (+5)`);
+          icpReasons.push(`+ Website (+5)`);
         }
         
         // Determinar tier (ajustado para score base 30)
@@ -903,7 +903,7 @@ export function SimilarCompaniesTab({
         ? Math.round(finalEnrichedCompanies.reduce((sum, c) => sum + (c.employees || 0), 0) / finalEnrichedCompanies.filter(c => c.employees).length)
         : 0;
 
-      // Insights com foco em ICP
+      // Insights com foco em ICP (sem emojis - visual premium)
       const insights: string[] = [];
       
       const excellentCount = finalEnrichedCompanies.filter(c => c.icp_score && c.icp_score >= 90).length;
@@ -913,35 +913,35 @@ export function SimilarCompaniesTab({
       const needsEnrichment = finalEnrichedCompanies.filter(c => c.needs_enrichment).length;
       
       if (total > 0) {
-        insights.push(`📊 ${total} empresas encontradas e classificadas por ICP`);
+        insights.push(`${total} empresas encontradas e classificadas por ICP`);
         
         if (excellentCount > 0) {
-          insights.push(`🏆 ${excellentCount} empresas EXCELENTES (90-100) - ICP Perfeito!`);
+          insights.push(`${excellentCount} empresas EXCELENTES (90-100) - ICP Perfeito`);
         }
         
         if (premiumCount > 0) {
-          insights.push(`🔥 ${premiumCount} empresas PREMIUM (70-89) - Alta Qualificação`);
+          insights.push(`${premiumCount} empresas PREMIUM (70-89) - Alta Qualificação`);
         }
         
         if (qualifiedCount > 0) {
-          insights.push(`⭐ ${qualifiedCount} empresas QUALIFICADAS (50-69) - Bom Potencial`);
+          insights.push(`${qualifiedCount} empresas QUALIFICADAS (50-69) - Bom Potencial`);
         }
         
         if (needsEnrichment > 0) {
-          insights.push(`🔄 ${needsEnrichment} empresas precisam de enriquecimento`);
+          insights.push(`${needsEnrichment} empresas precisam de enriquecimento`);
         }
         
-        insights.push(`🎯 Clique nos cards acima para filtrar por faixa de score`);
+        insights.push(`Clique nos cards acima para filtrar por faixa de score`);
         
         if (avgEmployees > 0) {
-          insights.push(`👥 Média de funcionários: ${avgEmployees} (perfil target: ${icpProfile.minEmployees}-${icpProfile.maxEmployees})`);
+          insights.push(`Média de funcionários: ${avgEmployees} (perfil target: ${icpProfile.minEmployees}-${icpProfile.maxEmployees})`);
         }
         
         if (newCompanies > 0) {
-          insights.push(`🆕 ${newCompanies} empresas novas para adicionar à quarentena`);
+          insights.push(`${newCompanies} empresas novas para adicionar à quarentena`);
         }
       } else {
-        insights.push(`⚠️ Nenhuma empresa encontrada nesta busca`);
+        insights.push(`Nenhuma empresa encontrada nesta busca`);
       }
 
       console.log('[SIMILAR-WEB] ===== RESULTADO FINAL =====');
@@ -1000,7 +1000,7 @@ export function SimilarCompaniesTab({
 
       // Mostrar toast de sucesso
       toast({
-        title: `✅ ${company.name} adicionada à quarentena!`,
+        title: `${company.name} adicionada à quarentena`,
         description: 'Iniciando processo de enriquecimento...',
       });
 
@@ -1249,7 +1249,7 @@ export function SimilarCompaniesTab({
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">🏆</div>
+                    <Award className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
                     <Badge className="bg-yellow-500 text-white">90-100</Badge>
                   </div>
                   <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
@@ -1273,7 +1273,7 @@ export function SimilarCompaniesTab({
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">🔥</div>
+                    <Flame className="w-8 h-8 text-green-600 dark:text-green-400" />
                     <Badge className="bg-green-500 text-white">70-89</Badge>
                   </div>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -1297,7 +1297,7 @@ export function SimilarCompaniesTab({
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">⭐</div>
+                    <Star className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                     <Badge className="bg-blue-500 text-white">50-69</Badge>
                   </div>
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -1321,7 +1321,7 @@ export function SimilarCompaniesTab({
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">⚠️</div>
+                    <AlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                     <Badge className="bg-orange-500 text-white">30-49</Badge>
                   </div>
                   <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -1345,7 +1345,7 @@ export function SimilarCompaniesTab({
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-3xl">📊</div>
+                    <BarChart3 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
                     <Badge variant="outline" className="border-gray-400">0-29</Badge>
                   </div>
                   <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
@@ -1429,22 +1429,22 @@ export function SimilarCompaniesTab({
                   {/* BADGE DE TIER ICP */}
                   {company.icp_tier === 'premium' && (
                     <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg">
-                      🔥 Premium ICP
+                      Premium ICP
                     </Badge>
                   )}
                   {company.icp_tier === 'qualified' && (
                     <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
-                      ⭐ Qualificado
+                      Qualificado
                     </Badge>
                   )}
                   {company.icp_tier === 'potential' && (
                     <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
-                      ⚠️ Potencial
+                      Potencial
                     </Badge>
                   )}
                   {company.icp_tier === 'low' && (
                     <Badge variant="outline" className="border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                      🔻 Baixa Qualificação
+                      Baixa Qualificação
                     </Badge>
                   )}
                   
@@ -1459,9 +1459,9 @@ export function SimilarCompaniesTab({
                   </Badge>
                   
                   {company.already_in_database ? (
-                    <Badge variant="secondary">✅ No Banco</Badge>
+                    <Badge variant="secondary">No Banco</Badge>
                   ) : (
-                    <Badge variant="default" className="bg-emerald-600">🆕 Nova</Badge>
+                    <Badge variant="default" className="bg-emerald-600">Nova</Badge>
                   )}
                 </div>
               </div>
