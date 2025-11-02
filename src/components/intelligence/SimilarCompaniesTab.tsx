@@ -55,23 +55,113 @@ export function SimilarCompaniesTab({
 }: SimilarCompaniesTabProps) {
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['similar-companies-analysis', companyId],
+    queryKey: ['similar-companies-direct', companyId, sector, state, size],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('discover-similar-companies', {
-        body: {
-          companyId,
-          companyName,
-          cnpj,
-          sector,
-          state,
-          size
-        }
-      });
+      console.log('[SIMILAR] ===== BUSCA DIRETA NO BANCO =====');
+      console.log('[SIMILAR] Parâmetros:', { companyId, companyName, sector, state, size });
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Erro ao buscar empresas similares');
-      
-      return data.data as SimilarCompaniesData;
+      // 1) Buscar empresa alvo para critérios (setor/uf/employees)
+      const sb = supabase as any;
+      const { data: targetCompany, error: targetError } = await sb
+        .from('quarantine_companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (targetError) {
+        console.warn('[SIMILAR] Empresa alvo não encontrada, seguindo com busca ampla.', targetError.message);
+      }
+
+      // 2) Buscar candidatas
+      let query: any = sb
+        .from('quarantine_companies' as any)
+        .select('id, name, cnpj, setor, uf, employees, revenue, is_disqualified')
+        .neq('id', companyId)
+        .eq('is_disqualified', false);
+
+      const useSector = sector || targetCompany?.setor;
+      const useState = state || targetCompany?.uf;
+      const targetEmployees = targetCompany?.employees as number | undefined;
+
+      if (useSector) query = query.eq('setor', useSector);
+      if (useState) query = query.eq('uf', useState);
+
+      const { data: companies, error: companiesError } = await query.limit(50);
+      if (companiesError) {
+        console.error('[SIMILAR] Erro na query:', companiesError);
+        throw companiesError;
+      }
+
+      if (!companies || companies.length === 0) {
+        console.log('[SIMILAR] Nenhuma empresa encontrada mesmo com filtros. Tentando somente por setor...');
+        let alt = supabase
+          .from('quarantine_companies')
+          .select('id, name, cnpj, setor, uf, employees, revenue, is_disqualified')
+          .neq('id', companyId)
+          .eq('is_disqualified', false);
+        if (useSector) alt = alt.eq('setor', useSector);
+        const { data: altCompanies } = await alt.limit(50);
+        if (!altCompanies || altCompanies.length === 0) {
+          return {
+            similar_companies: [],
+            statistics: { total: 0, using_totvs: 0, percentage_totvs: 0, not_using_totvs: 0 },
+            insights: ['⚠️ Nenhuma empresa similar encontrada no banco de dados.'],
+            search_criteria: { sector: useSector, state: useState, size }
+          } as SimilarCompaniesData;
+        }
+        // use alt result as base
+        (companies as any) = altCompanies;
+      }
+
+      // 3) Score de similaridade
+      const employeeRange = targetEmployees ? { min: Math.floor(targetEmployees * 0.5), max: Math.ceil(targetEmployees * 2) } : null;
+      const scored = (companies || []).map((company: any) => {
+        let similarity_score = 0;
+        if (useSector && company.setor === useSector) similarity_score += 40;
+        if (useState && company.uf === useState) similarity_score += 20;
+        if (employeeRange && company.employees && targetEmployees) {
+          const diff = Math.abs(company.employees - targetEmployees);
+          const pct = diff / targetEmployees;
+          if (pct <= 0.3) similarity_score += 20; else if (pct <= 0.5) similarity_score += 15; else if (pct <= 1) similarity_score += 10;
+        }
+        return { ...company, similarity_score };
+      }).sort((a: any, b: any) => b.similarity_score - a.similarity_score).slice(0, 10);
+
+      // 4) Enriquecer com status TOTVS
+      const enriched = await Promise.all(scored.map(async (company: any) => {
+        const { data: report } = await supabase
+          .from('totvs_detection_reports')
+          .select('detection_status, confidence, score')
+          .eq('company_id', company.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const uses_totvs = report?.detection_status === 'no-go' || (report?.score && report.score >= 70);
+        return { ...company, totvs_status: report?.detection_status || 'desconhecido', totvs_confidence: report?.confidence || 'baixa', totvs_score: report?.score || 0, uses_totvs };
+      }));
+
+      // 5) Estatísticas + insights
+      const total = enriched.length;
+      const using_totvs = enriched.filter(c => c.uses_totvs).length;
+      const percentage = total > 0 ? (using_totvs / total * 100) : 0;
+
+      const insights: string[] = [];
+      if (percentage >= 60) insights.push(`🔥 ${percentage.toFixed(0)}% dos concorrentes JÁ USAM TOTVS. Alta pressão competitiva.`);
+      else if (percentage >= 40) insights.push(`⚡ ${percentage.toFixed(0)}% do mercado usa TOTVS. Janela de oportunidade aberta.`);
+      else if (percentage >= 20) insights.push(`💡 ${percentage.toFixed(0)}% já usa TOTVS. Mercado em expansão.`);
+      else insights.push(`🆕 Apenas ${percentage.toFixed(0)}% usa TOTVS. Oceano azul para explorar.`);
+
+      if (using_totvs > 0) {
+        const names = enriched.filter(c => c.uses_totvs).slice(0, 3).map(c => c.name).join(', ');
+        insights.push(`📊 Prova social: ${names}${using_totvs > 3 ? ` e mais ${using_totvs - 3}` : ''}.`);
+      }
+
+      return {
+        similar_companies: enriched,
+        statistics: { total, using_totvs, percentage_totvs: parseFloat(percentage.toFixed(1)), not_using_totvs: total - using_totvs },
+        insights,
+        search_criteria: { sector: useSector, state: useState, size }
+      } as SimilarCompaniesData;
     },
     enabled: !!companyId,
     staleTime: 5 * 60 * 1000, // 5 minutos

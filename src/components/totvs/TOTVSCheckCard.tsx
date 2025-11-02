@@ -103,21 +103,8 @@ export default function TOTVSCheckCard({
     enabled,
   });
 
-  // Buscar dados de empresas similares para análise 360°
-  const { data: similarCompaniesData } = useQuery({
-    queryKey: ['similar-for-360', companyId],
-    queryFn: async () => {
-      const { data } = await supabase.functions.invoke('discover-similar-companies', {
-        body: { 
-          companyId, 
-          companyName, 
-          cnpj 
-        }
-      });
-      return data?.data;
-    },
-    enabled: !!companyId && !!data && enabled
-  });
+  // Buscar dados de empresas similares para análise 360° (removido - será buscado direto na aba)
+  const similarCompaniesData = null;
 
   useEffect(() => {
     if (onResult && data) onResult(data);
