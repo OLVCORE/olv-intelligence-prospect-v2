@@ -37,7 +37,6 @@ export function QuarantineReportModal({
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleApprove = () => {
@@ -117,23 +116,17 @@ export function QuarantineReportModal({
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
-    // Reset position when toggling expand
-    setPosition({ x: 0, y: 0 });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className={`${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-6xl max-h-[90vh]'} overflow-hidden p-0`}
-        style={{ 
-          transform: `translate(${position.x}px, ${position.y}px)`,
-        }}
       >
         <Draggable
           handle=".drag-handle"
-          position={position}
-          onStop={(e, data) => setPosition({ x: data.x, y: data.y })}
           bounds="parent"
+          disabled={false}
         >
           <div className="w-full h-full flex flex-col">
             {/* Header com controles */}
