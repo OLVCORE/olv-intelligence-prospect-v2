@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
-import { QuarantineReportModal } from '@/components/icp/QuarantineReportModal';
+import QuarantineReportModal from '@/components/icp/QuarantineReportModal';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
 
 interface QuarantineRowActionsProps {
@@ -470,7 +470,6 @@ export function QuarantineRowActions({
           companyId={company.company_id || undefined}
           companyName={company.razao_social || 'Empresa'}
           cnpj={company.cnpj}
-          domain={company.domain || company.website}
         />
 
         {/* Modal de Descarte com motivos */}

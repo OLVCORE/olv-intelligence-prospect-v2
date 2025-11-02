@@ -1,13 +1,27 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Rocket, RefreshCw, Save, AlertTriangle } from 'lucide-react';
-import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
+import { cn } from '@/lib/utils';
+import {
+  Shield,
+  Users,
+  Target,
+  RefreshCw,
+  Save,
+  CheckCircle,
+  Maximize2,
+  Minimize2,
+  XCircle,
+  Rocket,
+  AlertTriangle,
+  ExternalLink,
+  Lightbulb,
+} from 'lucide-react';
 import SaveReportPDF from '@/components/reports/SaveReportPDF';
 
 interface QuarantineReportModalProps {
@@ -16,152 +30,161 @@ interface QuarantineReportModalProps {
   analysisId: string;
   companyName: string;
   cnpj?: string;
-  domain?: string;
   companyId?: string;
 }
 
-export function QuarantineReportModal({
+export default function QuarantineReportModal({
   open,
   onOpenChange,
   analysisId,
   companyName,
   cnpj,
-  domain,
-  companyId,
+  companyId
 }: QuarantineReportModalProps) {
-  const { mutate: approveBatch } = useApproveQuarantineBatch();
-  const { mutate: rejectCompany } = useRejectQuarantine();
-
   const [showDiscard, setShowDiscard] = useState(false);
-  const [stcResult, setStcResult] = useState<any | null>(null);
+  const [stcResult, setStcResult] = useState<any>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activating, setActivating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasExistingReport, setHasExistingReport] = useState(false);
   const [reportDate, setReportDate] = useState<string | null>(null);
-  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // NORMALIZAR ESTRUTURA DO stcResult (compatibilidade com formatos antigos e novos)
-  const normalizeStcResult = useCallback((data: any) => {
-    if (!data) return null;
-    
-    // Se já está no formato novo com as 3 seções separadas, retornar como está
-    if (data.totvs && data.similares && data.analysis360) {
-      return data;
-    }
-
-    // Se está no formato antigo (flat), converter para o novo formato
-    return {
-      totvs: {
-        status: data.status,
-        confidence: data.confidence,
-        evidences: data.evidences,
-        methodology: data.methodology,
-        tripleMatches: data.tripleMatches,
-        doubleMatches: data.doubleMatches,
-        singleMatches: data.singleMatches,
-        totalScore: data.totalScore,
-      },
-      similares: {
-        companies: data.similarCompanies || [],
-        total: data.similarCompanies?.length || 0,
-        criteria: data.criteria || {},
-      },
-      analysis360: {
-        icpScore: data.icpScore,
-        temperatura: data.temperatura,
-        insights: data.insights || [],
-        swot: data.swot || {},
-        porter: data.porter || {},
-        redesSociais: data.redesSociais || [],
-        marketplaces: data.marketplaces || [],
-        produtos: data.produtos || [],
-        concorrentes: data.concorrentes || [],
-        fontes: data.fontes || [],
-      },
-    };
-  }, []);
-
-  // VERIFICAR SE JÁ EXISTE RELATÓRIO SALVO
+  // ========================================
+  // CARREGAR RELATÓRIO (UMA VEZ SÓ)
+  // ========================================
   useEffect(() => {
     if (!open) return;
 
-    const verificarRelatorioExistente = async () => {
+    const carregarRelatorio = async () => {
       setLoading(true);
-      
-      try {
-        console.log('[RELATÓRIO] 🔍 Verificando se existe relatório salvo...');
 
+      try {
+        console.log('[RELATÓRIO] 🔍 Verificando relatório salvo...');
+
+        // Buscar relatório salvo
         const { data: quarantineData, error: quarantineError } = await supabase
           .from('icp_analysis_results')
-          .select('relatorio_salvo, relatorio_gerado_em, stc_result')
+          .select('relatorio_salvo, relatorio_gerado_em, stc_result, raw_data')
           .eq('id', analysisId)
           .single();
 
         if (quarantineError) throw quarantineError;
 
-        console.log('[RELATÓRIO] Dados encontrados:', {
-          relatorio_salvo: quarantineData.relatorio_salvo,
-          relatorio_gerado_em: quarantineData.relatorio_gerado_em,
-          tem_stc_result: !!quarantineData.stc_result
-        });
-
         // SE JÁ TEM RELATÓRIO SALVO
         if (quarantineData.relatorio_salvo && quarantineData.stc_result) {
-          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando do cache...');
-          
+          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando...');
+
           setHasExistingReport(true);
           setReportDate(quarantineData.relatorio_gerado_em);
-          setStcResult(normalizeStcResult(quarantineData.stc_result));
+          setStcResult(quarantineData.stc_result);
+          setLoading(false);
 
           toast.success('📄 Relatório Salvo Carregado', {
             description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')} • Sem consumo de créditos`,
           });
-        } else {
-          console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo. Aguardando ação do usuário...');
-          setHasExistingReport(false);
-          setStcResult(null);
+
+          return; // PARAR AQUI - NÃO FAZER NOVA ANÁLISE!
         }
+
+        // SE NÃO TEM RELATÓRIO, USAR DADOS EXISTENTES OU FAZER ANÁLISE
+        console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo.');
+
+        // Tentar usar raw_data existente
+        if (quarantineData.raw_data) {
+          console.log('[RELATÓRIO] 📦 Usando dados existentes da análise ICP...');
+          setStcResult(quarantineData.raw_data);
+          setHasExistingReport(false);
+          setLoading(false);
+          return;
+        }
+
+        // Se não tem dados, fazer análise nova
+        console.log('[RELATÓRIO] 🔍 Iniciando análise nova...');
+        setHasExistingReport(false);
+        await executarAnaliseCompleta();
+
       } catch (error: any) {
-        console.error('[RELATÓRIO] Erro ao verificar:', error);
+        console.error('[RELATÓRIO] Erro:', error);
         toast.error('Erro ao carregar relatório', {
           description: error.message,
         });
-      } finally {
         setLoading(false);
       }
     };
 
-    verificarRelatorioExistente();
-  }, [open, analysisId, normalizeStcResult]);
+    carregarRelatorio();
+  }, [open, analysisId]); // EXECUTAR APENAS ao abrir modal
 
-  const handleReject = useCallback(() => {
-    setShowDiscard(true);
-  }, []);
+  // ========================================
+  // EXECUTAR ANÁLISE COMPLETA (GASTA CRÉDITOS)
+  // ========================================
+  const executarAnaliseCompleta = async () => {
+    try {
+      console.log('[ANÁLISE] 🚀 Iniciando análise COMPLETA (GASTA CRÉDITOS)...');
 
-  const handleToggleExpand = useCallback(() => {
-    setIsExpanded(prev => !prev);
-  }, []);
+      toast.info('🔍 Análise Completa Iniciada', {
+        description: 'Processando 3 abas simultaneamente... Isso pode levar alguns minutos.',
+        duration: 5000,
+      });
 
-  // FUNÇÃO PARA ATUALIZAR ANÁLISE (COM CONFIRMAÇÃO)
-  const handleAtualizarAnalise = useCallback(() => {
-    setShowUpdateConfirm(true);
-  }, []);
+      // CHAMAR EDGE FUNCTION
+      const { data, error } = await supabase.functions.invoke('stc-agent', {
+        body: {
+          companyName,
+          cnpj,
+          analysisId,
+        }
+      });
 
-  const confirmAtualizarAnalise = useCallback(async () => {
-    console.log('[ANÁLISE] 🔄 Usuário confirmou atualização. Forçando nova análise...');
-    
-    setShowUpdateConfirm(false);
+      if (error) throw error;
+
+      console.log('[ANÁLISE] ✅ Análise completa concluída!');
+
+      setStcResult(data);
+      setLoading(false);
+
+      toast.success('✓ Análise Completa Concluída', {
+        description: '3 abas geradas com sucesso',
+      });
+
+    } catch (error: any) {
+      console.error('[ANÁLISE] Erro:', error);
+      toast.error('Erro na análise', {
+        description: error.message,
+      });
+      setLoading(false);
+    }
+  };
+
+  // ========================================
+  // ATUALIZAR ANÁLISE (COM CONFIRMAÇÃO)
+  // ========================================
+  const handleAtualizarAnalise = useCallback(async () => {
+    const confirmar = window.confirm(
+      '⚠️ ATENÇÃO: CONSUMO DE CRÉDITOS\n\n' +
+      'Atualizar a análise irá:\n' +
+      '• Reprocessar as 3 abas\n' +
+      '• Consumir créditos novamente\n' +
+      '• Substituir o relatório atual\n\n' +
+      'Deseja realmente atualizar?'
+    );
+
+    if (!confirmar) return;
+
+    console.log('[ANÁLISE] 🔄 Usuário confirmou atualização. Reprocessando...');
+
     setLoading(true);
     setStcResult(null);
     setHasExistingReport(false);
-    
-    // Força o TOTVSCheckCard a refazer a análise
-    setLoading(false);
-  }, []);
 
-  // FUNÇÃO PARA SALVAR RELATÓRIO (3 ABAS SIMULTANEAMENTE)
+    await executarAnaliseCompleta();
+
+  }, [companyName, cnpj, analysisId]);
+
+  // ========================================
+  // SALVAR RELATÓRIO COMPLETO (3 ABAS)
+  // ========================================
   const handleSalvarRelatorio = useCallback(async () => {
     if (!stcResult) {
       toast.error('Nenhum relatório para salvar');
@@ -170,117 +193,94 @@ export function QuarantineReportModal({
 
     try {
       console.log('[RELATÓRIO] 💾 Salvando relatório completo (3 abas)...');
-      
+
       toast.info('💾 Salvando Relatório Completo', {
         description: 'Gerando PDFs das 3 abas...',
       });
 
-      // ======================================== 
-      // GERAR PDF DE CADA ABA SEPARADAMENTE
-      // ========================================
+      // Função para gerar PDF de uma aba
       const generateTabPDF = async (tabId: string, tabName: string, reportType: string) => {
         const element = document.getElementById(tabId);
+
         if (!element) {
-          console.warn(`[PDF] Elemento ${tabId} não encontrado, pulando...`);
+          console.warn(`[PDF] Elemento ${tabId} não encontrado`);
           return null;
         }
 
-        // Importar html2pdf
         const html2pdf = (await import('html2pdf.js')).default;
 
-        // Criar elemento temporário com conteúdo formatado
         const tempElement = document.createElement('div');
         tempElement.style.position = 'absolute';
         tempElement.style.left = '-9999px';
         tempElement.style.width = '210mm';
         tempElement.style.padding = '20px';
         tempElement.style.backgroundColor = 'white';
-        tempElement.style.color = 'black';
 
-        // Adicionar cabeçalho
         tempElement.innerHTML = `
           <div style="margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
-            <h1 style="font-size: 24px; margin: 0 0 10px 0; color: #000;">${companyName}</h1>
+            <h1 style="font-size: 24px; margin: 0 0 10px 0;">${companyName}</h1>
             <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #666;">${tabName}</h2>
             <p style="margin: 5px 0; color: #666;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>
         `;
 
-        // Clonar e adicionar conteúdo da aba
-        const clonedContent = element.cloneNode(true) as HTMLElement;
-        tempElement.appendChild(clonedContent);
-
-        // Adicionar ao DOM temporariamente
+        tempElement.appendChild(element.cloneNode(true));
         document.body.appendChild(tempElement);
 
-        try {
-          // Gerar PDF
-          const opt = {
-            margin: 10,
-            filename: `${reportType}.pdf`,
-            image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { 
-              scale: 2, 
-              useCORS: true, 
-              scrollY: 0, 
-              scrollX: 0,
-              windowHeight: tempElement.scrollHeight,
-            },
-            jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        const opt = {
+          margin: 10,
+          filename: `${reportType}.pdf`,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            scrollY: 0,
+            scrollX: 0,
+            windowHeight: tempElement.scrollHeight,
+          },
+          jsPDF: {
+            unit: 'mm' as const,
+            format: 'a4' as const,
+            orientation: 'portrait' as const
+          },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        const blob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
+        document.body.removeChild(tempElement);
+
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onloadend = () => {
+            const base64 = reader.result as string;
+            resolve(base64.split(',')[1]);
           };
+          reader.readAsDataURL(blob);
+        });
 
-          const blob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
+        const base64PDF = await base64Promise;
 
-          // Converter para base64
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve) => {
-            reader.onloadend = () => {
-              const base64 = reader.result as string;
-              resolve(base64.split(',')[1]);
-            };
-            reader.readAsDataURL(blob);
-          });
-
-          const base64PDF = await base64Promise;
-
-          return {
-            tipo: reportType,
-            titulo: tabName,
-            file_name: `${reportType}-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
-            file_url: `data:application/pdf;base64,${base64PDF}`,
-            file_size: blob.size,
-            content_text: element.innerText.substring(0, 5000),
-          };
-        } finally {
-          // Remover elemento temporário
-          document.body.removeChild(tempElement);
-        }
+        return {
+          tipo: reportType,
+          titulo: tabName,
+          file_name: `${reportType}-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
+          file_url: `data:application/pdf;base64,${base64PDF}`,
+          file_size: blob.size,
+          content_text: element.innerText.substring(0, 5000),
+        };
       };
 
-      // ======================================== 
-      // GERAR PDFs DAS 3 ABAS EM PARALELO
-      // ========================================
+      // Gerar PDFs das 3 abas
       const [pdf1, pdf2, pdf3] = await Promise.all([
-        generateTabPDF('totvs-detection-tab', 'Verificação TOTVS', 'totvs_verification'),
-        generateTabPDF('totvs-similar-tab', 'Empresas Similares', 'similar_companies'),
-        generateTabPDF('totvs-analysis-tab', 'Análise 360°', 'analysis_360'),
+        generateTabPDF('totvs-verification-content', 'Verificação TOTVS', 'totvs_verification'),
+        generateTabPDF('similar-companies-content', 'Empresas Similares', 'similar_companies'),
+        generateTabPDF('analysis-360-content', 'Análise 360°', 'analysis_360'),
       ]);
 
-      console.log('[RELATÓRIO] PDFs gerados:', { 
-        pdf1: !!pdf1, 
-        pdf2: !!pdf2, 
-        pdf3: !!pdf3 
-      });
-
-      // ======================================== 
-      // SALVAR OS 3 PDFs NO BANCO
-      // ========================================
       const documentsToInsert = [pdf1, pdf2, pdf3]
         .filter(pdf => pdf !== null)
         .map(pdf => ({
           quarantine_id: analysisId,
-          company_id: companyId || null,
           tipo: pdf!.tipo,
           titulo: pdf!.titulo,
           descricao: `Relatório gerado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`,
@@ -293,7 +293,7 @@ export function QuarantineReportModal({
         }));
 
       if (documentsToInsert.length === 0) {
-        throw new Error('Nenhum PDF foi gerado com sucesso');
+        throw new Error('Nenhum PDF foi gerado');
       }
 
       const { data: documentsData, error: documentsError } = await supabase
@@ -303,11 +303,6 @@ export function QuarantineReportModal({
 
       if (documentsError) throw documentsError;
 
-      console.log('[RELATÓRIO] Documentos salvos:', documentsData.length);
-
-      // ======================================== 
-      // MARCAR RELATÓRIO COMO SALVO
-      // ========================================
       const { error: updateError } = await supabase
         .from('icp_analysis_results')
         .update({
@@ -318,8 +313,6 @@ export function QuarantineReportModal({
         .eq('id', analysisId);
 
       if (updateError) throw updateError;
-
-      console.log('[RELATÓRIO] ✅ Relatório completo salvo com sucesso!');
 
       setHasExistingReport(true);
       setReportDate(new Date().toISOString());
@@ -334,13 +327,15 @@ export function QuarantineReportModal({
         description: error.message,
       });
     }
-  }, [stcResult, analysisId, companyName, companyId]);
+  }, [stcResult, analysisId, companyName, cnpj, companyId]);
 
+  // ========================================
+  // ATIVAR NO PIPELINE
+  // ========================================
   const handleActivatePipeline = useCallback(async () => {
     setActivating(true);
 
     try {
-      // 1. BUSCAR DADOS DA QUARENTENA
       const { data: quarantineData, error: quarantineError } = await supabase
         .from('icp_analysis_results')
         .select('*')
@@ -349,7 +344,6 @@ export function QuarantineReportModal({
 
       if (quarantineError) throw quarantineError;
 
-      // 2. CRIAR EMPRESA NO PIPELINE
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert({
@@ -367,35 +361,27 @@ export function QuarantineReportModal({
 
       if (companyError) throw companyError;
 
-      console.log('[PIPELINE] Empresa criada:', companyData);
-
-      // 3. ATUALIZAR DOCUMENTOS COM COMPANY_ID
-      const { error: updateDocsError } = await supabase
+      await supabase
         .from('company_documents')
         .update({ company_id: companyData.id })
         .eq('quarantine_id', analysisId);
 
-      if (updateDocsError) {
-        console.error('[PIPELINE] Erro ao atualizar documentos:', updateDocsError);
-      }
-
-      // 4. MARCAR COMO ATIVADA NA QUARENTENA
       await supabase
         .from('icp_analysis_results')
-        .update({ 
+        .update({
           moved_to_pool: true,
           status: 'ativado'
         })
         .eq('id', analysisId);
 
       toast.success('✓ Empresa Ativada no Pipeline', {
-        description: 'A empresa e todos os documentos foram enviados para o pipeline de vendas',
+        description: 'A empresa e todos os documentos foram enviados para o pipeline',
       });
 
       onOpenChange(false);
 
     } catch (error: any) {
-      console.error('[PIPELINE] Erro ao ativar:', error);
+      console.error('[PIPELINE] Erro:', error);
       toast.error('Erro ao ativar empresa', {
         description: error.message,
       });
@@ -404,155 +390,228 @@ export function QuarantineReportModal({
     }
   }, [analysisId, onOpenChange]);
 
+  const handleReject = useCallback(() => {
+    setShowDiscard(true);
+  }, []);
+
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
   const modalSize = useMemo(() => {
-    return isExpanded 
-      ? 'max-w-[98vw] w-[98vw] h-[98vh]' 
+    return isExpanded
+      ? 'max-w-[98vw] w-[98vw] h-[98vh]'
       : 'max-w-7xl w-[90vw] h-[85vh]';
   }, [isExpanded]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className={`${modalSize} overflow-hidden p-0 flex flex-col`}
-      >
-        <div className="w-full h-full flex flex-col min-h-0">
-          {/* Header com controles */}
-          <div className="flex-shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="min-w-0 flex-1">
-                <DialogTitle className="text-lg font-semibold truncate">
-                  Relatório de Verificação TOTVS
-                </DialogTitle>
-                <DialogDescription className="text-sm mt-1 truncate">
-                  {companyName}
-                  {hasExistingReport && reportDate && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      📄 Salvo em {new Date(reportDate).toLocaleString('pt-BR')}
-                    </span>
-                  )}
-                </DialogDescription>
+      <DialogContent className={cn("p-0 gap-0 flex flex-col overflow-hidden", modalSize)}>
+        {/* Header Fixo */}
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b bg-white">
+          <div className="flex-1">
+            <DialogTitle className="text-2xl font-bold">
+              Relatório de Verificação - {companyName}
+            </DialogTitle>
+            {hasExistingReport && reportDate && (
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Relatório Salvo
+                </Badge>
+                <span className="text-sm text-gray-600">
+                  {new Date(reportDate).toLocaleString('pt-BR')}
+                </span>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2 shrink-0 ml-4">
-              {/* Botão Atualizar (SEMPRE VISÍVEL quando tem relatório) */}
-              {stcResult && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAtualizarAnalise}
-                  className="text-orange-600 border-orange-600 hover:bg-orange-50 gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Atualizar
-                </Button>
-              )}
-
-              {/* Botão Salvar (só aparece se ainda não salvou e tem resultado) */}
-              {!hasExistingReport && stcResult && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSalvarRelatorio}
-                  className="bg-green-600 hover:bg-green-700 gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Salvar Completo (3 Abas)
-                </Button>
-              )}
-
-              <SaveReportPDF
-                contentId="totvs-report-content"
-                fileName={`relatorio-completo-${cnpj || 'empresa'}`}
-                reportType="totvs_verification"
-                reportTitle="Relatório Consolidado de Verificação"
-                quarantineId={analysisId}
-                companyId={companyId}
-                allTabs
-              />
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleToggleExpand}
-                title={isExpanded ? 'Minimizar' : 'Maximizar'}
-                className="h-9 w-9"
-              >
-                {isExpanded ? (
-                  <Minimize2 className="w-4 h-4" />
-                ) : (
-                  <Maximize2 className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Conteúdo scrollable */}
-          <div 
-            id="totvs-report-content"
-            ref={contentRef}
-            className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 bg-gray-50"
-            style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
-          >
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <RefreshCw className="w-12 h-12 animate-spin text-primary mb-4" />
-                <p className="text-lg font-semibold">
-                  Carregando relatório...
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Sem consumo de créditos
-                </p>
-              </div>
-            ) : hasExistingReport && stcResult ? (
-              <div className="space-y-4">
-                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="font-semibold">Relatório em Cache - 3 Documentos Salvos</span>
-                  </div>
-                  <p className="text-sm text-green-700 dark:text-green-300 mt-2">
-                    Este relatório foi salvo anteriormente com todas as 3 abas (TOTVS + Similares + 360°). Navegue livremente entre as abas sem consumir créditos.
-                  </p>
-                </div>
-                <TOTVSCheckCard
-                  companyId={companyId}
-                  companyName={companyName}
-                  cnpj={cnpj}
-                  domain={domain}
-                  autoVerify={false}
-                  cachedData={stcResult}
-                  onResult={setStcResult}
-                />
-              </div>
-            ) : (
-              <TOTVSCheckCard
-                companyId={companyId}
-                companyName={companyName}
-                cnpj={cnpj}
-                domain={domain}
-                autoVerify={false}
-                onResult={setStcResult}
-              />
             )}
           </div>
 
-          {/* Footer fixo */}
-          <div className="flex-shrink-0 border-t bg-muted/30 p-4">
-            <DialogFooter className="gap-2 sm:gap-2">
-              <Button 
-                variant="destructive" 
-                onClick={handleReject} 
-                className="gap-2"
+          <div className="flex items-center gap-2 ml-4">
+            {/* Botão Atualizar - SEMPRE VISÍVEL quando tem relatório */}
+            {stcResult && (
+              <Button
+                variant="outline"
                 size="sm"
+                onClick={handleAtualizarAnalise}
+                className="text-orange-600 border-orange-600 hover:bg-orange-50"
               >
-                <XCircle className="w-4 h-4" />
-                Descartar Empresa
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Atualizar
               </Button>
-              <Button 
-                onClick={handleActivatePipeline} 
-                className="gap-2 bg-green-600 hover:bg-green-700"
+            )}
+
+            {/* Botão Salvar - só aparece se ainda não salvou */}
+            {!hasExistingReport && stcResult && (
+              <Button
+                variant="default"
                 size="sm"
+                onClick={handleSalvarRelatorio}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Salvar (3 Abas)
+              </Button>
+            )}
+
+            <SaveReportPDF
+              contentId="quarantine-report-modal"
+              fileName={`relatorio-completo-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}`}
+              reportType="totvs_verification"
+              reportTitle="Relatório Completo"
+              quarantineId={analysisId}
+            />
+
+            <Button variant="ghost" size="icon" onClick={handleToggleExpand}>
+              {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Conteúdo Scrollável */}
+        <div
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50"
+          style={{ minHeight: 0 }}
+        >
+          <div className="p-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <RefreshCw className="w-16 h-16 animate-spin text-primary mb-6" />
+                <h3 className="text-xl font-semibold mb-2">
+                  {hasExistingReport ? 'Carregando relatório salvo...' : 'Analisando empresa...'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {hasExistingReport ? '📄 Sem consumo de créditos' : '🔍 Consultando múltiplas fontes'}
+                </p>
+              </div>
+            ) : stcResult ? (
+              <Tabs defaultValue="totvs" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-white">
+                  <TabsTrigger value="totvs">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Verificação TOTVS
+                  </TabsTrigger>
+                  <TabsTrigger value="similar">
+                    <Users className="w-4 h-4 mr-2" />
+                    Empresas Similares
+                  </TabsTrigger>
+                  <TabsTrigger value="analysis">
+                    <Target className="w-4 h-4 mr-2" />
+                    Análise 360°
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* ABA 1: TOTVS */}
+                <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
+                  <Card className="p-6 bg-white">
+                    <h2 className="text-2xl font-bold mb-4">Verificação TOTVS</h2>
+                    <div className="mb-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-sm font-semibold">Status:</span>
+                        <Badge
+                          variant={stcResult?.status === 'cliente_totvs' ? 'destructive' : 'default'}
+                        >
+                          {stcResult?.status === 'cliente_totvs' ? '❌ Cliente TOTVS' : '✅ Não é Cliente TOTVS'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold">Confiança:</span>
+                        <Badge variant="outline">
+                          {stcResult?.confidence || 'N/A'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {stcResult?.evidences && stcResult.evidences.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold mb-3">Evidências</h3>
+                        <div className="space-y-3">
+                          {stcResult.evidences.map((evidence: any, index: number) => (
+                            <div key={index} className="bg-gray-50 p-4 rounded-lg border">
+                              <p className="text-sm">{evidence.text}</p>
+                              {evidence.source && (
+                                <a
+                                  href={evidence.source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline mt-2 inline-flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  Ver fonte
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </TabsContent>
+
+                {/* ABA 2: SIMILARES */}
+                <TabsContent value="similar" id="similar-companies-content" className="space-y-6">
+                  <Card className="p-6 bg-white">
+                    <h2 className="text-2xl font-bold mb-4">Empresas Similares</h2>
+                    <p className="text-gray-600 mb-6">
+                      Empresas com perfil similar identificadas
+                    </p>
+
+                    <div className="space-y-4">
+                      {stcResult?.similarCompanies?.length > 0 ? (
+                        stcResult.similarCompanies.map((company: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <h3 className="font-semibold text-lg">{company.name}</h3>
+                            {company.cnpj && (
+                              <p className="text-sm text-gray-600 mt-1">CNPJ: {company.cnpj}</p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-12 text-gray-500">
+                          <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p>Nenhuma empresa similar encontrada</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </TabsContent>
+
+                {/* ABA 3: 360° */}
+                <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
+                  <Card className="p-6 bg-white">
+                    <h2 className="text-2xl font-bold mb-4">Análise 360°</h2>
+
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold mb-3">Score ICP</h3>
+                      <div className="text-5xl font-bold text-primary">
+                        {stcResult?.icpScore || 'N/A'}
+                      </div>
+                    </div>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20">
+                <AlertTriangle className="w-16 h-16 text-yellow-500 mb-6" />
+                <h3 className="text-xl font-semibold mb-2">Nenhum relatório disponível</h3>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer Fixo */}
+        <div className="flex-shrink-0 border-t bg-white p-6">
+          <div className="flex justify-between items-center">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="destructive" onClick={handleReject} disabled={!stcResult}>
+                <XCircle className="w-4 h-4 mr-2" />
+                Descartar
+              </Button>
+              <Button
+                onClick={handleActivatePipeline}
+                className="bg-green-600 hover:bg-green-700"
                 disabled={activating}
               >
                 {activating ? (
@@ -562,90 +621,15 @@ export function QuarantineReportModal({
                   </>
                 ) : (
                   <>
-                    <Rocket className="w-4 h-4" />
+                    <Rocket className="w-4 h-4 mr-2" />
                     Ativar no Pipeline
                   </>
                 )}
               </Button>
-            </DialogFooter>
+            </div>
           </div>
         </div>
       </DialogContent>
-
-      {/* Modal de confirmação de atualização */}
-      {showUpdateConfirm && (
-        <Dialog open={showUpdateConfirm} onOpenChange={setShowUpdateConfirm}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-orange-600">
-                <AlertTriangle className="w-6 h-6" />
-                Atenção: Consumo de Créditos
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-foreground">
-                Atualizar a análise irá <strong>consumir créditos novamente</strong> das seguintes fontes:
-              </p>
-              
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                  Firecrawl (scraping de websites)
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                  APIs de busca e dados empresariais
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                  Análise de IA (OpenAI/Claude)
-                </li>
-              </ul>
-
-              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg p-4">
-                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-                  💡 Dica: Use "Atualizar" apenas quando:
-                </p>
-                <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
-                  <li>• A empresa mudou significativamente</li>
-                  <li>• Passaram mais de 30 dias desde a última análise</li>
-                  <li>• Você precisa de dados mais recentes</li>
-                </ul>
-              </div>
-
-              <p className="text-sm font-semibold text-foreground">
-                Deseja realmente atualizar a análise?
-              </p>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUpdateConfirm(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={confirmAtualizarAnalise}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                Sim, Atualizar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Modal de Descarte com motivos */}
-      <DiscardCompanyModal
-        open={showDiscard}
-        onOpenChange={setShowDiscard}
-        company={{ id: companyId || analysisId, name: companyName, cnpj }}
-        analysisId={analysisId}
-        stcResult={stcResult || undefined}
-        onSuccess={() => {
-          toast.success('Empresa descartada');
-          onOpenChange(false);
-        }}
-      />
     </Dialog>
   );
 }
