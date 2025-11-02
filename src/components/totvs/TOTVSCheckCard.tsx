@@ -36,6 +36,7 @@ interface TOTVSCheckCardProps {
   domain?: string;
   autoVerify?: boolean;
   onResult?: (result: any) => void;
+  cachedData?: any;
 }
 
 export default function TOTVSCheckCard({
@@ -45,6 +46,7 @@ export default function TOTVSCheckCard({
   domain,
   autoVerify = false,
   onResult,
+  cachedData,
 }: TOTVSCheckCardProps) {
   const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
@@ -100,13 +102,16 @@ export default function TOTVSCheckCard({
     return highlighted;
   };
 
-  const { data, isLoading, refetch } = useSimpleTOTVSCheck({
+  const { data: queryData, isLoading, refetch } = useSimpleTOTVSCheck({
     companyId,
     companyName,
     cnpj,
     domain,
-    enabled,
+    enabled: enabled && !cachedData, // Não fazer query se tem cache
   });
+
+  // Usar dados do cache se disponível, senão usar dados da query
+  const data = cachedData || queryData;
 
   // Buscar dados de empresas similares para análise 360° (removido - será buscado direto na aba)
   const similarCompaniesData = null;
@@ -120,8 +125,8 @@ export default function TOTVSCheckCard({
     refetch();
   };
 
-  // ESTADO INICIAL
-  if (!enabled && !data) {
+  // ESTADO INICIAL - só mostrar se não tem cache e não está habilitado
+  if (!enabled && !data && !cachedData) {
     return (
       <Card className="p-6">
         <div className="text-center">

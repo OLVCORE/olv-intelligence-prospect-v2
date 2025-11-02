@@ -342,6 +342,7 @@ export function QuarantineReportModal({
                   cnpj={cnpj}
                   domain={domain}
                   autoVerify={false}
+                  cachedData={stcResult}
                   onResult={setStcResult}
                 />
               </div>
