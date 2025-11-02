@@ -1133,7 +1133,7 @@ export default function ICPQuarantine() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="min-w-[280px] max-w-[320px]">
+                  <TableHead className="min-w-[220px] max-w-[260px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1144,7 +1144,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'empresa' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[140px]">
+                  <TableHead className="min-w-[130px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1155,7 +1155,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'cnpj' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[120px]">
+                  <TableHead className="min-w-[100px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1166,7 +1166,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'cnpj_status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[200px]">
+                  <TableHead className="min-w-[140px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1188,7 +1188,7 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'uf' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[100px]">
+                  <TableHead className="min-w-[90px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1199,34 +1199,34 @@ export default function ICPQuarantine() {
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'score' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[120px]"><span className="font-semibold">Status Análise</span></TableHead>
-                  <TableHead className="min-w-[110px]">
+                  <TableHead className="min-w-[100px]"><span className="font-semibold">Status Análise</span></TableHead>
+                  <TableHead className="min-w-[90px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('status')}
                       className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      <span className="font-semibold">TOTVS Status</span>
+                      <span className="font-semibold">TOTVS</span>
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
-                  <TableHead className="min-w-[180px]"><span className="font-semibold">Website</span></TableHead>
-                  <TableHead className="min-w-[200px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
-                  <TableHead className="min-w-[100px]"><span className="font-semibold">Agent</span></TableHead>
-                  <TableHead className="w-[60px]"><span className="font-semibold">Ações</span></TableHead>
+                  <TableHead className="min-w-[140px]"><span className="font-semibold">Website</span></TableHead>
+                  <TableHead className="min-w-[150px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
+                  <TableHead className="min-w-[70px]"><span className="font-semibold">Agent</span></TableHead>
+                  <TableHead className="w-[50px]"><span className="font-semibold">Ações</span></TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
+                  <TableCell colSpan={13} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
@@ -1249,7 +1249,7 @@ export default function ICPQuarantine() {
                     </TableCell>
                     <TableCell className="py-4">
                       <div 
-                        className="flex flex-col cursor-pointer hover:text-primary transition-colors max-w-[300px]"
+                        className="flex flex-col cursor-pointer hover:text-primary transition-colors max-w-[250px]"
                         onClick={() => {
                           if (company.company_id) {
                             setExecutiveReportCompanyId(company.company_id);
@@ -1298,7 +1298,7 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="max-w-[190px]">
+                      <div className="max-w-[140px]">
                         {company.setor ? (
                           <span className="text-sm line-clamp-2 leading-snug" title={company.setor}>
                             {company.setor}
@@ -1353,7 +1353,7 @@ export default function ICPQuarantine() {
                     </TableCell>
                     <TableCell>
                       {editingWebsiteId === company.id ? (
-                        <div className="flex items-center gap-2 max-w-[180px]">
+                        <div className="flex items-center gap-2 max-w-[140px]">
                           <Input
                             value={websiteInput}
                             onChange={(e) => setWebsiteInput(e.target.value)}
@@ -1368,7 +1368,7 @@ export default function ICPQuarantine() {
                           >Cancelar</Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 max-w-[180px]">
+                        <div className="flex items-center gap-2 max-w-[140px]">
                           {(() => {
                             const domain = sanitizeDomain(company.website || rawData?.domain || null);
                             return domain ? (
@@ -1395,7 +1395,7 @@ export default function ICPQuarantine() {
                     </TableCell>
                     <TableCell className="py-4">
                       {company.motivo_descarte ? (
-                        <div className="max-w-[190px]">
+                        <div className="max-w-[150px]">
                           <span className="text-xs text-muted-foreground line-clamp-2 leading-snug" title={company.motivo_descarte}>
                             {company.motivo_descarte}
                           </span>
