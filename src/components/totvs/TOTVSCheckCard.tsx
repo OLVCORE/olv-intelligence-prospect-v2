@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSimpleTOTVSCheck } from '@/hooks/useSimpleTOTVSCheck';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { SimilarCompaniesTab } from '@/components/intelligence/SimilarCompaniesTab';
+import { Analysis360Tab } from '@/components/intelligence/Analysis360Tab';
 import { toast } from 'sonner';
 import {
   RefreshCw,
@@ -13,7 +18,10 @@ import {
   Filter,
   Clock,
   Copy,
-  Check
+  Check,
+  Building2,
+  BarChart3,
+  Search
 } from 'lucide-react';
 
 interface TOTVSCheckCardProps {
@@ -95,6 +103,22 @@ export default function TOTVSCheckCard({
     enabled,
   });
 
+  // Buscar dados de empresas similares para análise 360°
+  const { data: similarCompaniesData } = useQuery({
+    queryKey: ['similar-for-360', companyId],
+    queryFn: async () => {
+      const { data } = await supabase.functions.invoke('discover-similar-companies', {
+        body: { 
+          companyId, 
+          companyName, 
+          cnpj 
+        }
+      });
+      return data?.data;
+    },
+    enabled: !!companyId && !!data && enabled
+  });
+
   useEffect(() => {
     if (onResult && data) onResult(data);
   }, [data, onResult]);
@@ -153,235 +177,290 @@ export default function TOTVSCheckCard({
 
   return (
     <Card className="p-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            {data.status === 'go' && <CheckCircle className="w-5 h-5 text-green-600" />}
-            {data.status === 'revisar' && <AlertTriangle className="w-5 h-5 text-yellow-600" />}
-            {data.status === 'no-go' && <XCircle className="w-5 h-5 text-red-600" />}
-            Verificação TOTVS
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            {data.from_cache ? (
-              <Badge variant="outline" className="text-xs">
-                <Clock className="w-3 h-3 mr-1" />
-                Cache (24h)
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs">
-                🔄 Verificação nova
-              </Badge>
-            )}
-            <span className="text-xs text-muted-foreground">
-              {data.methodology?.execution_time}
-            </span>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleVerify}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Atualizar
-        </Button>
-      </div>
+      <Tabs defaultValue="detection" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="detection" className="flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            Detecção TOTVS
+          </TabsTrigger>
+          <TabsTrigger value="similar" className="flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Empresas Similares
+          </TabsTrigger>
+          <TabsTrigger value="analysis" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Análise 360°
+          </TabsTrigger>
+        </TabsList>
 
-      {/* STATUS */}
-      <div className="mb-4">
-        <Badge 
-          variant={
-            data.status === 'go' ? 'default' :
-            data.status === 'revisar' ? 'secondary' :
-            'destructive'
-          }
-          className="text-base px-4 py-2"
-        >
-          {data.status === 'go' && '✅ GO - Não é cliente TOTVS'}
-          {data.status === 'revisar' && '⚠️ REVISAR - Evidências encontradas'}
-          {data.status === 'no-go' && '❌ NO-GO - Cliente TOTVS confirmado'}
-        </Badge>
-        <p className="text-sm text-muted-foreground mt-2">
-          Confiança: <strong>{data.confidence === 'high' ? 'Alta' : data.confidence === 'medium' ? 'Média' : 'Baixa'}</strong>
-          {' | '}
-          Peso total: <strong>{data.total_weight} pontos</strong>
-        </p>
-        
-        {/* DEBUG INFO */}
-        <div className="text-xs text-muted-foreground mt-3 p-3 bg-muted/30 rounded-md border border-border/50">
-          <strong className="text-foreground">Debug:</strong>{' '}
-          {data.triple_matches || 0} triple matches |{' '}
-          {data.double_matches || 0} double matches |{' '}
-          {data.evidences?.length || 0} evidências |{' '}
-          {data.methodology?.total_queries || 0} queries executadas
-        </div>
-      </div>
-
-      {/* FILTROS */}
-      {evidences.length > 0 && (
-        <div className="mb-4 space-y-2">
-          <div className="flex gap-2">
-            <Button
-              variant={filterMode === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterMode('all')}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Triple + Double
-            </Button>
-            <Button
-              variant={filterMode === 'triple' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterMode('triple')}
-            >
-              🎯 Apenas Triple
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            🟢 {tripleMatches.length} Triple | 🔵 {doubleMatches.length} Double
-          </div>
-        </div>
-      )}
-
-      {/* EVIDÊNCIAS */}
-      {filteredEvidences.length > 0 ? (
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {filteredEvidences.map((evidence: any, index: number) => {
-            const evidenceId = `${evidence.source}-${index}`;
-            const allTerms = [
-              companyName || '',
-              'TOTVS',
-              ...(evidence.detected_products || []),
-              ...(evidence.intent_keywords || [])
-            ].filter(Boolean).join(' | ');
-            
-            return (
-              <div key={index} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'} className="text-sm">
-                    {evidence.match_type === 'triple' ? '🎯 TRIPLE MATCH' : '🔍 DOUBLE MATCH'}
-                  </Badge>
+        {/* ABA 1: DETECÇÃO TOTVS (CONTEÚDO ATUAL) */}
+        <TabsContent value="detection" className="mt-0">
+          {/* HEADER */}
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                {data.status === 'go' && <CheckCircle className="w-5 h-5 text-green-600" />}
+                {data.status === 'revisar' && <AlertTriangle className="w-5 h-5 text-yellow-600" />}
+                {data.status === 'no-go' && <XCircle className="w-5 h-5 text-red-600" />}
+                Verificação TOTVS
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                {data.from_cache ? (
                   <Badge variant="outline" className="text-xs">
-                    {evidence.source_name || evidence.source} ({evidence.weight} pts)
+                    <Clock className="w-3 h-3 mr-1" />
+                    Cache (24h)
                   </Badge>
-                </div>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    🔄 Verificação nova
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {data.methodology?.execution_time}
+                </span>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleVerify}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Atualizar
+            </Button>
+          </div>
+
+          {/* STATUS */}
+          <div className="mb-4">
+            <Badge 
+              variant={
+                data.status === 'go' ? 'default' :
+                data.status === 'revisar' ? 'secondary' :
+                'destructive'
+              }
+              className="text-base px-4 py-2"
+            >
+              {data.status === 'go' && '✅ GO - Não é cliente TOTVS'}
+              {data.status === 'revisar' && '⚠️ REVISAR - Evidências encontradas'}
+              {data.status === 'no-go' && '❌ NO-GO - Cliente TOTVS confirmado'}
+            </Badge>
+            <p className="text-sm text-muted-foreground mt-2">
+              Confiança: <strong>{data.confidence === 'high' ? 'Alta' : data.confidence === 'medium' ? 'Média' : 'Baixa'}</strong>
+              {' | '}
+              Peso total: <strong>{data.total_weight} pontos</strong>
+            </p>
+            
+            {/* DEBUG INFO */}
+            <div className="text-xs text-muted-foreground mt-3 p-3 bg-muted/30 rounded-md border border-border/50">
+              <strong className="text-foreground">Debug:</strong>{' '}
+              {data.triple_matches || 0} triple matches |{' '}
+              {data.double_matches || 0} double matches |{' '}
+              {data.evidences?.length || 0} evidências |{' '}
+              {data.methodology?.total_queries || 0} queries executadas
+            </div>
+          </div>
+
+          {/* FILTROS */}
+          {evidences.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <div className="flex gap-2">
+                <Button
+                  variant={filterMode === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterMode('all')}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  Triple + Double
+                </Button>
+                <Button
+                  variant={filterMode === 'triple' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterMode('triple')}
+                >
+                  🎯 Apenas Triple
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                🟢 {tripleMatches.length} Triple | 🔵 {doubleMatches.length} Double
+              </div>
+            </div>
+          )}
+
+          {/* EVIDÊNCIAS */}
+          {filteredEvidences.length > 0 ? (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {filteredEvidences.map((evidence: any, index: number) => {
+                const evidenceId = `${evidence.source}-${index}`;
+                const allTerms = [
+                  companyName || '',
+                  'TOTVS',
+                  ...(evidence.detected_products || []),
+                  ...(evidence.intent_keywords || [])
+                ].filter(Boolean).join(' | ');
                 
-                {/* INTENÇÃO DE COMPRA */}
-                {evidence.has_intent && evidence.intent_keywords?.length > 0 && (
-                  <div className="mb-3 p-2 bg-destructive/10 rounded-md border border-destructive/20">
-                    <Badge variant="destructive" className="text-xs mb-1">
-                      🔥 INTENÇÃO DE COMPRA DETECTADA
-                    </Badge>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <strong>Keywords:</strong> {evidence.intent_keywords.join(', ')}
+                return (
+                  <div key={index} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <Badge variant={evidence.match_type === 'triple' ? 'default' : 'secondary'} className="text-sm">
+                        {evidence.match_type === 'triple' ? '🎯 TRIPLE MATCH' : '🔍 DOUBLE MATCH'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {evidence.source_name || evidence.source} ({evidence.weight} pts)
+                      </Badge>
+                    </div>
+                    
+                    {/* INTENÇÃO DE COMPRA */}
+                    {evidence.has_intent && evidence.intent_keywords?.length > 0 && (
+                      <div className="mb-3 p-2 bg-destructive/10 rounded-md border border-destructive/20">
+                        <Badge variant="destructive" className="text-xs mb-1">
+                          🔥 INTENÇÃO DE COMPRA DETECTADA
+                        </Badge>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          <strong>Keywords:</strong> {evidence.intent_keywords.join(', ')}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* TÍTULO COM HIGHLIGHT */}
+                    <h4 
+                      className="text-sm font-semibold mb-2" 
+                      dangerouslySetInnerHTML={{ 
+                        __html: highlightTerms(evidence.title, evidence.detected_products) 
+                      }}
+                    />
+                    
+                    {/* CONTEÚDO COM HIGHLIGHT */}
+                    <p 
+                      className="text-sm text-muted-foreground mb-3"
+                      dangerouslySetInnerHTML={{ 
+                        __html: highlightTerms(evidence.content, evidence.detected_products) 
+                      }}
+                    />
+                    
+                    {/* PRODUTOS DETECTADOS */}
+                    {evidence.detected_products?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        <span className="text-xs font-medium mr-2">Produtos:</span>
+                        {evidence.detected_products.map((product: string) => (
+                          <Badge key={product} variant="outline" className="text-xs">
+                            📦 {product}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* BOTÕES DE AÇÃO */}
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => copyToClipboard(evidence.url, evidenceId, 'url')}
+                      >
+                        {copiedUrl === evidenceId ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copiar URL
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => copyToClipboard(allTerms, evidenceId, 'terms')}
+                      >
+                        {copiedTerms === evidenceId ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copiar Termos
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="text-xs h-7"
+                        asChild
+                      >
+                        <a
+                          href={evidence.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          Ver Fonte
+                        </a>
+                      </Button>
                     </div>
                   </div>
-                )}
-                
-                {/* TÍTULO COM HIGHLIGHT */}
-                <h4 
-                  className="text-sm font-semibold mb-2" 
-                  dangerouslySetInnerHTML={{ 
-                    __html: highlightTerms(evidence.title, evidence.detected_products) 
-                  }}
-                />
-                
-                {/* CONTEÚDO COM HIGHLIGHT */}
-                <p 
-                  className="text-sm text-muted-foreground mb-3"
-                  dangerouslySetInnerHTML={{ 
-                    __html: highlightTerms(evidence.content, evidence.detected_products) 
-                  }}
-                />
-                
-                {/* PRODUTOS DETECTADOS */}
-                {evidence.detected_products?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    <span className="text-xs font-medium mr-2">Produtos:</span>
-                    {evidence.detected_products.map((product: string) => (
-                      <Badge key={product} variant="outline" className="text-xs">
-                        📦 {product}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                
-                {/* BOTÕES DE AÇÃO */}
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => copyToClipboard(evidence.url, evidenceId, 'url')}
-                  >
-                    {copiedUrl === evidenceId ? (
-                      <>
-                        <Check className="w-3 h-3 mr-1" />
-                        Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copiar URL
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => copyToClipboard(allTerms, evidenceId, 'terms')}
-                  >
-                    {copiedTerms === evidenceId ? (
-                      <>
-                        <Check className="w-3 h-3 mr-1" />
-                        Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copiar Termos
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="text-xs h-7"
-                    asChild
-                  >
-                    <a
-                      href={evidence.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Ver Fonte
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-6">
-          <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Nenhuma evidência de uso de TOTVS encontrada
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {data.methodology?.searched_sources} fontes consultadas
-          </p>
-        </div>
-      )}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma evidência de uso de TOTVS encontrada
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.methodology?.searched_sources} fontes consultadas
+              </p>
+            </div>
+          )}
 
-      {/* METODOLOGIA */}
-      <div className="mt-4 pt-4 border-t">
-        <p className="text-xs text-muted-foreground">
-          Fontes consultadas: {data.methodology?.searched_sources} | 
-          Queries executadas: {data.methodology?.total_queries}
-        </p>
-      </div>
+          {/* METODOLOGIA */}
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-xs text-muted-foreground">
+              Fontes consultadas: {data.methodology?.searched_sources} | 
+              Queries executadas: {data.methodology?.total_queries}
+            </p>
+          </div>
+        </TabsContent>
+
+        {/* ABA 2: EMPRESAS SIMILARES (NOVO) */}
+        <TabsContent value="similar" className="mt-0">
+          {companyId && companyName ? (
+            <SimilarCompaniesTab
+              companyId={companyId}
+              companyName={companyName}
+              cnpj={cnpj}
+            />
+          ) : (
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">
+                Informações da empresa necessárias para buscar similares
+              </p>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ABA 3: ANÁLISE 360° (NOVO) */}
+        <TabsContent value="analysis" className="mt-0">
+          {companyId && companyName ? (
+            <Analysis360Tab
+              companyId={companyId}
+              companyName={companyName}
+              stcResult={data}
+              similarCompanies={similarCompaniesData}
+            />
+          ) : (
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">
+                Informações da empresa necessárias para análise 360°
+              </p>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </Card>
   );
 }
