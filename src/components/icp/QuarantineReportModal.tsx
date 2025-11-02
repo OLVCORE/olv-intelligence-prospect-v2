@@ -23,6 +23,9 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import SaveReportPDF from '@/components/reports/SaveReportPDF';
+import TOTVSVerificationReport from '@/components/reports/TOTVSVerificationReport';
+import SimilarCompaniesReport from '@/components/reports/SimilarCompaniesReport';
+import Analysis360Report from '@/components/reports/Analysis360Report';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -502,91 +505,27 @@ export default function QuarantineReportModal({
 
                 {/* ABA 1: TOTVS */}
                 <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
-                  <Card className="p-6 bg-white">
-                    <h2 className="text-2xl font-bold mb-4">Verificação TOTVS</h2>
-                    <div className="mb-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-sm font-semibold">Status:</span>
-                        <Badge
-                          variant={stcResult?.status === 'cliente_totvs' ? 'destructive' : 'default'}
-                        >
-                          {stcResult?.status === 'cliente_totvs' ? '❌ Cliente TOTVS' : '✅ Não é Cliente TOTVS'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold">Confiança:</span>
-                        <Badge variant="outline">
-                          {stcResult?.confidence || 'N/A'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {stcResult?.evidences && stcResult.evidences.length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-3">Evidências</h3>
-                        <div className="space-y-3">
-                          {stcResult.evidences.map((evidence: any, index: number) => (
-                            <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                              <p className="text-sm">{evidence.text}</p>
-                              {evidence.source && (
-                                <a
-                                  href={evidence.source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline mt-2 inline-flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Ver fonte
-                                </a>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </Card>
+                  <TOTVSVerificationReport 
+                    data={stcResult}
+                    companyName={companyName}
+                    cnpj={cnpj}
+                  />
                 </TabsContent>
 
                 {/* ABA 2: SIMILARES */}
                 <TabsContent value="similar" id="similar-companies-content" className="space-y-6">
-                  <Card className="p-6 bg-white">
-                    <h2 className="text-2xl font-bold mb-4">Empresas Similares</h2>
-                    <p className="text-gray-600 mb-6">
-                      Empresas com perfil similar identificadas
-                    </p>
-
-                    <div className="space-y-4">
-                      {stcResult?.similarCompanies?.length > 0 ? (
-                        stcResult.similarCompanies.map((company: any, index: number) => (
-                          <div key={index} className="border rounded-lg p-4">
-                            <h3 className="font-semibold text-lg">{company.name}</h3>
-                            {company.cnpj && (
-                              <p className="text-sm text-gray-600 mt-1">CNPJ: {company.cnpj}</p>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-12 text-gray-500">
-                          <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p>Nenhuma empresa similar encontrada</p>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+                  <SimilarCompaniesReport 
+                    companies={stcResult?.similarCompanies || []}
+                    companyName={companyName}
+                  />
                 </TabsContent>
 
                 {/* ABA 3: 360° */}
                 <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
-                  <Card className="p-6 bg-white">
-                    <h2 className="text-2xl font-bold mb-4">Análise 360°</h2>
-
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-3">Score ICP</h3>
-                      <div className="text-5xl font-bold text-primary">
-                        {stcResult?.icpScore || 'N/A'}
-                      </div>
-                    </div>
-                  </Card>
+                  <Analysis360Report 
+                    data={stcResult}
+                    companyName={companyName}
+                  />
                 </TabsContent>
               </Tabs>
             ) : (
