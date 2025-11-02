@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink } from 'lucide-react';
+import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe, ExternalLink, Filter, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SimilarCompaniesTabProps {
@@ -45,7 +45,7 @@ interface WebDiscoveredCompany {
   cnae?: string;
   // Sistema de pontuação ICP
   icp_score?: number;
-  icp_tier?: 'premium' | 'qualified' | 'potential' | 'low';
+  icp_tier?: 'excellent' | 'premium' | 'qualified' | 'potential' | 'low';
   icp_reasons?: string[];
 }
 
@@ -214,6 +214,7 @@ export function SimilarCompaniesTab({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
+  const [activeScoreFilter, setActiveScoreFilter] = useState<string | null>(null);
   
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['similar-companies-web', companyId, companyName, sector, state],
@@ -684,8 +685,8 @@ export function SimilarCompaniesTab({
       console.log('[ICP-SCORE] Calculando pontuação ICP para cada empresa...');
       
       const scoredCompanies = enrichedCompanies.map(company => {
-        let icpScore = 0;
-        const icpReasons: string[] = [];
+        let icpScore = 30; // SCORE BASE
+        const icpReasons: string[] = ['🎯 Score base (+30)'];
         
         console.log('\n[ICP-SCORE] ===== Avaliando:', company.name, '=====');
         
@@ -694,7 +695,7 @@ export function SimilarCompaniesTab({
           icpScore += 20;
           icpReasons.push('✅ CNPJ válido (+20)');
         } else {
-          icpReasons.push('⚠️ Sem CNPJ (0)');
+          icpReasons.push('❌ Sem CNPJ (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 2: Número de funcionários conhecido? (+15 pontos)
@@ -703,17 +704,17 @@ export function SimilarCompaniesTab({
           icpReasons.push(`✅ ${company.employees} funcionários (+15)`);
           
           // CRITÉRIO 3: Porte adequado? (+25 pontos BÔNUS)
-          if (company.employees >= icpProfile.minEmployees && company.employees <= icpProfile.maxEmployees) {
-            icpScore += 25;
-            icpReasons.push(`🎯 Porte ideal (${icpProfile.minEmployees}-${icpProfile.maxEmployees}) (+25)`);
-          } else if (company.employees >= icpProfile.minEmployees * 0.3 && company.employees <= icpProfile.maxEmployees * 2) {
-            icpScore += 10;
-            icpReasons.push(`⚠️ Porte aceitável (+10)`);
-          } else {
-            icpReasons.push(`❌ Porte fora da faixa (0)`);
+          if (icpProfile.minEmployees && icpProfile.maxEmployees) {
+            if (company.employees >= icpProfile.minEmployees && company.employees <= icpProfile.maxEmployees) {
+              icpScore += 25;
+              icpReasons.push(`🎯 Porte ideal (+25)`);
+            } else if (company.employees >= icpProfile.minEmployees * 0.3 && company.employees <= icpProfile.maxEmployees * 2) {
+              icpScore += 10;
+              icpReasons.push(`⚠️ Porte aceitável (+10)`);
+            }
           }
         } else {
-          icpReasons.push('⚠️ Funcionários desconhecidos (0)');
+          icpReasons.push('❌ Funcionários desconhecidos (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 4: Regime tributário conhecido? (+10 pontos)
@@ -770,8 +771,10 @@ export function SimilarCompaniesTab({
           
           if (companySetor.includes(targetSetor) || targetSetor.includes(companySetor)) {
             icpScore += 10;
-            icpReasons.push(`✅ Setor correto (+10)`);
+            icpReasons.push(`✅ Setor (+10)`);
           }
+        } else {
+          icpReasons.push('❌ Setor desconhecido (0) - PRECISA ENRIQUECER');
         }
         
         // CRITÉRIO 8: Localização? (+5 pontos)
@@ -786,19 +789,23 @@ export function SimilarCompaniesTab({
           icpReasons.push(`✅ Website (+5)`);
         }
         
-        // Determinar tier
-        const icp_tier = icpScore >= 80 ? 'premium' : 
-                        icpScore >= 60 ? 'qualified' : 
-                        icpScore >= 40 ? 'potential' : 'low';
+        // Determinar tier (ajustado para score base 30)
+        const icp_tier = icpScore >= 90 ? 'excellent' : 
+                        icpScore >= 70 ? 'premium' : 
+                        icpScore >= 50 ? 'qualified' : 
+                        icpScore >= 30 ? 'potential' : 'low';
         
-        console.log('[ICP-SCORE] Pontuação final:', icpScore, '/100 -', icp_tier);
+        const needs_enrichment = icpScore < 50;
+        
+        console.log('[ICP-SCORE] Score final:', icpScore, '/100');
         console.log('[ICP-SCORE] Detalhamento:', icpReasons.join(' | '));
         
         return {
           ...company,
-          icp_score: icpScore,
+          icp_score: Math.min(100, icpScore),
           icp_tier,
-          icp_reasons: icpReasons
+          icp_reasons: icpReasons,
+          needs_enrichment
         };
       });
 
@@ -806,12 +813,8 @@ export function SimilarCompaniesTab({
       console.log('[DEBUG] ===== APLICANDO FILTROS =====');
       console.log('[DEBUG] Empresas antes dos filtros:', scoredCompanies.length);
       
+      // Filtrar apenas lixo óbvio (não rejeitar por score)
       const filteredCompanies = scoredCompanies.filter((company, index) => {
-        console.log(`\n[DEBUG] Filtrando ${index + 1}/${scoredCompanies.length}:`, company.name);
-        console.log('[DEBUG] ICP Score:', company.icp_score);
-        console.log('[DEBUG] ICP Tier:', company.icp_tier);
-        
-        // Rejeitar apenas artigos/listas/associações
         const titleLower = company.name.toLowerCase();
         const isInvalid = 
           titleLower.startsWith('as ') || 
@@ -826,19 +829,11 @@ export function SimilarCompaniesTab({
           titleLower.includes('lista de');
         
         if (isInvalid) {
-          console.log('[DEBUG] ❌ Rejeitado: Artigo/Lista');
-          console.log('[ICP-FILTER] ❌ Rejeitado (artigo):', company.name);
+          console.log('[ICP-FILTER] ❌ Rejeitado (não é empresa):', company.name);
           return false;
         }
         
-        // Rejeitar se ICP score muito baixo (< 20)
-        if ((company.icp_score || 0) < 20) {
-          console.log('[DEBUG] ❌ Rejeitado: ICP score muito baixo (<20)');
-          console.log('[ICP-FILTER] ❌ Rejeitado (ICP score muito baixo):', company.name, company.icp_score);
-          return false;
-        }
-        
-        console.log('[DEBUG] ✅ APROVADO');
+        // NÃO REJEITAR POR SCORE - Mostrar todas
         return true;
       });
       
@@ -911,27 +906,32 @@ export function SimilarCompaniesTab({
       // Insights com foco em ICP
       const insights: string[] = [];
       
-      const premiumCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'premium').length;
-      const qualifiedCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'qualified').length;
-      const potentialCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'potential').length;
+      const excellentCount = finalEnrichedCompanies.filter(c => c.icp_score && c.icp_score >= 90).length;
+      const premiumCount = finalEnrichedCompanies.filter(c => c.icp_score && c.icp_score >= 70 && c.icp_score < 90).length;
+      const qualifiedCount = finalEnrichedCompanies.filter(c => c.icp_score && c.icp_score >= 50 && c.icp_score < 70).length;
+      const potentialCount = finalEnrichedCompanies.filter(c => c.icp_score && c.icp_score >= 30 && c.icp_score < 50).length;
+      const needsEnrichment = finalEnrichedCompanies.filter(c => c.needs_enrichment).length;
       
       if (total > 0) {
-        insights.push(`📊 ${total} empresas descobertas e classificadas por ICP`);
+        insights.push(`📊 ${total} empresas encontradas e classificadas por ICP`);
+        
+        if (excellentCount > 0) {
+          insights.push(`🏆 ${excellentCount} empresas EXCELENTES (90-100) - ICP Perfeito!`);
+        }
         
         if (premiumCount > 0) {
-          insights.push(`🔥 ${premiumCount} empresas PREMIUM (ICP 80+) - Prioridade máxima!`);
+          insights.push(`🔥 ${premiumCount} empresas PREMIUM (70-89) - Alta Qualificação`);
         }
         
         if (qualifiedCount > 0) {
-          insights.push(`⭐ ${qualifiedCount} empresas QUALIFICADAS (ICP 60-79) - Ótimos prospects`);
+          insights.push(`⭐ ${qualifiedCount} empresas QUALIFICADAS (50-69) - Bom Potencial`);
         }
         
-        if (potentialCount > 0) {
-          insights.push(`⚠️ ${potentialCount} empresas POTENCIAIS (ICP 40-59) - Investigar mais`);
+        if (needsEnrichment > 0) {
+          insights.push(`🔄 ${needsEnrichment} empresas precisam de enriquecimento`);
         }
         
-        insights.push(`💡 Empresas ordenadas por pontuação ICP (0-100)`);
-        insights.push(`🎯 Foque nas empresas Premium e Qualificadas primeiro`);
+        insights.push(`🎯 Clique nos cards acima para filtrar por faixa de score`);
         
         if (avgEmployees > 0) {
           insights.push(`👥 Média de funcionários: ${avgEmployees} (perfil target: ${icpProfile.minEmployees}-${icpProfile.maxEmployees})`);
@@ -940,14 +940,8 @@ export function SimilarCompaniesTab({
         if (newCompanies > 0) {
           insights.push(`🆕 ${newCompanies} empresas novas para adicionar à quarentena`);
         }
-        
-        if (existingCompanies > 0) {
-          insights.push(`✅ ${existingCompanies} empresas já estão no banco de dados`);
-        }
       } else {
         insights.push(`⚠️ Nenhuma empresa encontrada nesta busca`);
-        insights.push(`💡 O sistema usa pontuação ICP (0-100) com filtro mínimo de 20 pontos`);
-        insights.push(`🔄 Tente buscar novamente ou ajuste o perfil da empresa alvo`);
       }
 
       console.log('[SIMILAR-WEB] ===== RESULTADO FINAL =====');
@@ -1132,6 +1126,24 @@ export function SimilarCompaniesTab({
 
   const { similar_companies, statistics, insights } = data;
 
+  // Filtrar empresas por score ativo
+  const filteredCompaniesByScore = useMemo(() => {
+    if (!activeScoreFilter) return similar_companies;
+    
+    const [min, max] = activeScoreFilter.split('-').map(Number);
+    
+    return similar_companies.filter(company => {
+      const score = company.icp_score || 0;
+      if (max === 100) {
+        return score >= min && score <= max;
+      }
+      return score >= min && score < max;
+    });
+  }, [similar_companies, activeScoreFilter]);
+
+  console.log('[FILTER] Filtro ativo:', activeScoreFilter);
+  console.log('[FILTER] Empresas filtradas:', filteredCompaniesByScore.length);
+
   return (
     <div className="space-y-6">
       {/* Header com Estatísticas */}
@@ -1209,33 +1221,158 @@ export function SimilarCompaniesTab({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-primary">{statistics.total}</div>
-              <div className="text-sm text-muted-foreground">Total</div>
+          {/* PAINEL DE FILTROS ESCALONADOS */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Filtrar por Pontuação ICP</h3>
+              {activeScoreFilter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveScoreFilter(null)}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Limpar Filtro
+                </Button>
+              )}
             </div>
-            <div className="text-center p-4 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50">
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {similar_companies.filter(c => c.icp_tier === 'premium').length}
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {/* CARD: 90-100 (Excelente) */}
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-lg ${
+                  activeScoreFilter === '90-100' 
+                    ? 'ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950' 
+                    : 'hover:border-yellow-500'
+                }`}
+                onClick={() => setActiveScoreFilter(activeScoreFilter === '90-100' ? null : '90-100')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl">🏆</div>
+                    <Badge className="bg-yellow-500 text-white">90-100</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {similar_companies.filter(c => (c.icp_score || 0) >= 90).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Excelente</p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">
+                    ICP Perfeito
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* CARD: 70-89 (Ótimo) */}
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-lg ${
+                  activeScoreFilter === '70-89' 
+                    ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' 
+                    : 'hover:border-green-500'
+                }`}
+                onClick={() => setActiveScoreFilter(activeScoreFilter === '70-89' ? null : '70-89')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl">🔥</div>
+                    <Badge className="bg-green-500 text-white">70-89</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {similar_companies.filter(c => (c.icp_score || 0) >= 70 && (c.icp_score || 0) < 90).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Ótimo</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
+                    Alta Qualificação
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* CARD: 50-69 (Bom) */}
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-lg ${
+                  activeScoreFilter === '50-69' 
+                    ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                    : 'hover:border-blue-500'
+                }`}
+                onClick={() => setActiveScoreFilter(activeScoreFilter === '50-69' ? null : '50-69')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl">⭐</div>
+                    <Badge className="bg-blue-500 text-white">50-69</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {similar_companies.filter(c => (c.icp_score || 0) >= 50 && (c.icp_score || 0) < 70).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Bom</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                    Qualificado
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* CARD: 30-49 (Regular) */}
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-lg ${
+                  activeScoreFilter === '30-49' 
+                    ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950' 
+                    : 'hover:border-orange-500'
+                }`}
+                onClick={() => setActiveScoreFilter(activeScoreFilter === '30-49' ? null : '30-49')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl">⚠️</div>
+                    <Badge className="bg-orange-500 text-white">30-49</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {similar_companies.filter(c => (c.icp_score || 0) >= 30 && (c.icp_score || 0) < 50).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Regular</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">
+                    Precisa Enriquecer
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* CARD: 0-29 (Baixo) */}
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-lg ${
+                  activeScoreFilter === '0-29' 
+                    ? 'ring-2 ring-gray-500 bg-gray-50 dark:bg-gray-900' 
+                    : 'hover:border-gray-500'
+                }`}
+                onClick={() => setActiveScoreFilter(activeScoreFilter === '0-29' ? null : '0-29')}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-3xl">📊</div>
+                    <Badge variant="outline" className="border-gray-400">0-29</Badge>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                    {similar_companies.filter(c => (c.icp_score || 0) < 30).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Baixo</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">
+                    Dados Mínimos
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* INDICADOR DE FILTRO ATIVO */}
+            {activeScoreFilter && (
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-blue-900 dark:text-blue-100">
+                    Mostrando apenas empresas com score {activeScoreFilter}
+                  </span>
+                  <Badge variant="outline" className="ml-auto">
+                    {filteredCompaniesByScore.length} empresas
+                  </Badge>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground font-semibold">🔥 Premium</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/50">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {similar_companies.filter(c => c.icp_tier === 'qualified').length}
-              </div>
-              <div className="text-sm text-muted-foreground font-semibold">⭐ Qualificado</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {similar_companies.filter(c => c.icp_tier === 'potential').length}
-              </div>
-              <div className="text-sm text-muted-foreground">⚠️ Potencial</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statistics.new_companies}</div>
-              <div className="text-sm text-muted-foreground">Novas</div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1262,8 +1399,9 @@ export function SimilarCompaniesTab({
       )}
 
       {/* Lista de Empresas */}
-      <div className="grid gap-4">
-        {similar_companies.map((company, idx) => (
+      {filteredCompaniesByScore.length > 0 ? (
+        <div className="grid gap-4">
+          {filteredCompaniesByScore.map((company, idx) => (
           <Card 
             key={idx} 
             className={`border-muted/50 bg-card/30 backdrop-blur-sm hover:bg-card/60 hover:border-primary/30 transition-all duration-300 ${
@@ -1452,25 +1590,35 @@ export function SimilarCompaniesTab({
             </CardContent>
           </Card>
         ))}
-
-        {similar_companies.length === 0 && (
-          <Card className="border-muted/50 bg-card/50">
-            <CardContent className="py-12">
-              <div className="text-center space-y-3">
-                <Globe className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
-                <p className="text-lg font-semibold">Nenhuma empresa similar encontrada</p>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Tente ajustar os critérios de busca ou o setor da empresa para encontrar mais resultados.
-                </p>
-                <Button onClick={handleRefresh} variant="outline" className="gap-2 mt-4">
-                  <RefreshCw className="h-4 w-4" />
-                  Buscar Novamente
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              {activeScoreFilter 
+                ? `Nenhuma empresa com score ${activeScoreFilter}` 
+                : 'Nenhuma empresa similar encontrada'
+              }
+            </p>
+            {activeScoreFilter ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => setActiveScoreFilter(null)}
+              >
+                Limpar Filtro
+              </Button>
+            ) : (
+              <Button onClick={handleRefresh} variant="outline" className="gap-2 mt-4">
+                <RefreshCw className="h-4 w-4" />
+                Buscar Novamente
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
