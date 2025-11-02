@@ -12,9 +12,14 @@ interface TOTVSVerificationReportProps {
 }
 
 export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOTVSVerificationReportProps) {
+  // Garantir que evidences seja sempre um array válido
+  const evidences = Array.isArray(data?.evidences) 
+    ? data.evidences.filter((ev: any) => ev && (ev.text || ev.snippet) && (ev.url || ev.source))
+    : [];
+  
   console.log('[TOTVS REPORT] 📊 Dados recebidos:', data);
   console.log('[TOTVS REPORT] 📊 Metodologia:', data?.methodology);
-  console.log('[TOTVS REPORT] 📊 Evidências:', data?.evidences);
+  console.log('[TOTVS REPORT] 📊 Evidências recebidas:', evidences.length);
 
   // Função para destacar termos-chave nas evidências
   const highlightTerms = (text: string, terms?: string[]) => {
@@ -53,7 +58,6 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
   const executionMs = (data?.methodology?.execution_time_ms ?? data?.metadata?.execution_time_ms ?? 0) as number;
 
   // Evidências e buscas sugeridas (quando não houver evidências persistidas)
-  const evidences: any[] = Array.isArray(data?.evidences) ? data.evidences : [];
   const nameQuery = (companyName || data?.company_name || data?.razao_social || '').trim();
   const cnpjDigits = (cnpj || '').replace(/\D/g, '');
   const enc = (q: string) => encodeURIComponent(q);
@@ -284,7 +288,7 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
         )}
 
         {/* Evidências com Highlights e Ações */}
-        {data.evidences && data.evidences.length > 0 && (
+        {evidences && evidences.length > 0 ? (
           <Card className="p-5 border border-border bg-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -303,110 +307,96 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
                 </Tooltip>
               </div>
               <Badge variant="secondary" className="text-xs">
-                {data.evidences.length} {data.evidences.length === 1 ? 'evidência' : 'evidências'}
+                {evidences.length} {evidences.length === 1 ? 'evidência' : 'evidências'}
               </Badge>
             </div>
 
             <div className="space-y-3">
-              {data.evidences.map((evidence: any, index: number) => {
-                const matchType = evidence.matchType || (evidence.terms?.length >= 3 ? 'triple' : evidence.terms?.length === 2 ? 'double' : 'single');
-                const matchColor = matchType === 'triple' ? 'emerald' : matchType === 'double' ? 'blue' : 'purple';
+              {evidences.map((evidence: any, index: number) => {
+                const matchLevel = evidence.matchLevel || 3;
+                const matchType = evidence.matchType || (matchLevel >= 5 ? 'quintuple' : matchLevel >= 4 ? 'quadruple' : matchLevel >= 3 ? 'triple' : 'double');
+                const text = evidence.text || evidence.snippet || '';
+                const url = evidence.url || evidence.source || '#';
+                const source = evidence.source_name || (url !== '#' ? new URL(url).hostname.replace('www.', '') : 'Web');
+                const terms = evidence.terms || ['TOTVS'];
                 
                 return (
                   <Card 
                     key={index} 
-                    className="p-4 border border-border hover:border-primary/30 transition-all duration-200 bg-card/50"
+                    className="p-4 border border-border hover:shadow-md transition-shadow bg-card"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <div className={`w-8 h-8 rounded-lg bg-${matchColor}-500/10 flex items-center justify-center border border-${matchColor}-500/20`}>
-                          <span className={`text-sm font-bold text-${matchColor}-600`}>
-                            {index + 1}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      {/* Badge de Match */}
+                      <Badge variant={
+                        matchLevel === 5 ? "default" : 
+                        matchLevel === 4 ? "secondary" : 
+                        "outline"
+                      }>
+                        {matchLevel === 5 ? "⭐⭐⭐⭐⭐ Quintuple" : 
+                         matchLevel === 4 ? "⭐⭐⭐⭐ Quadruple" : 
+                         matchLevel === 3 ? "⭐⭐⭐ Triple" : "⭐⭐ Double"}
+                      </Badge>
                       
-                      <div className="flex-1 min-w-0 space-y-3">
-                        {/* Badge de Tipo de Match */}
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-[10px] px-2 py-0.5 bg-${matchColor}-500/5 border-${matchColor}-500/30 text-${matchColor}-700`}
-                          >
-                            {matchType === 'triple' && '🎯 Triple Match'}
-                            {matchType === 'double' && '✓✓ Double Match'}
-                            {matchType === 'single' && '✓ Single Match'}
-                          </Badge>
-                          {evidence.source_name && (
-                            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
-                              {evidence.source_name}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Texto com Highlights */}
-                        <div 
-                          className="text-sm leading-relaxed text-foreground"
-                          dangerouslySetInnerHTML={{ 
-                            __html: highlightTerms(evidence.text, evidence.terms || ['TOTVS', 'Protheus', 'RM', companyName]) 
-                          }}
-                        />
-
-                        {/* Termos Encontrados */}
-                        {evidence.terms && evidence.terms.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-muted-foreground">Termos:</span>
-                            {evidence.terms.map((term: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-[10px] px-2 py-0.5">
-                                {term}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Ações com ícones minimalistas */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                          {evidence.source && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(evidence.source, '_blank')}
-                                className="h-8 text-xs gap-1.5 flex-1"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                Ver Fonte
-                              </Button>
-                              
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => copyToClipboard(evidence.source, 'URL')}
-                                className="h-8 w-8"
-                                title="Copiar URL"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          )}
-                          
-                          {evidence.terms && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => copyToClipboard(evidence.terms.join(' '), 'Termos de busca')}
-                              className="h-8 w-8"
-                              title="Copiar termos (Ctrl+F)"
-                            >
-                              <Search className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      {/* Fonte */}
+                      <span className="text-sm text-muted-foreground">
+                        {source}
+                      </span>
+                    </div>
+                    
+                    {/* Snippet */}
+                    <div 
+                      className="text-sm mt-2 mb-3 line-clamp-3 leading-relaxed"
+                      dangerouslySetInnerHTML={{ 
+                        __html: highlightTerms(text, terms) 
+                      }}
+                    />
+                    
+                    {/* Botões */}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => window.open(url, '_blank')}
+                        disabled={url === '#'}
+                      >
+                        🔗 Ver Fonte
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(url);
+                          toast.success('URL copiada!');
+                        }}
+                        disabled={url === '#'}
+                      >
+                        📋
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(terms.join(', '));
+                          toast.success('Termos copiados!');
+                        }}
+                      >
+                        🔍
+                      </Button>
                     </div>
                   </Card>
                 );
               })}
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-8 text-center border-2 border-dashed">
+            <div className="text-muted-foreground">
+              <p className="text-lg mb-2">Nenhuma evidência encontrada.</p>
+              <p className="text-sm">
+                Clique em "Analisar" para buscar novamente.
+              </p>
             </div>
           </Card>
         )}

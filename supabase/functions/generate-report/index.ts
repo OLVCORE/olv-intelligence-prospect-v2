@@ -41,6 +41,55 @@ serve(async (req) => {
     const allEvidences = await collect50Sources(companyName, cnpj || '', website || '');
     console.log(`✅ Evidências coletadas: ${allEvidences.length}`);
     
+    // BUSCAR EVIDÊNCIAS SALVAS NO BANCO
+    console.log('\n📦 BUSCANDO EVIDÊNCIAS SALVAS NO BANCO...');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: savedReport } = await supabase
+          .from('totvs_detection_reports')
+          .select('evidences, metadata')
+          .eq('company_name', companyName)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (savedReport?.evidences && Array.isArray(savedReport.evidences)) {
+          console.log(`✅ Encontradas ${savedReport.evidences.length} evidências salvas`);
+          
+          // Mesclar evidências salvas com novas
+          const savedEvidences = savedReport.evidences.map((ev: any) => ({
+            id: ev.id || crypto.randomUUID(),
+            source: ev.source || ev.url || '#',
+            type: ev.type || 'search',
+            title: ev.title || '',
+            snippet: ev.snippet || ev.text || '',
+            url: ev.url || ev.source || '#',
+            matchLevel: ev.matchLevel || ev.match_level || 3,
+            components: ev.components || [],
+            confidence: ev.confidence || 75,
+            timestamp: ev.timestamp || new Date().toISOString(),
+            text: ev.text || ev.snippet || '',
+            terms: ev.terms || ['TOTVS'],
+            matchType: ev.matchType || (ev.matchLevel >= 4 ? 'triple' : 'double'),
+            score: ev.score || ev.matchLevel || 3
+          }));
+          
+          allEvidences.push(...savedEvidences);
+          console.log(`✅ Total após mesclar: ${allEvidences.length} evidências`);
+        } else {
+          console.log('ℹ️ Nenhuma evidência salva encontrada no banco');
+        }
+      } catch (error: any) {
+        console.warn(`⚠️ Erro ao buscar evidências salvas: ${error.message}`);
+      }
+    }
+    
     if (allEvidences.length === 0) {
       console.warn('⚠️ NENHUMA EVIDÊNCIA ENCONTRADA!');
       console.warn('   Possíveis causas:');
@@ -143,10 +192,15 @@ serve(async (req) => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
     // RETORNAR RESULTADO
+    console.log('\n📊 RETORNANDO RESULTADO:');
+    console.log(`  - Evidências: ${allEvidences.length}`);
+    console.log(`  - Score: ${totalScore}`);
+    console.log(`  - Confiança: ${confidence}%`);
+    
     const resultado = {
       status: isClienteTOTVS ? 'cliente_totvs' : 'nao_cliente_totvs',
       confidence,
-      evidences: allEvidences,
+      evidences: Array.isArray(allEvidences) ? allEvidences : [],
       methodology: {
         sources_checked: 50,
         total_searches: allEvidences.length,
