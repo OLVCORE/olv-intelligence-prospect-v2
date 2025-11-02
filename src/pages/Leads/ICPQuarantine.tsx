@@ -1251,9 +1251,17 @@ export default function ICPQuarantine() {
                           }
                         }}
                       >
-                        <span className="font-medium text-sm leading-snug line-clamp-2" title={company.razao_social}>
-                          {company.razao_social}
-                        </span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm leading-snug line-clamp-2" title={company.razao_social}>
+                            {company.razao_social}
+                          </span>
+                          {company.relatorio_salvo && (
+                            <Badge variant="default" className="bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800 text-xs px-1.5 py-0.5 h-5">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Relatório
+                            </Badge>
+                          )}
+                        </div>
                         {rawData?.domain && (
                           <span className="text-xs text-muted-foreground mt-0.5">{rawData.domain}</span>
                         )}

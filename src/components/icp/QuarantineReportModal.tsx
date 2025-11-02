@@ -2,10 +2,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Rocket } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Rocket, RefreshCw, Save, AlertTriangle } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
 import SaveReportPDF from '@/components/reports/SaveReportPDF';
@@ -36,7 +36,63 @@ export function QuarantineReportModal({
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasExistingReport, setHasExistingReport] = useState(false);
+  const [reportDate, setReportDate] = useState<string | null>(null);
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // VERIFICAR SE JÁ EXISTE RELATÓRIO SALVO
+  useEffect(() => {
+    if (!open) return;
+
+    const verificarRelatorioExistente = async () => {
+      setLoading(true);
+      
+      try {
+        console.log('[RELATÓRIO] Verificando se existe relatório salvo...');
+
+        const { data: quarantineData, error: quarantineError } = await supabase
+          .from('icp_analysis_results')
+          .select('relatorio_salvo, relatorio_gerado_em, stc_result')
+          .eq('id', analysisId)
+          .single();
+
+        if (quarantineError) throw quarantineError;
+
+        console.log('[RELATÓRIO] Dados encontrados:', {
+          relatorio_salvo: quarantineData.relatorio_salvo,
+          relatorio_gerado_em: quarantineData.relatorio_gerado_em,
+          tem_stc_result: !!quarantineData.stc_result
+        });
+
+        // SE JÁ TEM RELATÓRIO SALVO
+        if (quarantineData.relatorio_salvo && quarantineData.stc_result) {
+          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando...');
+          
+          setHasExistingReport(true);
+          setReportDate(quarantineData.relatorio_gerado_em);
+          setStcResult(quarantineData.stc_result);
+
+          toast.info('📄 Relatório Salvo Carregado', {
+            description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')}`,
+          });
+        } else {
+          console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo encontrado.');
+          setHasExistingReport(false);
+        }
+      } catch (error: any) {
+        console.error('[RELATÓRIO] Erro ao verificar:', error);
+        toast.error('Erro ao carregar relatório', {
+          description: error.message,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verificarRelatorioExistente();
+  }, [open, analysisId]);
 
   const handleReject = useCallback(() => {
     setShowDiscard(true);
@@ -45,6 +101,61 @@ export function QuarantineReportModal({
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
+
+  // FUNÇÃO PARA ATUALIZAR ANÁLISE (COM CONFIRMAÇÃO)
+  const handleAtualizarAnalise = useCallback(() => {
+    setShowUpdateConfirm(true);
+  }, []);
+
+  const confirmAtualizarAnalise = useCallback(async () => {
+    console.log('[ANÁLISE] 🔄 Usuário confirmou atualização. Forçando nova análise...');
+    
+    setShowUpdateConfirm(false);
+    setLoading(true);
+    setStcResult(null);
+    setHasExistingReport(false);
+    
+    // Força o TOTVSCheckCard a refazer a análise
+    setLoading(false);
+  }, []);
+
+  // FUNÇÃO PARA SALVAR RELATÓRIO
+  const handleSalvarRelatorio = useCallback(async () => {
+    if (!stcResult) {
+      toast.error('Nenhum relatório para salvar');
+      return;
+    }
+
+    try {
+      console.log('[RELATÓRIO] 💾 Salvando relatório no banco...');
+
+      const { error: updateError } = await supabase
+        .from('icp_analysis_results')
+        .update({
+          relatorio_salvo: true,
+          relatorio_gerado_em: new Date().toISOString(),
+          stc_result: stcResult,
+        })
+        .eq('id', analysisId);
+
+      if (updateError) throw updateError;
+
+      console.log('[RELATÓRIO] ✅ Relatório salvo com sucesso!');
+
+      setHasExistingReport(true);
+      setReportDate(new Date().toISOString());
+
+      toast.success('✓ Relatório Salvo', {
+        description: 'O relatório foi salvo e não será reprocessado',
+      });
+
+    } catch (error: any) {
+      console.error('[RELATÓRIO] Erro ao salvar:', error);
+      toast.error('Erro ao salvar relatório', {
+        description: error.message,
+      });
+    }
+  }, [stcResult, analysisId]);
 
   const handleActivatePipeline = useCallback(async () => {
     setActivating(true);
@@ -135,11 +246,42 @@ export function QuarantineReportModal({
                 </DialogTitle>
                 <DialogDescription className="text-sm mt-1 truncate">
                   {companyName}
+                  {hasExistingReport && reportDate && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      📄 Salvo em {new Date(reportDate).toLocaleString('pt-BR')}
+                    </span>
+                  )}
                 </DialogDescription>
               </div>
             </div>
             
             <div className="flex items-center gap-2 shrink-0 ml-4">
+              {/* Botão Atualizar (só aparece se já tem relatório) */}
+              {hasExistingReport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAtualizarAnalise}
+                  className="text-orange-600 border-orange-600 hover:bg-orange-50 gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Atualizar
+                </Button>
+              )}
+
+              {/* Botão Salvar (só aparece se ainda não salvou e tem resultado) */}
+              {!hasExistingReport && stcResult && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSalvarRelatorio}
+                  className="bg-green-600 hover:bg-green-700 gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Salvar
+                </Button>
+              )}
+
               <SaveReportPDF
                 contentId="totvs-report-content"
                 fileName={`relatorio-completo-${cnpj || 'empresa'}`}
@@ -172,14 +314,52 @@ export function QuarantineReportModal({
             ref={contentRef}
             className="flex-1 overflow-y-auto p-6 space-y-6"
           >
-            <TOTVSCheckCard
-              companyId={companyId}
-              companyName={companyName}
-              cnpj={cnpj}
-              domain={domain}
-              autoVerify={false}
-              onResult={setStcResult}
-            />
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <RefreshCw className="w-12 h-12 animate-spin text-primary mb-4" />
+                <p className="text-lg font-semibold">
+                  Carregando relatório...
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Sem consumo de créditos
+                </p>
+              </div>
+            ) : hasExistingReport && stcResult ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-semibold">Relatório em Cache</span>
+                  </div>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                    Este relatório foi salvo anteriormente. Use o botão "Atualizar" se precisar de dados mais recentes.
+                  </p>
+                </div>
+                <TOTVSCheckCard
+                  companyId={companyId}
+                  companyName={companyName}
+                  cnpj={cnpj}
+                  domain={domain}
+                  autoVerify={false}
+                  onResult={setStcResult}
+                />
+              </div>
+            ) : (
+              <TOTVSCheckCard
+                companyId={companyId}
+                companyName={companyName}
+                cnpj={cnpj}
+                domain={domain}
+                autoVerify={true}
+                onResult={(result) => {
+                  setStcResult(result);
+                  // Auto-salvar após primeira análise
+                  if (result && !hasExistingReport) {
+                    setTimeout(() => handleSalvarRelatorio(), 1000);
+                  }
+                }}
+              />
+            )}
           </div>
 
           {/* Footer fixo */}
@@ -216,6 +396,69 @@ export function QuarantineReportModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Modal de confirmação de atualização */}
+      {showUpdateConfirm && (
+        <Dialog open={showUpdateConfirm} onOpenChange={setShowUpdateConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-orange-600">
+                <AlertTriangle className="w-6 h-6" />
+                Atenção: Consumo de Créditos
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-foreground">
+                Atualizar a análise irá <strong>consumir créditos novamente</strong> das seguintes fontes:
+              </p>
+              
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                  Firecrawl (scraping de websites)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                  APIs de busca e dados empresariais
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                  Análise de IA (OpenAI/Claude)
+                </li>
+              </ul>
+
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg p-4">
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                  💡 Dica: Use "Atualizar" apenas quando:
+                </p>
+                <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+                  <li>• A empresa mudou significativamente</li>
+                  <li>• Passaram mais de 30 dias desde a última análise</li>
+                  <li>• Você precisa de dados mais recentes</li>
+                </ul>
+              </div>
+
+              <p className="text-sm font-semibold text-foreground">
+                Deseja realmente atualizar a análise?
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUpdateConfirm(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={confirmAtualizarAnalise}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Sim, Atualizar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Modal de Descarte com motivos */}
       <DiscardCompanyModal
         open={showDiscard}

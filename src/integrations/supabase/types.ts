@@ -4203,9 +4203,12 @@ export type Database = {
           raw_analysis: Json | null
           raw_data: Json | null
           razao_social: string
+          relatorio_gerado_em: string | null
+          relatorio_salvo: boolean | null
           reviewed: boolean | null
           setor: string | null
           status: string | null
+          stc_result: Json | null
           telefone: string | null
           temperatura: string | null
           totvs_check_confidence: string | null
@@ -4244,9 +4247,12 @@ export type Database = {
           raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social: string
+          relatorio_gerado_em?: string | null
+          relatorio_salvo?: boolean | null
           reviewed?: boolean | null
           setor?: string | null
           status?: string | null
+          stc_result?: Json | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_confidence?: string | null
@@ -4285,9 +4291,12 @@ export type Database = {
           raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social?: string
+          relatorio_gerado_em?: string | null
+          relatorio_salvo?: boolean | null
           reviewed?: boolean | null
           setor?: string | null
           status?: string | null
+          stc_result?: Json | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_confidence?: string | null
