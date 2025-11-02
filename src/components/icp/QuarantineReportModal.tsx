@@ -314,23 +314,35 @@ export default function QuarantineReportModal({
       }
 
       console.log('[MODAL] ✅ Relatório recebido:', data);
-      console.log('[MODAL] 📊 Estrutura TOTVS:', data?.totvs);
-      console.log('[MODAL] 📊 Metodologia TOTVS:', data?.totvs?.methodology);
-      console.log('[MODAL] 📊 Evidências TOTVS:', data?.totvs?.evidences);
-      console.log('[MODAL] 🔍 Verificando TODOS os campos do data.totvs:');
-      console.log('[MODAL] 🔍 Keys do data:', Object.keys(data || {}));
-      console.log('[MODAL] 🔍 Keys do data.totvs:', Object.keys(data?.totvs || {}));
-      console.log('[MODAL] 🔍 Tipo de data.totvs.evidences:', typeof data?.totvs?.evidences);
-      console.log('[MODAL] 🔍 É array?', Array.isArray(data?.totvs?.evidences));
-      console.log('[MODAL] 🔍 Length:', data?.totvs?.evidences?.length);
-      
-      // Verificar se evidences está em outro lugar
-      if (data?.evidences) console.log('[MODAL] 🔍 data.evidences encontrado:', data.evidences);
-      if (data?.totvs?.evidence) console.log('[MODAL] 🔍 data.totvs.evidence encontrado:', data.totvs.evidence);
-      if (data?.totvs?.detections) console.log('[MODAL] 🔍 data.totvs.detections encontrado:', data.totvs.detections);
+      console.log('[MODAL] 📊 Keys do data:', Object.keys(data || {}));
+      console.log('[MODAL] 📊 data.evidences (raiz):', data?.evidences);
+      console.log('[MODAL] 📊 data.methodology:', data?.methodology);
+      console.log('[MODAL] 📊 data.totalScore:', data?.totalScore);
 
       if (!data) {
         throw new Error('Relatório vazio');
+      }
+
+      // As evidências vêm na RAIZ do response, não em data.totvs
+      // Precisamos mapear para o formato esperado pelo componente TOTVSVerificationReport
+      if (data.evidences && Array.isArray(data.evidences) && data.evidences.length > 0) {
+        console.log(`[MODAL] ✅ ${data.evidences.length} evidências encontradas na raiz!`);
+        
+        // Criar estrutura totvs com as evidências
+        data.totvs = {
+          status: data.status,
+          confidence: data.confidence,
+          evidences: data.evidences,
+          methodology: data.methodology,
+          tripleMatches: data.tripleMatches || 0,
+          doubleMatches: data.doubleMatches || 0,
+          singleMatches: data.singleMatches || 0,
+          totalScore: data.totalScore || 0,
+        };
+        
+        console.log('[MODAL] ✅ Estrutura totvs criada com evidências!');
+      } else {
+        console.log('[MODAL] ⚠️ Nenhuma evidência na raiz do response');
       }
 
       // Buscar evidências da tabela totvs_detection_reports se tiver companyId

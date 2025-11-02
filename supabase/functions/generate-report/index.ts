@@ -100,39 +100,66 @@ async function verificarTOTVS(companyName: string, cnpj?: string) {
       const results = await buscarSerper(query as string);
       serperQueries++;
 
+      log('INFO', 'TOTVS', `📊 ${results.length} resultados do Serper`);
+
       for (const result of results) {
         const matchType = analisarMatch(result, companyName, cnpj);
+        const snippet = result.snippet || result.title || '';
+        const url = result.link || result.url || '#';
+        
+        let sourceName = 'Web';
+        try {
+          if (url && url !== '#') {
+            sourceName = new URL(url).hostname.replace('www.', '');
+          }
+        } catch {
+          sourceName = 'Web';
+        }
+        
+        log('INFO', 'TOTVS', `🔍 Match: ${matchType} | Source: ${sourceName}`);
         
         if (matchType === 'triple') {
           tripleMatches++;
           evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
+            text: snippet,
+            source: url,
+            source_name: sourceName,
             matchType: 'triple',
             score: 3,
+            terms: [companyName, 'TOTVS', cnpj].filter(Boolean),
           });
+          log('INFO', 'TOTVS', `✅ Triple match adicionado! Total evidences: ${evidences.length}`);
         } else if (matchType === 'double') {
           doubleMatches++;
           evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
+            text: snippet,
+            source: url,
+            source_name: sourceName,
             matchType: 'double',
             score: 2,
+            terms: [companyName, 'TOTVS'],
           });
+          log('INFO', 'TOTVS', `✅ Double match adicionado! Total evidences: ${evidences.length}`);
         } else if (matchType === 'single') {
           singleMatches++;
           evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
+            text: snippet,
+            source: url,
+            source_name: sourceName,
             matchType: 'single',
             score: 1,
+            terms: ['TOTVS'],
           });
+          log('INFO', 'TOTVS', `✅ Single match adicionado! Total evidences: ${evidences.length}`);
         }
       }
     } catch (error: any) {
       log('WARN', 'TOTVS', `Erro na query: ${query} - ${error.message}`);
     }
   }
+
+  log('INFO', 'TOTVS', `📊 FINAL - Evidences array length: ${evidences.length}`);
+  log('INFO', 'TOTVS', `📊 Matches: Triple=${tripleMatches}, Double=${doubleMatches}, Single=${singleMatches}`);
 
   const totalScore = (tripleMatches * 3) + (doubleMatches * 2) + singleMatches;
   const isClienteTOTVS = tripleMatches > 0 || totalScore > 10;
