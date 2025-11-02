@@ -2,13 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Move } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2 } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
-import Draggable from 'react-draggable';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -37,21 +36,22 @@ export function QuarantineReportModal({
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleApprove = () => {
+  const handleApprove = useCallback(() => {
     approveBatch(
       [analysisId],
       {
         onSuccess: () => {
-          toast.success('✅ Empresa aprovada e movida para o Pool');
+          toast.success('Empresa aprovada e movida para o Pool');
           onOpenChange(false);
         },
       }
     );
-  };
+  }, [analysisId, approveBatch, onOpenChange]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!stcResult) {
       toast.info('Execute a verificação antes de salvar');
       return;
@@ -76,132 +76,166 @@ export function QuarantineReportModal({
     } catch (error: any) {
       toast.error('Erro ao salvar relatório', { description: error.message });
     }
-  };
+  }, [stcResult, companyId, companyName, cnpj]);
 
-  const handleReject = () => {
+  const handleReject = useCallback(() => {
     setShowDiscard(true);
-  };
+  }, []);
 
-  const handlePrintPDF = async () => {
-    if (!contentRef.current) {
-      toast.error('Erro ao gerar PDF');
+  const handlePrintPDF = useCallback(async () => {
+    if (!contentRef.current || isGeneratingPDF) {
       return;
     }
 
     try {
+      setIsGeneratingPDF(true);
       toast.info('Gerando PDF...', { duration: 2000 });
       
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: contentRef.current.scrollWidth,
+        windowHeight: contentRef.current.scrollHeight,
       });
 
-      const imgWidth = 210; // A4 width in mm
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 0.95);
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      let position = 0;
+      const pageHeight = 297;
+      
+      while (position < imgHeight) {
+        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
+        position += pageHeight;
+        
+        if (position < imgHeight) {
+          pdf.addPage();
+        }
+      }
+      
       pdf.save(`relatorio-totvs-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
-      
       toast.success('PDF gerado com sucesso');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       toast.error('Erro ao gerar PDF');
+    } finally {
+      setIsGeneratingPDF(false);
     }
-  };
+  }, [companyName, isGeneratingPDF]);
 
-  const handleToggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
+  const modalSize = useMemo(() => {
+    return isExpanded 
+      ? 'max-w-[98vw] w-[98vw] h-[98vh]' 
+      : 'max-w-7xl w-[90vw] max-h-[90vh]';
+  }, [isExpanded]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className={`${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-6xl max-h-[90vh]'} overflow-hidden p-0`}
+        className={`${modalSize} overflow-hidden p-0 flex flex-col`}
       >
-        <Draggable
-          handle=".drag-handle"
-          bounds="parent"
-          disabled={false}
-        >
-          <div className="w-full h-full flex flex-col">
-            {/* Header com controles */}
-            <div className="drag-handle cursor-move border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Move className="w-5 h-5 text-primary/60" />
-                <div>
-                  <DialogTitle className="text-lg font-semibold">Relatório de Verificação TOTVS</DialogTitle>
-                  <DialogDescription className="text-sm mt-1">
-                    {companyName}
-                  </DialogDescription>
-                </div>
+        <div className="w-full h-full flex flex-col">
+          {/* Header com controles */}
+          <div className="shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-lg font-semibold truncate">
+                  Relatório de Verificação TOTVS
+                </DialogTitle>
+                <DialogDescription className="text-sm mt-1 truncate">
+                  {companyName}
+                </DialogDescription>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handlePrintPDF}
-                  title="Exportar como PDF"
-                  className="h-8 w-8"
-                >
+            </div>
+            
+            <div className="flex items-center gap-2 shrink-0 ml-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePrintPDF}
+                disabled={isGeneratingPDF}
+                title="Exportar como PDF"
+                className="h-9 w-9"
+              >
+                {isGeneratingPDF ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
                   <Download className="w-4 h-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleToggleExpand}
-                  title={isExpanded ? 'Minimizar' : 'Maximizar'}
-                  className="h-8 w-8"
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Conteúdo scrollable */}
-            <div 
-              ref={contentRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6"
-            >
-              <TOTVSCheckCard
-                companyId={companyId}
-                companyName={companyName}
-                cnpj={cnpj}
-                domain={domain}
-                autoVerify={false}
-                onResult={setStcResult}
-              />
-            </div>
-
-            {/* Footer fixo */}
-            <div className="border-t bg-muted/30 p-4">
-              <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={handleSave} className="gap-2">
-                  <FileText className="w-4 h-4" />
-                  Salvar Relatório
-                </Button>
-                <Button variant="destructive" onClick={handleReject} className="gap-2">
-                  <XCircle className="w-4 h-4" />
-                  Descartar Empresa
-                </Button>
-                <Button onClick={handleApprove} className="gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Aprovar e Mover para Pool
-                </Button>
-              </DialogFooter>
+                )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleToggleExpand}
+                title={isExpanded ? 'Minimizar' : 'Maximizar'}
+                className="h-9 w-9"
+              >
+                {isExpanded ? (
+                  <Minimize2 className="w-4 h-4" />
+                ) : (
+                  <Maximize2 className="w-4 h-4" />
+                )}
+              </Button>
             </div>
           </div>
-        </Draggable>
+
+          {/* Conteúdo scrollable */}
+          <div 
+            ref={contentRef}
+            className="flex-1 overflow-y-auto p-6 space-y-6"
+          >
+            <TOTVSCheckCard
+              companyId={companyId}
+              companyName={companyName}
+              cnpj={cnpj}
+              domain={domain}
+              autoVerify={false}
+              onResult={setStcResult}
+            />
+          </div>
+
+          {/* Footer fixo */}
+          <div className="shrink-0 border-t bg-muted/30 p-4">
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleSave} 
+                className="gap-2"
+                size="sm"
+              >
+                <FileText className="w-4 h-4" />
+                Salvar Relatório
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleReject} 
+                className="gap-2"
+                size="sm"
+              >
+                <XCircle className="w-4 h-4" />
+                Descartar Empresa
+              </Button>
+              <Button 
+                onClick={handleApprove} 
+                className="gap-2"
+                size="sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Aprovar e Mover para Pool
+              </Button>
+            </DialogFooter>
+          </div>
+        </div>
       </DialogContent>
       {/* Modal de Descarte com motivos */}
       <DiscardCompanyModal
