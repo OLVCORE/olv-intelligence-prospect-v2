@@ -18,17 +18,17 @@ serve(async (req) => {
   try {
     console.log('[360] Processing POST request');
 
-    // Return mock payload to validate CORS and wiring first
+    // Retornar mock de teste com CORS ativo
     const mockData = {
       success: true,
       data: {
         opportunity_score: 75,
         score_breakdown: {
-          test: { points: 75, max: 100, description: 'Função de teste - CORS funcionando!' },
+          test: { points: 75, max: 100, description: '✅ Edge function ativa - CORS configurado' },
         },
         timing: 'immediate',
         recommended_products: [],
-        insights: ['Função de teste - CORS funcionando!'],
+        insights: ['✅ Edge function ativa - CORS configurado'],
         generated_at: new Date().toISOString(),
       },
     };
