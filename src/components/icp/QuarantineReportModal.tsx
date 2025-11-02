@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import PrintReportButton from '@/components/reports/PrintReportButton';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -36,7 +35,6 @@ export function QuarantineReportModal({
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleApprove = useCallback(() => {
@@ -44,7 +42,7 @@ export function QuarantineReportModal({
       [analysisId],
       {
         onSuccess: () => {
-          toast.success('Empresa aprovada e movida para o Pool');
+          toast.success('✓ Empresa Ativada no Pipeline');
           onOpenChange(false);
         },
       }
@@ -82,52 +80,6 @@ export function QuarantineReportModal({
     setShowDiscard(true);
   }, []);
 
-  const handlePrintPDF = useCallback(async () => {
-    if (!contentRef.current || isGeneratingPDF) {
-      return;
-    }
-
-    try {
-      setIsGeneratingPDF(true);
-      toast.info('Gerando PDF...', { duration: 2000 });
-      
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: contentRef.current.scrollWidth,
-        windowHeight: contentRef.current.scrollHeight,
-      });
-
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png', 0.95);
-      
-      let position = 0;
-      const pageHeight = 297;
-      
-      while (position < imgHeight) {
-        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
-        position += pageHeight;
-        
-        if (position < imgHeight) {
-          pdf.addPage();
-        }
-      }
-      
-      pdf.save(`relatorio-totvs-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
-      toast.success('PDF gerado com sucesso');
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  }, [companyName, isGeneratingPDF]);
-
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
@@ -158,26 +110,10 @@ export function QuarantineReportModal({
             </div>
             
             <div className="flex items-center gap-2 shrink-0 ml-4">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handlePrintPDF}
-                disabled={isGeneratingPDF}
-                title="Exportar como PDF"
-                className="h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                {isGeneratingPDF ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm font-medium">Gerando...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileDown className="w-4 h-4" />
-                    <span className="text-sm font-medium">Exportar PDF</span>
-                  </>
-                )}
-              </Button>
+              <PrintReportButton
+                contentId="totvs-report-content"
+                fileName={`relatorio-totvs-${cnpj || 'empresa'}`}
+              />
               
               <Button
                 variant="outline"
@@ -197,6 +133,7 @@ export function QuarantineReportModal({
 
           {/* Conteúdo scrollable */}
           <div 
+            id="totvs-report-content"
             ref={contentRef}
             className="flex-1 overflow-y-auto p-6 space-y-6"
           >
@@ -233,11 +170,11 @@ export function QuarantineReportModal({
               </Button>
               <Button 
                 onClick={handleApprove} 
-                className="gap-2"
+                className="gap-2 bg-green-600 hover:bg-green-700"
                 size="sm"
               >
                 <CheckCircle className="w-4 h-4" />
-                Aprovar e Mover para Pool
+                Ativar no Pipeline
               </Button>
             </DialogFooter>
           </div>
