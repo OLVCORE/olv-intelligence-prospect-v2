@@ -128,7 +128,7 @@ export default function QuarantineReportModal({
                 .limit(1)
                 .maybeSingle();
 
-              if (!usageError && usageReport?.evidences?.length > 0) {
+              if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
                 const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
                   source: ev.url || ev.source,
                   source_name: ev.platform || 'Web',
@@ -204,7 +204,7 @@ export default function QuarantineReportModal({
                 .limit(1)
                 .maybeSingle();
 
-              if (!usageError && usageReport?.evidences?.length > 0) {
+              if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
                 const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
                   source: ev.url || ev.source,
                   source_name: ev.platform || 'Web',
@@ -379,7 +379,7 @@ export default function QuarantineReportModal({
             .limit(1)
             .maybeSingle();
 
-          if (!usageError && usageReport?.evidences?.length > 0) {
+          if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
             const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
               source: ev.url || ev.source,
               source_name: ev.platform || 'Web',
