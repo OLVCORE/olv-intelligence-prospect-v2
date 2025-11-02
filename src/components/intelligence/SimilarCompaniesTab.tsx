@@ -62,26 +62,37 @@ interface SimilarCompaniesData {
 function calculateSimilarity(result: any, target: { companyName: string; sector?: string; state?: string }): number {
   let score = 0;
   
-  // Setor similar (+40 pontos)
-  if (target.sector && result.industry?.toLowerCase().includes(target.sector.toLowerCase())) {
-    score += 40;
+  const resultText = `${result.title || ''} ${result.snippet || ''} ${result.description || ''}`.toLowerCase();
+  
+  // Setor similar (+40 pontos) - AUMENTADO
+  if (target.sector) {
+    const sectorNormalized = target.sector.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (resultText.includes(sectorNormalized) || resultText.includes(target.sector.toLowerCase())) {
+      score += 40;
+    }
   }
   
-  // Estado similar (+30 pontos)
-  if (target.state && result.location?.includes(target.state)) {
-    score += 30;
+  // Estado similar (+25 pontos) - AUMENTADO
+  if (target.state && resultText.includes(target.state.toLowerCase())) {
+    score += 25;
   }
   
   // Nome contém palavras-chave (+20 pontos)
   const targetWords = target.companyName.toLowerCase().split(' ').filter(w => w.length > 3);
-  const resultWords = (result.name || result.title || '').toLowerCase();
-  if (targetWords.some(word => resultWords.includes(word))) {
+  const matchedWords = targetWords.filter(word => resultText.includes(word));
+  if (matchedWords.length > 0) {
     score += 20;
   }
   
   // Tem CNPJ (+10 pontos)
-  if (result.cnpj) {
+  if (result.cnpj || /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/.test(resultText)) {
     score += 10;
+  }
+  
+  // Palavras relacionadas a indústria (+15 pontos) - NOVO
+  const industryWords = ['indústria', 'industria', 'fabricante', 'comercio', 'comércio', 'ltda', 'sa'];
+  if (industryWords.some(word => resultText.includes(word))) {
+    score += 15;
   }
   
   return Math.min(score, 100);
@@ -413,7 +424,6 @@ export function SimilarCompaniesTab({
         .filter(company => {
           // FILTRO 1: Nome válido
           if (!company.name || company.name === 'Empresa desconhecida' || company.name.length < 3) {
-            console.log('[FILTER] Rejeitado: Nome inválido -', company.name);
             return false;
           }
           
@@ -423,8 +433,10 @@ export function SimilarCompaniesTab({
             titleLower.startsWith('as ') || 
             titleLower.startsWith('os ') || 
             titleLower.startsWith('top ') ||
+            titleLower.includes('maiores') ||
             titleLower.includes('melhores') ||
-            titleLower.includes('ranking');
+            titleLower.includes('ranking') ||
+            titleLower.includes('lista de');
           
           if (isArticle) {
             console.log('[FILTER] Rejeitado: Artigo/Lista -', company.name);
@@ -433,21 +445,16 @@ export function SimilarCompaniesTab({
           
           // FILTRO 3: Não pode ser a própria empresa
           if (company.name.toLowerCase() === (targetCompany.company_name || companyName)?.toLowerCase()) {
-            console.log('[FILTER] Rejeitado: Empresa alvo -', company.name);
             return false;
           }
           
-          // FILTRO 4: Score mínimo de 40 (aumentado de 0)
-          if (company.similarity_score < 40) {
+          // FILTRO 4: Score mínimo de 20 (reduzido de 40)
+          if (company.similarity_score < 20) {
             console.log('[FILTER] Rejeitado: Score baixo -', company.name, company.similarity_score);
             return false;
           }
           
-          // FILTRO 5: Deve ter pelo menos 1 dado estruturado (CNPJ, setor ou estado)
-          if (!company.cnpj && !company.setor && !company.uf) {
-            console.log('[FILTER] Rejeitado: Sem dados estruturados -', company.name);
-            return false;
-          }
+          // FILTRO 5: Removido - não exigir dados estruturados
           
           console.log('[FILTER] ✅ Aprovado -', company.name, 'Score:', company.similarity_score);
           return true;
