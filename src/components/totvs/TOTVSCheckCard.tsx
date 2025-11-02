@@ -469,6 +469,7 @@ export default function TOTVSCheckCard({
               companyId={companyId}
               companyName={companyName}
               cnpj={cnpj}
+              enabled={!!cachedData}
             />
           ) : (
             <Card className="p-6">
@@ -487,6 +488,7 @@ export default function TOTVSCheckCard({
               companyName={companyName}
               stcResult={data}
               similarCompanies={similarCompaniesData}
+              enabled={!!cachedData}
             />
           ) : (
             <Card className="p-6">

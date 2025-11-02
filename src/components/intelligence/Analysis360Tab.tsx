@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ interface Analysis360TabProps {
     score?: number;
   };
   similarCompanies?: any;
+  enabled?: boolean;
 }
 
 interface ScoreBreakdownItem {
@@ -50,8 +52,10 @@ export function Analysis360Tab({
   companyId, 
   companyName,
   stcResult,
-  similarCompanies
+  similarCompanies,
+  enabled = false
 }: Analysis360TabProps) {
+  const [shouldLoad, setShouldLoad] = React.useState(enabled);
   
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['360-analysis', companyId],
@@ -260,7 +264,7 @@ export function Analysis360Tab({
         generated_at: new Date().toISOString()
       } as Analysis360Data;
     },
-    enabled: !!companyId,
+    enabled: shouldLoad && !!companyId,
     staleTime: 5 * 60 * 1000,
   });
 

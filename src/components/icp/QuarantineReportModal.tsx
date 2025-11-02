@@ -50,7 +50,7 @@ export function QuarantineReportModal({
       setLoading(true);
       
       try {
-        console.log('[RELATÓRIO] Verificando se existe relatório salvo...');
+        console.log('[RELATÓRIO] 🔍 Verificando se existe relatório salvo...');
 
         const { data: quarantineData, error: quarantineError } = await supabase
           .from('icp_analysis_results')
@@ -68,18 +68,19 @@ export function QuarantineReportModal({
 
         // SE JÁ TEM RELATÓRIO SALVO
         if (quarantineData.relatorio_salvo && quarantineData.stc_result) {
-          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando...');
+          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando do cache...');
           
           setHasExistingReport(true);
           setReportDate(quarantineData.relatorio_gerado_em);
           setStcResult(quarantineData.stc_result);
 
-          toast.info('📄 Relatório Salvo Carregado', {
-            description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')}`,
+          toast.success('📄 Relatório Salvo Carregado', {
+            description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')} • Sem consumo de créditos`,
           });
         } else {
-          console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo encontrado.');
+          console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo. Aguardando ação do usuário...');
           setHasExistingReport(false);
+          setStcResult(null); // Garantir que não tem dados
         }
       } catch (error: any) {
         console.error('[RELATÓRIO] Erro ao verificar:', error);
@@ -470,7 +471,7 @@ export function QuarantineReportModal({
                     <span className="font-semibold">Relatório em Cache - 3 Documentos Salvos</span>
                   </div>
                   <p className="text-sm text-green-700 dark:text-green-300 mt-2">
-                    Este relatório foi salvo anteriormente com todas as 3 abas (TOTVS + Similares + 360°). Use o botão "Atualizar" se precisar de dados mais recentes.
+                    Este relatório foi salvo anteriormente com todas as 3 abas (TOTVS + Similares + 360°). Navegue livremente entre as abas sem consumir créditos.
                   </p>
                 </div>
                 <TOTVSCheckCard
@@ -489,7 +490,7 @@ export function QuarantineReportModal({
                 companyName={companyName}
                 cnpj={cnpj}
                 domain={domain}
-                autoVerify={true}
+                autoVerify={false}
                 onResult={setStcResult}
               />
             )}

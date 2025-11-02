@@ -16,6 +16,7 @@ interface SimilarCompaniesTabProps {
   sector?: string;
   state?: string;
   size?: string;
+  enabled?: boolean;
 }
 
 interface WebDiscoveredCompany {
@@ -251,7 +252,8 @@ export function SimilarCompaniesTab({
   cnpj,
   sector, 
   state, 
-  size 
+  size,
+  enabled = false
 }: SimilarCompaniesTabProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -259,6 +261,7 @@ export function SimilarCompaniesTab({
   // ===== TODOS OS HOOKS NO TOPO (NUNCA CONDICIONAIS) =====
   const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
   const [activeScoreFilter, setActiveScoreFilter] = useState<string | null>(null);
+  const [shouldLoad, setShouldLoad] = useState(enabled);
   
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['similar-companies-web', companyId, companyName, sector, state],
@@ -1411,7 +1414,7 @@ export function SimilarCompaniesTab({
         }
       };
     },
-    enabled: !!companyId && !!companyName,
+    enabled: shouldLoad && !!companyId && !!companyName,
     staleTime: 5 * 60 * 1000,
   });
 
