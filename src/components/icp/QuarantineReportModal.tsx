@@ -647,7 +647,7 @@ export default function QuarantineReportModal({
           className="flex-1 overflow-y-auto overflow-x-hidden bg-background"
           style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
         >
-          <div className="p-6">
+          <div id="quarantine-report-modal" className="p-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <RefreshCw className="w-16 h-16 animate-spin text-primary mb-6" />
