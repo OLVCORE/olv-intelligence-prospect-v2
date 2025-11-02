@@ -38,10 +38,15 @@ interface WebDiscoveredCompany {
   already_in_database: boolean;
   existing_id?: string | null;
   raw_data?: any;
-  // Novos campos ICP
+  // Campos ICP
   porte?: string;
   regime_tributario?: string;
   capital_social?: number;
+  cnae?: string;
+  // Sistema de pontuação ICP
+  icp_score?: number;
+  icp_tier?: 'premium' | 'qualified' | 'potential' | 'low';
+  icp_reasons?: string[];
 }
 
 interface SimilarCompaniesData {
@@ -249,6 +254,18 @@ export function SimilarCompaniesTab({
         employees: sc?.employees_count
       });
 
+      // Inferir setor se não existir (MOVER PARA ANTES DO ICP PROFILE)
+      let inferredSector = targetCompany.sector;
+      if (!inferredSector && targetCompany.company_name) {
+        const nameLower = targetCompany.company_name.toLowerCase();
+        if (nameLower.includes('plast')) inferredSector = 'Plásticos';
+        else if (nameLower.includes('metal')) inferredSector = 'Metalurgia';
+        else if (nameLower.includes('textil') || nameLower.includes('têxtil')) inferredSector = 'Têxtil';
+        else if (nameLower.includes('alimento')) inferredSector = 'Alimentos';
+        else if (nameLower.includes('tecno') || nameLower.includes('software')) inferredSector = 'Tecnologia';
+        console.log('[DEEP-SEARCH] Setor inferido:', inferredSector);
+      }
+
       // ==================== DEFINIR PERFIL ICP ====================
       console.log('[ICP-PROFILE] Definindo perfil ICP da empresa alvo...');
       
@@ -295,21 +312,10 @@ export function SimilarCompaniesTab({
         minRevenue,
         maxRevenue,
         targetCnae: sc?.cnae_principal,
-        targetEmployees
+        targetEmployees,
+        targetSector: inferredSector
       };
       console.log('[ICP-PROFILE] Perfil ICP definido:', icpProfile);
-
-      // Inferir setor se não existir
-      let inferredSector = targetCompany.sector;
-      if (!inferredSector && targetCompany.company_name) {
-        const nameLower = targetCompany.company_name.toLowerCase();
-        if (nameLower.includes('plast')) inferredSector = 'Plásticos';
-        else if (nameLower.includes('metal')) inferredSector = 'Metalurgia';
-        else if (nameLower.includes('textil') || nameLower.includes('têxtil')) inferredSector = 'Têxtil';
-        else if (nameLower.includes('alimento')) inferredSector = 'Alimentos';
-        else if (nameLower.includes('tecno') || nameLower.includes('software')) inferredSector = 'Tecnologia';
-        console.log('[DEEP-SEARCH] Setor inferido:', inferredSector);
-      }
 
       const targetState = targetCompany.state;
       const targetCity = targetCompany.city;
@@ -586,136 +592,195 @@ export function SimilarCompaniesTab({
 
       console.log('[ENRICHMENT] Enriquecimento concluído');
 
-      // ==================== FILTRO RIGOROSO ICP ====================
-      console.log('[ICP-FILTER] Aplicando filtro rigoroso por perfil ICP...');
+      // ==================== SISTEMA DE PONTUAÇÃO ICP ====================
+      console.log('[ICP-SCORE] Calculando pontuação ICP para cada empresa...');
       
-      const icpFilteredCompanies = enrichedCompanies
-        .filter(company => {
-          console.log('\n[ICP-FILTER] ===== Avaliando:', company.name, '=====');
+      const scoredCompanies = enrichedCompanies.map(company => {
+        let icpScore = 0;
+        const icpReasons: string[] = [];
+        
+        console.log('\n[ICP-SCORE] ===== Avaliando:', company.name, '=====');
+        
+        // CRITÉRIO 1: Tem CNPJ? (+20 pontos)
+        if (company.cnpj && company.cnpj.replace(/\D/g, '').length === 14) {
+          icpScore += 20;
+          icpReasons.push('✅ CNPJ válido (+20)');
+        } else {
+          icpReasons.push('⚠️ Sem CNPJ (0)');
+        }
+        
+        // CRITÉRIO 2: Número de funcionários conhecido? (+15 pontos)
+        if (company.employees) {
+          icpScore += 15;
+          icpReasons.push(`✅ ${company.employees} funcionários (+15)`);
           
-          // FILTRO 1: Nome válido
-          if (!company.name || company.name === 'Empresa desconhecida' || company.name.length < 3) {
-            console.log('[ICP-FILTER] ❌ Rejeitado: Nome inválido');
-            return false;
-          }
-          
-          // FILTRO 2: Não pode ser artigo/lista/associação
-          const titleLower = company.name.toLowerCase();
-          const isInvalid = 
-            titleLower.startsWith('as ') || 
-            titleLower.startsWith('os ') || 
-            titleLower.startsWith('top ') ||
-            titleLower.startsWith('associação') ||
-            titleLower.startsWith('sindicato') ||
-            titleLower.startsWith('federação') ||
-            titleLower.includes('maiores') ||
-            titleLower.includes('melhores') ||
-            titleLower.includes('ranking') ||
-            titleLower.includes('lista de');
-          
-          if (isInvalid) {
-            console.log('[ICP-FILTER] ❌ Rejeitado: Não é empresa operacional');
-            return false;
-          }
-          
-          // FILTRO 3: Não pode ser a própria empresa
-          if (company.name.toLowerCase() === targetCompany.company_name?.toLowerCase()) {
-            console.log('[ICP-FILTER] ❌ Rejeitado: Empresa alvo');
-            return false;
-          }
-
-          // FILTRO 4: CNPJ obrigatório
-          if (!company.cnpj) {
-            console.log('[ICP-FILTER] ❌ Rejeitado: Sem CNPJ (impossível validar)');
-            return false;
-          }
-          
-          // FILTRO 5: PORTE - Número de funcionários (CRÍTICO!)
-          if (company.employees) {
-            if (company.employees < icpProfile.minEmployees) {
-              console.log('[ICP-FILTER] ❌ Rejeitado: Muito pequena -', company.employees, 'funcionários (mín:', icpProfile.minEmployees, ')');
-              return false;
-            }
-            
-            if (company.employees > icpProfile.maxEmployees) {
-              console.log('[ICP-FILTER] ❌ Rejeitado: Muito grande -', company.employees, 'funcionários (máx:', icpProfile.maxEmployees, ')');
-              return false;
-            }
-            
-            console.log('[ICP-FILTER] ✅ Porte adequado:', company.employees, 'funcionários');
+          // CRITÉRIO 3: Porte adequado? (+25 pontos BÔNUS)
+          if (company.employees >= icpProfile.minEmployees && company.employees <= icpProfile.maxEmployees) {
+            icpScore += 25;
+            icpReasons.push(`🎯 Porte ideal (${icpProfile.minEmployees}-${icpProfile.maxEmployees}) (+25)`);
+          } else if (company.employees >= icpProfile.minEmployees * 0.3 && company.employees <= icpProfile.maxEmployees * 2) {
+            icpScore += 10;
+            icpReasons.push(`⚠️ Porte aceitável (+10)`);
           } else {
-            // Se não tem dados de funcionários, tentar validar por porte
-            if (!company.porte) {
-              console.log('[ICP-FILTER] ⚠️ Sem dados de funcionários/porte - REJEITADO');
-              return false;
-            }
+            icpReasons.push(`❌ Porte fora da faixa (0)`);
           }
+        } else {
+          icpReasons.push('⚠️ Funcionários desconhecidos (0)');
+        }
+        
+        // CRITÉRIO 4: Regime tributário conhecido? (+10 pontos)
+        if (company.regime_tributario) {
+          icpScore += 10;
+          icpReasons.push(`✅ Regime: ${company.regime_tributario} (+10)`);
           
-          // FILTRO 6: PORTE RECEITA FEDERAL (se disponível)
-          if (company.porte) {
-            if (company.porte === 'MEI' || (company.porte === 'ME' && icpProfile.minEmployees > 20)) {
-              console.log('[ICP-FILTER] ❌ Rejeitado: Porte muito pequeno -', company.porte);
-              return false;
-            }
-            console.log('[ICP-FILTER] ✅ Porte Receita Federal:', company.porte);
+          // BÔNUS: Lucro Real? (+10 pontos)
+          if (company.regime_tributario.includes('Lucro Real')) {
+            icpScore += 10;
+            icpReasons.push('🔥 Lucro Real (+10)');
           }
-          
-          // FILTRO 7: REGIME TRIBUTÁRIO (se disponível)
-          if (company.regime_tributario) {
-            if (icpProfile.expectedRegime === 'Lucro Real' && company.regime_tributario === 'Simples Nacional (MEI)') {
-              console.log('[ICP-FILTER] ❌ Rejeitado: Regime tributário incompatível -', company.regime_tributario);
-              return false;
-            }
-            console.log('[ICP-FILTER] ✅ Regime tributário:', company.regime_tributario);
+        } else {
+          icpReasons.push('⚠️ Regime desconhecido (0)');
+        }
+        
+        // CRITÉRIO 5: Porte Receita Federal? (+10 pontos)
+        if (company.porte) {
+          if (company.porte === 'DEMAIS' || company.porte === 'EPP') {
+            icpScore += 10;
+            icpReasons.push(`✅ Porte RF: ${company.porte} (+10)`);
+          } else if (company.porte === 'ME') {
+            icpScore += 5;
+            icpReasons.push(`⚠️ Porte RF: ME (+5)`);
+          } else {
+            icpReasons.push(`❌ Porte RF muito pequeno: ${company.porte} (0)`);
           }
+        } else {
+          icpReasons.push('⚠️ Porte RF desconhecido (0)');
+        }
+        
+        // CRITÉRIO 6: CNAE similar? (+15 pontos)
+        if (company.cnae && icpProfile.targetCnae) {
+          const companyCnaePrefix = company.cnae.substring(0, 4);
+          const targetCnaePrefix = icpProfile.targetCnae.substring(0, 4);
           
-          // FILTRO 8: CNAE similar (reduz score se diferente, mas não rejeita)
-          if (company.setor && icpProfile.targetCnae) {
-            const sectorMatch = company.setor.toLowerCase().includes(inferredSector?.toLowerCase() || '');
-            if (!sectorMatch) {
-              console.log('[ICP-FILTER] ⚠️ Setor diferente:', company.setor, 'vs', inferredSector);
-              company.similarity_score -= 10;
-            } else {
-              console.log('[ICP-FILTER] ✅ Setor similar:', company.setor);
-            }
+          if (companyCnaePrefix === targetCnaePrefix) {
+            icpScore += 15;
+            icpReasons.push(`✅ CNAE idêntico (+15)`);
+          } else if (company.cnae.substring(0, 2) === icpProfile.targetCnae.substring(0, 2)) {
+            icpScore += 8;
+            icpReasons.push(`⚠️ CNAE similar (+8)`);
+          } else {
+            icpReasons.push(`❌ CNAE diferente (0)`);
           }
+        } else {
+          icpReasons.push('⚠️ CNAE desconhecido (0)');
+        }
+        
+        // CRITÉRIO 7: Setor correto? (+10 pontos)
+        if (company.setor && icpProfile.targetSector) {
+          const companySetor = company.setor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const targetSetor = icpProfile.targetSector.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           
-          // FILTRO 9: Score mínimo (após ajustes)
-          if (company.similarity_score < 30) {
-            console.log('[ICP-FILTER] ❌ Rejeitado: Score baixo após ajustes -', company.similarity_score);
-            return false;
+          if (companySetor.includes(targetSetor) || targetSetor.includes(companySetor)) {
+            icpScore += 10;
+            icpReasons.push(`✅ Setor correto (+10)`);
           }
-          
-          console.log('[ICP-FILTER] ✅✅✅ APROVADO - Empresa dentro do perfil ICP!');
-          console.log('[ICP-FILTER] Dados finais:', {
-            cnpj: company.cnpj,
-            employees: company.employees,
-            porte: company.porte,
-            score: company.similarity_score
-          });
-          
-          return true;
-        })
+        }
+        
+        // CRITÉRIO 8: Localização? (+5 pontos)
+        if (company.uf) {
+          icpScore += 5;
+          icpReasons.push(`✅ Estado: ${company.uf} (+5)`);
+        }
+        
+        // CRITÉRIO 9: Website? (+5 pontos)
+        if (company.website) {
+          icpScore += 5;
+          icpReasons.push(`✅ Website (+5)`);
+        }
+        
+        // Determinar tier
+        const icp_tier = icpScore >= 80 ? 'premium' : 
+                        icpScore >= 60 ? 'qualified' : 
+                        icpScore >= 40 ? 'potential' : 'low';
+        
+        console.log('[ICP-SCORE] Pontuação final:', icpScore, '/100 -', icp_tier);
+        console.log('[ICP-SCORE] Detalhamento:', icpReasons.join(' | '));
+        
+        return {
+          ...company,
+          icp_score: icpScore,
+          icp_tier,
+          icp_reasons: icpReasons
+        };
+      });
+
+      // FILTRO MÍNIMO: Apenas remover lixo óbvio
+      const filteredCompanies = scoredCompanies.filter(company => {
+        // Rejeitar apenas artigos/listas/associações
+        const titleLower = company.name.toLowerCase();
+        const isInvalid = 
+          titleLower.startsWith('as ') || 
+          titleLower.startsWith('os ') || 
+          titleLower.startsWith('top ') ||
+          titleLower.startsWith('associação') ||
+          titleLower.startsWith('sindicato') ||
+          titleLower.startsWith('federação') ||
+          titleLower.includes('maiores') ||
+          titleLower.includes('melhores') ||
+          titleLower.includes('ranking') ||
+          titleLower.includes('lista de');
+        
+        if (isInvalid) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (artigo):', company.name);
+          return false;
+        }
+        
+        // Rejeitar se ICP score muito baixo (< 20)
+        if ((company.icp_score || 0) < 20) {
+          console.log('[ICP-FILTER] ❌ Rejeitado (ICP score muito baixo):', company.name, company.icp_score);
+          return false;
+        }
+        
+        return true;
+      });
+
+      // ORDENAR por ICP score (maior primeiro), depois por similaridade
+      const sortedCompanies = filteredCompanies
         .filter((company, index, self) =>
           // Remover duplicatas por CNPJ ou nome
           index === self.findIndex(c => 
             (c.cnpj && c.cnpj === company.cnpj) || c.name === company.name
           )
         )
-        .sort((a, b) => b.similarity_score - a.similarity_score)
-        .slice(0, 20); // Top 20 empresas qualificadas ICP
+        .sort((a, b) => {
+          const scoreDiff = (b.icp_score || 0) - (a.icp_score || 0);
+          if (scoreDiff !== 0) return scoreDiff;
+          return b.similarity_score - a.similarity_score;
+        })
+        .slice(0, 30); // Top 30 empresas
 
-      console.log('[ICP-FILTER] ===== RESULTADO DO FILTRO ICP =====');
-      console.log('[ICP-FILTER] Empresas antes do filtro:', enrichedCompanies.length);
-      console.log('[ICP-FILTER] Empresas após filtro ICP:', icpFilteredCompanies.length);
-      console.log('[ICP-FILTER] Taxa de aprovação:', 
-        ((icpFilteredCompanies.length / enrichedCompanies.length) * 100).toFixed(1), '%'
-      );
+      console.log('[ICP-SCORE] ===== RESULTADO =====');
+      console.log('[ICP-SCORE] Total após filtro:', sortedCompanies.length);
+      console.log('[ICP-SCORE] 🔥 Premium (80+):', sortedCompanies.filter(c => c.icp_tier === 'premium').length);
+      console.log('[ICP-SCORE] ⭐ Qualificado (60-79):', sortedCompanies.filter(c => c.icp_tier === 'qualified').length);
+      console.log('[ICP-SCORE] ⚠️ Potencial (40-59):', sortedCompanies.filter(c => c.icp_tier === 'potential').length);
+      console.log('[ICP-SCORE] 🔻 Baixo (20-39):', sortedCompanies.filter(c => c.icp_tier === 'low').length);
 
       // Verificar se já existem no banco
       const finalEnrichedCompanies: WebDiscoveredCompany[] = [];
       
-      for (const company of icpFilteredCompanies) {
+      for (const company of sortedCompanies) {
+        if (!company.cnpj) {
+          finalEnrichedCompanies.push({ 
+            ...company, 
+            already_in_database: false,
+            icp_tier: company.icp_tier || 'low',
+            icp_score: company.icp_score || 0,
+            icp_reasons: company.icp_reasons || []
+          } as WebDiscoveredCompany);
+          continue;
+        }
+
         const { data: existing } = await (supabase as any)
           .from('suggested_companies')
           .select('id')
@@ -725,8 +790,11 @@ export function SimilarCompaniesTab({
         finalEnrichedCompanies.push({
           ...company,
           already_in_database: !!existing,
-          existing_id: existing?.id
-        });
+          existing_id: existing?.id,
+          icp_tier: company.icp_tier || 'low',
+          icp_score: company.icp_score || 0,
+          icp_reasons: company.icp_reasons || []
+        } as WebDiscoveredCompany);
       }
 
       // Estatísticas
@@ -742,30 +810,43 @@ export function SimilarCompaniesTab({
       // Insights com foco em ICP
       const insights: string[] = [];
       
-      if (newCompanies > 0) {
-        insights.push(`🎯 ${newCompanies} empresas QUALIFICADAS dentro do perfil ICP!`);
-        insights.push(`📊 Faixa de funcionários: ${icpProfile.minEmployees} - ${icpProfile.maxEmployees}`);
-        insights.push(`💼 Regime esperado: ${icpProfile.expectedRegime}`);
+      const premiumCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'premium').length;
+      const qualifiedCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'qualified').length;
+      const potentialCount = finalEnrichedCompanies.filter(c => c.icp_tier === 'potential').length;
+      
+      if (total > 0) {
+        insights.push(`📊 ${total} empresas descobertas e classificadas por ICP`);
         
-        if (avgEmployees > 0) {
-          insights.push(`👥 Média de funcionários: ${avgEmployees}`);
+        if (premiumCount > 0) {
+          insights.push(`🔥 ${premiumCount} empresas PREMIUM (ICP 80+) - Prioridade máxima!`);
         }
         
-        insights.push(`✅ Todas as empresas foram enriquecidas e validadas via Receita Federal.`);
-        insights.push(`🚀 Clique em "Adicionar à Quarentena" para iniciar prospecção.`);
-      }
-      
-      if (existingCompanies > 0) {
-        insights.push(`✅ ${existingCompanies} empresas já estão no banco de dados.`);
-      }
-      
-      if (total === 0) {
-        insights.push(`⚠️ Nenhuma empresa dentro do perfil ICP encontrada.`);
-        insights.push(`💡 O filtro ICP é rigoroso: empresas precisam ter porte similar (±50%), CNPJ válido e dados da Receita Federal.`);
-        insights.push(`🔄 Tente buscar novamente ou ajuste o perfil da empresa alvo.`);
+        if (qualifiedCount > 0) {
+          insights.push(`⭐ ${qualifiedCount} empresas QUALIFICADAS (ICP 60-79) - Ótimos prospects`);
+        }
+        
+        if (potentialCount > 0) {
+          insights.push(`⚠️ ${potentialCount} empresas POTENCIAIS (ICP 40-59) - Investigar mais`);
+        }
+        
+        insights.push(`💡 Empresas ordenadas por pontuação ICP (0-100)`);
+        insights.push(`🎯 Foque nas empresas Premium e Qualificadas primeiro`);
+        
+        if (avgEmployees > 0) {
+          insights.push(`👥 Média de funcionários: ${avgEmployees} (perfil target: ${icpProfile.minEmployees}-${icpProfile.maxEmployees})`);
+        }
+        
+        if (newCompanies > 0) {
+          insights.push(`🆕 ${newCompanies} empresas novas para adicionar à quarentena`);
+        }
+        
+        if (existingCompanies > 0) {
+          insights.push(`✅ ${existingCompanies} empresas já estão no banco de dados`);
+        }
       } else {
-        insights.push(`📈 Todas as ${total} empresas atendem critérios rigorosos de qualificação ICP.`);
-        insights.push(`🔍 Empresas ordenadas por score de similaridade (30-100).`);
+        insights.push(`⚠️ Nenhuma empresa encontrada nesta busca`);
+        insights.push(`💡 O sistema usa pontuação ICP (0-100) com filtro mínimo de 20 pontos`);
+        insights.push(`🔄 Tente buscar novamente ou ajuste o perfil da empresa alvo`);
       }
 
       console.log('[SIMILAR-WEB] ===== RESULTADO FINAL =====');
@@ -974,22 +1055,32 @@ export function SimilarCompaniesTab({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center p-4 rounded-lg bg-muted/50">
               <div className="text-2xl font-bold text-primary">{statistics.total}</div>
-              <div className="text-sm text-muted-foreground">Total Encontradas</div>
+              <div className="text-sm text-muted-foreground">Total</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/50">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {similar_companies.filter(c => c.icp_tier === 'premium').length}
+              </div>
+              <div className="text-sm text-muted-foreground font-semibold">🔥 Premium</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/50">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {similar_companies.filter(c => c.icp_tier === 'qualified').length}
+              </div>
+              <div className="text-sm text-muted-foreground font-semibold">⭐ Qualificado</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {similar_companies.filter(c => c.icp_tier === 'potential').length}
+              </div>
+              <div className="text-sm text-muted-foreground">⚠️ Potencial</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
               <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statistics.new_companies}</div>
-              <div className="text-sm text-muted-foreground">Novas Empresas</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold">{statistics.already_in_database}</div>
-              <div className="text-sm text-muted-foreground">Já no Banco</div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{statistics.needs_enrichment}</div>
-              <div className="text-sm text-muted-foreground">Para Enriquecer</div>
+              <div className="text-sm text-muted-foreground">Novas</div>
             </div>
           </div>
         </CardContent>
@@ -1042,25 +1133,64 @@ export function SimilarCompaniesTab({
                 </div>
                 
                 {/* Badge de Status */}
-                <div className="flex gap-2">
-                  {company.already_in_database ? (
-                    <Badge variant="secondary" className="gap-1">
-                      ✅ Já no Banco
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="bg-emerald-600 dark:bg-emerald-600 gap-1">
-                      🆕 Nova Empresa
+                <div className="flex flex-col gap-2">
+                  {/* BADGE DE TIER ICP */}
+                  {company.icp_tier === 'premium' && (
+                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg">
+                      🔥 Premium ICP
                     </Badge>
                   )}
-                  <Badge variant="outline" className="font-mono">
-                    Score: {company.similarity_score}/100
+                  {company.icp_tier === 'qualified' && (
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                      ⭐ Qualificado
+                    </Badge>
+                  )}
+                  {company.icp_tier === 'potential' && (
+                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
+                      ⚠️ Potencial
+                    </Badge>
+                  )}
+                  {company.icp_tier === 'low' && (
+                    <Badge variant="outline" className="border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400">
+                      🔻 Baixa Qualificação
+                    </Badge>
+                  )}
+                  
+                  {/* SCORE ICP */}
+                  <Badge variant="outline" className="text-xs font-mono">
+                    ICP: {company.icp_score || 0}/100
                   </Badge>
+                  
+                  {/* SCORE SIMILARIDADE */}
+                  <Badge variant="outline" className="text-xs">
+                    Similaridade: {company.similarity_score}/100
+                  </Badge>
+                  
+                  {company.already_in_database ? (
+                    <Badge variant="secondary">✅ No Banco</Badge>
+                  ) : (
+                    <Badge variant="default" className="bg-emerald-600">🆕 Nova</Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>
             
             <CardContent>
               <div className="space-y-4">
+                {/* DETALHAMENTO ICP */}
+                {company.icp_reasons && company.icp_reasons.length > 0 && (
+                  <details className="text-xs bg-muted/30 p-3 rounded-lg">
+                    <summary className="cursor-pointer text-primary hover:text-primary/80 font-medium mb-2">
+                      🔍 Ver critérios de qualificação ICP ({company.icp_reasons.length} avaliados)
+                    </summary>
+                    <ul className="mt-2 space-y-1 pl-4 list-disc">
+                      {company.icp_reasons.map((reason, idx) => (
+                        <li key={idx} className="text-muted-foreground">{reason}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
                 {/* BADGES DE QUALIFICAÇÃO ICP */}
                 {(company.employees || company.porte || company.regime_tributario) && (
                   <div className="flex gap-2 flex-wrap pb-3 border-b">
