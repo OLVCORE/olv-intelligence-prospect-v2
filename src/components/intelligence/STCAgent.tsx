@@ -33,12 +33,18 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [costInfo, setCostInfo] = useState<{ tokens: any; cost: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll para o final quando novas mensagens aparecerem
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }
+    }, 100);
   }, [messages]);
 
   const startInitialCheck = async () => {
@@ -455,7 +461,7 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
           </div>
           
           {/* Mensagens */}
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div
