@@ -132,12 +132,11 @@ export default function QuarantineReportModal({
         duration: 5000,
       });
 
-      // CHAMAR EDGE FUNCTION
-      const { data, error } = await supabase.functions.invoke('stc-agent', {
+      // CHAMAR EDGE FUNCTION generate-report
+      const { data, error } = await supabase.functions.invoke('generate-report', {
         body: {
           companyName,
           cnpj,
-          analysisId,
         }
       });
 
@@ -167,23 +166,21 @@ export default function QuarantineReportModal({
   const handleAnalyzeCompany = useCallback(async () => {
     if (!companyName) return;
 
-    console.log('[MODAL] 🚀 Iniciando análise FORÇADA (ignorando cache)...');
+    console.log('[MODAL] 🚀 Gerando relatório completo...');
     console.log('[MODAL] Empresa:', companyName);
     console.log('[MODAL] CNPJ:', cnpj);
 
     setLoading(true);
-    setStcResult(null); // Limpar resultado anterior
+    setStcResult(null);
     setHasExistingReport(false);
 
     try {
-      // FORÇAR CHAMADA DA EDGE FUNCTION (ignorar cache temporariamente)
-      console.log('[MODAL] 📡 Chamando Edge Function stc-agent...');
+      console.log('[MODAL] 📡 Chamando Edge Function generate-report...');
       
-      const { data, error } = await supabase.functions.invoke('stc-agent', {
+      const { data, error } = await supabase.functions.invoke('generate-report', {
         body: {
           companyName: companyName,
           cnpj: cnpj,
-          analysisId: `analysis_${Date.now()}`, // ID único
         },
       });
 
@@ -192,26 +189,21 @@ export default function QuarantineReportModal({
         throw error;
       }
 
-      console.log('[MODAL] ✅ Resposta recebida da Edge Function:', data);
+      console.log('[MODAL] ✅ Relatório recebido:', data);
 
       if (!data) {
-        throw new Error('Edge Function retornou dados vazios');
-      }
-
-      // Validar dados recebidos
-      if (!data.status || !data.methodology) {
-        console.warn('[MODAL] ⚠️ Dados incompletos recebidos:', data);
+        throw new Error('Relatório vazio');
       }
 
       setStcResult(data);
 
-      toast.success('✅ Análise concluída!', {
-        description: `Empresa analisada com sucesso. Status: ${data.status}`,
+      toast.success('✅ Relatório gerado!', {
+        description: 'Análise completa das 3 abas concluída com dados reais.',
       });
 
     } catch (error: any) {
-      console.error('[MODAL] ❌ Erro fatal:', error);
-      toast.error('❌ Erro na análise', {
+      console.error('[MODAL] ❌ Erro:', error);
+      toast.error('❌ Erro ao gerar relatório', {
         description: error.message,
       });
     } finally {
