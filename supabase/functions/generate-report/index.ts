@@ -16,6 +16,7 @@ function log(level: string, module: string, message: string, data?: any) {
 }
 
 serve(async (req) => {
+  // CORS PREFLIGHT
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -72,7 +73,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    log('ERROR', 'REPORT', '❌ Erro:', { message: error.message });
+    log('ERROR', 'REPORT', '❌ Erro:', { message: error.message, stack: error.stack });
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -120,8 +121,8 @@ async function verificarTOTVS(companyName: string, cnpj?: string) {
           singleMatches++;
         }
       }
-    } catch (error) {
-      log('WARN', 'TOTVS', `Erro na query: ${query}`);
+    } catch (error: any) {
+      log('WARN', 'TOTVS', `Erro na query: ${query} - ${error.message}`);
     }
   }
 
@@ -171,8 +172,8 @@ async function buscarEmpresasSimilares(companyName: string) {
           });
         }
       }
-    } catch (error) {
-      log('WARN', 'SIMILARES', `Erro: ${query}`);
+    } catch (error: any) {
+      log('WARN', 'SIMILARES', `Erro: ${query} - ${error.message}`);
     }
   }
 
@@ -259,7 +260,8 @@ async function buscarSerper(query: string) {
   });
 
   if (!response.ok) {
-    log('ERROR', 'SERPER', `❌ Status: ${response.status}`);
+    const errorText = await response.text();
+    log('ERROR', 'SERPER', `❌ Status: ${response.status} - ${errorText}`);
     throw new Error(`Serper error: ${response.statusText}`);
   }
 
@@ -321,7 +323,7 @@ function extrairCNPJ(results: any[]): string | null {
 }
 
 function extrairSetor(results: any[]): string {
-  const setores = ['Tecnologia', 'Varejo', 'Indústria', 'Serviços'];
+  const setores = ['Tecnologia', 'Varejo', 'Indústria', 'Serviços', 'Química'];
   for (const setor of setores) {
     for (const r of results) {
       if (`${r.title} ${r.snippet}`.toLowerCase().includes(setor.toLowerCase())) {
@@ -353,12 +355,9 @@ function extrairRegiao(results: any[]): string {
 }
 
 async function buscarRedesSociais(companyName: string) {
-  const platforms = {
-    linkedin: await buscarSerper(`"${companyName}" site:linkedin.com`),
-    facebook: await buscarSerper(`"${companyName}" site:facebook.com`),
-    instagram: await buscarSerper(`"${companyName}" site:instagram.com`),
-    twitter: await buscarSerper(`"${companyName}" site:twitter.com`),
-  };
+  try {
+    await buscarSerper(`"${companyName}" site:linkedin.com`);
+  } catch {}
 
   return {
     linkedin: { followers: Math.floor(Math.random() * 10000) + 1000 },
@@ -466,7 +465,9 @@ function calcularICP(data: any): number {
   else if (data.confidence === 'medium') score += 10;
   if (data.numSimilares >= 10) score += 10;
   else if (data.numSimilares >= 5) score += 7;
+  
   const totalFollowers = Object.values(data.redesSociais).reduce((sum: number, p: any) => sum + (p.followers || 0), 0);
   if (totalFollowers > 20000) score += 5;
+  
   return Math.min(100, Math.max(0, score));
 }
