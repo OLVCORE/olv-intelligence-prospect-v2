@@ -155,7 +155,7 @@ export function useApproveQuarantineBatch() {
         razao_social: q.razao_social!,
         icp_score: q.icp_score || 0,
         temperatura: q.temperatura || 'cold',
-        status: 'active',
+        status: 'pool',
         source: 'icp_batch_analysis',
         origem: 'icp_massa',
         raw_data: q.raw_analysis || {},
@@ -334,7 +334,7 @@ export function useAutoApprove() {
         razao_social: q.razao_social,
         icp_score: q.icp_score,
         temperatura: q.temperatura,
-        status: 'active',
+        status: 'pool',
         source: 'icp_auto_approval',
         origem: 'icp_massa', // Valor válido do constraint
         raw_data: q.raw_analysis,
