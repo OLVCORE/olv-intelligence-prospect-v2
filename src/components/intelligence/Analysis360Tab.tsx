@@ -274,11 +274,14 @@ export function Analysis360Tab({
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Gerando análise 360°...</p>
+      <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
+        <CardContent className="flex items-center justify-center py-16">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <div className="absolute inset-0 blur-xl opacity-30 bg-primary -z-10" />
+            </div>
+            <p className="text-sm text-muted-foreground font-medium">Gerando análise 360°...</p>
           </div>
         </CardContent>
       </Card>
@@ -287,17 +290,19 @@ export function Analysis360Tab({
 
   if (error) {
     return (
-      <Card>
+      <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
         <CardContent className="py-12">
           <div className="flex flex-col items-center gap-4">
-            <AlertTriangle className="h-12 w-12 text-destructive" />
-            <div className="text-center">
+            <div className="p-4 rounded-full bg-destructive/10">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <div className="text-center space-y-2">
               <p className="font-semibold text-lg">Erro ao carregar análise</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground max-w-md">
                 {error instanceof Error ? error.message : 'Erro desconhecido'}
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline">
+            <Button onClick={handleRefresh} variant="outline" className="gap-2">
               Tentar Novamente
             </Button>
           </div>
@@ -313,15 +318,21 @@ export function Analysis360Tab({
   const { opportunity_score, score_breakdown, timing, recommended_products, insights } = data;
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-green-600';
-    if (score >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 70) return 'text-emerald-500 dark:text-emerald-400';
+    if (score >= 50) return 'text-amber-500 dark:text-amber-400';
+    return 'text-blue-500 dark:text-blue-400';
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 70) return 'bg-green-100 border-green-200';
-    if (score >= 50) return 'bg-yellow-100 border-yellow-200';
-    return 'bg-red-100 border-red-200';
+  const getScoreGradient = (score: number) => {
+    if (score >= 70) return 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20';
+    if (score >= 50) return 'from-amber-500/20 to-amber-600/10 dark:from-amber-500/30 dark:to-amber-600/20';
+    return 'from-blue-500/20 to-blue-600/10 dark:from-blue-500/30 dark:to-blue-600/20';
+  };
+
+  const getScoreBorder = (score: number) => {
+    if (score >= 70) return 'border-emerald-500/30 dark:border-emerald-400/30';
+    if (score >= 50) return 'border-amber-500/30 dark:border-amber-400/30';
+    return 'border-blue-500/30 dark:border-blue-400/30';
   };
 
   const getScoreLabel = (score: number) => {
@@ -346,35 +357,44 @@ export function Analysis360Tab({
   return (
     <div className="space-y-6">
       {/* Score Principal */}
-      <Card className={getScoreBgColor(opportunity_score)}>
-        <CardHeader>
+      <Card className={`relative overflow-hidden border-2 ${getScoreBorder(opportunity_score)} bg-gradient-to-br ${getScoreGradient(opportunity_score)} backdrop-blur-sm`}>
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Score de Oportunidade
+              <div className="p-2 rounded-lg bg-background/50">
+                <Target className="h-5 w-5" />
+              </div>
+              <span>Score de Oportunidade</span>
             </div>
-            <Badge variant={timingInfo.color as any}>
-              <Clock className="h-3 w-3 mr-1" />
+            <Badge variant={timingInfo.color as any} className="gap-1">
+              <Clock className="h-3 w-3" />
               {timingInfo.icon} {timingInfo.label}
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center mb-4">
-            <div className={`text-6xl font-bold ${getScoreColor(opportunity_score)}`}>
-              {opportunity_score}
+          <div className="text-center space-y-4">
+            <div className="relative inline-block">
+              <div className={`text-7xl font-bold tracking-tight ${getScoreColor(opportunity_score)} drop-shadow-lg`}>
+                {opportunity_score}
+              </div>
+              <div className="absolute inset-0 blur-2xl opacity-30 bg-gradient-to-r from-primary/50 to-primary/30 -z-10" />
             </div>
-            <p className="text-lg font-semibold mt-2">{getScoreLabel(opportunity_score)}</p>
-            <Progress value={opportunity_score} className="mt-4 h-3" />
+            <div className="space-y-2">
+              <p className="text-xl font-bold tracking-wide">{getScoreLabel(opportunity_score)}</p>
+              <Progress value={opportunity_score} className="mt-4 h-2.5 bg-muted/50" />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Breakdown do Score */}
-      <Card>
+      <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
             Detalhamento do Score
           </CardTitle>
           <CardDescription>
@@ -382,18 +402,18 @@ export function Analysis360Tab({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {Object.entries(score_breakdown).map(([key, item]) => (
-              <div key={key} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-sm capitalize">
+              <div key={key} className="group border border-border/50 rounded-xl p-4 bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-300">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm capitalize text-foreground">
                     {key.replace(/_/g, ' ')}
                   </h4>
-                  <Badge variant="outline">
+                  <Badge variant="secondary" className="font-mono">
                     {item.points}/{item.max} pts
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{item.description}</p>
                 <Progress 
                   value={(item.points / item.max) * 100} 
                   className="h-2"
@@ -401,10 +421,10 @@ export function Analysis360Tab({
                 
                 {/* Fatores Adicionais */}
                 {item.factors && item.factors.length > 0 && (
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-3 space-y-1 pl-3 border-l-2 border-primary/20">
                     {item.factors.map((factor, idx) => (
                       <p key={idx} className="text-xs text-muted-foreground">
-                        {factor}
+                        • {factor}
                       </p>
                     ))}
                   </div>
@@ -412,11 +432,11 @@ export function Analysis360Tab({
 
                 {/* Gaps Tecnológicos */}
                 {item.gaps && item.gaps.length > 0 && (
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-3 space-y-2">
                     {item.gaps.map((gap: any, idx: number) => (
-                      <div key={idx} className="bg-muted p-2 rounded text-xs">
-                        <p className="font-semibold">{gap.gap}</p>
-                        <p className="text-muted-foreground">{gap.description}</p>
+                      <div key={idx} className="bg-muted/50 p-3 rounded-lg text-xs border border-border/50">
+                        <p className="font-semibold text-foreground">{gap.gap}</p>
+                        <p className="text-muted-foreground mt-1">{gap.description}</p>
                       </div>
                     ))}
                   </div>
@@ -424,9 +444,9 @@ export function Analysis360Tab({
 
                 {/* Sinais de Intenção */}
                 {item.signals && item.signals.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-3 flex flex-wrap gap-1.5">
                     {item.signals.map((signal: any, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
+                      <Badge key={idx} variant="secondary" className="text-xs font-normal">
                         {signal.type === 'strong' ? '🔥' : '💡'} {signal.signal}
                       </Badge>
                     ))}
@@ -440,10 +460,12 @@ export function Analysis360Tab({
 
       {/* Produtos Recomendados */}
       {recommended_products.length > 0 && (
-        <Card>
+        <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
               Produtos Recomendados
             </CardTitle>
             <CardDescription>
@@ -451,9 +473,9 @@ export function Analysis360Tab({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {recommended_products.map((product, idx) => (
-                <div key={idx} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                <div key={idx} className="border border-border/50 rounded-xl p-4 bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-300 cursor-pointer">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h4 className="font-semibold text-base">{product.product}</h4>
@@ -467,16 +489,16 @@ export function Analysis360Tab({
                     </div>
                   </div>
 
-                  <div className="space-y-1 mb-3">
+                  <div className="space-y-1.5 mb-3">
                     {product.benefits.map((benefit, bidx) => (
                       <div key={bidx} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <span className="text-green-600">✓</span>
-                        <span>{benefit}</span>
+                        <span className="text-emerald-500 dark:text-emerald-400 font-bold">✓</span>
+                        <span className="leading-relaxed">{benefit}</span>
                       </div>
                     ))}
                   </div>
 
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs font-mono">
                     ROI: {product.roi_months} meses
                   </Badge>
                 </div>
@@ -487,22 +509,24 @@ export function Analysis360Tab({
       )}
 
       {/* Insights Estratégicos */}
-      <Card>
+      <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-amber-500/10">
+              <Lightbulb className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+            </div>
             Insights Estratégicos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {insights.map((insight, idx) => (
               <div 
                 key={idx}
-                className="flex items-start gap-3 p-4 bg-primary/5 rounded-lg border border-primary/10"
+                className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl border border-border/50 hover:border-primary/30 transition-all duration-300 group"
               >
-                <span className="text-xl flex-shrink-0">{insight.charAt(0)}</span>
-                <p className="text-sm flex-1">{insight.slice(2)}</p>
+                <span className="text-xl flex-shrink-0 group-hover:scale-110 transition-transform">{insight.charAt(0)}</span>
+                <p className="text-sm flex-1 leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">{insight.slice(2)}</p>
               </div>
             ))}
           </div>
