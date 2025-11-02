@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ interface TOTVSCheckCardProps {
   cnpj?: string;
   domain?: string;
   autoVerify?: boolean;
+  onResult?: (result: any) => void;
 }
 
 export default function TOTVSCheckCard({
@@ -30,6 +31,7 @@ export default function TOTVSCheckCard({
   cnpj,
   domain,
   autoVerify = false,
+  onResult,
 }: TOTVSCheckCardProps) {
   const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
@@ -92,6 +94,10 @@ export default function TOTVSCheckCard({
     domain,
     enabled,
   });
+
+  useEffect(() => {
+    if (onResult && data) onResult(data);
+  }, [data, onResult]);
 
   const handleVerify = () => {
     setEnabled(true);

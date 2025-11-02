@@ -13,12 +13,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   company: {
-    id: string;
+    id: string; // companies.id preferencialmente
     name: string;
     cnpj?: string;
     icp_score?: number;
     icp_temperature?: string;
   };
+  analysisId?: string; // icp_analysis_results.id (opcional, para atualização direta)
   stcResult?: {
     status: string;
     confidence: string;
@@ -92,7 +93,7 @@ const DISCARD_REASONS = [
   }
 ];
 
-export function DiscardCompanyModal({ open, onOpenChange, company, stcResult, onSuccess }: Props) {
+export function DiscardCompanyModal({ open, onOpenChange, company, analysisId, stcResult, onSuccess }: Props) {
   const [selectedReason, setSelectedReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -134,11 +135,21 @@ export function DiscardCompanyModal({ open, onOpenChange, company, stcResult, on
 
       if (insertError) throw insertError;
 
-      // REMOVER DA QUARENTENA (atualizar status ou deletar)
-      const { error: updateError } = await supabase
-        .from('icp_analysis_results')
-        .update({ status: 'descartada' })
-        .eq('id', company.id);
+      // REMOVER DA QUARENTENA (atualizar status)
+      let updateError: any = null;
+      if (analysisId) {
+        const { error } = await supabase
+          .from('icp_analysis_results')
+          .update({ status: 'descartada' })
+          .eq('id', analysisId);
+        updateError = error;
+      } else {
+        const { error } = await supabase
+          .from('icp_analysis_results')
+          .update({ status: 'descartada' })
+          .eq('company_id', company.id);
+        updateError = error;
+      }
 
       if (updateError) throw updateError;
 
