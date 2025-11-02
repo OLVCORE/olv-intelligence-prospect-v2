@@ -47,10 +47,24 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
 
   const isClienteTOTVS = data.status === 'cliente_totvs';
   const confidence = data.confidence || 'low';
-  // Fallbacks robustos para contagens
+  // Fallbacks robustos para contagens e utilitários de exibição
   const sourcesWithResults = (data?.methodology?.sources_with_results ?? data?.methodology?.total_matches ?? (Array.isArray(data?.evidences) ? data.evidences.length : 0)) as number;
   const executionMs = (data?.methodology?.execution_time_ms ?? data?.metadata?.execution_time_ms ?? 0) as number;
- 
+
+  // Evidências e buscas sugeridas (quando não houver evidências persistidas)
+  const evidences: any[] = Array.isArray(data?.evidences) ? data.evidences : [];
+  const nameQuery = (companyName || data?.company_name || data?.razao_social || '').trim();
+  const cnpjDigits = (cnpj || '').replace(/\D/g, '');
+  const enc = (q: string) => encodeURIComponent(q);
+  const fallbackLinks = [
+    { label: 'Google: Nome + TOTVS', url: `https://www.google.com/search?q=${enc(`${nameQuery} TOTVS`)}` },
+    { label: 'Notícias: Nome + TOTVS', url: `https://www.google.com/search?q=${enc(`${nameQuery} TOTVS`)}&tbm=nws` },
+    { label: 'Site TOTVS (site:totvs.com)', url: `https://www.google.com/search?q=${enc(`site:totvs.com ${nameQuery}`)}` },
+    { label: 'LinkedIn (vagas)', url: `https://www.google.com/search?q=${enc(`site:linkedin.com/jobs ${nameQuery} TOTVS`)}` },
+    { label: 'Docs Oficiais (.gov.br)', url: `https://www.google.com/search?q=${enc(`site:gov.br ${nameQuery} TOTVS`)}` },
+    ...(cnpjDigits ? [{ label: 'Google: CNPJ + TOTVS', url: `https://www.google.com/search?q=${enc(`${cnpjDigits} TOTVS`)}` }] : []),
+  ];
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -396,12 +410,33 @@ export default function TOTVSVerificationReport({ data, companyName, cnpj }: TOT
           </Card>
         )}
 
-        {/* Mensagem caso não haja evidências */}
+        {/* Mensagem caso não haja evidências + sugestões rápidas */}
         {(!data.evidences || data.evidences.length === 0) && (
-          <Card className="p-8 text-center border border-dashed border-border">
-            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-            <h3 className="text-base font-semibold mb-1 text-foreground">Nenhuma evidência encontrada</h3>
-            <p className="text-sm text-muted-foreground">A análise não encontrou evidências específicas</p>
+          <Card className="p-6 border border-dashed border-border space-y-4 text-center">
+            <div>
+              <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-2" />
+              <h3 className="text-base font-semibold mb-1 text-foreground">Nenhuma evidência encontrada</h3>
+              <p className="text-sm text-muted-foreground">A análise não encontrou evidências específicas. Tente as buscas abaixo:</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-left">
+              {fallbackLinks.map((link, idx) => (
+                <Button
+                  key={idx}
+                  variant="outline"
+                  size="sm"
+                  className="justify-start h-9"
+                  onClick={() => window.open(link.url, '_blank')}
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  {link.label}
+                </Button>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              Dica: use Ctrl+F e termos como "TOTVS", "Protheus", "RM", junto com {nameQuery || 'o nome da empresa'}.
+            </p>
           </Card>
         )}
       </div>
