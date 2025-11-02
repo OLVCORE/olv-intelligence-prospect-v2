@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import apolloIcon from '@/assets/logos/apollo-icon.ico';
 import { QuarantineReportModal } from '@/components/icp/QuarantineReportModal';
+import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
 
 interface QuarantineRowActionsProps {
   company: any;
@@ -49,6 +50,7 @@ export function QuarantineRowActions({
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichingAction, setEnrichingAction] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
   const navigate = useNavigate();
 
   const handleApprove = () => {
@@ -57,7 +59,7 @@ export function QuarantineRowActions({
   };
 
   const handleReject = () => {
-    onReject(company.id, ''); // Modal vai coletar o motivo
+    setShowDiscardModal(true);
     setIsOpen(false);
   };
 
@@ -349,6 +351,23 @@ export function QuarantineRowActions({
         companyName={company.razao_social || 'Empresa'}
         cnpj={company.cnpj}
         domain={company.domain || company.website}
+      />
+
+      {/* Modal de Descarte com motivos */}
+      <DiscardCompanyModal
+        open={showDiscardModal}
+        onOpenChange={setShowDiscardModal}
+        company={{
+          id: company.company_id || company.id,
+          name: company.razao_social || 'Empresa',
+          cnpj: company.cnpj,
+          icp_score: company.icp_score,
+          icp_temperature: company.temperatura,
+        }}
+        analysisId={company.id}
+        onSuccess={() => {
+          onReject(company.id, 'Descartado via modal');
+        }}
       />
     </DropdownMenu>
   );

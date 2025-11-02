@@ -21,11 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { XCircle, Search, Filter, TrendingDown, BarChart3, FileText } from 'lucide-react';
+import { XCircle, Search, Filter, TrendingDown, BarChart3, FileText, RotateCcw, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useRestoreToQuarantine } from '@/hooks/useRestoreToQuarantine';
 
 export default function DiscardedCompanies() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const { mutate: restoreCompany, isPending: isRestoring } = useRestoreToQuarantine();
 
   const { data: discarded, isLoading } = useQuery({
     queryKey: ['discarded-companies', categoryFilter],
@@ -212,12 +222,13 @@ export default function DiscardedCompanies() {
                 <TableHead>STC Status</TableHead>
                 <TableHead>Score ICP</TableHead>
                 <TableHead>Data Descarte</TableHead>
+                <TableHead className="w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
@@ -290,11 +301,36 @@ export default function DiscardedCompanies() {
                         year: 'numeric'
                       })}
                     </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            disabled={isRestoring}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => restoreCompany(company.id)}
+                            className="hover:bg-primary/10 hover:border-l-4 hover:border-primary transition-all cursor-pointer"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-2 text-primary" />
+                            Restaurar para Quarentena
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhuma empresa descartada encontrada
                   </TableCell>
                 </TableRow>
