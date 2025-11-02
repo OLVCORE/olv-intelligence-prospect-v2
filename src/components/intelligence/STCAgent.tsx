@@ -471,7 +471,7 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col min-h-0">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg">
@@ -506,7 +506,7 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
           </div>
           
           {/* Mensagens */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4 [&_[data-radix-scroll-area-viewport]]:overflow-y-auto">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 pr-4 [&_[data-radix-scroll-area-viewport]]:overflow-y-auto">
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div
