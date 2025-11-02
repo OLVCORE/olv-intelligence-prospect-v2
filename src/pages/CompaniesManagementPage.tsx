@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EnrichmentStatusBadge } from '@/components/companies/EnrichmentStatusBadge';
 import { SimpleTOTVSCheckDialog } from '@/components/intelligence/SimpleTOTVSCheckDialog';
+import { STCAgent } from '@/components/intelligence/STCAgent';
 import {
   Table,
   TableBody,
@@ -1176,12 +1177,18 @@ export default function CompaniesManagementPage() {
                           )}
                        </TableCell>
                        <TableCell className="text-right">
-                        <CompanyRowActions
-                          company={company}
-                          onDelete={() => {
-                            setCompanyToDelete(company);
-                            setDeleteDialogOpen(true);
-                          }}
+                        <div className="flex items-center justify-end gap-2">
+                          <STCAgent 
+                            companyId={company.id}
+                            companyName={company.name || 'Empresa'}
+                            cnpj={company.cnpj}
+                          />
+                          <CompanyRowActions
+                            company={company}
+                            onDelete={() => {
+                              setCompanyToDelete(company);
+                              setDeleteDialogOpen(true);
+                            }}
                           onEnrichReceita={() => handleEnrichReceita(company.id)}
                           onEnrich360={() => handleEnrich(company.id)}
                           onEnrichApollo={async () => {
@@ -1225,6 +1232,7 @@ export default function CompaniesManagementPage() {
                             setCnpjDialogOpen(true); 
                           } : undefined}
                         />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
