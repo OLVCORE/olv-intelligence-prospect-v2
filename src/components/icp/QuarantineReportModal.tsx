@@ -2,13 +2,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Rocket } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
-import PrintReportButton from '@/components/reports/PrintReportButton';
+import SaveReportPDF from '@/components/reports/SaveReportPDF';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -35,46 +35,8 @@ export function QuarantineReportModal({
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activating, setActivating] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-
-  const handleApprove = useCallback(() => {
-    approveBatch(
-      [analysisId],
-      {
-        onSuccess: () => {
-          toast.success('✓ Empresa Ativada no Pipeline');
-          onOpenChange(false);
-        },
-      }
-    );
-  }, [analysisId, approveBatch, onOpenChange]);
-
-  const handleSave = useCallback(async () => {
-    if (!stcResult) {
-      toast.info('Execute a verificação antes de salvar');
-      return;
-    }
-    try {
-      await supabase.from('stc_verification_history').insert({
-        company_id: companyId || null,
-        company_name: companyName,
-        cnpj: cnpj || null,
-        status: stcResult.status || 'unknown',
-        confidence: stcResult.confidence || 'low',
-        triple_matches: stcResult.tripleMatches || (stcResult as any).triple_matches || 0,
-        double_matches: stcResult.doubleMatches || (stcResult as any).double_matches || 0,
-        single_matches: stcResult.singleMatches || (stcResult as any).single_matches || 0,
-        total_score: stcResult.totalScore || (stcResult as any).total_weight || 0,
-        evidences: (stcResult as any).evidences || [],
-        sources_consulted: (stcResult as any).methodology?.searched_sources || (stcResult as any).sourcesConsulted || 0,
-        queries_executed: (stcResult as any).methodology?.total_queries || (stcResult as any).queriesExecuted || 0,
-        verification_duration_ms: (stcResult as any).methodology?.execution_ms || (stcResult as any).verificationDurationMs || 0,
-      });
-      toast.success('Relatório STC salvo');
-    } catch (error: any) {
-      toast.error('Erro ao salvar relatório', { description: error.message });
-    }
-  }, [stcResult, companyId, companyName, cnpj]);
 
   const handleReject = useCallback(() => {
     setShowDiscard(true);
@@ -83,6 +45,74 @@ export function QuarantineReportModal({
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
+
+  const handleActivatePipeline = useCallback(async () => {
+    setActivating(true);
+
+    try {
+      // 1. BUSCAR DADOS DA QUARENTENA
+      const { data: quarantineData, error: quarantineError } = await supabase
+        .from('icp_analysis_results')
+        .select('*')
+        .eq('id', analysisId)
+        .single();
+
+      if (quarantineError) throw quarantineError;
+
+      // 2. CRIAR EMPRESA NO PIPELINE
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          quarantine_id: analysisId,
+          name: quarantineData.razao_social,
+          cnpj: quarantineData.cnpj,
+          domain: quarantineData.website,
+          icp_score: quarantineData.icp_score,
+          temperatura: quarantineData.temperatura,
+          pipeline_status: 'ativo',
+          raw_data: quarantineData.raw_data,
+        })
+        .select()
+        .single();
+
+      if (companyError) throw companyError;
+
+      console.log('[PIPELINE] Empresa criada:', companyData);
+
+      // 3. ATUALIZAR DOCUMENTOS COM COMPANY_ID
+      const { error: updateDocsError } = await supabase
+        .from('company_documents')
+        .update({ company_id: companyData.id })
+        .eq('quarantine_id', analysisId);
+
+      if (updateDocsError) {
+        console.error('[PIPELINE] Erro ao atualizar documentos:', updateDocsError);
+      }
+
+      // 4. MARCAR COMO ATIVADA NA QUARENTENA
+      await supabase
+        .from('icp_analysis_results')
+        .update({ 
+          moved_to_pool: true,
+          status: 'ativado'
+        })
+        .eq('id', analysisId);
+
+      toast.success('✓ Empresa Ativada no Pipeline', {
+        description: 'A empresa e todos os documentos foram enviados para o pipeline de vendas',
+      });
+
+      onOpenChange(false);
+
+    } catch (error: any) {
+      console.error('[PIPELINE] Erro ao ativar:', error);
+      toast.error('Erro ao ativar empresa', {
+        description: error.message,
+      });
+    } finally {
+      setActivating(false);
+    }
+  }, [analysisId, onOpenChange]);
 
   const modalSize = useMemo(() => {
     return isExpanded 
@@ -110,9 +140,13 @@ export function QuarantineReportModal({
             </div>
             
             <div className="flex items-center gap-2 shrink-0 ml-4">
-              <PrintReportButton
+              <SaveReportPDF
                 contentId="totvs-report-content"
                 fileName={`relatorio-totvs-${cnpj || 'empresa'}`}
+                reportType="totvs_verification"
+                reportTitle="Relatório de Verificação TOTVS"
+                quarantineId={analysisId}
+                companyId={companyId}
               />
               
               <Button
@@ -151,15 +185,6 @@ export function QuarantineReportModal({
           <div className="shrink-0 border-t bg-muted/30 p-4">
             <DialogFooter className="gap-2 sm:gap-2">
               <Button 
-                variant="outline" 
-                onClick={handleSave} 
-                className="gap-2"
-                size="sm"
-              >
-                <FileText className="w-4 h-4" />
-                Salvar Relatório
-              </Button>
-              <Button 
                 variant="destructive" 
                 onClick={handleReject} 
                 className="gap-2"
@@ -169,12 +194,22 @@ export function QuarantineReportModal({
                 Descartar Empresa
               </Button>
               <Button 
-                onClick={handleApprove} 
+                onClick={handleActivatePipeline} 
                 className="gap-2 bg-green-600 hover:bg-green-700"
                 size="sm"
+                disabled={activating}
               >
-                <CheckCircle className="w-4 h-4" />
-                Ativar no Pipeline
+                {activating ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Ativando...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" />
+                    Ativar no Pipeline
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </div>
