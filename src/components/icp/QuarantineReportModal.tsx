@@ -142,11 +142,12 @@ export function QuarantineReportModal({
             <div className="flex items-center gap-2 shrink-0 ml-4">
               <SaveReportPDF
                 contentId="totvs-report-content"
-                fileName={`relatorio-totvs-${cnpj || 'empresa'}`}
+                fileName={`relatorio-completo-${cnpj || 'empresa'}`}
                 reportType="totvs_verification"
-                reportTitle="Relatório de Verificação TOTVS"
+                reportTitle="Relatório Consolidado de Verificação"
                 quarantineId={analysisId}
                 companyId={companyId}
+                allTabs
               />
               
               <Button
