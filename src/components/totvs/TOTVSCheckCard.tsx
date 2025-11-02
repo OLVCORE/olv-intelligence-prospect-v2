@@ -427,7 +427,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 2: EMPRESAS SIMILARES (NOVO) */}
-        <TabsContent value="similar" className="mt-0">
+        <TabsContent value="similar" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <SimilarCompaniesTab
               companyId={companyId}
@@ -444,7 +444,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 3: ANÁLISE 360° (NOVO) */}
-        <TabsContent value="analysis" className="mt-0">
+        <TabsContent value="analysis" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <Analysis360Tab
               companyId={companyId}
