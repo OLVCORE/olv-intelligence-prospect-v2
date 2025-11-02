@@ -10,42 +10,140 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-function log(level: string, module: string, message: string, data?: any) {
-  const timestamp = new Date().toISOString();
-  const emoji = level === 'INFO' ? '✅' : level === 'WARN' ? '⚠️' : level === 'ERROR' ? '❌' : '🔍';
-  console.log(`${emoji} [${timestamp}] [${level}] [${module}] ${message}`);
-  if (data) console.log(JSON.stringify(data, null, 2));
-}
-
 serve(async (req) => {
-  // CORS PREFLIGHT
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { companyName, cnpj, website } = await req.json();
-    log('INFO', 'REPORT', `🚀 Gerando relatório: ${companyName}`);
-
-    const startTime = Date.now();
-
-    // NOVA IMPLEMENTAÇÃO: 50 FONTES
-    log('INFO', 'REPORT', '📋 Aba 1: Verificação TOTVS (50 fontes)...');
-    const allEvidences = await collect50Sources(companyName, cnpj || '', website || '');
     
-    // Calcular estatísticas
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 INICIANDO ANÁLISE:', companyName);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    // VERIFICAR API KEYS
+    const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
+    const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
+    
+    console.log('🔑 API Keys Status:');
+    console.log('  - SERPER:', SERPER_API_KEY ? '✅ SET' : '❌ MISSING');
+    console.log('  - OPENAI:', OPENAI_API_KEY ? '✅ SET' : '❌ MISSING');
+    console.log('  - GITHUB:', GITHUB_TOKEN ? '✅ SET' : '❌ MISSING');
+    console.log('  - YOUTUBE:', YOUTUBE_API_KEY ? '✅ SET' : '❌ MISSING');
+    
+    const startTime = Date.now();
+    
+    // COLETAR 50 FONTES
+    console.log('\n📊 COLETANDO 50 FONTES...');
+    const allEvidences = await collect50Sources(companyName, cnpj || '', website || '');
+    console.log(`✅ Evidências coletadas: ${allEvidences.length}`);
+    
+    if (allEvidences.length === 0) {
+      console.warn('⚠️ NENHUMA EVIDÊNCIA ENCONTRADA!');
+      console.warn('   Possíveis causas:');
+      console.warn('   - Empresa não usa TOTVS');
+      console.warn('   - Nome da empresa incorreto');
+      console.warn('   - APIs falharam');
+    }
+    
+    // CALCULAR ESTATÍSTICAS
     const quintuple = allEvidences.filter(e => e.matchLevel === 5);
     const quadruple = allEvidences.filter(e => e.matchLevel === 4);
     const triple = allEvidences.filter(e => e.matchLevel === 3);
     const double = allEvidences.filter(e => e.matchLevel === 2);
     
-    const totalScore = (quintuple.length * 5) + (quadruple.length * 4) + (triple.length * 3) + (double.length * 2);
-    const isClienteTOTVS = quintuple.length > 0 || totalScore > 20;
-    const confidence = quintuple.length > 0 ? 98 : 
-                      quadruple.length > 2 ? 90 : 
-                      triple.length > 5 ? 75 : 50;
+    const totalScore = (quintuple.length * 5) + (quadruple.length * 4) + 
+                       (triple.length * 3) + (double.length * 2);
     
-    const totvsResult = {
+    const confidence = quintuple.length > 0 ? 98 : 
+                       quadruple.length > 2 ? 90 : 
+                       triple.length > 5 ? 75 : 
+                       allEvidences.length > 0 ? 50 : 0;
+    
+    const isClienteTOTVS = totalScore > 20;
+    const leadClassification = totalScore >= 30 ? 'hot' : totalScore >= 15 ? 'warm' : 'cold';
+    
+    console.log('\n📈 ESTATÍSTICAS:');
+    console.log(`  - Quintuple (5pts): ${quintuple.length}`);
+    console.log(`  - Quadruple (4pts): ${quadruple.length}`);
+    console.log(`  - Triple (3pts): ${triple.length}`);
+    console.log(`  - Double (2pts): ${double.length}`);
+    console.log(`  - Score Total: ${totalScore}`);
+    console.log(`  - Confiança: ${confidence}%`);
+    console.log(`  - Status: ${isClienteTOTVS ? '✅ CLIENTE TOTVS' : '❌ NÃO CLIENTE'}`);
+    console.log(`  - Lead: ${leadClassification.toUpperCase()}`);
+
+    
+    // ANÁLISES AI (só se tiver evidências)
+    let swot, porter, insights;
+    
+    if (allEvidences.length > 0) {
+      console.log('\n🤖 GERANDO ANÁLISES AI...');
+      try {
+        [swot, porter, insights] = await Promise.all([
+          generateSwot({ name: companyName }, allEvidences),
+          generatePorter({ name: companyName }, allEvidences),
+          generateInsights({ name: companyName }, allEvidences)
+        ]);
+        console.log('✅ Análises AI geradas');
+      } catch (error: any) {
+        console.error('❌ Erro nas análises AI:', error.message);
+        swot = {
+          strengths: ['Dados insuficientes para análise'],
+          weaknesses: ['Dados insuficientes para análise'],
+          opportunities: ['Dados insuficientes para análise'],
+          threats: ['Dados insuficientes para análise']
+        };
+        porter = {
+          rivalry: 'Dados insuficientes',
+          suppliers: 'Dados insuficientes',
+          buyers: 'Dados insuficientes',
+          substitutes: 'Dados insuficientes',
+          newEntrants: 'Dados insuficientes'
+        };
+        insights = [
+          'Análise requer mais dados',
+          'Execute nova busca',
+          'Verifique nome da empresa',
+          'Tente busca manual'
+        ];
+      }
+    } else {
+      swot = {
+        strengths: ['Nenhuma evidência encontrada'],
+        weaknesses: ['Sistema não detectou uso de TOTVS'],
+        opportunities: ['Potencial cliente para prospecção'],
+        threats: ['Pode estar usando concorrente']
+      };
+      porter = {
+        rivalry: 'Análise indisponível sem evidências',
+        suppliers: 'Análise indisponível sem evidências',
+        buyers: 'Análise indisponível sem evidências',
+        substitutes: 'Análise indisponível sem evidências',
+        newEntrants: 'Análise indisponível sem evidências'
+      };
+      insights = [
+        'Nenhuma evidência TOTVS encontrada',
+        'Empresa pode não usar TOTVS',
+        'Verifique nome/CNPJ corretos',
+        'Considere busca manual'
+      ];
+    }
+    
+    // DETECTAR CONCORRENTES
+    console.log('\n🔍 DETECTANDO CONCORRENTES...');
+    const competitors = await detectCompetitors({ name: companyName }, allEvidences);
+    console.log(`✅ Concorrentes detectados: ${competitors.length}`);
+    
+    const executionTime = Date.now() - startTime;
+    console.log(`\n⏱️ Tempo total: ${executionTime}ms`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
+    // RETORNAR RESULTADO
+    const resultado = {
       status: isClienteTOTVS ? 'cliente_totvs' : 'nao_cliente_totvs',
       confidence,
       evidences: allEvidences,
@@ -59,82 +157,64 @@ serve(async (req) => {
       tripleMatches: triple.length,
       doubleMatches: double.length,
       totalScore,
-    };
-    
-    log('INFO', 'REPORT', `✅ TOTVS Complete: ${allEvidences.length} evidências | Score: ${totalScore} | Confidence: ${confidence}%`);
-
-    // ABA 2: SIMILARES
-    log('INFO', 'REPORT', '👥 Aba 2: Empresas similares...');
-    const similarCompanies = await buscarEmpresasSimilares(companyName);
-
-    // ABA 3: 360° COM NOVAS ANÁLISES AI
-    log('INFO', 'REPORT', '🎯 Aba 3: Análise 360° (GPT-4o-mini)...');
-    const swot = await generateSwot({ name: companyName }, allEvidences);
-    const porter = await generatePorter({ name: companyName }, allEvidences);
-    const insights = await generateInsights({ name: companyName }, allEvidences);
-    
-    const analysis360 = {
-      icpScore: Math.min(100, Math.round(totalScore * 1.5)),
-      temperatura: totalScore >= 30 ? 'hot' : totalScore >= 15 ? 'warm' : 'cold',
+      leadClassification,
+      competitors,
       swot,
       porter,
       insights,
+      icpScore: Math.min(100, Math.round(totalScore * 1.5)),
+      temperatura: leadClassification,
       redesSociais: {
         linkedin: { followers: 0 },
         facebook: { followers: 0 },
         instagram: { followers: 0 },
         twitter: { followers: 0 },
       },
-      marketplaces: [],
-      produtos: [],
-      fontes: ['Serper', 'Jina AI', 'GitHub API', 'YouTube API', 'OpenAI GPT-4o-mini'],
-    };
-
-    // ABA 4: INTELIGÊNCIA COMPETITIVA (NOVA)
-    log('INFO', 'REPORT', '🔍 Aba 4: Inteligência Competitiva...');
-    const competitors = await detectCompetitors({ name: companyName }, allEvidences);
-
-    const executionTime = Date.now() - startTime;
-
-    const resultado = {
-      status: totvsResult.status,
-      confidence: totvsResult.confidence,
-      evidences: totvsResult.evidences,
-      methodology: totvsResult.methodology,
-      quintupleMatches: totvsResult.quintupleMatches,
-      quadrupleMatches: totvsResult.quadrupleMatches,
-      tripleMatches: totvsResult.tripleMatches,
-      doubleMatches: totvsResult.doubleMatches,
-      totalScore: totvsResult.totalScore,
-      similarCompanies: similarCompanies,
-      analysis360: analysis360,
-      competitors: competitors,
-      icpScore: analysis360.icpScore,
-      temperatura: analysis360.temperatura,
-      insights: analysis360.insights,
-      swot: analysis360.swot,
-      porter: analysis360.porter,
-      redesSociais: analysis360.redesSociais,
+      similarCompanies: [],
+      analysis360: {
+        icpScore: Math.min(100, Math.round(totalScore * 1.5)),
+        temperatura: leadClassification,
+        swot,
+        porter,
+        insights,
+        redesSociais: {
+          linkedin: { followers: 0 },
+          facebook: { followers: 0 },
+          instagram: { followers: 0 },
+          twitter: { followers: 0 },
+        },
+        marketplaces: [],
+        produtos: [],
+        fontes: ['Serper', 'Jina AI', 'GitHub API', 'YouTube API', 'OpenAI GPT-4o-mini'],
+      },
       metadata: {
         analyzed_at: new Date().toISOString(),
         execution_time_ms: executionTime,
         total_sources: 50,
       }
     };
-
-    log('INFO', 'REPORT', `✅ Relatório completo gerado em ${executionTime}ms`);
-
+    
     return new Response(JSON.stringify(resultado), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    log('ERROR', 'REPORT', '❌ Erro:', { message: error.message, stack: error.stack });
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ ERRO CRÍTICO:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
+      }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
 

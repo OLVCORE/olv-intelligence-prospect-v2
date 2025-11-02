@@ -24,7 +24,8 @@ import {
   Search,
 } from 'lucide-react';
 import SaveReportPDF from '@/components/reports/SaveReportPDF';
-import TOTVSVerificationReport from '@/components/reports/TOTVSVerificationReport';
+import TOTVSVerificationReportV2 from '@/components/reports/TOTVSVerificationReportV2';
+import CompetitiveIntelligenceReport from '@/components/reports/CompetitiveIntelligenceReport';
 import SimilarCompaniesReport from '@/components/reports/SimilarCompaniesReport';
 import Analysis360Report from '@/components/reports/Analysis360Report';
 
@@ -763,10 +764,14 @@ export default function QuarantineReportModal({
               </div>
             ) : stcResult ? (
               <Tabs defaultValue="totvs" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-card sticky top-0 z-10 shadow-sm border">
+                <TabsList className="grid w-full grid-cols-4 mb-6 bg-card sticky top-0 z-10 shadow-sm border">
                   <TabsTrigger value="totvs">
                     <Shield className="w-4 h-4 mr-2" />
                     Verificação TOTVS
+                  </TabsTrigger>
+                  <TabsTrigger value="competitors">
+                    <Target className="w-4 h-4 mr-2" />
+                    Concorrentes
                   </TabsTrigger>
                   <TabsTrigger value="similar">
                     <Users className="w-4 h-4 mr-2" />
@@ -779,7 +784,7 @@ export default function QuarantineReportModal({
                 </TabsList>
 
                 <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
-                  <TOTVSVerificationReport 
+                  <TOTVSVerificationReportV2 
                     data={stcResult?.totvs
                       ? {
                           ...stcResult.totvs,
@@ -796,7 +801,14 @@ export default function QuarantineReportModal({
                   />
                 </TabsContent>
 
-                {/* ABA 2: SIMILARES */}
+                {/* ABA 2: CONCORRENTES (NOVA) */}
+                <TabsContent value="competitors" id="competitors-content" className="space-y-6">
+                  <CompetitiveIntelligenceReport 
+                    competitors={stcResult?.competitors || []}
+                  />
+                </TabsContent>
+
+                {/* ABA 3: SIMILARES */}
                 <TabsContent value="similar" id="similar-companies-content" className="space-y-6">
                   <SimilarCompaniesReport 
                     companies={stcResult?.similarCompanies || []}
@@ -804,7 +816,7 @@ export default function QuarantineReportModal({
                   />
                 </TabsContent>
 
-                {/* ABA 3: 360° */}
+                {/* ABA 4: 360° */}
                 <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
                   <Analysis360Report 
                     data={stcResult?.analysis360 || stcResult}
