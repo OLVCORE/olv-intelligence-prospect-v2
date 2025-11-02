@@ -1207,12 +1207,13 @@ export default function ICPQuarantine() {
                       onClick={() => handleSort('status')}
                       className="h-8 flex items-center gap-1 px-2 hover:bg-primary/10 transition-colors group"
                     >
-                      <span className="font-semibold">Status (STC)</span>
+                      <span className="font-semibold">TOTVS Status</span>
                       <ArrowUpDown className={`h-4 w-4 transition-colors ${sortColumn === 'status' ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                     </Button>
                   </TableHead>
                   <TableHead className="min-w-[180px]"><span className="font-semibold">Website</span></TableHead>
                   <TableHead className="min-w-[200px] hidden xl:table-cell"><span className="font-semibold">Motivo Descarte</span></TableHead>
+                  <TableHead className="min-w-[100px]"><span className="font-semibold">Agent</span></TableHead>
                   <TableHead className="w-[60px]"><span className="font-semibold">Ações</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -1345,9 +1346,10 @@ export default function ICPQuarantine() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        Verificar
-                      </Badge>
+                      <TOTVSCheckCard 
+                        companyId={company.id}
+                        companyName={company.razao_social}
+                      />
                     </TableCell>
                     <TableCell>
                       {editingWebsiteId === company.id ? (
@@ -1403,36 +1405,48 @@ export default function ICPQuarantine() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <STCAgent
-                          companyId={company.id}
-                          companyName={company.razao_social}
-                          cnpj={company.cnpj}
-                        />
-                        <QuarantineRowActions
-                          company={company}
-                          onApprove={handleApproveSingle}
-                          onReject={handleRejectSingle}
-                          onDelete={handleDeleteSingle}
-                          onPreview={handlePreviewSingle}
-                          onRefresh={handleRefreshSingle}
-                          onEnrichReceita={handleEnrichReceita}
-                          onEnrichApollo={handleEnrichApollo}
-                          onEnrich360={handleEnrich360}
-                          onEnrichTotvsCheck={handleEnrichTotvsCheck}
-                          onDiscoverCNPJ={handleDiscoverCNPJ}
-                          onOpenExecutiveReport={() => {
-                            if (company.company_id) {
-                              setExecutiveReportCompanyId(company.company_id);
-                              setExecutiveReportOpen(true);
-                            } else {
-                              toast.info('Empresa ainda não possui relatório completo', {
-                                description: 'Aprove a empresa primeiro para gerar o relatório executivo'
-                              });
-                            }
-                          }}
-                        />
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <STCAgent
+                                companyId={company.id}
+                                companyName={company.razao_social}
+                                cnpj={company.cnpj}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <p className="font-semibold">STC Agent</p>
+                            <p className="text-xs">Assistente de vendas e análise TOTVS</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <QuarantineRowActions
+                        company={company}
+                        onApprove={handleApproveSingle}
+                        onReject={handleRejectSingle}
+                        onDelete={handleDeleteSingle}
+                        onPreview={handlePreviewSingle}
+                        onRefresh={handleRefreshSingle}
+                        onEnrichReceita={handleEnrichReceita}
+                        onEnrichApollo={handleEnrichApollo}
+                        onEnrich360={handleEnrich360}
+                        onEnrichTotvsCheck={handleEnrichTotvsCheck}
+                        onDiscoverCNPJ={handleDiscoverCNPJ}
+                        onOpenExecutiveReport={() => {
+                          if (company.company_id) {
+                            setExecutiveReportCompanyId(company.company_id);
+                            setExecutiveReportOpen(true);
+                          } else {
+                            toast.info('Empresa ainda não possui relatório completo', {
+                              description: 'Aprove a empresa primeiro para gerar o relatório executivo'
+                            });
+                          }
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 );
