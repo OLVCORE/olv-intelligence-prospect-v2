@@ -405,10 +405,10 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
         }}
         variant="outline"
         size="sm"
-        className="gap-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
+        className="flex flex-col items-center gap-0.5 h-auto py-1.5 px-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950 transition-all group"
       >
-        <Bot className="w-4 h-4 text-purple-600" />
-        <span className="font-medium">🤖 STC Agent</span>
+        <Bot className="w-5 h-5 text-purple-600 group-hover:scale-110 transition-transform" />
+        <span className="text-[10px] font-medium leading-tight">STC</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
