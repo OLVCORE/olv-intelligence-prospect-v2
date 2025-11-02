@@ -31,8 +31,8 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
   
   if (!data || !data.evidences) {
     return (
-      <Card className="p-6 text-center text-muted-foreground">
-        <p>Nenhum dado disponível. Clique em "Atualizar Análise" para gerar o relatório.</p>
+      <Card className="p-4 text-center text-muted-foreground">
+        <p className="text-sm">Nenhum dado disponível. Clique em "Atualizar Análise" para gerar o relatório.</p>
       </Card>
     );
   }
@@ -43,9 +43,9 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
   const triple = evidences.filter(e => e.matchLevel === 3);
   const double = evidences.filter(e => e.matchLevel === 2);
   
-  const totalScore = data.totalScore || ((quintuple.length * 5) + (quadruple.length * 4) + (triple.length * 3) + (double.length * 2));
-  const confidence = data.confidence || (quintuple.length > 0 ? 98 : quadruple.length > 2 ? 90 : triple.length > 5 ? 75 : 50);
-  const status = data.status || (totalScore > 20 ? 'cliente_totvs' : 'nao_cliente_totvs');
+  const totalScore = (quintuple.length * 5) + (quadruple.length * 4) + (triple.length * 3) + (double.length * 2);
+  const confidence = quintuple.length > 0 ? 98 : quadruple.length > 2 ? 90 : triple.length > 5 ? 75 : evidences.length > 0 ? 50 : 0;
+  const status = totalScore > 20 ? 'cliente_totvs' : 'nao_cliente_totvs';
   const temperatura = totalScore >= 30 ? 'hot' : totalScore >= 15 ? 'warm' : 'cold';
   
   const copyToClipboard = (text: string, label: string) => {
@@ -56,25 +56,34 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
   const evidencesToShow = showAllEvidences ? evidences : evidences.slice(0, 5);
   
   return (
-    <div className="space-y-6">
-      {/* Status Card */}
-      <Card className="p-6 border-2">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <h3 className="text-2xl font-bold mb-2">
-              {status === 'cliente_totvs' ? '✅ Cliente TOTVS Confirmado' : '❌ Não Qualificado'}
-            </h3>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Confiança: <span className="font-bold text-foreground">{confidence}%</span></span>
-              <span>•</span>
-              <span>Score: <span className="font-bold text-foreground">{totalScore} pontos</span></span>
-              <span>•</span>
-              <span>Evidências: <span className="font-bold text-foreground">{evidences.length}</span></span>
+    <div className="space-y-4">
+      {/* Status Card - Compacto */}
+      <Card className="p-4 border">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              status === 'cliente_totvs' ? 'bg-green-100' : 'bg-gray-100'
+            }`}>
+              <span className="text-xl">{status === 'cliente_totvs' ? '✅' : '❌'}</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                {status === 'cliente_totvs' ? 'Cliente TOTVS Confirmado' : 'Não Qualificado'}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  Confiança: <span className={`font-semibold ${confidence >= 90 ? 'text-green-600' : confidence >= 75 ? 'text-yellow-600' : 'text-gray-600'}`}>{confidence}%</span>
+                </span>
+                <span>•</span>
+                <span>Score: <span className="font-semibold">{totalScore} pts</span></span>
+                <span>•</span>
+                <span>{evidences.length} evidências</span>
+              </div>
             </div>
           </div>
-          
           <Badge 
-            className={`px-6 py-3 text-base font-bold ${
+            className={`text-xs px-3 py-1 ${
               temperatura === 'hot' ? 'bg-red-500 hover:bg-red-600' :
               temperatura === 'warm' ? 'bg-yellow-500 hover:bg-yellow-600' :
               'bg-blue-500 hover:bg-blue-600'
@@ -87,47 +96,76 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
         </div>
       </Card>
       
-      {/* Distribuição de Evidências */}
-      <Card className="p-6">
-        <h4 className="text-lg font-bold mb-4">📊 Distribuição de Evidências ({evidences.length} total)</h4>
+      {/* Distribuição de Evidências - Grid Compacto */}
+      <Card className="p-4 border">
+        <h4 className="text-sm font-semibold mb-3">📊 Distribuição de Evidências ({evidences.length} total)</h4>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
-            <div className="text-4xl font-bold text-purple-600 mb-1">{quintuple.length}</div>
-            <div className="text-sm font-semibold text-purple-700 mb-1">🏆 Quintuple (5 pts)</div>
-            <div className="text-xs text-muted-foreground">Confiança 98%</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="flex items-center justify-between p-2 bg-purple-50 rounded border border-purple-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                5
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Quintuple</div>
+                <div className="text-lg font-bold text-purple-600">{quintuple.length}</div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500">98%</div>
           </div>
           
-          <div className="text-center p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
-            <div className="text-4xl font-bold text-blue-600 mb-1">{quadruple.length}</div>
-            <div className="text-sm font-semibold text-blue-700 mb-1">🔵 Quadruple (4 pts)</div>
-            <div className="text-xs text-muted-foreground">Confiança 90%</div>
+          <div className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                4
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Quadruple</div>
+                <div className="text-lg font-bold text-blue-600">{quadruple.length}</div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500">90%</div>
           </div>
           
-          <div className="text-center p-6 bg-green-50 rounded-lg border-2 border-green-200">
-            <div className="text-4xl font-bold text-green-600 mb-1">{triple.length}</div>
-            <div className="text-sm font-semibold text-green-700 mb-1">🟢 Triple (3 pts)</div>
-            <div className="text-xs text-muted-foreground">Confiança 75%</div>
+          <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-green-500 flex items-center justify-center text-white text-sm font-bold">
+                3
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Triple</div>
+                <div className="text-lg font-bold text-green-600">{triple.length}</div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500">75%</div>
           </div>
           
-          <div className="text-center p-6 bg-yellow-50 rounded-lg border-2 border-yellow-200">
-            <div className="text-4xl font-bold text-yellow-600 mb-1">{double.length}</div>
-            <div className="text-sm font-semibold text-yellow-700 mb-1">🟡 Double (2 pts)</div>
-            <div className="text-xs text-muted-foreground">Confiança 50%</div>
+          <div className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-yellow-500 flex items-center justify-center text-white text-sm font-bold">
+                2
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Double</div>
+                <div className="text-lg font-bold text-yellow-600">{double.length}</div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500">50%</div>
           </div>
         </div>
       </Card>
       
-      {/* Top Evidências */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-bold">
-            {showAllEvidences ? `📋 Todas as ${evidences.length} Evidências` : '🏆 Top 5 Evidências Mais Fortes'}
+      {/* Lista de Evidências - Tabela Compacta */}
+      <Card className="p-4 border">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold">
+            {showAllEvidences ? `📋 Todas as ${evidences.length} Evidências` : '🏆 Top 5 Evidências'}
           </h4>
           {evidences.length > 5 && (
             <Button
               variant="outline"
               size="sm"
+              className="h-7 text-xs"
               onClick={() => setShowAllEvidences(!showAllEvidences)}
             >
               {showAllEvidences ? 'Ver Top 5' : `Ver Todas (${evidences.length})`}
@@ -135,100 +173,92 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
           )}
         </div>
         
-        <div className="space-y-4">
+        <div className="divide-y">
           {evidencesToShow.map((evidence, index) => (
-            <Card key={evidence.id} className="p-4 hover:shadow-lg transition-shadow border-2">
-              <div className="flex items-start justify-between gap-4">
+            <div key={evidence.id} className="py-2 hover:bg-muted/50">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-600">
+                  {index + 1}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-2xl font-bold text-muted-foreground">#{index + 1}</span>
-                    <Badge variant="secondary" className="text-xs">{evidence.source}</Badge>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <Badge variant="outline" className="text-xs h-5">{evidence.source}</Badge>
                     <Badge 
-                      className={`text-xs text-white ${
+                      className={`text-xs h-5 text-white ${
                         evidence.matchLevel === 5 ? 'bg-purple-500' :
                         evidence.matchLevel === 4 ? 'bg-blue-500' :
                         evidence.matchLevel === 3 ? 'bg-green-500' :
                         'bg-yellow-500'
                       }`}
                     >
-                      {evidence.matchLevel === 5 ? '🏆 QUINTUPLE' :
-                       evidence.matchLevel === 4 ? '🔵 QUADRUPLE' :
-                       evidence.matchLevel === 3 ? '🟢 TRIPLE' :
-                       '🟡 DOUBLE'}
+                      {evidence.matchLevel === 5 ? '🏆' : evidence.matchLevel === 4 ? '🔵' : evidence.matchLevel === 3 ? '🟢' : '🟡'} 
+                      {evidence.matchLevel}pts
                     </Badge>
+                    <span className="text-xs text-muted-foreground">{evidence.confidence}%</span>
                   </div>
                   
-                  <h5 className="font-semibold mb-2 line-clamp-2">{evidence.title || 'Sem título'}</h5>
+                  <p className="text-sm text-foreground line-clamp-2 mb-1">{evidence.snippet}</p>
                   
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{evidence.snippet}</p>
-                  
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                    <span className="font-medium">
-                      Componentes: <span className="text-foreground">{evidence.components?.join(' + ')}</span>
-                    </span>
-                    <span>•</span>
-                    <span>
-                      Confiança: <span className="text-foreground font-medium">{evidence.confidence}%</span>
-                    </span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <span>Componentes: <span className="text-foreground">{evidence.components?.join(' + ')}</span></span>
                     {evidence.type && (
                       <>
                         <span>•</span>
-                        <span>
-                          Tipo: <span className="text-foreground capitalize">{evidence.type}</span>
-                        </span>
+                        <span className="capitalize">{evidence.type}</span>
                       </>
                     )}
                   </div>
+                  
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-6 text-xs px-2"
+                      onClick={() => window.open(evidence.url, '_blank')}
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      Ver
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-6 text-xs px-2"
+                      onClick={() => copyToClipboard(evidence.url, 'Link')}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copiar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-6 text-xs px-2"
+                      onClick={() => toast.success('Funcionalidade em breve!')}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Pitch
+                    </Button>
+                  </div>
                 </div>
               </div>
-              
-              <div className="mt-4 flex gap-2 flex-wrap">
-                <Button 
-                  size="sm"
-                  onClick={() => window.open(evidence.url, '_blank')}
-                  className="gap-2"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Ver Fonte
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(evidence.url, 'Link')}
-                  className="gap-2"
-                >
-                  <Copy className="w-3 h-3" />
-                  Copiar Link
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => toast.success('Funcionalidade em breve!')}
-                >
-                  <Plus className="w-3 h-3" />
-                  Adicionar ao Pitch
-                </Button>
-              </div>
-            </Card>
+            </div>
           ))}
         </div>
         
         {!showAllEvidences && evidences.length > 5 && (
           <Button 
             variant="outline"
-            className="w-full mt-4"
+            className="w-full mt-3 h-8 text-xs"
             onClick={() => setShowAllEvidences(true)}
           >
-            <TrendingUp className="w-4 h-4 mr-2" />
+            <TrendingUp className="w-3 h-3 mr-2" />
             Ver Todas as {evidences.length} Evidências
           </Button>
         )}
         
         {evidences.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhuma evidência encontrada.</p>
-            <p className="text-sm mt-2">Tente buscar manualmente ou aguarde nova análise.</p>
+          <div className="text-center py-6 text-muted-foreground">
+            <p className="text-sm">Nenhuma evidência encontrada.</p>
+            <p className="text-xs mt-1">Tente buscar manualmente ou aguarde nova análise.</p>
           </div>
         )}
       </Card>
