@@ -263,3 +263,6 @@ verify_jwt = false
 
   [functions.generate-360-analysis]
   verify_jwt = false
+
+  [functions.stc-agent]
+  verify_jwt = false
