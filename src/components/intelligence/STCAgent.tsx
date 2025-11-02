@@ -49,6 +49,49 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
     }, 100);
   }, [messages]);
 
+  // Habilita scroll manual por mouse e teclado no viewport do ScrollArea
+  useEffect(() => {
+    const viewport = (scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null)
+      ?? (document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null);
+    if (!viewport) return;
+
+    // Garante que o viewport seja rolável e focável
+    viewport.style.overflowY = 'auto';
+    viewport.tabIndex = 0;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const step = 60;
+      if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+      }
+      switch (e.key) {
+        case 'ArrowDown':
+          viewport.scrollTop += step;
+          break;
+        case 'ArrowUp':
+          viewport.scrollTop -= step;
+          break;
+        case 'PageDown':
+          viewport.scrollTop += viewport.clientHeight * 0.9;
+          break;
+        case 'PageUp':
+          viewport.scrollTop -= viewport.clientHeight * 0.9;
+          break;
+        case 'Home':
+          viewport.scrollTop = 0;
+          break;
+        case 'End':
+          viewport.scrollTop = viewport.scrollHeight;
+          break;
+      }
+    };
+
+    viewport.addEventListener('keydown', onKeyDown);
+    return () => {
+      viewport.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   const startInitialCheck = async () => {
     setLoading(true);
     
@@ -463,7 +506,7 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
           </div>
           
           {/* Mensagens */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4 [&_[data-radix-scroll-area-viewport]]:overflow-y-auto">
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div
