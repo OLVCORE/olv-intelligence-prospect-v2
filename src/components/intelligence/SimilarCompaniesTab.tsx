@@ -130,24 +130,69 @@ export function SimilarCompaniesTab({
 
       let allResults: any[] = [];
 
-      // Simular busca na web (em produção, usar API real de busca)
-      // Por enquanto, buscar no banco suggested_companies como fallback
-      console.log('[SIMILAR-WEB] Buscando empresas similares...');
+      // Busca web REAL usando Serper.dev
+      console.log('[SIMILAR-WEB] Executando buscas na web com Serper.dev...');
       
-      // Buscar empresas da tabela suggested_companies como fallback temporário
-      const { data: dbCompanies, error: dbError } = await (supabase as any)
-        .from('suggested_companies')
-        .select('*')
-        .neq('id', companyId)
-        .limit(20);
-
-      if (dbError) {
-        console.error('[SIMILAR-WEB] Erro ao buscar:', dbError);
-        throw dbError;
+      for (const query of searchQueries) {
+        try {
+          console.log(`[SIMILAR-WEB] Query: "${query}"`);
+          
+          const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
+            body: { 
+              query, 
+              limit: 5,
+              country: 'BR',
+              language: 'pt'
+            }
+          });
+          
+          if (searchError) {
+            console.error('[SIMILAR-WEB] Erro na busca:', searchError);
+            continue;
+          }
+          
+          if (!searchData?.success) {
+            console.error('[SIMILAR-WEB] API retornou erro:', searchData?.error);
+            continue;
+          }
+          
+          console.log(`[SIMILAR-WEB] Resultados da web: ${searchData.results?.length || 0}`);
+          
+          if (searchData.results && searchData.results.length > 0) {
+            allResults.push(...searchData.results);
+          }
+        } catch (error) {
+          console.error('[SIMILAR-WEB] Exceção na busca:', error);
+        }
       }
+      
+      // FALLBACK: Se nenhum resultado da web, buscar no banco
+      if (allResults.length === 0) {
+        console.log('[SIMILAR-WEB] Sem resultados da web, usando fallback (banco de dados)');
+        
+        const { data: dbCompanies, error: dbError } = await (supabase as any)
+          .from('suggested_companies')
+          .select('*')
+          .neq('id', companyId)
+          .limit(20);
 
-      if (dbCompanies && dbCompanies.length > 0) {
-        allResults = dbCompanies;
+        if (dbError) {
+          console.error('[SIMILAR-WEB] Erro ao buscar no banco:', dbError);
+          throw dbError;
+        }
+
+        if (dbCompanies && dbCompanies.length > 0) {
+          allResults = dbCompanies.map((company: any) => ({
+            title: company.company_name,
+            url: company.website,
+            snippet: `${company.sector || ''} - ${company.state || ''}`,
+            description: `${company.sector || ''} - ${company.state || ''}`,
+            cnpj: company.cnpj,
+            employees: company.employees_count,
+            location: company.state,
+            industry: company.sector
+          }));
+        }
       }
 
       console.log('[SIMILAR-WEB] Total de resultados brutos:', allResults.length);

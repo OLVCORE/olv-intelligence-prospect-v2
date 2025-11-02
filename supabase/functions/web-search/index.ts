@@ -18,10 +18,17 @@ serve(async (req) => {
     const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
     
     if (!SERPER_API_KEY) {
-      console.warn('[WEB-SEARCH] SERPER_API_KEY não configurado, retornando resultados vazios');
+      console.error('[WEB-SEARCH] SERPER_API_KEY não configurada');
       return new Response(
-        JSON.stringify({ results: [] }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'SERPER_API_KEY não configurada', 
+          results: [] 
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
@@ -40,7 +47,9 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Serper API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('[WEB-SEARCH] Serper API error:', response.status, errorText);
+      throw new Error(`Serper API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -49,20 +58,31 @@ serve(async (req) => {
       title: result.title,
       url: result.link,
       description: result.snippet,
-      position: result.position
+      snippet: result.snippet,
+      position: result.position,
+      date: result.date
     }));
 
     console.log('[WEB-SEARCH] Resultados encontrados:', results.length);
 
     return new Response(
-      JSON.stringify({ results }),
+      JSON.stringify({ 
+        success: true, 
+        results,
+        total: results.length,
+        query: query
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('[WEB-SEARCH] Erro:', error);
+  } catch (error: any) {
+    console.error('[WEB-SEARCH] Erro:', error.message);
     return new Response(
-      JSON.stringify({ error: error.message, results: [] }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message, 
+        results: [] 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
