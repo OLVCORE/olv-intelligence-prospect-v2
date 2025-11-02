@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Bot, Loader2, Send, Sparkles, TrendingUp, Users, Target, Lightbulb, ExternalLink } from 'lucide-react';
@@ -32,6 +32,14 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
   const [userInput, setUserInput] = useState('');
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [costInfo, setCostInfo] = useState<{ tokens: any; cost: string } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll para o final quando novas mensagens aparecerem
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages]);
 
   const startInitialCheck = async () => {
     setLoading(true);
@@ -480,6 +488,9 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
                   </div>
                 </div>
               )}
+              
+              {/* Referência para scroll automático */}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
           
