@@ -41,6 +41,56 @@ serve(async (req) => {
     const allEvidences = await collect50Sources(companyName, cnpj || '', website || '');
     console.log(`✅ Evidências coletadas: ${allEvidences.length}`);
     
+    // BUSCAR EVIDÊNCIAS SALVAS NO BANCO
+    console.log('\n📦 BUSCANDO EVIDÊNCIAS SALVAS NO BANCO...');
+    try {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: savedReport } = await supabase
+          .from('totvs_detection_reports')
+          .select('evidences, metadata')
+          .eq('company_name', companyName)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (savedReport?.evidences && Array.isArray(savedReport.evidences)) {
+          console.log(`✅ Encontradas ${savedReport.evidences.length} evidências salvas`);
+
+          const savedEvidences = savedReport.evidences
+            .filter((ev: any) => ev)
+            .map((ev: any) => ({
+              id: ev.id || `${Date.now()}-${Math.random()}`,
+              source: ev.source || 'web',
+              type: (ev.type && ['news','job','video','code','social','website'].includes(ev.type)) ? ev.type : 'website',
+              title: ev.title || (ev.text || ev.snippet || '').slice(0, 100),
+              snippet: ev.snippet || ev.text || '',
+              url: ev.url || ev.source || '#',
+              matchLevel: (ev.matchLevel ?? ev.match_level ?? ev.score ?? 3) as 2 | 3 | 4 | 5,
+              components: Array.isArray(ev.components) ? ev.components : [companyName, 'TOTVS'],
+              confidence: typeof ev.confidence === 'number' ? ev.confidence : 75,
+              publishedAt: ev.publishedAt || ev.published_at,
+              metadata: ev.metadata || undefined,
+              timestamp: ev.timestamp || new Date().toISOString(),
+            }));
+
+          allEvidences.push(...savedEvidences);
+          console.log(`✅ Total após mesclar: ${allEvidences.length} evidências`);
+        } else {
+          console.log('ℹ️ Nenhuma evidência salva encontrada no banco');
+        }
+      } else {
+        console.log('ℹ️ SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY ausentes; ignorando merge de banco');
+      }
+    } catch (error: any) {
+      console.warn(`⚠️ Erro ao buscar/mesclar evidências salvas: ${error.message}`);
+    }
+    
     if (allEvidences.length === 0) {
       console.warn('⚠️ NENHUMA EVIDÊNCIA ENCONTRADA!');
       console.warn('   Possíveis causas:');
