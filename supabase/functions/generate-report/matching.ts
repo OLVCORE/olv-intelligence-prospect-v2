@@ -21,45 +21,64 @@ export function analyzeMatchLevel(text: string, companyName: string): {
   const lowerText = text.toLowerCase();
   const lowerCompany = companyName.toLowerCase();
   
-  // Verificar se empresa e TOTVS estão no mesmo contexto (distância < 500 chars)
-  const companyPos = lowerText.indexOf(lowerCompany);
-  const totvsPos = lowerText.indexOf('totvs');
+  // Extrair palavras-chave do nome da empresa (ignorar "ltda", "sa", etc)
+  const companyKeywords = lowerCompany
+    .replace(/\s*-\s*/g, ' ')
+    .replace(/\b(ltda|sa|s\.a\.|industria|de|produtos|e|do|da|dos|das)\b/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 3);
   
-  if (companyPos === -1 || totvsPos === -1) {
+  // Verificar presença de TOTVS
+  const hasTOTVS = lowerText.includes('totvs') || 
+                   lowerText.includes('protheus') || 
+                   lowerText.includes('rm totvs') ||
+                   lowerText.includes('datasul') ||
+                   lowerText.includes('fluig');
+  
+  // Verificar presença da empresa (match parcial)
+  const hasCompany = companyKeywords.some(kw => lowerText.includes(kw));
+  
+  // Se não tem nem empresa nem TOTVS, rejeitar
+  if (!hasTOTVS && !hasCompany) {
     return { matchLevel: 2, components: [], confidence: 0 };
   }
   
-  const distance = Math.abs(companyPos - totvsPos);
-  if (distance > 500) {
+  // Se tem apenas TOTVS mas não a empresa, aceitar mas com confiança baixa
+  if (hasTOTVS && !hasCompany) {
+    return { 
+      matchLevel: 2, 
+      components: ['TOTVS'], 
+      confidence: 30 
+    };
+  }
+  
+  // Se tem empresa mas não TOTVS, rejeitar
+  if (!hasTOTVS && hasCompany) {
     return { matchLevel: 2, components: [], confidence: 0 };
   }
   
-  // Extrair snippet (contexto ao redor)
-  const start = Math.max(0, Math.min(companyPos, totvsPos) - 100);
-  const end = Math.max(companyPos, totvsPos) + 100;
-  const snippet = lowerText.slice(start, end);
-  
-  // Iniciar com DOUBLE MATCH
+  // Match completo: empresa + TOTVS
   let matchLevel: 2 | 3 | 4 | 5 = 2;
   const components = [companyName, 'TOTVS'];
   
   // TRIPLE: Solução mencionada?
-  const solutions = ['protheus', 'rm', 'datasul', 'fluig', 'winthor'];
-  if (solutions.some(sol => snippet.includes(sol))) {
+  const solutions = ['protheus', 'rm', 'datasul', 'fluig', 'winthor', 'logix'];
+  if (solutions.some(sol => lowerText.includes(sol))) {
     matchLevel = 3;
     components.push('Solução');
   }
   
   // QUADRUPLE: Módulo mencionado?
-  const modules = ['financeiro', 'controladoria', 'estoque', 'compras', 'produção', 'fiscal', 'contábil'];
-  if (modules.some(mod => snippet.includes(mod))) {
+  const modules = ['financeiro', 'controladoria', 'estoque', 'compras', 'produção', 'fiscal', 'contábil', 'rh', 'folha'];
+  if (modules.some(mod => lowerText.includes(mod))) {
     matchLevel = 4;
     components.push('Módulo');
   }
   
   // QUINTUPLE: Detalhes técnicos?
-  const technical = ['advpl', 'sql', 'integração', 'customização', 'versão', 'implementação', 'módulo'];
-  if (technical.some(tech => snippet.includes(tech))) {
+  const technical = ['advpl', 'sql', 'integração', 'customização', 'versão', 'implementação', 'api'];
+  if (technical.some(tech => lowerText.includes(tech))) {
     matchLevel = 5;
     components.push('Técnico');
   }
@@ -67,7 +86,7 @@ export function analyzeMatchLevel(text: string, companyName: string): {
   // Calcular confiança
   const confidence = matchLevel === 5 ? 98 : 
                      matchLevel === 4 ? 90 : 
-                     matchLevel === 3 ? 75 : 50;
+                     matchLevel === 3 ? 75 : 60;
   
   return { matchLevel, components, confidence };
 }
@@ -86,10 +105,21 @@ export function processEvidence(
     return null;
   }
   
-  // Extrair snippet (primeiras 200 chars do contexto)
-  const companyPos = rawText.toLowerCase().indexOf(companyName.toLowerCase());
-  const start = Math.max(0, companyPos - 50);
-  const snippet = rawText.slice(start, start + 200) + '...';
+  // Extrair snippet inteligente
+  let snippet = '';
+  const lowerText = rawText.toLowerCase();
+  
+  // Tentar encontrar contexto ao redor de TOTVS
+  const totvsPos = lowerText.indexOf('totvs');
+  if (totvsPos >= 0) {
+    const start = Math.max(0, totvsPos - 80);
+    snippet = rawText.slice(start, totvsPos + 120);
+  } else {
+    // Fallback: primeiros 200 chars
+    snippet = rawText.slice(0, 200);
+  }
+  
+  snippet = snippet.trim() + '...';
   
   return {
     id: `${source}-${Date.now()}-${Math.random()}`,
