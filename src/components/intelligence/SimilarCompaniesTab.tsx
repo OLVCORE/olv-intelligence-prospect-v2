@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface SimilarCompaniesTabProps {
   companyId: string;
@@ -126,26 +126,21 @@ export function SimilarCompaniesTab({
       // Por enquanto, buscar no banco suggested_companies como fallback
       console.log('[SIMILAR-WEB] Buscando empresas similares...');
       
-      const { data: dbCompanies } = await supabase
+      // Buscar empresas da tabela suggested_companies como fallback temporário
+      const { data: dbCompanies, error: dbError } = await (supabase as any)
         .from('suggested_companies')
         .select('*')
         .neq('id', companyId)
         .eq('is_disqualified', false)
         .limit(20);
 
-      if (dbCompanies) {
-        allResults = dbCompanies.map(company => ({
-          name: company.name,
-          cnpj: company.cnpj,
-          industry: company.setor,
-          location: company.uf,
-          state: company.uf,
-          employees: company.employees,
-          revenue: company.revenue,
-          website: company.website,
-          linkedin_url: company.linkedin_url,
-          id: company.id
-        }));
+      if (dbError) {
+        console.error('[SIMILAR-WEB] Erro ao buscar:', dbError);
+        throw dbError;
+      }
+
+      if (dbCompanies && dbCompanies.length > 0) {
+        allResults = dbCompanies;
       }
 
       console.log('[SIMILAR-WEB] Total de resultados brutos:', allResults.length);
@@ -163,7 +158,15 @@ export function SimilarCompaniesTab({
             needs_enrichment: true,
             enrichment_status: 'pending',
             already_in_database: false,
-            ...parsed
+            name: parsed.name || 'Empresa desconhecida',
+            cnpj: parsed.cnpj,
+            setor: parsed.setor,
+            uf: parsed.uf,
+            employees: parsed.employees,
+            revenue: parsed.revenue,
+            website: parsed.website,
+            linkedin_url: parsed.linkedin_url,
+            raw_data: result
           } as WebDiscoveredCompany;
         })
         .filter((company, index, self) =>
@@ -178,23 +181,26 @@ export function SimilarCompaniesTab({
       console.log('[SIMILAR-WEB] Empresas processadas:', processedCompanies.length);
 
       // Verificar se já existem no banco
-      const enrichedCompanies = await Promise.all(
-        processedCompanies.map(async (company) => {
-          if (!company.cnpj) return { ...company, already_in_database: false };
+      const enrichedCompanies: WebDiscoveredCompany[] = [];
+      
+      for (const company of processedCompanies) {
+        if (!company.cnpj) {
+          enrichedCompanies.push({ ...company, already_in_database: false });
+          continue;
+        }
 
-          const { data: existing } = await supabase
-            .from('suggested_companies')
-            .select('id, name')
-            .eq('cnpj', company.cnpj)
-            .single();
+        const { data: existing } = await (supabase as any)
+          .from('suggested_companies')
+          .select('id')
+          .eq('cnpj', company.cnpj)
+          .maybeSingle();
 
-          return {
-            ...company,
-            already_in_database: !!existing,
-            existing_id: existing?.id
-          };
-        })
-      );
+        enrichedCompanies.push({
+          ...company,
+          already_in_database: !!existing,
+          existing_id: existing?.id
+        });
+      }
 
       // Estatísticas
       const total = enrichedCompanies.length;
@@ -245,25 +251,26 @@ export function SimilarCompaniesTab({
       setIsAddingCompany(company.name);
       console.log('[ADD-QUARANTINE] Adicionando empresa:', company.name);
       
-      // Inserir na tabela suggested_companies
-      const { data: newCompany, error } = await supabase
+      // Inserir na tabela suggested_companies com campos existentes
+      const insertData: any = {
+        cnpj: company.cnpj,
+        source: 'similar_company_discovery',
+        discovered_from_company_id: companyId,
+        similarity_score: company.similarity_score,
+        enrichment_status: 'pending',
+        is_disqualified: false,
+        discovered_at: new Date().toISOString(),
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      };
+
+      // Adicionar campos opcionais se existirem
+      if (company.name) insertData.company_name = company.name;
+      if (company.website) insertData.website = company.website;
+      if (company.linkedin_url) insertData.linkedin_url = company.linkedin_url;
+      
+      const { data: newCompany, error } = await (supabase as any)
         .from('suggested_companies')
-        .insert({
-          name: company.name,
-          cnpj: company.cnpj,
-          setor: company.setor,
-          uf: company.uf,
-          employees: company.employees,
-          revenue: company.revenue,
-          website: company.website,
-          linkedin_url: company.linkedin_url,
-          source: 'similar_company_discovery',
-          discovered_from_company_id: companyId,
-          similarity_score: company.similarity_score,
-          enrichment_status: 'pending',
-          is_disqualified: false,
-          discovered_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -272,12 +279,9 @@ export function SimilarCompaniesTab({
       console.log('[ADD-QUARANTINE] Empresa adicionada:', newCompany.id);
 
       // Mostrar toast de sucesso
-      toast.success(`✅ ${company.name} adicionada à quarentena!`, {
+      toast({
+        title: `✅ ${company.name} adicionada à quarentena!`,
         description: 'Iniciando processo de enriquecimento...',
-        action: {
-          label: 'Ver na Quarentena',
-          onClick: () => navigate(`/leads/icp-quarantine?company=${newCompany.id}`)
-        }
       });
 
       // Iniciar enriquecimento automático em background
@@ -288,8 +292,10 @@ export function SimilarCompaniesTab({
 
     } catch (error: any) {
       console.error('[ADD-QUARANTINE] Erro:', error);
-      toast.error('Erro ao adicionar empresa', {
-        description: error.message
+      toast({
+        title: 'Erro ao adicionar empresa',
+        description: error.message,
+        variant: 'destructive'
       });
     } finally {
       setIsAddingCompany(null);
@@ -323,7 +329,8 @@ export function SimilarCompaniesTab({
 
       console.log('[ENRICHMENT] Enriquecimento iniciado com sucesso');
       
-      toast.success('Enriquecimento em andamento', {
+      toast({
+        title: 'Enriquecimento em andamento',
         description: 'A empresa está sendo processada em segundo plano.'
       });
       
@@ -339,14 +346,16 @@ export function SimilarCompaniesTab({
   };
 
   const handleQuickEnrich = async (company: WebDiscoveredCompany) => {
-    toast.info('Enriquecimento rápido', {
+    toast({
+      title: 'Enriquecimento rápido',
       description: 'Esta funcionalidade estará disponível em breve.'
     });
   };
 
   const handleRefresh = () => {
     refetch();
-    toast.success('Atualizando...', {
+    toast({
+      title: 'Atualizando...',
       description: 'Buscando novas empresas similares na web.'
     });
   };
