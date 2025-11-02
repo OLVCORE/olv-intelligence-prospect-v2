@@ -143,9 +143,14 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
       }
     };
 
+    const focusViewport = () => viewport.focus();
     viewport.addEventListener('keydown', onKeyDown);
+    viewport.addEventListener('mouseenter', focusViewport);
+    viewport.addEventListener('click', focusViewport);
     return () => {
       viewport.removeEventListener('keydown', onKeyDown);
+      viewport.removeEventListener('mouseenter', focusViewport);
+      viewport.removeEventListener('click', focusViewport);
     };
   }, [open]);
 
