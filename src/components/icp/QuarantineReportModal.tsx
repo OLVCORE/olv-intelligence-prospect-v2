@@ -688,10 +688,17 @@ export default function QuarantineReportModal({
                   </TabsTrigger>
                 </TabsList>
 
-                {/* ABA 1: TOTVS */}
                 <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
                   <TOTVSVerificationReport 
-                    data={stcResult?.totvs || stcResult}
+                    data={stcResult?.totvs
+                      ? {
+                          ...stcResult.totvs,
+                          evidences: stcResult?.totvs?.evidences ?? stcResult?.evidences ?? [],
+                          methodology: stcResult?.totvs?.methodology ?? stcResult?.methodology,
+                          status: stcResult?.totvs?.status ?? stcResult?.status,
+                          confidence: stcResult?.totvs?.confidence ?? stcResult?.confidence,
+                        }
+                      : stcResult}
                     companyName={companyName}
                     cnpj={cnpj}
                   />
