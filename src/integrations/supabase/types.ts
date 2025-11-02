@@ -7783,8 +7783,11 @@ export type Database = {
           company_id: string | null
           company_name: string
           created_at: string
+          discovered_at: string | null
+          discovered_from_company_id: string | null
           discovery_batch_id: string | null
           domain: string | null
+          enrichment_status: string | null
           id: string
           linkedin_data: Json | null
           linkedin_url: string | null
@@ -7809,8 +7812,11 @@ export type Database = {
           company_id?: string | null
           company_name: string
           created_at?: string
+          discovered_at?: string | null
+          discovered_from_company_id?: string | null
           discovery_batch_id?: string | null
           domain?: string | null
+          enrichment_status?: string | null
           id?: string
           linkedin_data?: Json | null
           linkedin_url?: string | null
@@ -7835,8 +7841,11 @@ export type Database = {
           company_id?: string | null
           company_name?: string
           created_at?: string
+          discovered_at?: string | null
+          discovered_from_company_id?: string | null
           discovery_batch_id?: string | null
           domain?: string | null
+          enrichment_status?: string | null
           id?: string
           linkedin_data?: Json | null
           linkedin_url?: string | null
@@ -7858,6 +7867,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggested_companies_discovered_from_company_id_fkey"
+            columns: ["discovered_from_company_id"]
+            isOneToOne: false
+            referencedRelation: "suggested_companies"
             referencedColumns: ["id"]
           },
           {

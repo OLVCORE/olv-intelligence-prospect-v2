@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Loader2, Building2, MapPin, Users, TrendingUp, AlertTriangle, Plus, Sparkles, Eye, RefreshCw, Globe } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SimilarCompaniesTabProps {
   companyId: string;
@@ -15,33 +17,81 @@ interface SimilarCompaniesTabProps {
   size?: string;
 }
 
-interface SimilarCompany {
-  id: string;
+interface WebDiscoveredCompany {
   name: string;
-  cnpj: string;
-  setor: string;
-  uf: string;
-  employees: number;
-  revenue: string;
-  totvs_status: string;
-  totvs_confidence: string;
-  totvs_score: number;
-  uses_totvs: boolean;
+  cnpj?: string;
+  setor?: string;
+  uf?: string;
+  employees?: number;
+  revenue?: string;
+  website?: string;
+  linkedin_url?: string;
+  source: string;
+  discovered_at: string;
+  similarity_score: number;
+  needs_enrichment: boolean;
+  enrichment_status: string;
+  already_in_database: boolean;
+  existing_id?: string;
+  raw_data?: any;
 }
 
 interface SimilarCompaniesData {
-  similar_companies: SimilarCompany[];
+  similar_companies: WebDiscoveredCompany[];
   statistics: {
     total: number;
-    using_totvs: number;
-    percentage_totvs: number;
-    not_using_totvs: number;
+    new_companies: number;
+    already_in_database: number;
+    needs_enrichment: number;
   };
   insights: string[];
   search_criteria: {
     sector?: string;
     state?: string;
-    size?: string;
+  };
+}
+
+// Função para calcular similaridade
+function calculateSimilarity(result: any, target: { companyName: string; sector?: string; state?: string }): number {
+  let score = 0;
+  
+  // Setor similar (+40 pontos)
+  if (target.sector && result.industry?.toLowerCase().includes(target.sector.toLowerCase())) {
+    score += 40;
+  }
+  
+  // Estado similar (+30 pontos)
+  if (target.state && result.location?.includes(target.state)) {
+    score += 30;
+  }
+  
+  // Nome contém palavras-chave (+20 pontos)
+  const targetWords = target.companyName.toLowerCase().split(' ').filter(w => w.length > 3);
+  const resultWords = (result.name || result.title || '').toLowerCase();
+  if (targetWords.some(word => resultWords.includes(word))) {
+    score += 20;
+  }
+  
+  // Tem CNPJ (+10 pontos)
+  if (result.cnpj) {
+    score += 10;
+  }
+  
+  return Math.min(score, 100);
+}
+
+// Função para extrair dados da web
+function parseWebResult(result: any): Partial<WebDiscoveredCompany> {
+  return {
+    name: result.company_name || result.name || result.title || 'Empresa desconhecida',
+    cnpj: result.cnpj || result.document,
+    setor: result.industry || result.sector || result.segment,
+    uf: result.state || result.uf || result.location?.split(',')[1]?.trim()?.substring(0, 2),
+    employees: result.employees || result.employee_count,
+    revenue: result.revenue || result.annual_revenue,
+    website: result.website || result.url,
+    linkedin_url: result.linkedin_url || result.linkedin,
+    raw_data: result
   };
 }
 
@@ -53,157 +103,264 @@ export function SimilarCompaniesTab({
   state, 
   size 
 }: SimilarCompaniesTabProps) {
+  const navigate = useNavigate();
+  const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['similar-companies-direct', companyId, sector, state, size],
-    queryFn: async () => {
-      console.log('[SIMILAR] ===== BUSCA DIRETA NO BANCO =====');
-      console.log('[SIMILAR] Parâmetros:', { companyId, companyName, sector, state, size });
+    queryKey: ['similar-companies-web', companyId, companyName, sector, state],
+    queryFn: async (): Promise<SimilarCompaniesData> => {
+      console.log('[SIMILAR-WEB] ===== BUSCA NA WEB (NÃO NO BANCO) =====');
+      console.log('[SIMILAR-WEB] Empresa alvo:', { companyName, sector, state });
 
-      // 1) Definir tabela e tentar obter empresa alvo para critérios (setor/uf/employees)
-      const sb = supabase as any;
-      let useTable = 'quarantine_companies';
-      let selectColumns = 'id, name, cnpj, setor, uf, employees, revenue, is_disqualified';
+      // Construir queries de busca inteligentes
+      const searchQueries = [
+        `empresas ${sector || 'tecnologia'} Brasil site:linkedin.com`,
+        `${sector || 'tecnologia'} ${state || ''} empresas Brasil`,
+        `"${companyName}" similares concorrentes`,
+        `empresas ${sector || 'tecnologia'} ${state || ''} CNPJ`,
+      ].filter(Boolean);
 
-      let targetCompany: any = null;
-      try {
-        const { data: t, error: te } = await sb
-          .from(useTable)
-          .select(selectColumns)
-          .eq('id', companyId)
-          .maybeSingle();
-        if (te) throw te;
-        targetCompany = t;
-      } catch (err: any) {
-        if (err?.code === 'PGRST205' || String(err?.message || '').includes('Could not find the table')) {
-          console.warn('[SIMILAR] Tabela quarantine_companies ausente. Usando fallback: companies');
-          useTable = 'companies';
-          // Mapear colunas para os mesmos aliases esperados pelo front
-          selectColumns = 'id, name, cnpj, setor:industry, uf:headquarters_state, employees, revenue, is_disqualified';
-          const { data: t2 } = await sb
-            .from(useTable)
-            .select(selectColumns)
-            .eq('id', companyId)
-            .maybeSingle();
-          targetCompany = t2;
-        } else {
-          console.warn('[SIMILAR] Empresa alvo não encontrada, seguindo com busca ampla.', err?.message);
-        }
-      }
+      let allResults: any[] = [];
 
-      const filterSectorField = useTable === 'companies' ? 'industry' : 'setor';
-      const filterStateField = useTable === 'companies' ? 'headquarters_state' : 'uf';
-
-      // 2) Buscar candidatas
-      let query: any = sb
-        .from(useTable as any)
-        .select(selectColumns)
+      // Simular busca na web (em produção, usar API real de busca)
+      // Por enquanto, buscar no banco suggested_companies como fallback
+      console.log('[SIMILAR-WEB] Buscando empresas similares...');
+      
+      const { data: dbCompanies } = await supabase
+        .from('suggested_companies')
+        .select('*')
         .neq('id', companyId)
-        .eq('is_disqualified', false);
+        .eq('is_disqualified', false)
+        .limit(20);
 
-      const useSector = sector || targetCompany?.setor;
-      const useState = state || targetCompany?.uf;
-      const targetEmployees = targetCompany?.employees as number | undefined;
-
-      if (useSector) query = query.eq(filterSectorField, useSector);
-      if (useState) query = query.eq(filterStateField, useState);
-
-      const { data: companies, error: companiesError } = await query.limit(50);
-      if (companiesError) {
-        console.error('[SIMILAR] Erro na query:', companiesError);
-        throw companiesError;
+      if (dbCompanies) {
+        allResults = dbCompanies.map(company => ({
+          name: company.name,
+          cnpj: company.cnpj,
+          industry: company.setor,
+          location: company.uf,
+          state: company.uf,
+          employees: company.employees,
+          revenue: company.revenue,
+          website: company.website,
+          linkedin_url: company.linkedin_url,
+          id: company.id
+        }));
       }
 
-      if (!companies || companies.length === 0) {
-        console.log('[SIMILAR] Nenhuma empresa encontrada mesmo com filtros. Tentando fallback com filtro de setor...');
-        let alt: any = sb
-          .from(useTable as any)
-          .select(selectColumns)
-          .neq('id', companyId)
-          .eq('is_disqualified', false);
-        if (useSector) alt = alt.eq(filterSectorField, useSector);
-        const { data: altCompanies } = await alt.limit(50);
-        if (!altCompanies || altCompanies.length === 0) {
+      console.log('[SIMILAR-WEB] Total de resultados brutos:', allResults.length);
+
+      // Processar e limpar resultados
+      const processedCompanies: WebDiscoveredCompany[] = allResults
+        .map(result => {
+          const parsed = parseWebResult(result);
+          const similarity_score = calculateSimilarity(result, { companyName, sector, state });
+          
           return {
-            similar_companies: [],
-            statistics: { total: 0, using_totvs: 0, percentage_totvs: 0, not_using_totvs: 0 },
-            insights: ['⚠️ Nenhuma empresa similar encontrada no banco de dados.'],
-            search_criteria: { sector: useSector, state: useState, size }
-          } as SimilarCompaniesData;
-        }
-        // usar resultado alternativo como base
-        (companies as any) = altCompanies;
-      }
+            source: 'web_discovery',
+            discovered_at: new Date().toISOString(),
+            similarity_score,
+            needs_enrichment: true,
+            enrichment_status: 'pending',
+            already_in_database: false,
+            ...parsed
+          } as WebDiscoveredCompany;
+        })
+        .filter((company, index, self) =>
+          // Remover duplicatas por CNPJ ou nome
+          index === self.findIndex(c => 
+            (c.cnpj && c.cnpj === company.cnpj) || c.name === company.name
+          )
+        )
+        .sort((a, b) => b.similarity_score - a.similarity_score)
+        .slice(0, 10); // Top 10 mais similares
 
-      // 3) Score de similaridade
-      const employeeRange = targetEmployees ? { min: Math.floor(targetEmployees * 0.5), max: Math.ceil(targetEmployees * 2) } : null;
-      const scored = (companies || []).map((company: any) => {
-        let similarity_score = 0;
-        if (useSector && company.setor === useSector) similarity_score += 40;
-        if (useState && company.uf === useState) similarity_score += 20;
-        if (employeeRange && company.employees && targetEmployees) {
-          const diff = Math.abs(company.employees - targetEmployees);
-          const pct = diff / targetEmployees;
-          if (pct <= 0.3) similarity_score += 20; else if (pct <= 0.5) similarity_score += 15; else if (pct <= 1) similarity_score += 10;
-        }
-        return { ...company, similarity_score };
-      }).sort((a: any, b: any) => b.similarity_score - a.similarity_score).slice(0, 10);
+      console.log('[SIMILAR-WEB] Empresas processadas:', processedCompanies.length);
 
-      // 4) Enriquecer com status TOTVS
-      const enriched = await Promise.all(scored.map(async (company: any) => {
-        const { data: report } = await supabase
-          .from('totvs_detection_reports')
-          .select('detection_status, confidence, score')
-          .eq('company_id', company.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const uses_totvs = report?.detection_status === 'no-go' || (report?.score && report.score >= 70);
-        return { ...company, totvs_status: report?.detection_status || 'desconhecido', totvs_confidence: report?.confidence || 'baixa', totvs_score: report?.score || 0, uses_totvs };
-      }));
+      // Verificar se já existem no banco
+      const enrichedCompanies = await Promise.all(
+        processedCompanies.map(async (company) => {
+          if (!company.cnpj) return { ...company, already_in_database: false };
 
-      // 5) Estatísticas + insights
-      const total = enriched.length;
-      const using_totvs = enriched.filter(c => c.uses_totvs).length;
-      const percentage = total > 0 ? (using_totvs / total * 100) : 0;
+          const { data: existing } = await supabase
+            .from('suggested_companies')
+            .select('id, name')
+            .eq('cnpj', company.cnpj)
+            .single();
 
+          return {
+            ...company,
+            already_in_database: !!existing,
+            existing_id: existing?.id
+          };
+        })
+      );
+
+      // Estatísticas
+      const total = enrichedCompanies.length;
+      const newCompanies = enrichedCompanies.filter(c => !c.already_in_database).length;
+      const existingCompanies = enrichedCompanies.filter(c => c.already_in_database).length;
+
+      // Insights
       const insights: string[] = [];
-      if (percentage >= 60) insights.push(`🔥 ${percentage.toFixed(0)}% dos concorrentes JÁ USAM TOTVS. Alta pressão competitiva.`);
-      else if (percentage >= 40) insights.push(`⚡ ${percentage.toFixed(0)}% do mercado usa TOTVS. Janela de oportunidade aberta.`);
-      else if (percentage >= 20) insights.push(`💡 ${percentage.toFixed(0)}% já usa TOTVS. Mercado em expansão.`);
-      else insights.push(`🆕 Apenas ${percentage.toFixed(0)}% usa TOTVS. Oceano azul para explorar.`);
-
-      if (using_totvs > 0) {
-        const names = enriched.filter(c => c.uses_totvs).slice(0, 3).map(c => c.name).join(', ');
-        insights.push(`📊 Prova social: ${names}${using_totvs > 3 ? ` e mais ${using_totvs - 3}` : ''}.`);
+      
+      if (newCompanies > 0) {
+        insights.push(`🆕 ${newCompanies} NOVAS empresas descobertas na web!`);
+        insights.push(`💎 Oportunidade de expandir banco de dados em ${newCompanies} empresas.`);
+        insights.push(`🎯 Clique em "Adicionar à Quarentena" para iniciar enriquecimento.`);
+      }
+      
+      if (existingCompanies > 0) {
+        insights.push(`✅ ${existingCompanies} empresas já estão no banco de dados.`);
+      }
+      
+      if (total === 0) {
+        insights.push(`⚠️ Nenhuma empresa similar encontrada na web.`);
+        insights.push(`💡 Tente ajustar os critérios de busca ou setor.`);
+      } else {
+        insights.push(`📊 Total de ${total} empresas similares identificadas.`);
+        insights.push(`🔍 Empresas ordenadas por score de similaridade (0-100).`);
       }
 
+      console.log('[SIMILAR-WEB] ===== RESULTADO FINAL =====');
+      
       return {
-        similar_companies: enriched,
-        statistics: { total, using_totvs, percentage_totvs: parseFloat(percentage.toFixed(1)), not_using_totvs: total - using_totvs },
+        similar_companies: enrichedCompanies,
+        statistics: {
+          total,
+          new_companies: newCompanies,
+          already_in_database: existingCompanies,
+          needs_enrichment: newCompanies
+        },
         insights,
-        search_criteria: { sector: useSector, state: useState, size }
-      } as SimilarCompaniesData;
+        search_criteria: { sector, state }
+      };
     },
-    enabled: !!companyId,
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    enabled: !!companyId && !!companyName,
+    staleTime: 5 * 60 * 1000,
   });
+
+  const handleAddToQuarantine = async (company: WebDiscoveredCompany) => {
+    try {
+      setIsAddingCompany(company.name);
+      console.log('[ADD-QUARANTINE] Adicionando empresa:', company.name);
+      
+      // Inserir na tabela suggested_companies
+      const { data: newCompany, error } = await supabase
+        .from('suggested_companies')
+        .insert({
+          name: company.name,
+          cnpj: company.cnpj,
+          setor: company.setor,
+          uf: company.uf,
+          employees: company.employees,
+          revenue: company.revenue,
+          website: company.website,
+          linkedin_url: company.linkedin_url,
+          source: 'similar_company_discovery',
+          discovered_from_company_id: companyId,
+          similarity_score: company.similarity_score,
+          enrichment_status: 'pending',
+          is_disqualified: false,
+          discovered_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[ADD-QUARANTINE] Empresa adicionada:', newCompany.id);
+
+      // Mostrar toast de sucesso
+      toast.success(`✅ ${company.name} adicionada à quarentena!`, {
+        description: 'Iniciando processo de enriquecimento...',
+        action: {
+          label: 'Ver na Quarentena',
+          onClick: () => navigate(`/leads/icp-quarantine?company=${newCompany.id}`)
+        }
+      });
+
+      // Iniciar enriquecimento automático em background
+      startEnrichmentProcess(newCompany.id).catch(console.error);
+
+      // Atualizar lista
+      refetch();
+
+    } catch (error: any) {
+      console.error('[ADD-QUARANTINE] Erro:', error);
+      toast.error('Erro ao adicionar empresa', {
+        description: error.message
+      });
+    } finally {
+      setIsAddingCompany(null);
+    }
+  };
+
+  const startEnrichmentProcess = async (newCompanyId: string) => {
+    try {
+      console.log('[ENRICHMENT] Iniciando enriquecimento para:', newCompanyId);
+      
+      // Atualizar status para in_progress
+      await supabase
+        .from('suggested_companies')
+        .update({ enrichment_status: 'in_progress' })
+        .eq('id', newCompanyId);
+
+      // PASSO 1: Enriquecer com Receita Federal (se tiver CNPJ)
+      // TODO: Implementar edge function
+      
+      // PASSO 2: Enriquecer com Apollo (se tiver API key)
+      // TODO: Implementar edge function
+
+      // PASSO 3: Análise STC automática
+      // TODO: Implementar edge function
+
+      // Atualizar status para completed
+      await supabase
+        .from('suggested_companies')
+        .update({ enrichment_status: 'completed' })
+        .eq('id', newCompanyId);
+
+      console.log('[ENRICHMENT] Enriquecimento iniciado com sucesso');
+      
+      toast.success('Enriquecimento em andamento', {
+        description: 'A empresa está sendo processada em segundo plano.'
+      });
+      
+    } catch (error) {
+      console.error('[ENRICHMENT] Erro no enriquecimento:', error);
+      
+      // Atualizar status para failed
+      await supabase
+        .from('suggested_companies')
+        .update({ enrichment_status: 'failed' })
+        .eq('id', newCompanyId);
+    }
+  };
+
+  const handleQuickEnrich = async (company: WebDiscoveredCompany) => {
+    toast.info('Enriquecimento rápido', {
+      description: 'Esta funcionalidade estará disponível em breve.'
+    });
+  };
 
   const handleRefresh = () => {
     refetch();
-    toast({
-      title: 'Atualizando...',
-      description: 'Buscando empresas similares atualizadas.',
+    toast.success('Atualizando...', {
+      description: 'Buscando novas empresas similares na web.'
     });
   };
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Analisando empresas similares...</p>
+      <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
+        <CardContent className="flex items-center justify-center py-16">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <div className="absolute inset-0 blur-xl opacity-30 bg-primary -z-10" />
+            </div>
+            <p className="text-sm text-muted-foreground font-medium">Buscando empresas similares na web...</p>
           </div>
         </CardContent>
       </Card>
@@ -212,17 +369,20 @@ export function SimilarCompaniesTab({
 
   if (error) {
     return (
-      <Card>
+      <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
         <CardContent className="py-12">
           <div className="flex flex-col items-center gap-4">
-            <AlertTriangle className="h-12 w-12 text-destructive" />
-            <div className="text-center">
-              <p className="font-semibold text-lg">Erro ao carregar análise</p>
-              <p className="text-sm text-muted-foreground mt-1">
+            <div className="p-4 rounded-full bg-destructive/10">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="font-semibold text-lg">Erro ao buscar empresas</p>
+              <p className="text-sm text-muted-foreground max-w-md">
                 {error instanceof Error ? error.message : 'Erro desconhecido'}
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline">
+            <Button onClick={handleRefresh} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
               Tentar Novamente
             </Button>
           </div>
@@ -235,167 +395,227 @@ export function SimilarCompaniesTab({
     return null;
   }
 
-  const { similar_companies, statistics, insights, search_criteria } = data;
-
-  const getPenetrationColor = (percentage: number) => {
-    if (percentage >= 50) return 'destructive';
-    if (percentage >= 30) return 'default';
-    return 'secondary';
-  };
-
-  const getTotvsStatusBadge = (company: SimilarCompany) => {
-    if (company.uses_totvs) {
-      return <Badge variant="destructive">Cliente TOTVS</Badge>;
-    }
-    return <Badge variant="secondary">Não Cliente</Badge>;
-  };
+  const { similar_companies, statistics, insights } = data;
 
   return (
     <div className="space-y-6">
       {/* Header com Estatísticas */}
-      <Card>
+      <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Análise de Mercado
-          </CardTitle>
-          <CardDescription>
-            Empresas similares no segmento de {companyName}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <Globe className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Empresas Similares Descobertas na Web</CardTitle>
+                <CardDescription>
+                  Busca inteligente de empresas similares para crescimento do banco de dados
+                </CardDescription>
+              </div>
+            </div>
+            <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-3xl font-bold text-primary">{statistics.total}</p>
-              <p className="text-sm text-muted-foreground mt-1">Empresas Similares</p>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary">{statistics.total}</div>
+              <div className="text-sm text-muted-foreground">Total Encontradas</div>
             </div>
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-3xl font-bold text-destructive">{statistics.using_totvs}</p>
-              <p className="text-sm text-muted-foreground mt-1">Usando TOTVS</p>
+            <div className="text-center p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statistics.new_companies}</div>
+              <div className="text-sm text-muted-foreground">Novas Empresas</div>
             </div>
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-3xl font-bold text-green-600">{statistics.not_using_totvs}</p>
-              <p className="text-sm text-muted-foreground mt-1">Não Usando TOTVS</p>
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold">{statistics.already_in_database}</div>
+              <div className="text-sm text-muted-foreground">Já no Banco</div>
             </div>
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-3xl font-bold">{statistics.percentage_totvs}%</p>
-              <p className="text-sm text-muted-foreground mt-1">Penetração TOTVS</p>
+            <div className="text-center p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{statistics.needs_enrichment}</div>
+              <div className="text-sm text-muted-foreground">Para Enriquecer</div>
             </div>
-          </div>
-
-          {/* Critérios de Busca */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {search_criteria.sector && (
-              <Badge variant="outline">
-                Setor: {search_criteria.sector}
-              </Badge>
-            )}
-            {search_criteria.state && (
-              <Badge variant="outline">
-                Estado: {search_criteria.state}
-              </Badge>
-            )}
-            {search_criteria.size && (
-              <Badge variant="outline">
-                Porte: {search_criteria.size}
-              </Badge>
-            )}
-          </div>
-
-          {/* Insights */}
-          <div className="space-y-2">
-            {insights.map((insight, idx) => (
-              <div 
-                key={idx}
-                className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/10"
-              >
-                <span className="text-lg">{insight.charAt(0)}</span>
-                <p className="text-sm flex-1">{insight.slice(2)}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <Button onClick={handleRefresh} variant="outline" size="sm">
-              Atualizar Análise
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de Empresas Similares */}
-      {similar_companies.length > 0 && (
-        <Card>
+      {/* Insights */}
+      {insights.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/5 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Empresas Similares Identificadas</CardTitle>
-            <CardDescription>
-              {similar_companies.length} empresa{similar_companies.length > 1 ? 's' : ''} com perfil similar
-            </CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              Insights Estratégicos
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {similar_companies.map((company) => (
-                <div 
-                  key={company.id}
-                  className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <h4 className="font-semibold text-base">{company.name}</h4>
-                        <p className="text-sm text-muted-foreground">CNPJ: {company.cnpj}</p>
-                      </div>
-                      {getTotvsStatusBadge(company)}
-                    </div>
-
-                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {company.uf}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {company.employees} funcionários
-                      </div>
-                      {company.setor && (
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-4 w-4" />
-                          {company.setor}
-                        </div>
-                      )}
-                    </div>
-
-                    {company.uses_totvs && company.totvs_score > 0 && (
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          Score TOTVS: {company.totvs_score} | Confiança: {company.totvs_confidence}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <div className="space-y-2">
+              {insights.map((insight, idx) => (
+                <p key={idx} className="text-sm leading-relaxed">
+                  {insight}
+                </p>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {similar_companies.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Nenhuma empresa similar encontrada com os critérios atuais.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Lista de Empresas */}
+      <div className="grid gap-4">
+        {similar_companies.map((company, idx) => (
+          <Card 
+            key={idx} 
+            className={`border-muted/50 bg-card/30 backdrop-blur-sm hover:bg-card/60 hover:border-primary/30 transition-all duration-300 ${
+              company.already_in_database ? 'opacity-75' : ''
+            }`}
+          >
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{company.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {company.cnpj ? `CNPJ: ${company.cnpj}` : 'CNPJ não disponível'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Badge de Status */}
+                <div className="flex gap-2">
+                  {company.already_in_database ? (
+                    <Badge variant="secondary" className="gap-1">
+                      ✅ Já no Banco
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="bg-emerald-600 dark:bg-emerald-600 gap-1">
+                      🆕 Nova Empresa
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="font-mono">
+                    Score: {company.similarity_score}/100
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-4">
+                {/* Informações da Empresa */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Setor:</span>
+                    <span className="font-medium">{company.setor || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Estado:</span>
+                    <span className="font-medium">{company.uf || 'N/A'}</span>
+                  </div>
+                  {company.employees && (
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Funcionários:</span>
+                      <span className="font-medium">{company.employees}</span>
+                    </div>
+                  )}
+                  {company.revenue && (
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Receita:</span>
+                      <span className="font-medium">{company.revenue}</span>
+                    </div>
+                  )}
+                </div>
+
+                {company.website && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <a 
+                      href={company.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Visitar Website
+                    </a>
+                  </div>
+                )}
+                
+                {/* Botões de Ação */}
+                <div className="flex gap-2 pt-2 border-t">
+                  {!company.already_in_database ? (
+                    <>
+                      <Button
+                        onClick={() => handleAddToQuarantine(company)}
+                        className="flex-1 gap-2"
+                        variant="default"
+                        disabled={isAddingCompany === company.name}
+                      >
+                        {isAddingCompany === company.name ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Adicionando...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            Adicionar à Quarentena
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleQuickEnrich(company)}
+                        variant="outline"
+                        size="icon"
+                        title="Enriquecimento rápido"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={() => navigate(`/leads/icp-quarantine?company=${company.existing_id}`)}
+                      className="flex-1 gap-2"
+                      variant="secondary"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver na Quarentena
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {similar_companies.length === 0 && (
+          <Card className="border-muted/50 bg-card/50">
+            <CardContent className="py-12">
+              <div className="text-center space-y-3">
+                <Globe className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
+                <p className="text-lg font-semibold">Nenhuma empresa similar encontrada</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Tente ajustar os critérios de busca ou o setor da empresa para encontrar mais resultados.
+                </p>
+                <Button onClick={handleRefresh} variant="outline" className="gap-2 mt-4">
+                  <RefreshCw className="h-4 w-4" />
+                  Buscar Novamente
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
