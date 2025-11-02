@@ -531,6 +531,79 @@ export function SimilarCompaniesTab({
         console.log('[DEBUG] ⏭️ CAMADA 4 pulada (limite atingido)');
       }
 
+      // ==================== CAMADA 16: CONCORRENTES SEO ====================
+      if (targetCompany.website && totalQueries < MAX_TOTAL_QUERIES) {
+        console.log('[DEEP-SEARCH] 🔍 CAMADA 16: Concorrentes SEO');
+        
+        try {
+          const seoApiKey = localStorage.getItem('seo_api_key');
+          
+          if (seoApiKey) {
+            console.log('[DEEP-SEARCH] Usando API SEO...');
+            const { data: seoData, error } = await supabase.functions.invoke('seo-competitors', {
+              body: { 
+                website: targetCompany.website,
+                apiKey: seoApiKey,
+                provider: localStorage.getItem('seo_provider') || 'similarweb'
+              }
+            });
+            
+            if (error) {
+              console.error('[DEEP-SEARCH] Erro API SEO:', error);
+            } else if (seoData?.success && seoData.competitors) {
+              console.log('[DEEP-SEARCH] SEO encontrou:', seoData.competitors.length, 'concorrentes');
+              
+              for (const competitor of seoData.competitors.slice(0, 10)) {
+                allResults.push({
+                  title: competitor.domain.split('.')[0].toUpperCase(),
+                  url: `https://${competitor.domain}`,
+                  snippet: `Concorrente SEO - Score: ${competitor.score}`,
+                  description: `Descoberto via ${seoData.provider}`,
+                  source: 'seo_competitor',
+                  score: competitor.score || 95,
+                  domain: competitor.domain
+                });
+              }
+              
+              totalQueries++;
+            }
+          } else {
+            console.log('[DEEP-SEARCH] API SEO não configurada, usando fallback...');
+            const domain = targetCompany.website.replace(/^https?:\/\//, '').split('/')[0];
+            const queries = [
+              `concorrentes ${domain}`,
+              `empresas similares ${domain}`,
+              `competitors ${inferredSector} Brasil`
+            ];
+            
+            for (const query of queries.slice(0, 2)) {
+              if (totalQueries >= MAX_TOTAL_QUERIES) break;
+              
+              try {
+                console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 5)');
+                const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
+                  body: { query, limit: 5, country: 'BR', language: 'pt' }
+                });
+                
+                if (!searchError && searchData?.results) {
+                  console.log('[SEARCH-WEB] ✅ Encontrados:', searchData.results.length, 'resultados');
+                  allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'seo_search', score: 85 })));
+                }
+                
+                totalQueries++;
+                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
+              } catch (err) {
+                console.error('[DEEP-SEARCH] Erro na query SEO:', query, err);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[DEEP-SEARCH] Erro na CAMADA 16:', error);
+        }
+      } else {
+        console.log('[DEEP-SEARCH] ⏭️ CAMADA 16 pulada (sem website)');
+      }
+
       console.log('[DEEP-SEARCH] Total de queries executadas:', totalQueries);
       console.log('[DEEP-SEARCH] Total de resultados brutos:', allResults.length);
       
@@ -633,7 +706,38 @@ export function SimilarCompaniesTab({
 
             // Pular se não tem CNPJ (não é possível validar)
             if (!company.cnpj) {
-              console.log('[ENRICHMENT] ⚠️ Sem CNPJ:', company.name);
+              console.log('[ENRICHMENT] Sem CNPJ, tentando scraping do website...', company.name);
+              
+              // Se não tem CNPJ mas tem website, tentar enriquecer via scraping
+              if (company.website) {
+                try {
+                  const { data: enrichData, error } = await supabase.functions.invoke('enrich-company', {
+                    body: { 
+                      website: company.website,
+                      companyName: company.name
+                    }
+                  });
+                  
+                  if (!error && enrichData?.success && enrichData.data) {
+                    console.log('[ENRICHMENT] Dados obtidos via scraping para:', company.name);
+                    
+                    return {
+                      ...company,
+                      cnpj: enrichData.data.cnpj || company.cnpj,
+                      uf: enrichData.data.state || company.uf,
+                      city: enrichData.data.city || company.city,
+                      setor: enrichData.data.sector || company.setor,
+                      employees: enrichData.data.employees || company.employees,
+                      linkedin_url: enrichData.data.linkedin_url || company.linkedin_url,
+                      enrichment_status: 'completed',
+                      enrichment_score: enrichData.enrichment_score || 0
+                    };
+                  }
+                } catch (error) {
+                  console.error('[ENRICHMENT] Erro no scraping:', company.name, error);
+                }
+              }
+              
               return company;
             }
 
@@ -1214,8 +1318,31 @@ export function SimilarCompaniesTab({
                 🔧 Teste Debug
               </Button>
               <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 h-4" />
                 Atualizar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  const provider = prompt('Qual provider usar? (similarweb ou semrush):', localStorage.getItem('seo_provider') || 'similarweb');
+                  if (provider) {
+                    localStorage.setItem('seo_provider', provider);
+                  }
+                  
+                  const apiKey = prompt(`Cole sua API Key do ${provider || 'SimilarWeb/SEMrush'}:`);
+                  if (apiKey) {
+                    localStorage.setItem('seo_api_key', apiKey);
+                    toast({
+                      title: 'API SEO Configurada',
+                      description: `A CAMADA 16 (Análise de Concorrentes ${provider?.toUpperCase()}) será ativada nas próximas buscas.`,
+                    });
+                  }
+                }}
+              >
+                <Globe className="w-4 h-4" />
+                Configurar API SEO
               </Button>
             </div>
           </div>
