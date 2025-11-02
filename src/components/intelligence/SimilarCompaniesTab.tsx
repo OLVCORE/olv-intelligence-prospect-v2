@@ -60,22 +60,44 @@ export function SimilarCompaniesTab({
       console.log('[SIMILAR] ===== BUSCA DIRETA NO BANCO =====');
       console.log('[SIMILAR] Parâmetros:', { companyId, companyName, sector, state, size });
 
-      // 1) Buscar empresa alvo para critérios (setor/uf/employees)
+      // 1) Definir tabela e tentar obter empresa alvo para critérios (setor/uf/employees)
       const sb = supabase as any;
-      const { data: targetCompany, error: targetError } = await sb
-        .from('quarantine_companies')
-        .select('*')
-        .eq('id', companyId)
-        .single();
+      let useTable = 'quarantine_companies';
+      let selectColumns = 'id, name, cnpj, setor, uf, employees, revenue, is_disqualified';
 
-      if (targetError) {
-        console.warn('[SIMILAR] Empresa alvo não encontrada, seguindo com busca ampla.', targetError.message);
+      let targetCompany: any = null;
+      try {
+        const { data: t, error: te } = await sb
+          .from(useTable)
+          .select(selectColumns)
+          .eq('id', companyId)
+          .maybeSingle();
+        if (te) throw te;
+        targetCompany = t;
+      } catch (err: any) {
+        if (err?.code === 'PGRST205' || String(err?.message || '').includes('Could not find the table')) {
+          console.warn('[SIMILAR] Tabela quarantine_companies ausente. Usando fallback: companies');
+          useTable = 'companies';
+          // Mapear colunas para os mesmos aliases esperados pelo front
+          selectColumns = 'id, name, cnpj, setor:industry, uf:headquarters_state, employees, revenue, is_disqualified';
+          const { data: t2 } = await sb
+            .from(useTable)
+            .select(selectColumns)
+            .eq('id', companyId)
+            .maybeSingle();
+          targetCompany = t2;
+        } else {
+          console.warn('[SIMILAR] Empresa alvo não encontrada, seguindo com busca ampla.', err?.message);
+        }
       }
+
+      const filterSectorField = useTable === 'companies' ? 'industry' : 'setor';
+      const filterStateField = useTable === 'companies' ? 'headquarters_state' : 'uf';
 
       // 2) Buscar candidatas
       let query: any = sb
-        .from('quarantine_companies' as any)
-        .select('id, name, cnpj, setor, uf, employees, revenue, is_disqualified')
+        .from(useTable as any)
+        .select(selectColumns)
         .neq('id', companyId)
         .eq('is_disqualified', false);
 
@@ -83,8 +105,8 @@ export function SimilarCompaniesTab({
       const useState = state || targetCompany?.uf;
       const targetEmployees = targetCompany?.employees as number | undefined;
 
-      if (useSector) query = query.eq('setor', useSector);
-      if (useState) query = query.eq('uf', useState);
+      if (useSector) query = query.eq(filterSectorField, useSector);
+      if (useState) query = query.eq(filterStateField, useState);
 
       const { data: companies, error: companiesError } = await query.limit(50);
       if (companiesError) {
@@ -93,13 +115,13 @@ export function SimilarCompaniesTab({
       }
 
       if (!companies || companies.length === 0) {
-        console.log('[SIMILAR] Nenhuma empresa encontrada mesmo com filtros. Tentando somente por setor...');
+        console.log('[SIMILAR] Nenhuma empresa encontrada mesmo com filtros. Tentando fallback com filtro de setor...');
         let alt: any = sb
-          .from('quarantine_companies' as any)
-          .select('id, name, cnpj, setor, uf, employees, revenue, is_disqualified')
+          .from(useTable as any)
+          .select(selectColumns)
           .neq('id', companyId)
           .eq('is_disqualified', false);
-        if (useSector) alt = alt.eq('setor', useSector);
+        if (useSector) alt = alt.eq(filterSectorField, useSector);
         const { data: altCompanies } = await alt.limit(50);
         if (!altCompanies || altCompanies.length === 0) {
           return {
@@ -109,7 +131,7 @@ export function SimilarCompaniesTab({
             search_criteria: { sector: useSector, state: useState, size }
           } as SimilarCompaniesData;
         }
-        // use alt result as base
+        // usar resultado alternativo como base
         (companies as any) = altCompanies;
       }
 
