@@ -11,86 +11,101 @@ serve(async (req) => {
   }
 
   try {
-    const { website, apiKey, provider = 'similarweb' } = await req.json()
+    const { website, companyName, sector } = await req.json()
     
-    console.log('[SEO-COMPETITORS] Analisando:', website, 'Provider:', provider)
+    console.log('[SEO-DISCOVER] 🔍 Descobrindo concorrentes GRATUITO:', companyName, website)
     
-    let competitors: any[] = []
+    const competitors: any[] = []
     const domain = website.replace(/^https?:\/\//, '').split('/')[0]
 
-    // OPÇÃO 1: SimilarWeb API
-    if (provider === 'similarweb' && apiKey) {
+    // ==================== ESTRATÉGIA 1: SCRAPING DO WEBSITE ====================
+    // Descobrir links de parceiros, fornecedores, associações
+    if (website) {
       try {
-        const response = await fetch(
-          `https://api.similarweb.com/v1/website/${domain}/similar-sites?api_key=${apiKey}`,
-          { headers: { 'Content-Type': 'application/json' } }
-        )
+        console.log('[SEO-DISCOVER] Fazendo scraping de:', website)
+        
+        const response = await fetch(website, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          signal: AbortSignal.timeout(10000)
+        })
         
         if (response.ok) {
-          const data = await response.json()
-          competitors = data.similar_sites?.map((site: any) => ({
-            domain: site.site,
-            affinity: site.rank,
-            score: Math.round((1 / site.rank) * 100)
-          })) || []
+          const html = await response.text()
           
-          console.log('[SEO-COMPETITORS] SimilarWeb encontrou:', competitors.length)
-        }
-      } catch (error) {
-        console.error('[SEO-COMPETITORS] Erro SimilarWeb:', error)
-      }
-    }
-    
-    // OPÇÃO 2: SEMrush API
-    else if (provider === 'semrush' && apiKey) {
-      try {
-        const response = await fetch(
-          `https://api.semrush.com/?type=domain_organic_organic&key=${apiKey}&display_limit=20&export_columns=Dn,Np,Or&domain=${domain}&database=br`
-        )
-        
-        if (response.ok) {
-          const text = await response.text()
-          const lines = text.split('\n').slice(1)
+          // Extrair todos os domínios .com.br mencionados
+          const domainRegex = /https?:\/\/([a-zA-Z0-9\-]+\.com\.br)/gi
+          const matches = html.matchAll(domainRegex)
+          const domains = new Set<string>()
           
-          competitors = lines
-            .filter(line => line.trim())
-            .map(line => {
-              const [domain, keywords, traffic] = line.split(';')
-              return {
-                domain: domain?.trim(),
-                keywords: parseInt(keywords) || 0,
-                traffic: parseInt(traffic) || 0,
-                score: Math.min(95, Math.round((parseInt(keywords) || 0) / 10))
-              }
+          for (const match of matches) {
+            const foundDomain = match[1].toLowerCase()
+            // Filtrar domínios comuns (Google, Facebook, etc.)
+            if (!foundDomain.includes('google') && 
+                !foundDomain.includes('facebook') && 
+                !foundDomain.includes('youtube') &&
+                !foundDomain.includes('instagram') &&
+                !foundDomain.includes('twitter') &&
+                foundDomain !== domain.toLowerCase()) {
+              domains.add(foundDomain)
+            }
+          }
+          
+          console.log('[SEO-DISCOVER] Domínios encontrados no website:', domains.size)
+          
+          for (const foundDomain of Array.from(domains).slice(0, 10)) {
+            competitors.push({
+              website: `https://${foundDomain}`,
+              name: foundDomain.split('.')[0].toUpperCase(),
+              source: 'website_links',
+              confidence: 70,
+              discovery_method: 'website_scraping'
             })
-            .filter(c => c.domain && c.domain !== domain)
-          
-          console.log('[SEO-COMPETITORS] SEMrush encontrou:', competitors.length)
+          }
         }
       } catch (error) {
-        console.error('[SEO-COMPETITORS] Erro SEMrush:', error)
+        console.error('[SEO-DISCOVER] Erro ao scraping:', error)
       }
     }
     
-    // OPÇÃO 3: Scraping alternativo
-    else {
-      console.log('[SEO-COMPETITORS] Modo fallback (sem API key)')
-      competitors = []
-    }
+    // ==================== ESTRATÉGIA 2: BUSCAR NO GOOGLE ====================
+    // Retornar queries para busca (serão executadas pela função web-search)
+    const searchQueries = [
+      `concorrentes ${companyName}`,
+      `empresas similares ${companyName}`,
+      `competitors ${companyName} Brasil`,
+      sector ? `${sector} empresas Brasil` : null,
+      sector ? `maiores empresas ${sector} Brasil` : null,
+      sector ? `ranking ${sector} Brasil` : null,
+      `site:linkedin.com/company ${sector || companyName} Brasil`,
+      `${companyName} vs concorrentes`,
+    ].filter(Boolean)
+    
+    console.log('[SEO-DISCOVER] Queries sugeridas:', searchQueries.length)
+    
+    // ==================== ESTRATÉGIA 3: DESCOBRIR ASSOCIAÇÕES ====================
+    const associationQueries = sector ? [
+      `associação ${sector} Brasil empresas`,
+      `sindicato ${sector} Brasil filiados`,
+      `federação ${sector} Brasil`,
+    ] : []
 
     return new Response(
       JSON.stringify({
         success: true,
         competitors,
         total: competitors.length,
-        provider,
+        suggested_queries: searchQueries,
+        association_queries: associationQueries,
+        method: 'free_discovery',
         domain
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
     
   } catch (error: any) {
-    console.error('[SEO-COMPETITORS] Erro:', error)
+    console.error('[SEO-DISCOVER] Erro:', error)
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

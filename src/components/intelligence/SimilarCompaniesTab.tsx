@@ -531,77 +531,119 @@ export function SimilarCompaniesTab({
         console.log('[DEBUG] ⏭️ CAMADA 4 pulada (limite atingido)');
       }
 
-      // ==================== CAMADA 16: CONCORRENTES SEO ====================
-      if (targetCompany.website && totalQueries < MAX_TOTAL_QUERIES) {
-        console.log('[DEEP-SEARCH] 🔍 CAMADA 16: Concorrentes SEO');
+      // ==================== CAMADA 16: CONCORRENTES SEO (100% GRATUITO) ====================
+      if (totalQueries < MAX_TOTAL_QUERIES) {
+        console.log('[DEEP-SEARCH] 🔍 CAMADA 16: Concorrentes SEO (GRATUITO)');
         
         try {
-          const seoApiKey = localStorage.getItem('seo_api_key');
-          
-          if (seoApiKey) {
-            console.log('[DEEP-SEARCH] Usando API SEO...');
+          // ESTRATÉGIA 1: Se tem website, fazer scraping
+          if (targetCompany.website) {
+            console.log('[DEEP-SEARCH] Tentando descobrir concorrentes via website...');
+            
             const { data: seoData, error } = await supabase.functions.invoke('seo-competitors', {
               body: { 
                 website: targetCompany.website,
-                apiKey: seoApiKey,
-                provider: localStorage.getItem('seo_provider') || 'similarweb'
+                companyName: targetCompany.company_name,
+                sector: inferredSector
               }
             });
             
-            if (error) {
-              console.error('[DEEP-SEARCH] Erro API SEO:', error);
-            } else if (seoData?.success && seoData.competitors) {
-              console.log('[DEEP-SEARCH] SEO encontrou:', seoData.competitors.length, 'concorrentes');
+            if (!error && seoData?.success) {
+              console.log('[DEEP-SEARCH] Scraping encontrou:', seoData.competitors?.length || 0, 'domínios');
               
-              for (const competitor of seoData.competitors.slice(0, 10)) {
-                allResults.push({
-                  title: competitor.domain.split('.')[0].toUpperCase(),
-                  url: `https://${competitor.domain}`,
-                  snippet: `Concorrente SEO - Score: ${competitor.score}`,
-                  description: `Descoberto via ${seoData.provider}`,
-                  source: 'seo_competitor',
-                  score: competitor.score || 95,
-                  domain: competitor.domain
-                });
+              // Adicionar domínios descobertos
+              if (seoData.competitors && seoData.competitors.length > 0) {
+                for (const competitor of seoData.competitors) {
+                  allResults.push({
+                    url: competitor.website,
+                    title: competitor.name,
+                    snippet: `Descoberto via scraping do website ${targetCompany.website}`,
+                    source: 'seo_scraping',
+                    discovery_method: 'website_scraping',
+                    score: competitor.confidence
+                  });
+                }
               }
               
-              totalQueries++;
-            }
-          } else {
-            console.log('[DEEP-SEARCH] API SEO não configurada, usando fallback...');
-            const domain = targetCompany.website.replace(/^https?:\/\//, '').split('/')[0];
-            const queries = [
-              `concorrentes ${domain}`,
-              `empresas similares ${domain}`,
-              `competitors ${inferredSector} Brasil`
-            ];
-            
-            for (const query of queries.slice(0, 2)) {
-              if (totalQueries >= MAX_TOTAL_QUERIES) break;
-              
-              try {
-                console.log('[SEARCH-WEB] 🔍 Query:', query, '(limit: 5)');
-                const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
-                  body: { query, limit: 5, country: 'BR', language: 'pt' }
-                });
+              // Executar queries sugeridas
+              if (seoData.suggested_queries && seoData.suggested_queries.length > 0) {
+                console.log('[DEEP-SEARCH] Executando', seoData.suggested_queries.length, 'queries sugeridas...');
                 
-                if (!searchError && searchData?.results) {
-                  console.log('[SEARCH-WEB] ✅ Encontrados:', searchData.results.length, 'resultados');
-                  allResults.push(...searchData.results.map((r: any) => ({ ...r, source: 'seo_search', score: 85 })));
+                for (const query of seoData.suggested_queries.slice(0, 5)) {
+                  if (totalQueries >= MAX_TOTAL_QUERIES) break;
+                  
+                  try {
+                    console.log('[SEARCH-WEB] 🔍 Query SEO:', query, '(limit: 8)');
+                    const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
+                      body: { query, limit: 8, country: 'BR', language: 'pt' }
+                    });
+                    
+                    if (!searchError && searchData?.success && searchData.results) {
+                      console.log('[SEARCH-WEB] ✅ Query SEO:', query, '→', searchData.results.length, 'resultados');
+                      allResults.push(...searchData.results.map((r: any) => ({ 
+                        ...r, 
+                        source: 'seo_google_search', 
+                        discovery_method: 'seo_competitor_analysis',
+                        score: 85 
+                      })));
+                    }
+                    
+                    totalQueries++;
+                    await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
+                  } catch (err) {
+                    console.error('[DEEP-SEARCH] Erro na query SEO:', query, err);
+                  }
                 }
-                
-                totalQueries++;
-                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
-              } catch (err) {
-                console.error('[DEEP-SEARCH] Erro na query SEO:', query, err);
               }
             }
           }
+          
+          // ESTRATÉGIA 2: Buscas diretas de concorrentes (sem depender de website)
+          const seoQueries = [
+            `concorrentes ${targetCompany.company_name} Brasil`,
+            `empresas similares ${targetCompany.company_name}`,
+            inferredSector ? `maiores empresas ${inferredSector} Brasil` : null,
+            inferredSector ? `ranking empresas ${inferredSector} Brasil 2024` : null,
+            inferredSector ? `site:linkedin.com/company ${inferredSector} Brasil` : null,
+            targetCompany.cnae_principal ? `CNAE ${targetCompany.cnae_principal} empresas Brasil` : null,
+            inferredSector ? `associação ${inferredSector} Brasil empresas` : null,
+          ].filter(Boolean);
+          
+          console.log('[DEEP-SEARCH] Executando', seoQueries.length, 'queries SEO diretas...');
+          
+          for (const query of seoQueries) {
+            if (totalQueries >= MAX_TOTAL_QUERIES) break;
+            
+            try {
+              console.log('[SEARCH-WEB] 🔍 Query SEO:', query, '(limit: 10)');
+              const { data: searchData, error: searchError } = await supabase.functions.invoke('web-search', {
+                body: { query, limit: 10, country: 'BR', language: 'pt' }
+              });
+              
+              if (!searchError && searchData?.success && searchData.results) {
+                console.log('[SEARCH-WEB] ✅ CAMADA 16:', query, '→', searchData.results.length, 'resultados');
+                allResults.push(...searchData.results.map((r: any) => ({ 
+                  ...r, 
+                  source: 'seo_competitor', 
+                  discovery_method: 'seo_free_analysis',
+                  score: 90 
+                })));
+              }
+              
+              totalQueries++;
+              await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_QUERIES));
+            } catch (err) {
+              console.error('[DEEP-SEARCH] Erro na query SEO:', query, err);
+            }
+          }
+          
+          console.log('[DEEP-SEARCH] ✅ CAMADA 16 concluída (100% GRATUITO)');
+          
         } catch (error) {
           console.error('[DEEP-SEARCH] Erro na CAMADA 16:', error);
         }
       } else {
-        console.log('[DEEP-SEARCH] ⏭️ CAMADA 16 pulada (sem website)');
+        console.log('[DEEP-SEARCH] ⏭️ CAMADA 16 pulada (limite atingido)');
       }
 
       console.log('[DEEP-SEARCH] Total de queries executadas:', totalQueries);
@@ -1031,6 +1073,17 @@ export function SimilarCompaniesTab({
           insights.push(`${qualifiedCount} empresas QUALIFICADAS (50-69) - Bom Potencial`);
         }
         
+        // INSIGHT: Empresas descobertas via SEO GRATUITO
+        const seoFreeCompanies = finalEnrichedCompanies.filter(c => 
+          c.discovery_method === 'seo_free_analysis' || 
+          c.discovery_method === 'seo_competitor_analysis' ||
+          c.discovery_method === 'website_scraping'
+        ).length;
+        
+        if (seoFreeCompanies > 0) {
+          insights.push(`🔍 ${seoFreeCompanies} concorrentes descobertos via análise SEO GRATUITA (sem APIs pagas!)`);
+        }
+        
         if (needsEnrichment > 0) {
           insights.push(`${needsEnrichment} empresas precisam de enriquecimento`);
         }
@@ -1050,6 +1103,13 @@ export function SimilarCompaniesTab({
 
       console.log('[SIMILAR-WEB] ===== RESULTADO FINAL =====');
       
+      // Calcular estatísticas por método de descoberta
+      const byDiscoveryMethod: Record<string, number> = {};
+      finalEnrichedCompanies.forEach(company => {
+        const method = company.discovery_method || 'unknown';
+        byDiscoveryMethod[method] = (byDiscoveryMethod[method] || 0) + 1;
+      });
+      
       return {
         similar_companies: finalEnrichedCompanies,
         statistics: {
@@ -1057,7 +1117,7 @@ export function SimilarCompaniesTab({
           new_companies: newCompanies,
           already_in_database: existingCompanies,
           needs_enrichment: newCompanies,
-          by_discovery_method: {}
+          by_discovery_method: byDiscoveryMethod
         },
         insights,
         search_criteria: { 
@@ -1321,29 +1381,6 @@ export function SimilarCompaniesTab({
                 <RefreshCw className="h-4 h-4" />
                 Atualizar
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  const provider = prompt('Qual provider usar? (similarweb ou semrush):', localStorage.getItem('seo_provider') || 'similarweb');
-                  if (provider) {
-                    localStorage.setItem('seo_provider', provider);
-                  }
-                  
-                  const apiKey = prompt(`Cole sua API Key do ${provider || 'SimilarWeb/SEMrush'}:`);
-                  if (apiKey) {
-                    localStorage.setItem('seo_api_key', apiKey);
-                    toast({
-                      title: 'API SEO Configurada',
-                      description: `A CAMADA 16 (Análise de Concorrentes ${provider?.toUpperCase()}) será ativada nas próximas buscas.`,
-                    });
-                  }
-                }}
-              >
-                <Globe className="w-4 h-4" />
-                Configurar API SEO
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -1584,6 +1621,15 @@ export function SimilarCompaniesTab({
                   <Badge variant="outline" className="text-xs">
                     Similaridade: {company.similarity_score}/100
                   </Badge>
+                  
+                  {/* BADGE: Descoberto via SEO Gratuito */}
+                  {(company.discovery_method === 'seo_free_analysis' || 
+                    company.discovery_method === 'seo_competitor_analysis' ||
+                    company.discovery_method === 'website_scraping') && (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-sm text-xs">
+                      🔍 SEO Gratuito
+                    </Badge>
+                  )}
                   
                   {company.already_in_database ? (
                     <Badge variant="secondary">No Banco</Badge>
