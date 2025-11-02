@@ -473,7 +473,7 @@ export default function QuarantineReportModal({
         {/* Conteúdo Scrollável */}
         <div
           className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50"
-          style={{ minHeight: 0 }}
+          style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
         >
           <div className="p-6">
             {loading ? (
@@ -488,7 +488,7 @@ export default function QuarantineReportModal({
               </div>
             ) : stcResult ? (
               <Tabs defaultValue="totvs" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-white">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-white sticky top-0 z-10 shadow-sm">
                   <TabsTrigger value="totvs">
                     <Shield className="w-4 h-4 mr-2" />
                     Verificação TOTVS
