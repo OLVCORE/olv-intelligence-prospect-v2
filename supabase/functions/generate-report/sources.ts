@@ -1,5 +1,9 @@
 import { Evidence, processEvidence } from './matching.ts';
 
+const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
+const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
+const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
+
 function extractSerperItems(results: any) {
   return [
     ...(results?.organic || []),
