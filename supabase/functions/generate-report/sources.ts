@@ -39,6 +39,12 @@ function extractSerperItems(results: any) {
   ];
 }
 
+// ============================================
+// PALAVRAS-CHAVE TOTVS
+// ============================================
+const totvsKeywords = ['TOTVS','Protheus','RM TOTVS','Datasul','Fluig','WinThor','ADVPL'];
+const totvsOr = `(${totvsKeywords.map(k => k.includes(' ') ? `"${k}"` : k).join(' OR ')})`;
+
 export async function serperSearch(query: string): Promise<any> {
   try {
     const response = await fetch('https://google.serper.dev/search', {
@@ -158,7 +164,7 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
     console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
     for (const item of items) {
       const evidence = processEvidence(
-        `${item.title || ''} ${item.snippet || item.description || ''}`,
+        `${item.title || ''} ${item.snippet || item.description || ''} ${(item.link || item.url || '')}`,
         companyName,
         'Serper (Wave 1)',
         item.link || item.url || '#',
