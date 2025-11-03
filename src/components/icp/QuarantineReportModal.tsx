@@ -146,6 +146,20 @@ export default function QuarantineReportModal({
             }
           }
           
+          // Se relatório salvo veio sem evidências, reprocessar automaticamente
+          const hasSavedEvidences =
+            (savedReport?.totvs?.evidences && Array.isArray(savedReport.totvs.evidences) && savedReport.totvs.evidences.length > 0) ||
+            (Array.isArray(savedReport?.evidences) && savedReport.evidences.length > 0);
+
+          if (!hasSavedEvidences) {
+            console.log('[RELATÓRIO] ⚠️ Relatório salvo sem evidências. Reprocessando análise completa...');
+            toast.info('Reprocessando análise', {
+              description: 'Relatório salvo não contém evidências. Executando nova análise automaticamente.',
+            });
+            await executarAnaliseCompleta();
+            return;
+          }
+
           setStcResult(savedReport);
           setLoading(false);
 
