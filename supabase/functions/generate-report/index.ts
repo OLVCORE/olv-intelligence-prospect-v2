@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { collect50Sources } from './sources.ts';
+import { collect50Sources, analyzeKeywords } from './sources.ts';
 import { Evidence } from './matching.ts';
-import { generateSwot, generatePorter, generateInsights } from './analysis.ts';
+import { generateSwot, generatePorter, generateInsights, generateProductGaps } from './analysis.ts';
 import { detectCompetitors } from './competitive.ts';
 
 const corsHeaders = {
@@ -188,6 +188,19 @@ serve(async (req) => {
     const competitors = await detectCompetitors({ name: companyName }, allEvidences);
     console.log(`✅ Concorrentes detectados: ${competitors.length}`);
     
+    // ANÁLISE DE KEYWORDS SEO
+    console.log('\n🔎 ANALISANDO KEYWORDS SEO...');
+    let keywords: string[] = [];
+    if (website) {
+      keywords = await analyzeKeywords(website);
+      console.log(`✅ Keywords extraídas: ${keywords.length}`);
+    }
+    
+    // GAP ANALYSIS DE PRODUTOS
+    console.log('\n🎯 GERANDO GAP ANALYSIS...');
+    const productGaps = await generateProductGaps({ name: companyName }, allEvidences, isClienteTOTVS);
+    console.log(`✅ Produtos recomendados: ${productGaps.length}`);
+    
     const executionTime = Date.now() - startTime;
     console.log(`\n⏱️ Tempo total: ${executionTime}ms`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
@@ -203,7 +216,7 @@ serve(async (req) => {
       confidence,
       evidences: Array.isArray(allEvidences) ? allEvidences : [],
       methodology: {
-        sources_checked: 50,
+        sources_checked: 70, // Agora com Onda 7
         total_searches: allEvidences.length,
         total_matches: allEvidences.length,
       },
@@ -226,6 +239,15 @@ serve(async (req) => {
         twitter: { followers: 0 },
       },
       similarCompanies: [],
+      // NOVA: Keywords & SEO
+      keywords: keywords,
+      // NOVA: Product Gaps & Recommendations
+      productGaps: productGaps,
+      // NOVA: Client Discovery (extrair de evidências)
+      clientDiscovery: {
+        topClients: extractClientsFromEvidences(allEvidences),
+        totalFound: extractClientsFromEvidences(allEvidences).length,
+      },
       analysis360: {
         icpScore: Math.min(100, Math.round(totalScore * 1.5)),
         temperatura: leadClassification,
@@ -239,13 +261,13 @@ serve(async (req) => {
           twitter: { followers: 0 },
         },
         marketplaces: [],
-        produtos: [],
+        produtos: productGaps.map(p => p.name),
         fontes: ['Serper', 'Jina AI', 'GitHub API', 'YouTube API', 'OpenAI GPT-4o-mini'],
       },
       metadata: {
         analyzed_at: new Date().toISOString(),
         execution_time_ms: executionTime,
-        total_sources: 50,
+        total_sources: 70,
       }
     };
     
@@ -272,6 +294,37 @@ serve(async (req) => {
     );
   }
 });
+
+// ============================================
+// EXTRAIR CLIENTES DE EVIDÊNCIAS
+// ============================================
+function extractClientsFromEvidences(evidences: Evidence[]): any[] {
+  const clients: any[] = [];
+  
+  for (const ev of evidences) {
+    if (ev.source.includes('Client Discovery') || ev.source.includes('Press Release') || ev.source.includes('Case Study')) {
+      const text = `${ev.title} ${ev.snippet}`;
+      
+      // Extrair nomes de empresas (simplificado)
+      const matches = text.match(/([A-Z][a-zA-Z\s&]{3,40}(?:Ltda|S\.A\.|Inc\.|Corp)?)/g) || [];
+      
+      for (const match of matches.slice(0, 3)) {
+        if (match.length > 5 && match.length < 50) {
+          clients.push({
+            name: match.trim(),
+            source: ev.url,
+            snippet: ev.snippet.slice(0, 200),
+            confidence: ev.confidence
+          });
+        }
+      }
+    }
+  }
+  
+  // Remover duplicatas
+  const unique = Array.from(new Map(clients.map(c => [c.name.toLowerCase(), c])).values());
+  return unique.slice(0, 20);
+}
 
 async function verificarTOTVS(companyName: string, cnpj?: string) {
   const evidences: any[] = [];

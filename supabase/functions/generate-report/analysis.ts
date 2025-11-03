@@ -130,3 +130,103 @@ Retorne array JSON com 4 insights curtos (máximo 80 caracteres cada):
     ];
   }
 }
+
+// ============================================
+// GAP ANALYSIS DE PRODUTOS TOTVS
+// ============================================
+const TOTVS_CATALOG = [
+  'TOTVS Protheus', 'RM TOTVS', 'Datasul', 'Fluig', 'WinThor', 'Logix', 'Backoffice',
+  'Carol AI', 'TOTVS BI', 'Advanced Analytics', 'TOTVS CRM', 'SFA', 'TOTVS RH',
+  'Folha de Pagamento', 'Ponto Eletrônico', 'TOTVS Pay', 'PIX', 'Techfin',
+  'iPaaS', 'API Management', 'Assinatura Eletrônica', 'WhatsApp Business'
+];
+
+export async function generateProductGaps(company: any, evidences: Evidence[], isClienteTOTVS: boolean): Promise<any[]> {
+  // Detectar produtos TOTVS mencionados nas evidências
+  const detectedProducts = new Set<string>();
+  
+  for (const evidence of evidences) {
+    const text = `${evidence.title} ${evidence.snippet}`.toLowerCase();
+    for (const product of TOTVS_CATALOG) {
+      if (text.includes(product.toLowerCase())) {
+        detectedProducts.add(product);
+      }
+    }
+  }
+  
+  console.log(`[GAP ANALYSIS] Produtos detectados: ${detectedProducts.size}`);
+  
+  // Se é cliente TOTVS: recomendar produtos faltantes (cross-sell)
+  if (isClienteTOTVS) {
+    const gaps = TOTVS_CATALOG.filter(p => !detectedProducts.has(p));
+    
+    return gaps.slice(0, 5).map(product => ({
+      name: product,
+      category: getCategoryForProduct(product),
+      reason: `Cross-selling: Empresa usa TOTVS mas não detectamos uso de ${product}`,
+      estimatedValue: 'R$ 100K-500K ARR',
+      priority: 'medium',
+      timing: 'Médio prazo (30-60 dias)'
+    }));
+  }
+  
+  // Se NÃO é cliente TOTVS: recomendar stack inicial
+  const prompt = `
+Empresa: ${company.name}
+Evidências: ${evidences.slice(0, 5).map(e => e.snippet).join('; ')}
+
+Recomende 3-5 produtos TOTVS essenciais para esta empresa.
+Catálogo: ${TOTVS_CATALOG.join(', ')}
+
+Retorne JSON:
+[
+  {
+    "name": "Nome do Produto",
+    "reason": "Motivo da recomendação (máximo 100 caracteres)",
+    "estimatedValue": "R$ XXK-XXXK ARR",
+    "priority": "high|medium|low",
+    "timing": "Imediato|Médio prazo|Longo prazo"
+  }
+]
+`;
+  
+  const result = await callOpenAI(prompt);
+  
+  try {
+    const recommendations = JSON.parse(result);
+    return recommendations.map((r: any) => ({
+      ...r,
+      category: getCategoryForProduct(r.name)
+    }));
+  } catch {
+    // Fallback: recomendar produtos core
+    return [
+      {
+        name: 'TOTVS Protheus',
+        category: 'ERP',
+        reason: 'ERP completo para gestão empresarial integrada',
+        estimatedValue: 'R$ 300K-500K ARR',
+        priority: 'high',
+        timing: 'Imediato'
+      },
+      {
+        name: 'TOTVS CRM',
+        category: 'CRM',
+        reason: 'Gestão de relacionamento com clientes',
+        estimatedValue: 'R$ 100K-200K ARR',
+        priority: 'medium',
+        timing: 'Médio prazo'
+      }
+    ];
+  }
+}
+
+function getCategoryForProduct(productName: string): string {
+  if (productName.includes('Protheus') || productName.includes('Datasul') || productName.includes('RM')) return 'ERP';
+  if (productName.includes('CRM') || productName.includes('SFA')) return 'CRM';
+  if (productName.includes('RH') || productName.includes('Folha') || productName.includes('Ponto')) return 'RH';
+  if (productName.includes('Carol') || productName.includes('BI') || productName.includes('Analytics')) return 'Analytics';
+  if (productName.includes('Pay') || productName.includes('PIX') || productName.includes('Techfin')) return 'Pagamentos';
+  if (productName.includes('Fluig') || productName.includes('BPM')) return 'Processos';
+  return 'Outros';
+}

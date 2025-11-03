@@ -28,6 +28,10 @@ import TOTVSVerificationReportV2 from '@/components/reports/TOTVSVerificationRep
 import CompetitiveIntelligenceReport from '@/components/reports/CompetitiveIntelligenceReport';
 import SimilarCompaniesReport from '@/components/reports/SimilarCompaniesReport';
 import Analysis360Report from '@/components/reports/Analysis360Report';
+import ExecutiveSummaryReport from '@/components/reports/ExecutiveSummaryReport';
+import ClientDiscoveryReport from '@/components/reports/ClientDiscoveryReport';
+import RecommendedProductsReport from '@/components/reports/RecommendedProductsReport';
+import KeywordsSEOReport from '@/components/reports/KeywordsSEOReport';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -777,23 +781,39 @@ export default function QuarantineReportModal({
                 </p>
               </div>
             ) : stcResult ? (
-              <Tabs defaultValue="totvs" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-6 bg-card sticky top-0 z-10 shadow-sm border">
+              <Tabs defaultValue="summary" className="w-full">
+                <TabsList className="grid w-full grid-cols-8 mb-6 bg-card sticky top-0 z-10 shadow-sm border text-xs">
+                  <TabsTrigger value="summary">
+                    <Lightbulb className="w-3 h-3 mr-1" />
+                    Summary
+                  </TabsTrigger>
                   <TabsTrigger value="totvs">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Verificação TOTVS
+                    <Shield className="w-3 h-3 mr-1" />
+                    TOTVS
                   </TabsTrigger>
                   <TabsTrigger value="competitors">
-                    <Target className="w-4 h-4 mr-2" />
-                    Concorrentes
+                    <Target className="w-3 h-3 mr-1" />
+                    Competitors
                   </TabsTrigger>
                   <TabsTrigger value="similar">
-                    <Users className="w-4 h-4 mr-2" />
-                    Empresas Similares
+                    <Users className="w-3 h-3 mr-1" />
+                    Similar
+                  </TabsTrigger>
+                  <TabsTrigger value="clients">
+                    <Users className="w-3 h-3 mr-1" />
+                    Clients
                   </TabsTrigger>
                   <TabsTrigger value="analysis">
-                    <Target className="w-4 h-4 mr-2" />
-                    Análise 360°
+                    <Target className="w-3 h-3 mr-1" />
+                    360°
+                  </TabsTrigger>
+                  <TabsTrigger value="products">
+                    <Rocket className="w-3 h-3 mr-1" />
+                    Products
+                  </TabsTrigger>
+                  <TabsTrigger value="keywords">
+                    <Search className="w-3 h-3 mr-1" />
+                    Keywords
                   </TabsTrigger>
                 </TabsList>
 
