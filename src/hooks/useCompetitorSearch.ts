@@ -18,6 +18,16 @@ export interface DetectedCompetitor {
   relevance_score: number;
 }
 
+export interface STCCompetitor {
+  name: string;
+  match_type: 'double_match' | 'triple_match';
+  confidence: number;
+  evidence: string;
+  source_url: string;
+  source_title: string;
+  detected_at: string;
+}
+
 export interface CompetitorSearchResult {
   success: boolean;
   competitors: DetectedCompetitor[];
@@ -26,6 +36,13 @@ export interface CompetitorSearchResult {
   total_portals: number;
   search_date: string;
   product_searched?: string;
+}
+
+export interface STCCompetitorSearchResult {
+  success: boolean;
+  competitors: STCCompetitor[];
+  total_found: number;
+  company_name: string;
 }
 
 export function useCompetitorSearch() {
@@ -65,6 +82,41 @@ export function useCompetitorSearch() {
     },
     onError: (error: Error) => {
       toast.error('Erro na busca de concorrentes', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+export function useCompetitorSearchSTC() {
+  return useMutation({
+    mutationFn: async ({
+      companyId,
+      companyName,
+      sector,
+    }: {
+      companyId: string;
+      companyName: string;
+      sector?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('search-competitors-stc', {
+        body: {
+          company_id: companyId,
+          company_name: companyName,
+          sector,
+        },
+      });
+
+      if (error) throw error;
+      return data as STCCompetitorSearchResult;
+    },
+    onSuccess: (data) => {
+      toast.success('✅ Busca STC Concluída', {
+        description: `${data.total_found} concorrentes encontrados usando metodologia STC`,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('Erro na busca STC de concorrentes', {
         description: error.message,
       });
     },
