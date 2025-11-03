@@ -1,194 +1,198 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { companyId, personaId, decisionMakerId } = await req.json();
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    // 1. Buscar dados da empresa
-    const { data: company, error: companyError } = await supabaseClient
-      .from('companies')
-      .select('*, digital_maturity(*), governance_signals(*), decision_makers(*)')
-      .eq('id', companyId)
-      .single();
-
-    if (companyError || !company) {
-      throw new Error('Empresa não encontrada');
-    }
-
-    // 2. Buscar persona
-    const { data: persona, error: personaError } = await supabaseClient
-      .from('buyer_personas')
-      .select('*')
-      .eq('id', personaId)
-      .single();
-
-    if (personaError || !persona) {
-      throw new Error('Persona não encontrada');
-    }
-
-    // 3. Buscar decision maker específico
-    let decisionMaker = null;
-    if (decisionMakerId) {
-      const { data: dm } = await supabaseClient
-        .from('decision_makers')
-        .select('*')
-        .eq('id', decisionMakerId)
-        .single();
-      decisionMaker = dm;
-    }
-
-    // 4. Preparar contexto para IA
-    const governanceAnalysis = company.governance_signals?.[0] || {};
-    const maturityData = company.digital_maturity?.[0] || {};
+    const { companyId, companyData, decisionMakers } = await req.json()
     
-    const systemPrompt = `Você é um consultor estratégico especializado em PMEs brasileiras.
-
-**SUA MISSÃO:** Criar uma estratégia de Account Plan completa e executável.
-
-**PERFIL DA PERSONA-ALVO:**
-- Nome: ${persona.name}
-- Cargo: ${persona.role} (${persona.seniority})
-- Estilo de Comunicação: ${persona.communication_style}
-- Fatores de Decisão: ${JSON.stringify(persona.decision_factors)}
-- Dores: ${JSON.stringify(persona.pain_points)}
-- Objeções Típicas: ${JSON.stringify(persona.objections)}
-- Canais Preferidos: ${JSON.stringify(persona.preferred_channels)}
-
-**IMPORTANTE:**
-- Adapte toda a estratégia ao perfil dessa persona
-- Use linguagem e argumentos que ressoam com ela
-- Antecipe objeções e prepare contra-argumentações
-- Sugira abordagens nos canais preferidos dela`;
-
-    const userPrompt = `Crie uma estratégia comercial completa para:
-
-**EMPRESA:** ${company.name}
-**INDÚSTRIA:** ${company.industry}
-**FUNCIONÁRIOS:** ${company.employees}
-**MATURIDADE DIGITAL:** ${maturityData.overall_score || 0}/10
-
-**GAPS IDENTIFICADOS:**
-${governanceAnalysis.raw_data ? JSON.stringify(governanceAnalysis.raw_data.gaps || []) : 'Nenhum gap identificado ainda'}
-
-**DECISION MAKER:**
-${decisionMaker ? `${decisionMaker.name} - ${decisionMaker.title}` : 'Não mapeado ainda'}
-
-**GERE:**
-1. **value_proposition**: Proposta de valor personalizada para essa persona (max 200 palavras)
-2. **approach_strategy**: Estratégia de abordagem detalhada (3-5 parágrafos)
-3. **identified_gaps**: Array com gaps críticos encontrados
-4. **recommended_products**: Array com produtos TOTVS recomendados (nome, justificativa, prioridade)
-5. **transformation_roadmap**: Objeto com {immediate: [], shortTerm: [], mediumTerm: [], longTerm: []}
-6. **projected_roi**: ROI projetado em % (número)
-7. **investment_required**: Investimento necessário em R$ (número)
-8. **payback_period**: Período de retorno (string: "6-12 meses")
-9. **stakeholder_map**: Array com stakeholders chave e estratégia para cada
-10. **ai_insights**: Objeto com insights estratégicos
-11. **ai_recommendations**: Array com 5 próximas ações recomendadas
-
-Retorne APENAS JSON válido, sem markdown.`;
-
-    // 5. Chamar IA
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
     
-    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    if (!openaiKey) {
+      throw new Error('OpenAI API Key não configurada nas Edge Functions secrets')
+    }
+
+    // Construct strategy prompt
+    const decisionMakersList = decisionMakers && decisionMakers.length > 0
+      ? decisionMakers.map((d: any) => `${d.full_name} - ${d.position || 'Cargo não informado'}`).join(', ')
+      : 'Decisores não identificados ainda'
+
+    const prompt = `Gere uma estratégia completa de Account-Based Selling (ABS) para:
+
+DADOS DA EMPRESA:
+- Nome: ${companyData.company_name}
+- Setor: ${companyData.main_activity}
+- Porte: ${companyData.company_size}
+- Localização: ${companyData.city}, ${companyData.state}
+- Funcionários: ${companyData.employee_count || 'N/A'}
+- Receita Anual: R$ ${companyData.annual_revenue ? companyData.annual_revenue.toLocaleString('pt-BR') : 'N/A'}
+- Website: ${companyData.website || 'N/A'}
+
+DECISORES IDENTIFICADOS:
+${decisionMakersList}
+
+Forneça em JSON estruturado:
+{
+  "executive_summary": "resumo executivo da oportunidade (2-3 parágrafos)",
+  "key_stakeholders": [
+    {
+      "name": "nome do decisor",
+      "role": "cargo",
+      "influence_level": "Alto/Médio/Baixo",
+      "engagement_approach": "abordagem específica para este stakeholder",
+      "recommended_content": "tipo de conteúdo a enviar"
+    }
+  ],
+  "value_proposition": "proposta de valor específica para esta empresa",
+  "pain_points_addressed": ["dor 1", "dor 2", "dor 3"],
+  "competitive_advantages": ["vantagem 1", "vantagem 2"],
+  "next_actions": [
+    {
+      "action": "descrição da ação",
+      "responsible": "SDR/BDR/AE",
+      "timeline": "prazo",
+      "priority": "Alta/Média/Baixa"
+    }
+  ],
+  "content_strategy": {
+    "first_touch": "tipo de primeiro contato",
+    "nurture_sequence": ["conteúdo 1", "conteúdo 2", "conteúdo 3"],
+    "meeting_preparation": "pontos chave para reunião"
+  },
+  "success_metrics": ["métrica 1", "métrica 2", "métrica 3"],
+  "estimated_timeline": "prazo estimado para fechamento",
+  "risk_factors": ["risco 1", "risco 2"]
+}
+
+Seja específico e prático. Foque em ações concretas.`
+
+    // Call OpenAI API with GPT-4
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${openaiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { 
+            role: 'system', 
+            content: 'Você é um especialista em estratégias de vendas B2B e Account-Based Selling. Responda sempre em JSON válido e estruturado.' 
+          },
+          { role: 'user', content: prompt }
         ],
+        temperature: 0.8,
+        max_tokens: 2000
       }),
-    });
+    })
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API Error:', errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const content = aiData.choices[0].message.content;
-
-    // 6. Parse JSON da IA
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('IA não retornou JSON válido');
-    }
-
-    const strategy = JSON.parse(jsonMatch[0]);
-
-    // 7. Criar Account Strategy no banco
-    const { data: accountStrategy, error: strategyError } = await supabaseClient
-      .from('account_strategies')
-      .insert({
-        company_id: companyId,
-        persona_id: personaId,
-        decision_maker_id: decisionMakerId,
-        status: 'draft',
-        current_stage: 'cold_outreach',
-        priority: governanceAnalysis.transformation_priority === 'CRITICO' ? 'critical' : 'high',
-        value_proposition: strategy.value_proposition,
-        approach_strategy: strategy.approach_strategy,
-        expected_timeline: '3-6 meses',
-        identified_gaps: strategy.identified_gaps || [],
-        recommended_products: strategy.recommended_products || [],
-        transformation_roadmap: strategy.transformation_roadmap || {},
-        projected_roi: strategy.projected_roi || 0,
-        investment_required: strategy.investment_required || 0,
-        payback_period: strategy.payback_period || '12 meses',
-        stakeholder_map: strategy.stakeholder_map || [],
-        relationship_score: 0,
-        engagement_level: 'cold',
-        ai_insights: strategy.ai_insights || {},
-        ai_recommendations: strategy.ai_recommendations || [],
-        created_by: req.headers.get('x-user-id') || null
+    if (!response.ok) {
+      // Fallback to GPT-3.5 if GPT-4 fails
+      const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'Você é um especialista em estratégias de vendas B2B. Responda em JSON válido.' 
+            },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.8,
+          max_tokens: 1500
+        }),
       })
-      .select()
-      .single();
-
-    if (strategyError) {
-      console.error('Strategy Insert Error:', strategyError);
-      throw strategyError;
+      
+      if (!fallbackResponse.ok) {
+        const errorData = await fallbackResponse.json()
+        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`)
+      }
+      
+      const result = await fallbackResponse.json()
+      const strategyText = result.choices[0].message.content
+      
+      let strategy
+      try {
+        strategy = JSON.parse(strategyText)
+      } catch (parseError) {
+        strategy = {
+          executive_summary: strategyText,
+          key_stakeholders: [],
+          value_proposition: 'Análise manual necessária',
+          next_actions: [],
+          estimated_timeline: '3-6 meses'
+        }
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          strategy,
+          company_id: companyId,
+          generated_at: new Date().toISOString(),
+          model_used: 'gpt-3.5-turbo'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
-    console.log('✅ Account Strategy criada:', accountStrategy.id);
+    const result = await response.json()
+    const strategyText = result.choices[0].message.content
+    
+    // Parse JSON response
+    let strategy
+    try {
+      strategy = JSON.parse(strategyText)
+    } catch (parseError) {
+      strategy = {
+        executive_summary: strategyText,
+        key_stakeholders: [],
+        value_proposition: 'Análise manual necessária',
+        next_actions: [],
+        estimated_timeline: '3-6 meses'
+      }
+    }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        strategy: accountStrategy
+      JSON.stringify({ 
+        success: true, 
+        strategy,
+        company_id: companyId,
+        generated_at: new Date().toISOString(),
+        model_used: 'gpt-4'
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
   } catch (error) {
-    console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      }
+    )
   }
-});
+})
