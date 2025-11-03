@@ -229,7 +229,7 @@ export default function TOTVSCheckCard({
         </TabsList>
 
         {/* ABA 1: EXECUTIVE SUMMARY (NOVA) */}
-        <TabsContent value="executive" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="executive" className="mt-0 overflow-y-auto">
           <ExecutiveSummaryTab
             companyName={companyName}
             stcResult={data}
@@ -241,7 +241,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 2: DETECÇÃO TOTVS (CONTEÚDO ATUAL - MANTIDO) */}
-        <TabsContent value="detection" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="detection" className="mt-0 overflow-y-auto">
           {/* HEADER */}
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -355,7 +355,7 @@ export default function TOTVSCheckCard({
 
           {/* EVIDÊNCIAS */}
           {filteredEvidences.length > 0 ? (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-3">
               {filteredEvidences.map((evidence: any, index: number) => {
                 const evidenceId = `${evidence.source}-${index}`;
                 const allTerms = [
@@ -510,7 +510,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 3: COMPETITORS (NOVA) */}
-        <TabsContent value="competitors" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="competitors" className="mt-0 overflow-y-auto">
           <CompetitorsTab
             companyId={companyId}
             companyName={companyName}
@@ -520,7 +520,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 4: EMPRESAS SIMILARES (MANTIDO) */}
-        <TabsContent value="similar" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="similar" className="mt-0 overflow-y-auto">
           {companyId && companyName ? (
             <SimilarCompaniesTab
               companyId={companyId}
@@ -537,7 +537,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 5: CLIENT DISCOVERY (NOVA - EXPANSÃO EXPONENCIAL) */}
-        <TabsContent value="clients" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="clients" className="mt-0 overflow-y-auto">
           <ClientDiscoveryTab
             companyId={companyId}
             companyName={companyName}
@@ -546,7 +546,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 6: ANÁLISE 360° (MANTIDO) */}
-        <TabsContent value="analysis" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="analysis" className="mt-0 overflow-y-auto">
           {companyId && companyName ? (
             <Analysis360Tab
               companyId={companyId}
@@ -564,7 +564,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 7: RECOMMENDED PRODUCTS (NOVA) */}
-        <TabsContent value="products" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="products" className="mt-0 overflow-y-auto">
           <RecommendedProductsTab
             companyName={companyName}
             stcResult={data}
@@ -572,7 +572,7 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 8: KEYWORDS & SEO (NOVA) */}
-        <TabsContent value="keywords" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="keywords" className="mt-0 overflow-y-auto">
           <KeywordsSEOTab
             companyName={companyName}
             domain={domain}

@@ -141,9 +141,9 @@ export function QuarantineReportModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className={`${modalSize} overflow-hidden p-0 flex flex-col`}
+        className={`${modalSize} p-0 flex flex-col`}
       >
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col overflow-hidden">
           {/* Header com controles */}
           <div className="shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
