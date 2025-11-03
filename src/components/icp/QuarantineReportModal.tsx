@@ -2,12 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Database, Send } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
+import { useCreateDeal } from '@/hooks/useDeals';
 import { toast } from 'sonner';
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
+import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -32,11 +34,15 @@ export function QuarantineReportModal({
 }: QuarantineReportModalProps) {
   const { mutate: approveBatch } = useApproveQuarantineBatch();
   const { mutate: rejectCompany } = useRejectQuarantine();
+  const { mutate: createDeal } = useCreateDeal();
+  const navigate = useNavigate();
 
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleApprove = useCallback(() => {
@@ -51,12 +57,15 @@ export function QuarantineReportModal({
     );
   }, [analysisId, approveBatch, onOpenChange]);
 
-  const handleSave = useCallback(async () => {
+  const handleSaveToSystem = useCallback(async () => {
     if (!stcResult) {
-      toast.info('Execute a verificação antes de salvar');
+      toast.info('Execute a verificação TOTVS antes de salvar');
       return;
     }
+    
+    setIsSaving(true);
     try {
+      // 1. Salvar relatório STC
       await supabase.from('stc_verification_history').insert({
         company_id: companyId || null,
         company_name: companyName,
@@ -72,11 +81,74 @@ export function QuarantineReportModal({
         queries_executed: (stcResult as any).methodology?.total_queries || (stcResult as any).queriesExecuted || 0,
         verification_duration_ms: (stcResult as any).methodology?.execution_ms || (stcResult as any).verificationDurationMs || 0,
       });
-      toast.success('Relatório STC salvo');
+
+      // 2. Salvar/atualizar empresa no banco (se tiver companyId)
+      if (companyId) {
+        const { error: updateError } = await supabase
+          .from('companies')
+          .update({
+            totvs_detection_score: stcResult.totalScore || 0,
+            totvs_last_checked_at: new Date().toISOString(),
+          })
+          .eq('id', companyId);
+        
+        if (updateError) throw updateError;
+      }
+
+      toast.success('✅ Salvo no sistema com sucesso!', { 
+        duration: 4000,
+        description: 'Relatório e dados da empresa foram salvos'
+      });
     } catch (error: any) {
-      toast.error('Erro ao salvar relatório', { description: error.message });
+      toast.error('Erro ao salvar no sistema', { description: error.message });
+    } finally {
+      setIsSaving(false);
     }
   }, [stcResult, companyId, companyName, cnpj]);
+
+  const handleSendToPipeline = useCallback(async () => {
+    if (!companyId) {
+      toast.error('ID da empresa não encontrado');
+      return;
+    }
+
+    setIsSendingToPipeline(true);
+    try {
+      // Criar deal no pipeline de vendas
+      createDeal(
+        {
+          title: `Prospecção - ${companyName}`,
+          company_id: companyId,
+          stage: 'lead',
+          priority: 'medium',
+          value: 0,
+          description: `Empresa originada do ICP Quarantine. CNPJ: ${cnpj || 'N/A'}`,
+        },
+        {
+          onSuccess: () => {
+            toast.success('✅ Enviado para o Pipeline!', {
+              duration: 4000,
+              description: 'Empresa adicionada no estágio Lead',
+            });
+            onOpenChange(false);
+            // Redirecionar para o Sales Workspace
+            setTimeout(() => {
+              navigate('/sdr/workspace');
+            }, 500);
+          },
+          onError: (error: any) => {
+            toast.error('Erro ao enviar para pipeline', { 
+              description: error.message 
+            });
+            setIsSendingToPipeline(false);
+          },
+        }
+      );
+    } catch (error: any) {
+      toast.error('Erro ao criar deal', { description: error.message });
+      setIsSendingToPipeline(false);
+    }
+  }, [companyId, companyName, cnpj, createDeal, onOpenChange, navigate]);
 
   const handleReject = useCallback(() => {
     setShowDiscard(true);
@@ -212,16 +284,47 @@ export function QuarantineReportModal({
 
           {/* Footer fixo */}
           <div className="shrink-0 border-t bg-muted/30 p-4">
-            <DialogFooter className="gap-2 sm:gap-2">
+            <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
               <Button 
                 variant="outline" 
-                onClick={handleSave} 
+                onClick={handleSaveToSystem} 
+                disabled={isSaving || !stcResult}
                 className="gap-2"
                 size="sm"
               >
-                <FileText className="w-4 h-4" />
-                Salvar Relatório
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4" />
+                    Salvar no Sistema
+                  </>
+                )}
               </Button>
+              
+              <Button 
+                variant="default" 
+                onClick={handleSendToPipeline} 
+                disabled={isSendingToPipeline || !companyId}
+                className="gap-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600"
+                size="sm"
+              >
+                {isSendingToPipeline ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Enviar para Pipeline
+                  </>
+                )}
+              </Button>
+              
               <Button 
                 variant="destructive" 
                 onClick={handleReject} 
@@ -231,6 +334,7 @@ export function QuarantineReportModal({
                 <XCircle className="w-4 h-4" />
                 Descartar Empresa
               </Button>
+              
               <Button 
                 onClick={handleApprove} 
                 className="gap-2"
