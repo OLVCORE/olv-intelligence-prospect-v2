@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Copy, Plus, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
+
 
 interface Evidence {
   id: string;
@@ -25,7 +25,7 @@ interface TOTVSVerificationReportProps {
 }
 
 export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: TOTVSVerificationReportProps) {
-  const [showAllEvidences, setShowAllEvidences] = useState(false);
+  
   
   console.log('[TOTVS V2] 📊 Dados recebidos:', data);
   
@@ -53,7 +53,7 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
     toast.success(`${label} copiado!`);
   };
   
-  const evidencesToShow = showAllEvidences ? evidences : evidences.slice(0, 5);
+  const evidencesToShow = evidences;
   
   return (
     <div className="space-y-4">
@@ -158,22 +158,10 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
       {/* Lista de Evidências - Tabela Compacta */}
       <Card className="p-4 border">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold">
-            {showAllEvidences ? `📋 Todas as ${evidences.length} Evidências` : '🏆 Top 5 Evidências'}
-          </h4>
-          {evidences.length > 5 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setShowAllEvidences(!showAllEvidences)}
-            >
-              {showAllEvidences ? 'Ver Top 5' : `Ver Todas (${evidences.length})`}
-            </Button>
-          )}
+          <h4 className="text-sm font-semibold">📋 Todas as {evidences.length} Evidências</h4>
         </div>
         
-        <div className="divide-y">
+        <div className="divide-y max-h-[60vh] overflow-auto pr-1">
           {evidencesToShow.map((evidence, index) => (
             <div key={evidence.id} className="py-2 hover:bg-muted/50">
               <div className="flex items-start gap-3">
@@ -244,16 +232,6 @@ export default function TOTVSVerificationReportV2({ data, companyName, cnpj }: T
           ))}
         </div>
         
-        {!showAllEvidences && evidences.length > 5 && (
-          <Button 
-            variant="outline"
-            className="w-full mt-3 h-8 text-xs"
-            onClick={() => setShowAllEvidences(true)}
-          >
-            <TrendingUp className="w-3 h-3 mr-2" />
-            Ver Todas as {evidences.length} Evidências
-          </Button>
-        )}
         
         {evidences.length === 0 && (
           <div className="text-center py-6 text-muted-foreground">
