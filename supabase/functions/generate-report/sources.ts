@@ -94,7 +94,6 @@ export async function serperSearch(query: string): Promise<any> {
     }
     
     const data = await response.json();
-    console.log(`[SERPER] Query: "${query.slice(0, 80)}..." - Organic: ${data?.organic?.length || 0}, News: ${data?.news?.length || 0}`);
     return data;
   } catch (error: any) {
     console.error(`[SERPER] Erro: ${error.message}`);
@@ -193,22 +192,15 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
         ...(results?.news || []),
       ];
       
-      console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
       for (const item of items.slice(0, 5)) {
-        const rawText = `${item.title || ''} ${item.snippet || item.description || ''} ${(item.link || item.url || '')}`;
         const evidence = processEvidence(
-          rawText,
+          `${item.title || ''} ${item.snippet || item.description || ''} ${(item.link || item.url || '')}`,
           companyName,
           'Serper (Wave 1)',
           item.link || item.url || '#',
           'news'
         );
-        if (evidence) {
-          console.log(`[50 SOURCES] ✅ Evidência encontrada: ${evidence.matchLevel}pts - ${evidence.source}`);
-          allEvidences.push(evidence);
-        } else {
-          console.log(`[50 SOURCES] ❌ Evidência rejeitada - texto: "${rawText.slice(0, 100)}..."`);
-        }
+        if (evidence) allEvidences.push(evidence);
       }
     } catch (error: any) {
       console.error(`[50 SOURCES] Erro wave1: ${error.message}`);
