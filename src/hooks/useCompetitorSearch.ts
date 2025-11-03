@@ -36,13 +36,27 @@ export function useCompetitorSearch() {
       productCategory,
       keywords,
       totvsProduct,
+      ttlHours = 24,
     }: {
       companyName: string;
       sector?: string;
       productCategory?: string;
       keywords?: string;
       totvsProduct?: string;
+      ttlHours?: number; // cache local para reduzir créditos
     }) => {
+      const cacheKey = `competitors:${companyName.toLowerCase()}`;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const ageMs = Date.now() - (parsed.cached_at || 0);
+          if (ageMs < ttlHours * 60 * 60 * 1000) {
+            return parsed.data as CompetitorSearchResult;
+          }
+        }
+      } catch {}
+
       const { data, error } = await supabase.functions.invoke('search-competitors', {
         body: {
           company_name: companyName,
@@ -54,13 +68,45 @@ export function useCompetitorSearch() {
       });
 
       if (error) throw error;
-      return data as CompetitorSearchResult;
+
+      // Filtrar rigorosamente no client para bloquear lixo e TOTVS
+      const EXCLUDE = /(totvs|protheus|rm|datasul|logix|microsiga)/i;
+      const filtered = (data as CompetitorSearchResult).competitors
+        .filter((c) => !EXCLUDE.test(c.name))
+        // preferir somente evidências STC (quando presente)
+        .filter((c: any) => {
+          if ('match_type' in c) {
+            return c.match_type === 'triple' || c.match_type === 'double';
+          }
+          // fallback: validar ao menos 1 link com contexto
+          const ctx = /\b(usa|utiliza|cliente|implementou|migrou)\b/i;
+          const erp = /\b(erp|sistema|gestão)\b/i;
+          return (c.comparison_links || []).some((l) => ctx.test(l.snippet) && erp.test(l.snippet));
+        })
+        .sort((a, b) => b.relevance_score - a.relevance_score)
+        .slice(0, 8);
+
+      const portals = new Set<string>();
+      filtered.forEach((c) => (c.portals || []).forEach((p: string) => portals.add(p)));
+
+      const shaped: CompetitorSearchResult = {
+        ...(data as CompetitorSearchResult),
+        competitors: filtered as any,
+        portals_searched: portals.size,
+        total_portals: portals.size,
+      };
+
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ cached_at: Date.now(), data: shaped }));
+      } catch {}
+
+      return shaped;
     },
     onSuccess: (data) => {
       const portalsCount = data.portals_searched || 0;
-      const totalPortals = data.total_portals || 41;
+      const totalPortals = data.total_portals || portalsCount;
       toast.success('🔍 Busca de Concorrentes Concluída', {
-        description: `${data.competitors.length} concorrentes encontrados em ${portalsCount}/${totalPortals} portais`,
+        description: `${data.competitors.length} concorrentes validados em ${portalsCount} portais (cache ativo)`,
       });
     },
     onError: (error: Error) => {
