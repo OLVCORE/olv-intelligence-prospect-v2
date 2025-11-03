@@ -8,6 +8,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SimilarCompaniesTab } from '@/components/intelligence/SimilarCompaniesTab';
 import { Analysis360Tab } from '@/components/intelligence/Analysis360Tab';
+import { ExecutiveSummaryTab } from '@/components/icp/tabs/ExecutiveSummaryTab';
+import { CompetitorsTab } from '@/components/icp/tabs/CompetitorsTab';
+import { ClientDiscoveryTab } from '@/components/icp/tabs/ClientDiscoveryTab';
+import { RecommendedProductsTab } from '@/components/icp/tabs/RecommendedProductsTab';
+import { KeywordsSEOTab } from '@/components/icp/tabs/KeywordsSEOTab';
 import { toast } from 'sonner';
 import {
   RefreshCw,
@@ -26,7 +31,10 @@ import {
   Flame,
   Package,
   Sparkles,
-  Circle
+  Circle,
+  LayoutDashboard,
+  Users,
+  Globe
 } from 'lucide-react';
 
 interface TOTVSCheckCardProps {
@@ -172,23 +180,55 @@ export default function TOTVSCheckCard({
 
   return (
     <Card className="p-6">
-      <Tabs defaultValue="detection" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="detection" className="flex items-center gap-2">
+      <Tabs defaultValue="executive" className="w-full">
+        <TabsList className="grid w-full grid-cols-8 mb-6 h-auto">
+          <TabsTrigger value="executive" className="flex items-center gap-2 text-xs">
+            <LayoutDashboard className="w-4 h-4" />
+            Executive
+          </TabsTrigger>
+          <TabsTrigger value="detection" className="flex items-center gap-2 text-xs">
             <Search className="w-4 h-4" />
-            Detecção TOTVS
+            TOTVS
           </TabsTrigger>
-          <TabsTrigger value="similar" className="flex items-center gap-2">
+          <TabsTrigger value="competitors" className="flex items-center gap-2 text-xs">
+            <Target className="w-4 h-4" />
+            Competitors
+          </TabsTrigger>
+          <TabsTrigger value="similar" className="flex items-center gap-2 text-xs">
             <Building2 className="w-4 h-4" />
-            Empresas Similares
+            Similar
           </TabsTrigger>
-          <TabsTrigger value="analysis" className="flex items-center gap-2">
+          <TabsTrigger value="clients" className="flex items-center gap-2 text-xs">
+            <Users className="w-4 h-4" />
+            Clients
+          </TabsTrigger>
+          <TabsTrigger value="analysis" className="flex items-center gap-2 text-xs">
             <BarChart3 className="w-4 h-4" />
-            Análise 360°
+            Analysis 360°
+          </TabsTrigger>
+          <TabsTrigger value="products" className="flex items-center gap-2 text-xs">
+            <Package className="w-4 h-4" />
+            Products
+          </TabsTrigger>
+          <TabsTrigger value="keywords" className="flex items-center gap-2 text-xs">
+            <Globe className="w-4 h-4" />
+            Keywords
           </TabsTrigger>
         </TabsList>
 
-        {/* ABA 1: DETECÇÃO TOTVS (CONTEÚDO ATUAL) */}
+        {/* ABA 1: EXECUTIVE SUMMARY (NOVA) */}
+        <TabsContent value="executive" className="mt-0 max-h-[600px] overflow-y-auto">
+          <ExecutiveSummaryTab
+            companyName={companyName}
+            stcResult={data}
+            similarCount={0}
+            competitorsCount={0}
+            clientsCount={0}
+            maturityScore={0}
+          />
+        </TabsContent>
+
+        {/* ABA 2: DETECÇÃO TOTVS (CONTEÚDO ATUAL - MANTIDO) */}
         <TabsContent value="detection" className="mt-0 max-h-[600px] overflow-y-auto">
           {/* HEADER */}
           <div className="flex justify-between items-start mb-4">
@@ -457,7 +497,16 @@ export default function TOTVSCheckCard({
           </div>
         </TabsContent>
 
-        {/* ABA 2: EMPRESAS SIMILARES (NOVO) */}
+        {/* ABA 3: COMPETITORS (NOVA) */}
+        <TabsContent value="competitors" className="mt-0 max-h-[600px] overflow-y-auto">
+          <CompetitorsTab
+            companyName={companyName}
+            cnpj={cnpj}
+            domain={domain}
+          />
+        </TabsContent>
+
+        {/* ABA 4: EMPRESAS SIMILARES (MANTIDO) */}
         <TabsContent value="similar" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <SimilarCompaniesTab
@@ -474,7 +523,16 @@ export default function TOTVSCheckCard({
           )}
         </TabsContent>
 
-        {/* ABA 3: ANÁLISE 360° (NOVO) */}
+        {/* ABA 5: CLIENT DISCOVERY (NOVA - EXPANSÃO EXPONENCIAL) */}
+        <TabsContent value="clients" className="mt-0 max-h-[600px] overflow-y-auto">
+          <ClientDiscoveryTab
+            companyId={companyId}
+            companyName={companyName}
+            cnpj={cnpj}
+          />
+        </TabsContent>
+
+        {/* ABA 6: ANÁLISE 360° (MANTIDO) */}
         <TabsContent value="analysis" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <Analysis360Tab
@@ -490,6 +548,22 @@ export default function TOTVSCheckCard({
               </p>
             </Card>
           )}
+        </TabsContent>
+
+        {/* ABA 7: RECOMMENDED PRODUCTS (NOVA) */}
+        <TabsContent value="products" className="mt-0 max-h-[600px] overflow-y-auto">
+          <RecommendedProductsTab
+            companyName={companyName}
+            stcResult={data}
+          />
+        </TabsContent>
+
+        {/* ABA 8: KEYWORDS & SEO (NOVA) */}
+        <TabsContent value="keywords" className="mt-0 max-h-[600px] overflow-y-auto">
+          <KeywordsSEOTab
+            companyName={companyName}
+            domain={domain}
+          />
         </TabsContent>
       </Tabs>
     </Card>
