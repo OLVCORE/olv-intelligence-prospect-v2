@@ -2,11 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Separator } from '@/components/ui/separator';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Database, Send } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown, Database, Send, History } from 'lucide-react';
 import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { useCreateDeal } from '@/hooks/useDeals';
+import { useLatestSTCReport } from '@/hooks/useSTCHistory';
 import { toast } from 'sonner';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,9 @@ export function QuarantineReportModal({
   const { mutate: rejectCompany } = useRejectQuarantine();
   const { mutate: createDeal } = useCreateDeal();
   const navigate = useNavigate();
+  
+  // Buscar último relatório salvo
+  const { data: latestReport, isLoading: loadingHistory } = useLatestSTCReport(companyId, companyName);
 
   const [showDiscard, setShowDiscard] = useState(false);
   const [stcResult, setStcResult] = useState<any | null>(null);
@@ -43,7 +47,20 @@ export function QuarantineReportModal({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingToPipeline, setIsSendingToPipeline] = useState(false);
+  const [loadedFromHistory, setLoadedFromHistory] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Carregar relatório salvo automaticamente ao abrir modal
+  useEffect(() => {
+    if (open && latestReport && latestReport.full_report && !loadedFromHistory) {
+      setStcResult(latestReport.full_report);
+      setLoadedFromHistory(true);
+      toast.success('📋 Relatório carregado do histórico', {
+        description: `Salvo em ${new Date(latestReport.created_at).toLocaleString('pt-BR')}`,
+        duration: 3000,
+      });
+    }
+  }, [open, latestReport, loadedFromHistory]);
 
   const handleApprove = useCallback(() => {
     approveBatch(
@@ -65,8 +82,8 @@ export function QuarantineReportModal({
     
     setIsSaving(true);
     try {
-      // 1. Salvar relatório STC
-      await supabase.from('stc_verification_history').insert({
+      // 1. Salvar relatório STC COMPLETO (incluindo full_report para reabertura)
+      const { error: insertError } = await supabase.from('stc_verification_history').insert({
         company_id: companyId || null,
         company_name: companyName,
         cnpj: cnpj || null,
@@ -80,7 +97,11 @@ export function QuarantineReportModal({
         sources_consulted: (stcResult as any).methodology?.searched_sources || (stcResult as any).sourcesConsulted || 0,
         queries_executed: (stcResult as any).methodology?.total_queries || (stcResult as any).queriesExecuted || 0,
         verification_duration_ms: (stcResult as any).methodology?.execution_ms || (stcResult as any).verificationDurationMs || 0,
+        // ✅ SALVAR RELATÓRIO COMPLETO para reabertura sem nova consulta
+        full_report: stcResult,
       });
+
+      if (insertError) throw insertError;
 
       // 2. Salvar/atualizar empresa no banco (se tiver companyId)
       if (companyId) {
@@ -95,11 +116,12 @@ export function QuarantineReportModal({
         if (updateError) throw updateError;
       }
 
-      toast.success('✅ Salvo no sistema com sucesso!', { 
+      toast.success('✅ Relatório salvo com sucesso!', { 
         duration: 4000,
-        description: 'Relatório e dados da empresa foram salvos'
+        description: 'Pode ser reaberto a qualquer momento sem consumir créditos'
       });
     } catch (error: any) {
+      console.error('Erro ao salvar:', error);
       toast.error('Erro ao salvar no sistema', { description: error.message });
     } finally {
       setIsSaving(false);
@@ -220,11 +242,22 @@ export function QuarantineReportModal({
           <div className="shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="min-w-0 flex-1">
-                <DialogTitle className="text-lg font-semibold truncate">
+                <DialogTitle className="text-lg font-semibold truncate flex items-center gap-2">
                   Relatório de Verificação TOTVS
+                  {loadedFromHistory && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
+                      <History className="w-3 h-3" />
+                      Histórico
+                    </span>
+                  )}
                 </DialogTitle>
                 <DialogDescription className="text-sm mt-1 truncate">
                   {companyName}
+                  {latestReport && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      • Último relatório: {new Date(latestReport.created_at).toLocaleString('pt-BR')}
+                    </span>
+                  )}
                 </DialogDescription>
               </div>
             </div>

@@ -7880,6 +7880,7 @@ export type Database = {
           created_at: string | null
           double_matches: number | null
           evidences: Json | null
+          full_report: Json | null
           id: string
           queries_executed: number | null
           single_matches: number | null
@@ -7898,6 +7899,7 @@ export type Database = {
           created_at?: string | null
           double_matches?: number | null
           evidences?: Json | null
+          full_report?: Json | null
           id?: string
           queries_executed?: number | null
           single_matches?: number | null
@@ -7916,6 +7918,7 @@ export type Database = {
           created_at?: string | null
           double_matches?: number | null
           evidences?: Json | null
+          full_report?: Json | null
           id?: string
           queries_executed?: number | null
           single_matches?: number | null
