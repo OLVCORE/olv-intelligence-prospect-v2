@@ -9,12 +9,16 @@ interface ClientDiscoveryTabProps {
   companyId?: string;
   companyName?: string;
   cnpj?: string;
+  savedData?: any[];
 }
 
-export function ClientDiscoveryTab({ companyId, companyName, cnpj }: ClientDiscoveryTabProps) {
+export function ClientDiscoveryTab({ companyId, companyName, cnpj, savedData }: ClientDiscoveryTabProps) {
   const { data: similarCompanies, isLoading, refetch } = useCompanySimilar(companyId);
   const [expandedLevel, setExpandedLevel] = useState<'direct' | 'indirect'>('direct');
 
+  // Usar dados salvos se disponíveis
+  const loadedFromHistory = !!savedData;
+  const directClients = savedData || similarCompanies || [];
   if (!companyId) {
     return (
       <Card className="p-6">
@@ -25,7 +29,7 @@ export function ClientDiscoveryTab({ companyId, companyName, cnpj }: ClientDisco
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !loadedFromHistory) {
     return (
       <Card className="p-6">
         <div className="text-center">
@@ -38,7 +42,6 @@ export function ClientDiscoveryTab({ companyId, companyName, cnpj }: ClientDisco
     );
   }
 
-  const directClients = similarCompanies || [];
   const totalDiscovered = directClients.length;
 
   // Simular expansão exponencial (em produção, viria de API)
@@ -53,8 +56,14 @@ export function ClientDiscoveryTab({ companyId, companyName, cnpj }: ClientDisco
             <Users className="w-8 h-8 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-1">
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
               Expansão Exponencial de Mercado
+              {loadedFromHistory && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  Histórico
+                </Badge>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">
               Descobrir clientes dos clientes para ampliar oportunidades

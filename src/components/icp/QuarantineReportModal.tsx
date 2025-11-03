@@ -82,7 +82,9 @@ export function QuarantineReportModal({
     
     setIsSaving(true);
     try {
-      // Montar relatório completo incluindo dados de abas (ex.: Concorrentes)
+      // ===== CAPTURAR DADOS DE TODAS AS ABAS =====
+      
+      // 1. Competitors (do localStorage)
       let competitors: any | null = null;
       try {
         const key = `competitors:${(companyName || '').toLowerCase()}`;
@@ -92,7 +94,41 @@ export function QuarantineReportModal({
           competitors = parsed.data || null;
         }
       } catch {}
-      const fullReport = { ...stcResult, competitors_report: competitors };
+
+      // 2. Similar Companies (do banco de dados)
+      let similarCompanies: any[] = [];
+      if (companyId) {
+        try {
+          const { data } = await supabase
+            .from('similar_companies')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('similarity_score', { ascending: false });
+          similarCompanies = data || [];
+        } catch (err) {
+          console.error('Erro ao capturar similar companies:', err);
+        }
+      }
+
+      // 3. Keywords SEO (do localStorage se disponível)
+      let keywordsSEO: any | null = null;
+      try {
+        const keywordsKey = `seo-keywords:${(companyName || '').toLowerCase()}`;
+        const keywordsCached = localStorage.getItem(keywordsKey);
+        if (keywordsCached) {
+          const parsed = JSON.parse(keywordsCached);
+          keywordsSEO = parsed.data || null;
+        }
+      } catch {}
+
+      // Montar relatório completo com TODAS as abas
+      const fullReport = { 
+        ...stcResult, 
+        competitors_report: competitors,
+        similar_companies_report: similarCompanies,
+        keywords_seo_report: keywordsSEO,
+        saved_at: new Date().toISOString()
+      };
 
       // 1. Salvar relatório STC COMPLETO (incluindo full_report para reabertura)
       const { error: insertError } = await supabase.from('stc_verification_history').insert({
@@ -324,6 +360,7 @@ export function QuarantineReportModal({
               domain={domain}
               autoVerify={false}
               onResult={setStcResult}
+              latestReport={latestReport}
             />
           </div>
 

@@ -44,6 +44,7 @@ interface TOTVSCheckCardProps {
   domain?: string;
   autoVerify?: boolean;
   onResult?: (result: any) => void;
+  latestReport?: any;
 }
 
 export default function TOTVSCheckCard({
@@ -53,6 +54,7 @@ export default function TOTVSCheckCard({
   domain,
   autoVerify = false,
   onResult,
+  latestReport,
 }: TOTVSCheckCardProps) {
   const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
@@ -526,6 +528,7 @@ export default function TOTVSCheckCard({
               companyId={companyId}
               companyName={companyName}
               cnpj={cnpj}
+              savedData={latestReport?.full_report?.similar_companies_report}
             />
           ) : (
             <Card className="p-6">
@@ -542,6 +545,7 @@ export default function TOTVSCheckCard({
             companyId={companyId}
             companyName={companyName}
             cnpj={cnpj}
+            savedData={latestReport?.full_report?.similar_companies_report}
           />
         </TabsContent>
 
@@ -576,6 +580,7 @@ export default function TOTVSCheckCard({
           <KeywordsSEOTab
             companyName={companyName}
             domain={domain}
+            savedData={latestReport?.full_report?.keywords_seo_report}
           />
         </TabsContent>
       </Tabs>

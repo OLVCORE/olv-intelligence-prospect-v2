@@ -7,10 +7,15 @@ import { useSEOKeywords } from '@/hooks/useSEOKeywords';
 interface KeywordsSEOTabProps {
   companyName?: string;
   domain?: string;
+  savedData?: any;
 }
 
-export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
+export function KeywordsSEOTab({ companyName, domain, savedData }: KeywordsSEOTabProps) {
   const { data: seoData, isLoading, error } = useSEOKeywords(companyName);
+
+  // Usar dados salvos se disponíveis
+  const loadedFromHistory = !!savedData;
+  const effectiveData = savedData || seoData;
 
   if (!companyName) {
     return (
@@ -22,7 +27,7 @@ export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !loadedFromHistory) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
@@ -33,7 +38,7 @@ export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
     );
   }
 
-  if (error) {
+  if (error && !loadedFromHistory) {
     return (
       <Card className="p-6">
         <p className="text-center text-destructive">
@@ -43,7 +48,7 @@ export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
     );
   }
 
-  if (!seoData?.organicResults?.length) {
+  if (!effectiveData?.organicResults?.length) {
     return (
       <Card className="p-6">
         <p className="text-center text-muted-foreground">
@@ -53,8 +58,8 @@ export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
     );
   }
 
-  const organicResults = seoData.organicResults || [];
-  const knowledgeGraph = seoData.knowledgeGraph;
+  const organicResults = effectiveData.organicResults || [];
+  const knowledgeGraph = effectiveData.knowledgeGraph;
 
   return (
     <div className="space-y-4">
@@ -65,8 +70,14 @@ export function KeywordsSEOTab({ companyName, domain }: KeywordsSEOTabProps) {
             <Search className="w-8 h-8 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-1">
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
               Keywords & SEO Intelligence
+              {loadedFromHistory && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <Globe className="w-3 h-3" />
+                  Histórico
+                </Badge>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">
               Análise de palavras-chave e posicionamento de mercado

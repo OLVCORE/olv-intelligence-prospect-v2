@@ -16,6 +16,7 @@ interface SimilarCompaniesTabProps {
   sector?: string;
   state?: string;
   size?: string;
+  savedData?: any[];
 }
 
 interface WebDiscoveredCompany {
@@ -251,7 +252,8 @@ export function SimilarCompaniesTab({
   cnpj,
   sector, 
   state, 
-  size 
+  size,
+  savedData
 }: SimilarCompaniesTabProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -259,6 +261,7 @@ export function SimilarCompaniesTab({
   // ===== TODOS OS HOOKS NO TOPO (NUNCA CONDICIONAIS) =====
   const [isAddingCompany, setIsAddingCompany] = useState<string | null>(null);
   const [activeScoreFilter, setActiveScoreFilter] = useState<string | null>(null);
+  const [loadedFromHistory, setLoadedFromHistory] = useState(false);
   
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['similar-companies-web', companyId, companyName, sector, state],
@@ -1411,34 +1414,53 @@ export function SimilarCompaniesTab({
         }
       };
     },
-    enabled: !!companyId && !!companyName,
+    enabled: !!companyId && !!companyName && !savedData,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Usar dados salvos se disponíveis
+  const effectiveData = savedData ? {
+    similar_companies: savedData,
+    statistics: {
+      total: savedData.length,
+      new_companies: 0,
+      already_in_database: savedData.length,
+      needs_enrichment: 0,
+      by_discovery_method: {}
+    },
+    insights: [`${savedData.length} empresas carregadas do histórico`],
+    search_criteria: { keywords: '' }
+  } : data;
+
+  // Marcar como carregado do histórico
+  if (savedData && !loadedFromHistory) {
+    setLoadedFromHistory(true);
+  }
 
   // ===== USEMEMO SEMPRE APÓS USEQUERY, NUNCA APÓS RETURNS =====
   // Filtrar empresas por score ativo (sempre chamar, nunca condicionalmente)
   const filteredCompaniesByScore = useMemo(() => {
     // Se não há dados, retornar array vazio
-    if (!data?.similar_companies) {
+    if (!effectiveData?.similar_companies) {
       return [];
     }
     
     // Se não há filtro ativo, retornar todas
     if (!activeScoreFilter) {
-      return data.similar_companies;
+      return effectiveData.similar_companies;
     }
     
     // Aplicar filtro de score
     const [min, max] = activeScoreFilter.split('-').map(Number);
     
-    return data.similar_companies.filter(company => {
+    return effectiveData.similar_companies.filter(company => {
       const score = company.icp_score || 0;
       if (max === 100) {
         return score >= min && score <= max;
       }
       return score >= min && score < max;
     });
-  }, [data?.similar_companies, activeScoreFilter]);
+  }, [effectiveData?.similar_companies, activeScoreFilter]);
 
 
   const handleAddToQuarantine = async (company: WebDiscoveredCompany) => {
@@ -1554,7 +1576,7 @@ export function SimilarCompaniesTab({
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !loadedFromHistory) {
     return (
       <Card className="border-muted/50 bg-card/50 backdrop-blur-sm">
         <CardContent className="flex items-center justify-center py-16">
@@ -1570,7 +1592,7 @@ export function SimilarCompaniesTab({
     );
   }
 
-  if (error) {
+  if (error && !loadedFromHistory) {
     return (
       <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
         <CardContent className="py-12">
@@ -1594,11 +1616,11 @@ export function SimilarCompaniesTab({
     );
   }
 
-  if (!data) {
+  if (!effectiveData) {
     return null;
   }
 
-  const { similar_companies, statistics, insights } = data;
+  const { similar_companies, statistics, insights } = effectiveData;
 
   console.log('[FILTER] Filtro ativo:', activeScoreFilter);
   console.log('[FILTER] Empresas filtradas:', filteredCompaniesByScore.length);
@@ -1614,7 +1636,15 @@ export function SimilarCompaniesTab({
                 <Globe className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <CardTitle>Empresas Similares Descobertas na Web</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Empresas Similares Descobertas na Web
+                  {loadedFromHistory && (
+                    <Badge variant="outline" className="text-xs flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
+                      Histórico
+                    </Badge>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   Busca inteligente de empresas similares para crescimento do banco de dados
                 </CardDescription>
