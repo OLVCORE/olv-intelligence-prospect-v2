@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Target, ExternalLink, TrendingUp, Building2, Search, Zap } from 'lucide-react';
 import { useCompetitorSearch } from '@/hooks/useCompetitorSearch';
 import { useCompetitorAnalysis } from '@/hooks/useCompetitorAnalysis';
-import { useState } from 'react';
+import { useLatestSTCReport } from '@/hooks/useSTCHistory';
+import { useState, useEffect } from 'react';
 
 interface CompetitorsTabProps {
   companyId?: string;
@@ -15,20 +16,30 @@ interface CompetitorsTabProps {
 
 export function CompetitorsTab({ companyId, companyName, cnpj, domain }: CompetitorsTabProps) {
   const [hasSearched, setHasSearched] = useState(false);
-  const { mutate: searchCompetitors, data: searchData, isPending } = useCompetitorSearch();
+  const [externalData, setExternalData] = useState<any | null>(null);
+  const { mutateAsync: searchCompetitors, data: searchData, isPending } = useCompetitorSearch();
   const { data: internalCompetitors, isLoading: loadingInternal } = useCompetitorAnalysis(companyId);
+  const { data: latestReport } = useLatestSTCReport(companyId, companyName);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    const saved = (latestReport as any)?.full_report?.competitors_report;
+    if (saved && !externalData) {
+      setExternalData(saved);
+      setHasSearched(true);
+    }
+  }, [latestReport, externalData]);
+  const handleSearch = async () => {
     if (!companyName) return;
     setHasSearched(true);
     // Buscar concorrentes ERP (não TOTVS) para identificar concorrência real
-    searchCompetitors({
+    const result = await searchCompetitors({
       companyName,
       sector: 'ERP Software',
       productCategory: 'Enterprise Resource Planning',
       keywords: 'ERP software gestão empresarial sistema integrado -TOTVS',
       totvsProduct: undefined // Não buscar TOTVS, buscar concorrentes
     });
+    setExternalData(result as any);
   };
 
   if (!companyName) {
@@ -79,7 +90,8 @@ export function CompetitorsTab({ companyId, companyName, cnpj, domain }: Competi
   // Removido: verificação antiga, agora usamos hasInternalData e hasSearchData
 
   const hasInternalData = internalCompetitors && internalCompetitors.length > 0;
-  const hasSearchData = searchData && searchData.competitors.length > 0;
+  const currentData = externalData || searchData;
+  const hasSearchData = currentData && currentData.competitors?.length > 0;
   
   return (
     <div className="space-y-4">
@@ -150,7 +162,7 @@ export function CompetitorsTab({ companyId, companyName, cnpj, domain }: Competi
                   Concorrentes Externos
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {searchData.competitors.length} concorrentes em {searchData.portals_searched}/{searchData.total_portals} portais
+                  {currentData.competitors.length} concorrentes em {currentData.portals_searched}/{currentData.total_portals} portais
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={handleSearch}>
@@ -160,7 +172,7 @@ export function CompetitorsTab({ companyId, companyName, cnpj, domain }: Competi
           </Card>
 
           <div className="space-y-3">
-            {searchData.competitors.map((competitor, index) => (
+            {currentData.competitors.map((competitor, index) => (
               <Card key={`external-${index}`} className="p-4 hover:bg-accent/50 transition-colors">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

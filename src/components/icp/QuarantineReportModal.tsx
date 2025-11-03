@@ -82,6 +82,18 @@ export function QuarantineReportModal({
     
     setIsSaving(true);
     try {
+      // Montar relatório completo incluindo dados de abas (ex.: Concorrentes)
+      let competitors: any | null = null;
+      try {
+        const key = `competitors:${(companyName || '').toLowerCase()}`;
+        const cached = localStorage.getItem(key);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          competitors = parsed.data || null;
+        }
+      } catch {}
+      const fullReport = { ...stcResult, competitors_report: competitors };
+
       // 1. Salvar relatório STC COMPLETO (incluindo full_report para reabertura)
       const { error: insertError } = await supabase.from('stc_verification_history').insert({
         company_id: companyId || null,
@@ -98,7 +110,7 @@ export function QuarantineReportModal({
         queries_executed: (stcResult as any).methodology?.total_queries || (stcResult as any).queriesExecuted || 0,
         verification_duration_ms: (stcResult as any).methodology?.execution_ms || (stcResult as any).verificationDurationMs || 0,
         // ✅ SALVAR RELATÓRIO COMPLETO para reabertura sem nova consulta
-        full_report: stcResult,
+        full_report: fullReport,
       });
 
       if (insertError) throw insertError;

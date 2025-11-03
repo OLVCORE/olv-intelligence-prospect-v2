@@ -36,26 +36,14 @@ export function useCompetitorSearch() {
       productCategory,
       keywords,
       totvsProduct,
-      ttlHours = 24,
     }: {
       companyName: string;
       sector?: string;
       productCategory?: string;
       keywords?: string;
       totvsProduct?: string;
-      ttlHours?: number; // cache local para reduzir créditos
     }) => {
       const cacheKey = `competitors:${companyName.toLowerCase()}`;
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const ageMs = Date.now() - (parsed.cached_at || 0);
-          if (ageMs < ttlHours * 60 * 60 * 1000) {
-            return parsed.data as CompetitorSearchResult;
-          }
-        }
-      } catch {}
 
       const { data, error } = await supabase.functions.invoke('search-competitors', {
         body: {
@@ -66,7 +54,6 @@ export function useCompetitorSearch() {
           totvs_product: totvsProduct,
         },
       });
-
       if (error) throw error;
 
       // Filtrar rigorosamente no client para bloquear lixo e TOTVS
@@ -106,7 +93,7 @@ export function useCompetitorSearch() {
       const portalsCount = data.portals_searched || 0;
       const totalPortals = data.total_portals || portalsCount;
       toast.success('🔍 Busca de Concorrentes Concluída', {
-        description: `${data.competitors.length} concorrentes validados em ${portalsCount} portais (cache ativo)`,
+        description: `${data.competitors.length} concorrentes validados em ${portalsCount} portais`,
       });
     },
     onError: (error: Error) => {
