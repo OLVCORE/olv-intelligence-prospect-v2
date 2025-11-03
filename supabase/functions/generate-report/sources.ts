@@ -4,6 +4,30 @@ const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
 const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
 
+// ============================================
+// NORMALIZAÇÃO E VARIAÇÕES DE NOME
+// ============================================
+function normalizeName(raw: string): string {
+  return raw
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCompanyVariations(name: string): string[] {
+  const tokens = normalizeName(name).split(" ").filter(w => w.length > 2);
+  const variants: string[] = [name]; // nome original sempre primeiro
+  
+  if (tokens.length >= 1) variants.push(tokens[0]);
+  if (tokens.length >= 2) variants.push(tokens.slice(0, 2).join(" "));
+  if (tokens.length >= 3) variants.push(tokens.slice(0, 3).join(" "));
+  
+  // Remove duplicatas mantendo ordem
+  return [...new Set(variants)];
+}
+
 function extractSerperItems(results: any) {
   return [
     ...(results?.organic || []),
@@ -109,14 +133,23 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   const allEvidences: Evidence[] = [];
   
   console.log('[50 SOURCES] Starting collection...');
+  console.log('[50 SOURCES] Company:', companyName);
   
-  // ONDA 1: BUSCA GERAL (5 fontes)
+  // GERAR VARIAÇÕES DO NOME
+  const variants = getCompanyVariations(companyName);
+  console.log('[50 SOURCES] Variants:', variants);
+  
+  // Usar primeira variação (mais curta e efetiva) para queries
+  const searchName = variants.length > 1 ? variants[1] : companyName;
+  console.log('[50 SOURCES] Search name:', searchName);
+  
+  // ONDA 1: BUSCA GERAL (5 fontes) - usando variação otimizada
   const wave1Queries = [
-    `"${companyName}" TOTVS cliente`,
-    `"${companyName}" Protheus`,
-    `"${companyName}" ERP TOTVS`,
-    `site:news.google.com "${companyName}" TOTVS`,
-    `"${companyName}" TOTVS`
+    `"${searchName}" TOTVS cliente`,
+    `"${searchName}" Protheus`,
+    `"${searchName}" ERP TOTVS`,
+    `site:news.google.com "${searchName}" TOTVS`,
+    companyCnpj ? `"${companyCnpj}" TOTVS` : `"${searchName}" TOTVS`
   ];
   
   for (const query of wave1Queries) {
@@ -137,14 +170,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   console.log(`[50 SOURCES] Wave 1 complete: ${allEvidences.length} evidences`);
   
-  // ONDA 2: REDES SOCIAIS (6 fontes)
+  // ONDA 2: REDES SOCIAIS (6 fontes) - usando variação
   const wave2Queries = [
-    `site:linkedin.com/company "${companyName}" TOTVS`,
-    `site:linkedin.com/posts "${companyName}" TOTVS`,
-    `site:facebook.com "${companyName}" TOTVS`,
-    `site:instagram.com "${companyName}" TOTVS`,
-    `site:twitter.com OR site:x.com "${companyName}" TOTVS`,
-    `site:youtube.com "${companyName}" TOTVS`
+    `site:linkedin.com/company "${searchName}" TOTVS`,
+    `site:linkedin.com/posts "${searchName}" TOTVS`,
+    `site:facebook.com "${searchName}" TOTVS`,
+    `site:instagram.com "${searchName}" TOTVS`,
+    `site:twitter.com OR site:x.com "${searchName}" TOTVS`,
+    `site:youtube.com "${searchName}" TOTVS`
   ];
   
   for (const query of wave2Queries) {
@@ -165,7 +198,7 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   console.log(`[50 SOURCES] Wave 2 complete: ${allEvidences.length} evidences`);
   
-  // ONDA 3: VAGAS DE EMPREGO (15 fontes)
+  // ONDA 3: VAGAS DE EMPREGO (15 fontes) - usando variação
   const wave3Sites = [
     'linkedin.com/jobs',
     'glassdoor.com.br',
@@ -185,7 +218,7 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   ];
   
   for (const site of wave3Sites) {
-    const query = `site:${site} "${companyName}" TOTVS OR Protheus OR ADVPL`;
+    const query = `site:${site} "${searchName}" TOTVS OR Protheus OR ADVPL`;
     const results = await serperSearch(query);
     const items = extractSerperItems(results);
     console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
@@ -203,13 +236,13 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   console.log(`[50 SOURCES] Wave 3 complete: ${allEvidences.length} evidences`);
   
-  // ONDA 4: PORTAIS TÉCNICOS (6 fontes)
+  // ONDA 4: PORTAIS TÉCNICOS (6 fontes) - usando variação
   const wave4Queries = [
-    `site:stackoverflow.com "${companyName}" TOTVS OR Protheus OR ADVPL`,
-    `site:github.com "${companyName}" TOTVS`,
-    `site:gitlab.com "${companyName}" TOTVS`,
-    `site:bitbucket.org "${companyName}" TOTVS`,
-    `site:dev.to "${companyName}" TOTVS`
+    `site:stackoverflow.com "${searchName}" TOTVS OR Protheus OR ADVPL`,
+    `site:github.com "${searchName}" TOTVS`,
+    `site:gitlab.com "${searchName}" TOTVS`,
+    `site:bitbucket.org "${searchName}" TOTVS`,
+    `site:dev.to "${searchName}" TOTVS`
   ];
   
   for (const query of wave4Queries) {
@@ -228,8 +261,8 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
     }
   }
   
-  // GitHub API
-  const githubRepos = await githubSearch(companyName);
+  // GitHub API - usando variação
+  const githubRepos = await githubSearch(searchName);
   for (const repo of githubRepos) {
     const evidence = processEvidence(
       `${repo.name} ${repo.description || ''}`,
@@ -243,7 +276,7 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   console.log(`[50 SOURCES] Wave 4 complete: ${allEvidences.length} evidences`);
   
-  // ONDA 5: MARKETPLACES B2B (7 fontes)
+  // ONDA 5: MARKETPLACES B2B (7 fontes) - usando variação
   const wave5Sites = [
     'mercadolivre.com.br',
     'b2brazil.com.br',
@@ -255,7 +288,7 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   ];
   
   for (const site of wave5Sites) {
-    const query = `site:${site} "${companyName}"`;
+    const query = `site:${site} "${searchName}"`;
     const results = await serperSearch(query);
     const items = extractSerperItems(results);
     console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
@@ -292,10 +325,10 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
     }
   }
   
-  // Portal TOTVS
+  // Portal TOTVS - usando variação
   const totvsQueries = [
-    `site:totvs.com/clientes "${companyName}"`,
-    `site:totvs.com/blog "${companyName}"`
+    `site:totvs.com/clientes "${searchName}"`,
+    `site:totvs.com/blog "${searchName}"`
   ];
   
   for (const query of totvsQueries) {
@@ -314,8 +347,8 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
     }
   }
   
-  // YouTube API
-  const youtubeVideos = await youtubeSearch(companyName);
+  // YouTube API - usando variação
+  const youtubeVideos = await youtubeSearch(searchName);
   for (const video of youtubeVideos) {
     const evidence = processEvidence(
       `${video.snippet.title} ${video.snippet.description}`,
