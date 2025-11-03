@@ -6,69 +6,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// 🎯 TODOS OS 41 PORTAIS OBRIGATÓRIOS PARA BUSCA DE CONCORRENTES
-const COMPARISON_PORTALS = [
-  // Portais Principais de Comparação
-  'g2.com',
-  'capterra.com',
-  'capterra.com.br',
-  'b2bstack.com.br',
-  'melhores.com.br',
-  'portalerp.com.br',
-  'indeed.com',
-  'trustradius.com',
-  'softwareadvice.com',
-  'getapp.com',
-  'crozdesk.com',
-  
-  // Análise Profunda
-  'gartner.com',
-  'forrester.com',
-  'idc.com',
-  'deloitte.com',
-  'pwc.com.br',
-  'mckinsey.com',
-  
-  // Portais Brasileiros
-  'tiinside.com.br',
-  'baguete.com.br',
-  'tecnoblog.net',
-  'olhardigital.com.br',
-  'abes.org.br',
-  'assespro.org.br',
-  'sebrae.com.br',
-  'abimaq.org.br',
-  
-  // Consultorias Especializadas
-  'conti.com.br',
-  'qive.com.br',
-  'simplevisionit.com.br',
-  'accenture.com',
-  'ibm.com',
-  
-  // Dados e Análise
-  'statista.com',
-  'mordorintelligence.com',
-  'grandviewresearch.com',
-  'alliedmarketresearch.com',
-  
-  // Redes Sociais e Comunidades
-  'linkedin.com',
-  'reddit.com',
-  'stackoverflow.com',
-  'github.com',
-  
-  // Educacionais
-  'udemy.com',
-  'coursera.org',
-  
-  // Vídeos e Tutoriais
-  'youtube.com',
-  
-  // E-commerce e Reviews
-  'nuvemshop.com.br',
-  'trustpilot.com',
-  'glassdoor.com'
+// Normalização de nome (mesma função do detect-totvs-usage)
+function normalizeName(raw: string): string {
+  return raw
+    .replace(/\b(LTDA|Ltda|ME|EPP|EIRELI|S\.?A\.?|SA|CIA|HOLDING|PARTICIPA(C|Ç)OES|GRUPO)\b\.?/gi, " ")
+    .replace(/[^\w\s]/g, " ")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenVariants(name: string): string[] {
+  const tokens = normalizeName(name).split(" ").filter(w => w.length > 2);
+  const variants: string[] = [];
+  if (tokens.length >= 1) variants.push(tokens[0]);
+  if (tokens.length >= 2) variants.push(tokens.slice(0, 2).join(" "));
+  if (tokens.length >= 3) variants.push(tokens.slice(0, 3).join(" "));
+  return variants;
+}
+
+function validateMention(text: string, companyName: string): boolean {
+  const normalized = normalizeName(text);
+  const variants = tokenVariants(companyName);
+  return variants.some(v => normalized.includes(v));
+}
+
+// Lista de concorrentes ERP conhecidos (excluindo TOTVS)
+const KNOWN_COMPETITORS = [
+  // ERP Nacionais
+  'Senior', 'Sankhya', 'Linx', 'Omie', 'Bling', 'Conta Azul', 'Tiny', 
+  'vhsys', 'eGestor', 'Jiva', 'Procfy', 'Mastermaq', 'WebMais', 'Mysoft', 'Wolken',
+  // ERP Internacionais
+  'SAP', 'Oracle', 'Microsoft Dynamics', 'Infor', 'Epicor', 'IFS', 'Sage',
+  'NetSuite', 'Acumatica', 'Syspro', 'Workday', 'Unit4',
+  // CRM
+  'Salesforce', 'Pipedrive', 'HubSpot', 'Zoho', 'RD Station',
+  // Contabilidade
+  'QuickBooks', 'Xero', 'Nibo', 'FreshBooks',
+  // Gestão
+  'Monday.com', 'Asana', 'Trello', 'Jira', 'Pipefy',
+  // Específicos TOTVS
+  'Protheus', 'RM', 'Datasul', 'Logix', 'Microsiga'
 ];
 
 serve(async (req) => {
@@ -77,35 +56,39 @@ serve(async (req) => {
   }
 
   try {
-    const { company_name, sector, productCategory, keywords, totvs_product } = await req.json();
+    const { company_name } = await req.json();
     const serperApiKey = Deno.env.get('SERPER_API_KEY');
 
     if (!serperApiKey) {
       throw new Error('SERPER_API_KEY não configurada');
     }
 
-    console.log('[Search Competitors] 🎯 Iniciando busca obrigatória em TODOS os 41 portais');
-    console.log('[Search Competitors] 📦 Produto TOTVS:', totvs_product);
-    console.log('[Search Competitors] 🏢 Categoria:', productCategory);
-    console.log('[Search Competitors] 🔍 Empresa:', company_name);
-    console.log('[Search Competitors] 🌐 Total de portais:', COMPARISON_PORTALS.length);
+    if (!company_name) {
+      throw new Error('company_name é obrigatório');
+    }
 
-    const allComparisons: any[] = [];
-    const uniqueLinks = new Set<string>();
+    console.log('[🎯 STC Competitors] Iniciando busca para:', company_name);
 
-    // Buscar em cada portal de comparação
-    const searchPromises = COMPARISON_PORTALS.map(async (portal) => {
+    const variants = tokenVariants(company_name);
+    console.log('[🎯 STC Competitors] Variantes:', variants.join(', '));
+
+    const detectedCompetitors = new Map<string, any>();
+    let totalQueries = 0;
+    let totalResults = 0;
+
+    // Para cada concorrente conhecido, buscar menções com a empresa
+    for (const competitor of KNOWN_COMPETITORS) {
       try {
-        // Queries otimizadas para encontrar comparações reais
-        const productName = totvs_product || productCategory || 'TOTVS';
+        // Queries STC: Empresa + Concorrente + Contexto
         const queries = [
-          `site:${portal} "${productName}" vs alternativas comparação`,
-          `site:${portal} "${productName}" melhor que versus`,
-          `site:${portal} concorrentes "${productName}" ERP`,
-          `site:${portal} "${productName}" review comparativo ${keywords || ''}`
+          `"${variants[0]}" "${competitor}" (usa OR utiliza OR implementou OR migrou)`,
+          `"${company_name}" "${competitor}" ERP sistema`,
+          `"${variants[0]}" "cliente ${competitor}"`,
         ];
 
         for (const query of queries) {
+          totalQueries++;
+          
           const response = await fetch('https://google.serper.dev/search', {
             method: 'POST',
             headers: {
@@ -114,7 +97,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               q: query,
-              num: 10,
+              num: 5,
               gl: 'br',
               hl: 'pt-br'
             })
@@ -123,145 +106,102 @@ serve(async (req) => {
           if (!response.ok) continue;
 
           const data = await response.json();
-          
-          for (const result of data.organic || []) {
-            // Evitar duplicatas de links
-            if (uniqueLinks.has(result.link)) continue;
-            uniqueLinks.add(result.link);
+          const results = data.organic || [];
+          totalResults += results.length;
 
-            // Extrair nomes de concorrentes mencionados
-            const text = `${result.title} ${result.snippet}`.toLowerCase();
-            const competitorNames: string[] = [];
+          for (const result of results) {
+            const fullText = `${result.title} ${result.snippet}`.toLowerCase();
             
-            // Lista expandida de concorrentes conhecidos ERP/Software
-            const knownCompetitors = [
-              // ERP Nacionais
-              'Bling', 'Conta Azul', 'Omie', 'Tiny', 'vhsys', 'Senior', 'Sankhya', 'eGestor',
-              'Jiva', 'Procfy', 'Mastermaq', 'WebMais', 'Mysoft', 'Wolken', 'Linx',
-              // ERP Internacionais
-              'SAP', 'Oracle', 'Microsoft Dynamics', 'Infor', 'Epicor', 'IFS', 'Sage',
-              'NetSuite', 'Acumatica', 'Syspro', 'Workday', 'Unit4',
-              // CRM e Marketing
-              'RD Station', 'HubSpot', 'Zoho', 'Salesforce', 'Pipedrive', 'Pipefy',
-              'Monday.com', 'Asana', 'Trello', 'Jira',
-              // Contabilidade e Financeiro
-              'ContaAzul', 'Nibo', 'Conta Simples', 'QuickBooks', 'Xero', 'FreshBooks',
-              // Varejo e E-commerce
-              'Loja Integrada', 'Tray', 'Vtex', 'Shopify', 'Magento', 'WooCommerce',
-              // Indústria
-              'Datasul', 'Protheus', 'RM', 'Logix'
+            // VALIDAÇÃO STC: Empresa + Concorrente + Contexto
+            const hasCompany = validateMention(fullText, company_name);
+            const hasCompetitor = fullText.includes(competitor.toLowerCase());
+            
+            // Contextos que indicam uso/competição
+            const contexts = [
+              /usa|utiliza|implementou|migrou|adotou/i,
+              /sistema|software|erp|plataforma/i,
+              /cliente|contrato|parceiro/i,
             ];
-
-            for (const competitor of knownCompetitors) {
-              if (text.includes(competitor.toLowerCase())) {
-                competitorNames.push(competitor);
-              }
+            
+            let matchCount = 0;
+            if (hasCompany) matchCount++;
+            if (hasCompetitor) matchCount++;
+            for (const context of contexts) {
+              if (context.test(fullText)) matchCount++;
             }
 
-            if (competitorNames.length > 0) {
-              allComparisons.push({
-                portal: portal,
+            // Double Match (2) ou Triple Match (3+)
+            if (matchCount >= 2 && hasCompany && hasCompetitor) {
+              const isTripleMatch = matchCount >= 3;
+              const confidence = isTripleMatch ? 85 : 65;
+              
+              if (!detectedCompetitors.has(competitor)) {
+                detectedCompetitors.set(competitor, {
+                  name: competitor,
+                  mentions: 0,
+                  comparison_links: [],
+                  portals: new Set(),
+                  match_type: isTripleMatch ? 'triple_match' : 'double_match',
+                  relevance_score: confidence,
+                  avg_position: 0
+                });
+              }
+
+              const comp = detectedCompetitors.get(competitor);
+              comp.mentions++;
+              comp.comparison_links.push({
+                portal: new URL(result.link).hostname,
                 title: result.title,
-                snippet: result.snippet,
                 url: result.link,
-                competitors_mentioned: competitorNames,
-                search_position: result.position,
-                relevance_score: 100 - (result.position * 5) // Score baseado na posição
+                snippet: result.snippet,
               });
+              comp.portals.add(new URL(result.link).hostname);
+
+              console.log(`[✅ ${isTripleMatch ? 'TRIPLE' : 'DOUBLE'} MATCH] ${competitor} - ${confidence}%`);
             }
           }
         }
       } catch (error) {
-        console.error(`[Search Competitors] Erro ao buscar em ${portal}:`, error);
-      }
-    });
-
-    // Executar todas as buscas em paralelo
-    await Promise.all(searchPromises);
-
-    console.log('[Search Competitors] Total de comparações encontradas:', allComparisons.length);
-
-    // Ordenar por relevância
-    allComparisons.sort((a, b) => b.relevance_score - a.relevance_score);
-
-    // Agrupar por concorrente
-    const competitorMap = new Map<string, any>();
-    
-    for (const comparison of allComparisons) {
-      for (const competitor of comparison.competitors_mentioned) {
-        if (!competitorMap.has(competitor)) {
-          competitorMap.set(competitor, {
-            name: competitor,
-            mentions: 0,
-            comparison_links: [],
-            portals: new Set(),
-            avg_position: 0,
-            relevance_score: 0
-          });
-        }
-
-        const comp = competitorMap.get(competitor);
-        comp.mentions++;
-        comp.comparison_links.push({
-          portal: comparison.portal,
-          title: comparison.title,
-          url: comparison.url,
-          snippet: comparison.snippet
-        });
-        comp.portals.add(comparison.portal);
-        comp.avg_position += comparison.search_position;
-        comp.relevance_score += comparison.relevance_score;
+        console.error(`[❌ Error] ${competitor}:`, error);
       }
     }
 
-    // Converter para array e calcular médias
-    const competitors = Array.from(competitorMap.values()).map(comp => ({
+    // Converter para array e ordenar por relevância
+    const competitors = Array.from(detectedCompetitors.values()).map(comp => ({
       ...comp,
       portals: Array.from(comp.portals),
-      avg_position: comp.avg_position / comp.mentions,
-      relevance_score: Math.round(comp.relevance_score / comp.mentions)
-    }));
+      avg_position: comp.comparison_links.length > 0 
+        ? comp.comparison_links.reduce((sum: number, link: any) => sum + (link.position || 1), 0) / comp.comparison_links.length 
+        : 0
+    })).sort((a, b) => b.relevance_score - a.relevance_score);
 
-    // Ordenar por número de menções e relevância
-    competitors.sort((a, b) => {
-      if (b.mentions !== a.mentions) return b.mentions - a.mentions;
-      return b.relevance_score - a.relevance_score;
-    });
-
-    // Retornar top 20 concorrentes
-    const topCompetitors = competitors.slice(0, 20);
-
-    console.log('[Search Competitors] ✅ Busca concluída!');
-    console.log('[Search Competitors] 📊 Portais pesquisados:', COMPARISON_PORTALS.length);
-    console.log('[Search Competitors] 📝 Total de comparações:', allComparisons.length);
-    console.log('[Search Competitors] 🏆 Top concorrentes encontrados:', topCompetitors.length);
+    console.log(`[✅ STC Competitors] ${competitors.length} concorrentes encontrados`);
+    console.log(`[📊 Stats] ${totalQueries} queries executadas, ${totalResults} resultados processados`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        competitors: topCompetitors,
-        total_comparisons_found: allComparisons.length,
-        portals_searched: COMPARISON_PORTALS.length,
-        total_portals: COMPARISON_PORTALS.length,
-        product_searched: totvs_product || productCategory,
-        search_date: new Date().toISOString()
+        competitors,
+        total_comparisons_found: competitors.reduce((sum, c) => sum + c.mentions, 0),
+        portals_searched: new Set(competitors.flatMap(c => c.portals)).size,
+        total_portals: new Set(competitors.flatMap(c => c.portals)).size,
+        search_date: new Date().toISOString(),
+        product_searched: 'Concorrentes ERP (metodologia STC)'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
       }
     );
 
-  } catch (error: any) {
-    console.error('[Search Competitors] Erro:', error);
+  } catch (error) {
+    console.error('[❌ STC Competitors] Erro:', error);
     return new Response(
       JSON.stringify({
-        error: error.message,
-        success: false
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
