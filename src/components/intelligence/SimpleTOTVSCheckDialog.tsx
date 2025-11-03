@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { DraggableDialog } from '@/components/ui/draggable-dialog';
 import { Button } from '@/components/ui/button';
-import { Maximize2, Minimize2, UserPlus } from 'lucide-react';
+import { Maximize2, Minimize2, Printer, UserPlus } from 'lucide-react';
 import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
-import SaveReportPDF from '@/components/reports/SaveReportPDF';
 import { toast } from 'sonner';
 
 interface SimpleTOTVSCheckDialogProps {
@@ -26,6 +25,11 @@ export function SimpleTOTVSCheckDialog({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
+  const handlePrint = () => {
+    window.print();
+    toast.success("Preparando relatório para impressão...");
+  };
+
   const handleAssign = () => {
     toast.info("Funcionalidade de atribuição em breve!");
   };
@@ -42,15 +46,13 @@ export function SimpleTOTVSCheckDialog({
   };
 
   const reportContent = (
-    <div id="simple-totvs-check-report">
-      <TOTVSCheckCard
-        companyId={companyId}
-        companyName={companyName}
-        cnpj={cnpj}
-        domain={domain}
-        autoVerify={true}
-      />
-    </div>
+    <TOTVSCheckCard
+      companyId={companyId}
+      companyName={companyName}
+      cnpj={cnpj}
+      domain={domain}
+      autoVerify={true}
+    />
   );
 
   // Modo Minimizado (botão flutuante)
@@ -83,14 +85,10 @@ export function SimpleTOTVSCheckDialog({
               <p className="text-muted-foreground">Relatório completo de detecção TOTVS</p>
             </div>
             <div className="flex items-center gap-2">
-              <SaveReportPDF
-                contentId="simple-totvs-check-report"
-                fileName={`relatorio-totvs-${cnpj || companyName?.replace(/[^a-zA-Z0-9]/g, '-') || 'empresa'}`}
-                reportType="totvs_verification"
-                reportTitle={`Verificação TOTVS - ${companyName || 'Empresa'}`}
-                quarantineId={companyId || ''}
-                allTabs
-              />
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir PDF
+              </Button>
               <Button variant="outline" size="sm" onClick={handleAssign}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Atribuir
@@ -129,14 +127,10 @@ export function SimpleTOTVSCheckDialog({
       <div className="space-y-4">
         {/* Barra de Ações */}
         <div className="flex items-center justify-end gap-2 pb-4 border-b">
-          <SaveReportPDF
-            contentId="simple-totvs-check-report"
-            fileName={`relatorio-totvs-${cnpj || companyName?.replace(/[^a-zA-Z0-9]/g, '-') || 'empresa'}`}
-            reportType="totvs_verification"
-            reportTitle={`Verificação TOTVS - ${companyName || 'Empresa'}`}
-            quarantineId={companyId || ''}
-            allTabs
-          />
+          <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
           <Button variant="outline" size="sm" onClick={handleAssign}>
             <UserPlus className="h-4 w-4 mr-2" />
             Atribuir

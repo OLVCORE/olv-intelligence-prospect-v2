@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Bot, Loader2, Send, Sparkles, TrendingUp, Users, Target, Lightbulb, ExternalLink, ArrowRight } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, TrendingUp, Users, Target, Lightbulb, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from 'sonner';
 
 interface Message {
   role: 'user' | 'agent';
@@ -36,7 +35,6 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [sendingToPipeline, setSendingToPipeline] = useState(false);
 
   // Carregar histórico ao abrir modal
   useEffect(() => {
@@ -303,113 +301,6 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
 
   const handleSuggestedQuestion = (question: string) => {
     setUserInput(question);
-  };
-
-  const handleSendToPipeline = async () => {
-    if (messages.length === 0) {
-      toast.error('Nenhuma conversa para enviar');
-      return;
-    }
-
-    setSendingToPipeline(true);
-    
-    try {
-      toast.info('📤 Enviando para pipeline...', {
-        description: 'Criando empresa e salvando conversa como documento'
-      });
-
-      // 1. Criar ou atualizar empresa no pipeline
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('name', companyName)
-        .maybeSingle();
-
-      let finalCompanyId = companyId;
-
-      if (!existingCompany) {
-        // Criar nova empresa
-        const { data: newCompany, error: companyError } = await supabase
-          .from('companies')
-          .insert({
-            name: companyName,
-            cnpj: cnpj,
-            pipeline_status: 'ativo',
-            lead_score: 70,
-            temperatura: 'warm'
-          })
-          .select('id')
-          .single();
-
-        if (companyError) throw companyError;
-        finalCompanyId = newCompany.id;
-      } else {
-        // Atualizar empresa existente
-        finalCompanyId = existingCompany.id;
-        await supabase
-          .from('companies')
-          .update({ pipeline_status: 'ativo' })
-          .eq('id', finalCompanyId);
-      }
-
-      // 2. Criar documento com a conversa
-      const conversationText = messages
-        .map(msg => `[${msg.role === 'user' ? 'USUÁRIO' : 'STC AGENT'}]\n${msg.content}\n`)
-        .join('\n---\n\n');
-
-      const { error: docError } = await supabase
-        .from('company_documents')
-        .insert({
-          company_id: finalCompanyId,
-          tipo: 'stc_conversation',
-          titulo: `Conversa STC Agent - ${companyName}`,
-          descricao: `Análise e conversa do STC Agent sobre ${companyName}`,
-          content_text: conversationText,
-          file_name: `stc-conversation-${companyName.replace(/\s+/g, '-')}-${Date.now()}.txt`,
-          generated_at: new Date().toISOString(),
-          status: 'active'
-        });
-
-      if (docError) throw docError;
-
-      // 3. Criar deal se não existir
-      const { data: existingDeal } = await supabase
-        .from('sdr_deals')
-        .select('id')
-        .eq('company_id', finalCompanyId)
-        .eq('status', 'open')
-        .maybeSingle();
-
-      if (!existingDeal) {
-        await supabase
-          .from('sdr_deals')
-          .insert({
-            company_id: finalCompanyId,
-            title: `Prospecção - ${companyName}`,
-            stage: 'discovery',
-            priority: 'high',
-            status: 'open',
-            value: 50000,
-            probability: 40,
-            source: 'stc_agent'
-          });
-      }
-
-      toast.success('✓ Enviado para Pipeline!', {
-        description: `${companyName} e a conversa foram adicionados ao pipeline de vendas`
-      });
-
-      // Fechar modal após sucesso
-      setTimeout(() => setOpen(false), 1500);
-
-    } catch (error: any) {
-      console.error('Error sending to pipeline:', error);
-      toast.error('Erro ao enviar para pipeline', {
-        description: error.message
-      });
-    } finally {
-      setSendingToPipeline(false);
-    }
   };
 
   const renderAgentMessage = (msg: Message) => {
@@ -793,29 +684,6 @@ export function STCAgent({ companyId, companyName, cnpj }: Props) {
               >
                 <Lightbulb className="w-3 h-3 mr-1" />
                 Estratégia
-              </Button>
-            </div>
-          )}
-
-          {/* Botão Enviar para Pipeline */}
-          {messages.length > 0 && (
-            <div className="pt-3 border-t mt-2">
-              <Button
-                onClick={handleSendToPipeline}
-                disabled={sendingToPipeline || loading}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-              >
-                {sendingToPipeline ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Enviar Conversa para Pipeline
-                  </>
-                )}
               </Button>
             </div>
           )}

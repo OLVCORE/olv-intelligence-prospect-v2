@@ -1989,75 +1989,6 @@ export type Database = {
           },
         ]
       }
-      company_documents: {
-        Row: {
-          company_id: string | null
-          content_text: string | null
-          created_at: string | null
-          descricao: string | null
-          file_name: string
-          file_size: number | null
-          file_url: string | null
-          generated_at: string | null
-          id: string
-          mime_type: string | null
-          quarantine_id: string | null
-          status: string | null
-          tipo: string
-          titulo: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          content_text?: string | null
-          created_at?: string | null
-          descricao?: string | null
-          file_name: string
-          file_size?: number | null
-          file_url?: string | null
-          generated_at?: string | null
-          id?: string
-          mime_type?: string | null
-          quarantine_id?: string | null
-          status?: string | null
-          tipo: string
-          titulo: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          content_text?: string | null
-          created_at?: string | null
-          descricao?: string | null
-          file_name?: string
-          file_size?: number | null
-          file_url?: string | null
-          generated_at?: string | null
-          id?: string
-          mime_type?: string | null
-          quarantine_id?: string | null
-          status?: string | null
-          tipo?: string
-          titulo?: string
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_documents_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_documents_quarantine_id_fkey"
-            columns: ["quarantine_id"]
-            isOneToOne: false
-            referencedRelation: "icp_analysis_results"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       company_enrichment: {
         Row: {
           company_id: string
@@ -4203,12 +4134,9 @@ export type Database = {
           raw_analysis: Json | null
           raw_data: Json | null
           razao_social: string
-          relatorio_gerado_em: string | null
-          relatorio_salvo: boolean | null
           reviewed: boolean | null
           setor: string | null
           status: string | null
-          stc_result: Json | null
           telefone: string | null
           temperatura: string | null
           totvs_check_confidence: string | null
@@ -4247,12 +4175,9 @@ export type Database = {
           raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social: string
-          relatorio_gerado_em?: string | null
-          relatorio_salvo?: boolean | null
           reviewed?: boolean | null
           setor?: string | null
           status?: string | null
-          stc_result?: Json | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_confidence?: string | null
@@ -4291,12 +4216,9 @@ export type Database = {
           raw_analysis?: Json | null
           raw_data?: Json | null
           razao_social?: string
-          relatorio_gerado_em?: string | null
-          relatorio_salvo?: boolean | null
           reviewed?: boolean | null
           setor?: string | null
           status?: string | null
-          stc_result?: Json | null
           telefone?: string | null
           temperatura?: string | null
           totvs_check_confidence?: string | null

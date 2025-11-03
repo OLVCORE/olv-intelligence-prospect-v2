@@ -36,7 +36,6 @@ interface TOTVSCheckCardProps {
   domain?: string;
   autoVerify?: boolean;
   onResult?: (result: any) => void;
-  cachedData?: any;
 }
 
 export default function TOTVSCheckCard({
@@ -46,7 +45,6 @@ export default function TOTVSCheckCard({
   domain,
   autoVerify = false,
   onResult,
-  cachedData,
 }: TOTVSCheckCardProps) {
   const [enabled, setEnabled] = useState(autoVerify);
   const [filterMode, setFilterMode] = useState<'all' | 'triple'>('all');
@@ -102,16 +100,13 @@ export default function TOTVSCheckCard({
     return highlighted;
   };
 
-  const { data: queryData, isLoading, refetch } = useSimpleTOTVSCheck({
+  const { data, isLoading, refetch } = useSimpleTOTVSCheck({
     companyId,
     companyName,
     cnpj,
     domain,
-    enabled: enabled && !cachedData, // Não fazer query se tem cache
+    enabled,
   });
-
-  // Usar dados do cache se disponível, senão usar dados da query
-  const data = cachedData || queryData;
 
   // Buscar dados de empresas similares para análise 360° (removido - será buscado direto na aba)
   const similarCompaniesData = null;
@@ -125,8 +120,8 @@ export default function TOTVSCheckCard({
     refetch();
   };
 
-  // ESTADO INICIAL - só mostrar se não tem cache e não está habilitado
-  if (!enabled && !data && !cachedData) {
+  // ESTADO INICIAL
+  if (!enabled && !data) {
     return (
       <Card className="p-6">
         <div className="text-center">
@@ -194,7 +189,7 @@ export default function TOTVSCheckCard({
         </TabsList>
 
         {/* ABA 1: DETECÇÃO TOTVS (CONTEÚDO ATUAL) */}
-        <TabsContent value="detection" id="totvs-detection-tab" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="detection" className="mt-0 max-h-[600px] overflow-y-auto">
           {/* HEADER */}
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -463,13 +458,12 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 2: EMPRESAS SIMILARES (NOVO) */}
-        <TabsContent value="similar" id="totvs-similar-tab" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="similar" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <SimilarCompaniesTab
               companyId={companyId}
               companyName={companyName}
               cnpj={cnpj}
-              enabled={!!cachedData}
             />
           ) : (
             <Card className="p-6">
@@ -481,14 +475,13 @@ export default function TOTVSCheckCard({
         </TabsContent>
 
         {/* ABA 3: ANÁLISE 360° (NOVO) */}
-        <TabsContent value="analysis" id="totvs-analysis-tab" className="mt-0 max-h-[600px] overflow-y-auto">
+        <TabsContent value="analysis" className="mt-0 max-h-[600px] overflow-y-auto">
           {companyId && companyName ? (
             <Analysis360Tab
               companyId={companyId}
               companyName={companyName}
               stcResult={data}
               similarCompanies={similarCompaniesData}
-              enabled={!!cachedData}
             />
           ) : (
             <Card className="p-6">

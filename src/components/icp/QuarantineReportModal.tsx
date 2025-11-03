@@ -1,37 +1,15 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import TOTVSCheckCard from '@/components/totvs/TOTVSCheckCard';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, XCircle, FileText, Maximize2, Minimize2, Download, Loader2, FileDown } from 'lucide-react';
+import { useApproveQuarantineBatch, useRejectQuarantine } from '@/hooks/useICPQuarantine';
 import { toast } from 'sonner';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-import {
-  Shield,
-  Users,
-  Target,
-  RefreshCw,
-  Save,
-  CheckCircle,
-  Maximize2,
-  Minimize2,
-  XCircle,
-  Rocket,
-  AlertTriangle,
-  ExternalLink,
-  Lightbulb,
-  Search,
-} from 'lucide-react';
-import SaveReportPDF from '@/components/reports/SaveReportPDF';
-import TOTVSVerificationReportV2 from '@/components/reports/TOTVSVerificationReportV2';
-import CompetitiveIntelligenceReport from '@/components/reports/CompetitiveIntelligenceReport';
-import SimilarCompaniesReport from '@/components/reports/SimilarCompaniesReport';
-import Analysis360Report from '@/components/reports/Analysis360Report';
-import ExecutiveSummaryReport from '@/components/reports/ExecutiveSummaryReport';
-import ClientDiscoveryReport from '@/components/reports/ClientDiscoveryReport';
-import RecommendedProductsReport from '@/components/reports/RecommendedProductsReport';
-import KeywordsSEOReport from '@/components/reports/KeywordsSEOReport';
+import { DiscardCompanyModal } from '@/components/icp/DiscardCompanyModal';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface QuarantineReportModalProps {
   open: boolean;
@@ -39,926 +17,244 @@ interface QuarantineReportModalProps {
   analysisId: string;
   companyName: string;
   cnpj?: string;
+  domain?: string;
   companyId?: string;
 }
 
-export default function QuarantineReportModal({
+export function QuarantineReportModal({
   open,
   onOpenChange,
   analysisId,
   companyName,
   cnpj,
-  companyId
+  domain,
+  companyId,
 }: QuarantineReportModalProps) {
+  const { mutate: approveBatch } = useApproveQuarantineBatch();
+  const { mutate: rejectCompany } = useRejectQuarantine();
+
   const [showDiscard, setShowDiscard] = useState(false);
-  const [stcResult, setStcResult] = useState<any>(null);
+  const [stcResult, setStcResult] = useState<any | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activating, setActivating] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hasExistingReport, setHasExistingReport] = useState(false);
-  const [reportDate, setReportDate] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // ========================================
-  // CARREGAR RELATÓRIO (UMA VEZ SÓ)
-  // ========================================
-  useEffect(() => {
-    if (!open) return;
-
-    const carregarRelatorio = async () => {
-      setLoading(true);
-
-      try {
-        console.log('[RELATÓRIO] 🔍 Verificando relatório salvo...');
-
-        // Buscar relatório salvo
-        const { data: quarantineData, error: quarantineError } = await supabase
-          .from('icp_analysis_results')
-          .select('relatorio_salvo, relatorio_gerado_em, stc_result, raw_data')
-          .eq('id', analysisId)
-          .single();
-
-        if (quarantineError) throw quarantineError;
-
-        // SE JÁ TEM RELATÓRIO SALVO
-        if (quarantineData.relatorio_salvo && quarantineData.stc_result) {
-          console.log('[RELATÓRIO] ✅ Relatório salvo encontrado! Carregando...');
-
-          setHasExistingReport(true);
-          setReportDate(quarantineData.relatorio_gerado_em);
-          
-          const savedReport = quarantineData.stc_result as any;
-          console.log('[RELATÓRIO] 🔍 Estrutura do relatório salvo:', savedReport);
-          console.log('[RELATÓRIO] 🔍 Keys:', Object.keys(savedReport || {}));
-          console.log('[RELATÓRIO] 🔍 TOTVS evidences:', savedReport?.totvs?.evidences);
-          
-          // Buscar evidências da tabela totvs_detection_reports se tiver companyId
-          if (companyId) {
-            console.log('[RELATÓRIO] 🔍 Buscando evidências do banco totvs_detection_reports...');
-            const { data: totvsReport, error: totvsError } = await supabase
-              .from('totvs_detection_reports')
-              .select('*')
-              .eq('company_id', companyId)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            let merged = false;
-            if (!totvsError && totvsReport) {
-              const evidences = (totvsReport.evidences as any[]) || [];
-              console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
-              console.log('[RELATÓRIO] 📊 Evidências completas:', evidences);
-
-              if (evidences.length > 0) {
-                // Mesclar evidências no relatório
-                if (!savedReport.totvs) savedReport.totvs = {};
-                savedReport.totvs.evidences = evidences;
-                savedReport.totvs.methodology = totvsReport.methodology;
-                savedReport.totvs.score = totvsReport.score;
-                savedReport.totvs.confidence = totvsReport.confidence;
-                savedReport.totvs.detection_status = totvsReport.detection_status;
-                savedReport.totvs.status = totvsReport.detection_status;
-                merged = true;
-              }
-            }
-
-            // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
-            if (!merged) {
-              console.log('[RELATÓRIO] 🔎 Fallback: buscando em totvs_usage_detection...');
-              const { data: usageReport, error: usageError } = await supabase
-                .from('totvs_usage_detection')
-                .select('*')
-                .eq('company_id', companyId)
-                .order('checked_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
-                const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
-                  source: ev.url || ev.source,
-                  source_name: ev.platform || 'Web',
-                  text: ev.snippet || ev.title || '',
-                  terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
-                  matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
-                }));
-                if (!savedReport.totvs) savedReport.totvs = {};
-                savedReport.totvs.evidences = mapped;
-                console.log(`[RELATÓRIO] ✅ Evidências fallback aplicadas: ${mapped.length}`);
-              } else {
-                console.log('[RELATÓRIO] ⚠️ Sem evidências em totvs_usage_detection');
-              }
-            }
-          }
-          
-          // Se relatório salvo veio sem evidências, reprocessar automaticamente
-          const hasSavedEvidences =
-            (savedReport?.totvs?.evidences && Array.isArray(savedReport.totvs.evidences) && savedReport.totvs.evidences.length > 0) ||
-            (Array.isArray(savedReport?.evidences) && savedReport.evidences.length > 0);
-
-          if (!hasSavedEvidences) {
-            console.log('[RELATÓRIO] ⚠️ Relatório salvo sem evidências. Reprocessando análise completa...');
-            toast.info('Reprocessando análise', {
-              description: 'Relatório salvo não contém evidências. Executando nova análise automaticamente.',
-            });
-            await executarAnaliseCompleta();
-            return;
-          }
-
-          setStcResult(savedReport);
-          setLoading(false);
-
-          toast.success('📄 Relatório Salvo Carregado', {
-            description: `Gerado em ${new Date(quarantineData.relatorio_gerado_em).toLocaleString('pt-BR')} • Sem consumo de créditos`,
-          });
-
-          return; // PARAR AQUI - NÃO FAZER NOVA ANÁLISE!
-        }
-
-        // SE NÃO TEM RELATÓRIO, USAR DADOS EXISTENTES OU FAZER ANÁLISE
-        console.log('[RELATÓRIO] ⚠️ Nenhum relatório salvo.');
-
-        // Tentar usar raw_data existente
-        if (quarantineData.raw_data) {
-          console.log('[RELATÓRIO] 📦 Usando dados existentes da análise ICP...');
-          
-          const rawData = quarantineData.raw_data as any;
-          
-          // Buscar evidências da tabela totvs_detection_reports se tiver companyId
-          if (companyId) {
-            console.log('[RELATÓRIO] 🔍 Buscando evidências do banco totvs_detection_reports...');
-            const { data: totvsReport, error: totvsError } = await supabase
-              .from('totvs_detection_reports')
-              .select('*')
-              .eq('company_id', companyId)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            let merged = false;
-            if (!totvsError && totvsReport) {
-              const evidences = (totvsReport.evidences as any[]) || [];
-              console.log('[RELATÓRIO] ✅ Evidências encontradas no banco:', evidences.length);
-
-              if (evidences.length > 0) {
-                // Mesclar evidências no relatório
-                if (!rawData.totvs) rawData.totvs = {};
-                rawData.totvs.evidences = evidences;
-                rawData.totvs.methodology = totvsReport.methodology;
-                rawData.totvs.score = totvsReport.score;
-                rawData.totvs.confidence = totvsReport.confidence;
-                rawData.totvs.detection_status = totvsReport.detection_status;
-                rawData.totvs.status = totvsReport.detection_status;
-                merged = true;
-              }
-            }
-
-            // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
-            if (!merged) {
-              console.log('[RELATÓRIO] 🔎 Fallback: buscando em totvs_usage_detection...');
-              const { data: usageReport, error: usageError } = await supabase
-                .from('totvs_usage_detection')
-                .select('*')
-                .eq('company_id', companyId)
-                .order('checked_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
-                const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
-                  source: ev.url || ev.source,
-                  source_name: ev.platform || 'Web',
-                  text: ev.snippet || ev.title || '',
-                  terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
-                  matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
-                }));
-                if (!rawData.totvs) rawData.totvs = {};
-                rawData.totvs.evidences = mapped;
-                console.log(`[RELATÓRIO] ✅ Evidências fallback aplicadas: ${mapped.length}`);
-              } else {
-                console.log('[RELATÓRIO] ⚠️ Sem evidências em totvs_usage_detection');
-              }
-            }
-          }
-          
-          setStcResult(rawData);
-          setHasExistingReport(false);
-          setLoading(false);
-          return;
-        }
-
-        // Se não tem dados, fazer análise nova
-        console.log('[RELATÓRIO] 🔍 Iniciando análise nova...');
-        setHasExistingReport(false);
-        await executarAnaliseCompleta();
-
-      } catch (error: any) {
-        console.error('[RELATÓRIO] Erro:', error);
-        toast.error('Erro ao carregar relatório', {
-          description: error.message,
-        });
-        setLoading(false);
-      }
-    };
-
-    carregarRelatorio();
-  }, [open, analysisId]); // EXECUTAR APENAS ao abrir modal
-
-  // ========================================
-  // EXECUTAR ANÁLISE COMPLETA (GASTA CRÉDITOS)
-  // ========================================
-  const executarAnaliseCompleta = async () => {
-    try {
-      console.log('[ANÁLISE] 🚀 Iniciando análise COMPLETA (GASTA CRÉDITOS)...');
-
-      toast.info('🔍 Análise Completa Iniciada', {
-        description: 'Processando 3 abas simultaneamente... Isso pode levar alguns minutos.',
-        duration: 5000,
-      });
-
-      // CHAMAR EDGE FUNCTION generate-report
-      const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: {
-          companyName,
-          cnpj,
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('[ANÁLISE] ✅ Análise completa concluída!');
-
-      setStcResult(data);
-      setLoading(false);
-
-      toast.success('✓ Análise Completa Concluída', {
-        description: '3 abas geradas com sucesso',
-      });
-
-    } catch (error: any) {
-      console.error('[ANÁLISE] Erro:', error);
-      toast.error('Erro na análise', {
-        description: error.message,
-      });
-      setLoading(false);
-    }
-  };
-
-  // ========================================
-  // ANALISAR EMPRESA (FORÇAR NOVA ANÁLISE)
-  // ========================================
-  const handleAnalyzeCompany = useCallback(async () => {
-    if (!companyName) return;
-
-    console.log('[MODAL] 🚀 Gerando relatório completo...');
-    console.log('[MODAL] Empresa:', companyName);
-    console.log('[MODAL] CNPJ:', cnpj);
-
-    setLoading(true);
-    setStcResult(null);
-    setHasExistingReport(false);
-
-    try {
-      console.log('[MODAL] 📡 Chamando Edge Function generate-report...');
-      
-      const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: {
-          companyName: companyName,
-          cnpj: cnpj,
+  const handleApprove = useCallback(() => {
+    approveBatch(
+      [analysisId],
+      {
+        onSuccess: () => {
+          toast.success('Empresa aprovada e movida para o Pool');
+          onOpenChange(false);
         },
-      });
-
-      if (error) {
-        console.error('[MODAL] ❌ Erro na Edge Function:', error);
-        throw error;
       }
-
-      console.log('[MODAL] ✅ Relatório recebido:', data);
-      console.log('[MODAL] 📊 Keys do data:', Object.keys(data || {}));
-      console.log('[MODAL] 📊 data.evidences (raiz):', data?.evidences);
-      console.log('[MODAL] 📊 data.methodology:', data?.methodology);
-      console.log('[MODAL] 📊 data.totalScore:', data?.totalScore);
-
-      if (!data) {
-        throw new Error('Relatório vazio');
-      }
-
-      // As evidências vêm na RAIZ do response, não em data.totvs
-      // Precisamos mapear para o formato esperado pelo componente TOTVSVerificationReport
-      if (data.evidences && Array.isArray(data.evidences) && data.evidences.length > 0) {
-        console.log(`[MODAL] ✅ ${data.evidences.length} evidências encontradas na raiz!`);
-        
-        // Criar estrutura totvs com as evidências
-        data.totvs = {
-          status: data.status,
-          confidence: data.confidence,
-          evidences: data.evidences,
-          methodology: data.methodology,
-          tripleMatches: data.tripleMatches || 0,
-          doubleMatches: data.doubleMatches || 0,
-          singleMatches: data.singleMatches || 0,
-          totalScore: data.totalScore || 0,
-        };
-        
-        console.log('[MODAL] ✅ Estrutura totvs criada com evidências!');
-      } else {
-        console.log('[MODAL] ⚠️ Nenhuma evidência na raiz do response');
-      }
-
-      // Buscar evidências da tabela totvs_detection_reports se tiver companyId
-      if (companyId) {
-        console.log('[MODAL] 🔍 Buscando evidências adicionais do banco totvs_detection_reports...');
-        const { data: totvsReport, error: totvsError } = await supabase
-          .from('totvs_detection_reports')
-          .select('*')
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        let merged = false;
-        if (!totvsError && totvsReport) {
-          const evidences = (totvsReport.evidences as any[]) || [];
-          console.log('[MODAL] ✅ Evidências do banco encontradas:', evidences.length);
-          console.log('[MODAL] 📊 Evidências completas:', evidences);
-
-          // Mesclar evidências no relatório (priorizar evidências do banco se existirem)
-          if (evidences.length > 0) {
-            if (!data.totvs) data.totvs = {};
-            data.totvs.evidences = evidences;
-            data.totvs.methodology = totvsReport.methodology;
-            data.totvs.score = totvsReport.score;
-            data.totvs.confidence = totvsReport.confidence;
-            data.totvs.detection_status = totvsReport.detection_status;
-            data.totvs.status = totvsReport.detection_status;
-            merged = true;
-            console.log('[MODAL] ✅ Evidências mescladas no relatório!');
-          }
-        } else if (totvsError) {
-          console.log('[MODAL] ⚠️ Erro ao buscar evidências:', totvsError.message);
-        } else {
-          console.log('[MODAL] ⚠️ Nenhum registro encontrado em totvs_detection_reports');
-        }
-
-        // Fallback: buscar na tabela totvs_usage_detection e mapear para o formato do componente
-        if (!merged) {
-          console.log('[MODAL] 🔎 Fallback: buscando em totvs_usage_detection...');
-          const { data: usageReport, error: usageError } = await supabase
-            .from('totvs_usage_detection')
-            .select('*')
-            .eq('company_id', companyId)
-            .order('checked_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!usageError && usageReport?.evidences && Array.isArray(usageReport.evidences) && usageReport.evidences.length > 0) {
-            const mapped = (usageReport.evidences as any[]).map((ev: any) => ({
-              source: ev.url || ev.source,
-              source_name: ev.platform || 'Web',
-              text: ev.snippet || ev.title || '',
-              terms: [companyName, 'TOTVS', ...(ev.totvs_products_mentioned || [])].filter(Boolean),
-              matchType: (ev.totvs_products_mentioned?.length || 0) >= 2 ? 'triple' : ((ev.totvs_products_mentioned?.length || 0) === 1 ? 'double' : 'single'),
-            }));
-            if (!data.totvs) data.totvs = {};
-            data.totvs.evidences = mapped;
-            console.log(`[MODAL] ✅ Evidências fallback aplicadas: ${mapped.length}`);
-          } else {
-            console.log('[MODAL] ⚠️ Sem evidências em totvs_usage_detection');
-          }
-        }
-      } else {
-        console.log('[MODAL] ⚠️ companyId não disponível para buscar evidências');
-      }
-
-      setStcResult(data);
-
-      toast.success('✅ Relatório gerado!', {
-        description: 'Análise completa das 3 abas concluída com dados reais.',
-      });
-
-    } catch (error: any) {
-      console.error('[MODAL] ❌ Erro:', error);
-      toast.error('❌ Erro ao gerar relatório', {
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [companyName, cnpj]);
-
-  // ========================================
-  // ATUALIZAR ANÁLISE (COM CONFIRMAÇÃO)
-  // ========================================
-  const handleAtualizarAnalise = useCallback(async () => {
-    const confirmar = window.confirm(
-      '⚠️ ATENÇÃO: CONSUMO DE CRÉDITOS\n\n' +
-      'Atualizar a análise irá:\n' +
-      '• Reprocessar as 3 abas\n' +
-      '• Consumir créditos novamente\n' +
-      '• Substituir o relatório atual\n\n' +
-      'Deseja realmente atualizar?'
     );
+  }, [analysisId, approveBatch, onOpenChange]);
 
-    if (!confirmar) return;
-
-    console.log('[ANÁLISE] 🔄 Usuário confirmou atualização. Reprocessando...');
-
-    setLoading(true);
-    setStcResult(null);
-    setHasExistingReport(false);
-
-    await executarAnaliseCompleta();
-
-  }, [companyName, cnpj, analysisId]);
-
-  // ========================================
-  // SALVAR RELATÓRIO COMPLETO (3 ABAS)
-  // ========================================
-  const handleSalvarRelatorio = useCallback(async () => {
+  const handleSave = useCallback(async () => {
     if (!stcResult) {
-      toast.error('Nenhum relatório para salvar');
+      toast.info('Execute a verificação antes de salvar');
       return;
     }
-
     try {
-      console.log('[RELATÓRIO] 💾 Salvando relatório completo (3 abas)...');
-
-      toast.info('💾 Salvando Relatório Completo', {
-        description: 'Gerando PDFs das 3 abas...',
+      await supabase.from('stc_verification_history').insert({
+        company_id: companyId || null,
+        company_name: companyName,
+        cnpj: cnpj || null,
+        status: stcResult.status || 'unknown',
+        confidence: stcResult.confidence || 'low',
+        triple_matches: stcResult.tripleMatches || (stcResult as any).triple_matches || 0,
+        double_matches: stcResult.doubleMatches || (stcResult as any).double_matches || 0,
+        single_matches: stcResult.singleMatches || (stcResult as any).single_matches || 0,
+        total_score: stcResult.totalScore || (stcResult as any).total_weight || 0,
+        evidences: (stcResult as any).evidences || [],
+        sources_consulted: (stcResult as any).methodology?.searched_sources || (stcResult as any).sourcesConsulted || 0,
+        queries_executed: (stcResult as any).methodology?.total_queries || (stcResult as any).queriesExecuted || 0,
+        verification_duration_ms: (stcResult as any).methodology?.execution_ms || (stcResult as any).verificationDurationMs || 0,
       });
-
-      // Função para gerar PDF de uma aba
-      const generateTabPDF = async (tabId: string, tabName: string, reportType: string) => {
-        const element = document.getElementById(tabId);
-
-        if (!element) {
-          console.warn(`[PDF] Elemento ${tabId} não encontrado`);
-          return null;
-        }
-
-        const html2pdf = (await import('html2pdf.js')).default;
-
-        const tempElement = document.createElement('div');
-        tempElement.style.position = 'absolute';
-        tempElement.style.left = '-9999px';
-        tempElement.style.width = '210mm';
-        tempElement.style.padding = '20px';
-        tempElement.style.backgroundColor = 'white';
-
-        tempElement.innerHTML = `
-          <div style="margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
-            <h1 style="font-size: 24px; margin: 0 0 10px 0;">${companyName}</h1>
-            <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #666;">${tabName}</h2>
-            <p style="margin: 5px 0; color: #666;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
-          </div>
-        `;
-
-        tempElement.appendChild(element.cloneNode(true));
-        document.body.appendChild(tempElement);
-
-        const opt = {
-          margin: 10,
-          filename: `${reportType}.pdf`,
-          image: { type: 'jpeg' as const, quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            scrollY: 0,
-            scrollX: 0,
-            windowHeight: tempElement.scrollHeight,
-          },
-          jsPDF: {
-            unit: 'mm' as const,
-            format: 'a4' as const,
-            orientation: 'portrait' as const
-          },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
-        const blob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
-        document.body.removeChild(tempElement);
-
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onloadend = () => {
-            const base64 = reader.result as string;
-            resolve(base64.split(',')[1]);
-          };
-          reader.readAsDataURL(blob);
-        });
-
-        const base64PDF = await base64Promise;
-
-        return {
-          tipo: reportType,
-          titulo: tabName,
-          file_name: `${reportType}-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
-          file_url: `data:application/pdf;base64,${base64PDF}`,
-          file_size: blob.size,
-          content_text: element.innerText.substring(0, 5000),
-        };
-      };
-
-      // Gerar PDFs das 3 abas
-      const [pdf1, pdf2, pdf3] = await Promise.all([
-        generateTabPDF('totvs-verification-content', 'Verificação TOTVS', 'totvs_verification'),
-        generateTabPDF('similar-companies-content', 'Empresas Similares', 'similar_companies'),
-        generateTabPDF('analysis-360-content', 'Análise 360°', 'analysis_360'),
-      ]);
-
-      const documentsToInsert = [pdf1, pdf2, pdf3]
-        .filter(pdf => pdf !== null)
-        .map(pdf => ({
-          quarantine_id: analysisId,
-          tipo: pdf!.tipo,
-          titulo: pdf!.titulo,
-          descricao: `Relatório gerado automaticamente em ${new Date().toLocaleDateString('pt-BR')}`,
-          file_name: pdf!.file_name,
-          file_url: pdf!.file_url,
-          file_size: pdf!.file_size,
-          mime_type: 'application/pdf',
-          content_text: pdf!.content_text,
-          status: 'active',
-        }));
-
-      if (documentsToInsert.length === 0) {
-        throw new Error('Nenhum PDF foi gerado');
-      }
-
-      const { data: documentsData, error: documentsError } = await supabase
-        .from('company_documents')
-        .insert(documentsToInsert)
-        .select();
-
-      if (documentsError) throw documentsError;
-
-      const { error: updateError } = await supabase
-        .from('icp_analysis_results')
-        .update({
-          relatorio_salvo: true,
-          relatorio_gerado_em: new Date().toISOString(),
-          stc_result: stcResult,
-        })
-        .eq('id', analysisId);
-
-      if (updateError) throw updateError;
-
-      setHasExistingReport(true);
-      setReportDate(new Date().toISOString());
-
-      toast.success('✓ Relatório Completo Salvo', {
-        description: `${documentsData.length} documentos salvos no sistema`,
-      });
-
+      toast.success('Relatório STC salvo');
     } catch (error: any) {
-      console.error('[RELATÓRIO] Erro ao salvar:', error);
-      toast.error('Erro ao salvar relatório', {
-        description: error.message,
-      });
+      toast.error('Erro ao salvar relatório', { description: error.message });
     }
-  }, [stcResult, analysisId, companyName, cnpj, companyId]);
-
-  // ========================================
-  // ATIVAR NO PIPELINE
-  // ========================================
-  const handleActivatePipeline = useCallback(async () => {
-    setActivating(true);
-
-    try {
-      const { data: quarantineData, error: quarantineError } = await supabase
-        .from('icp_analysis_results')
-        .select('*')
-        .eq('id', analysisId)
-        .single();
-
-      if (quarantineError) throw quarantineError;
-
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert({
-          quarantine_id: analysisId,
-          name: quarantineData.razao_social,
-          cnpj: quarantineData.cnpj,
-          domain: quarantineData.website,
-          icp_score: quarantineData.icp_score,
-          temperatura: quarantineData.temperatura,
-          pipeline_status: 'ativo',
-          raw_data: quarantineData.raw_data,
-        })
-        .select()
-        .single();
-
-      if (companyError) throw companyError;
-
-      await supabase
-        .from('company_documents')
-        .update({ company_id: companyData.id })
-        .eq('quarantine_id', analysisId);
-
-      await supabase
-        .from('icp_analysis_results')
-        .update({
-          moved_to_pool: true,
-          status: 'ativado'
-        })
-        .eq('id', analysisId);
-
-      toast.success('✓ Empresa Ativada no Pipeline', {
-        description: 'A empresa e todos os documentos foram enviados para o pipeline',
-      });
-
-      onOpenChange(false);
-
-    } catch (error: any) {
-      console.error('[PIPELINE] Erro:', error);
-      toast.error('Erro ao ativar empresa', {
-        description: error.message,
-      });
-    } finally {
-      setActivating(false);
-    }
-  }, [analysisId, onOpenChange]);
+  }, [stcResult, companyId, companyName, cnpj]);
 
   const handleReject = useCallback(() => {
     setShowDiscard(true);
   }, []);
+
+  const handlePrintPDF = useCallback(async () => {
+    if (!contentRef.current || isGeneratingPDF) {
+      return;
+    }
+
+    try {
+      setIsGeneratingPDF(true);
+      toast.info('Gerando PDF...', { duration: 2000 });
+      
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: contentRef.current.scrollWidth,
+        windowHeight: contentRef.current.scrollHeight,
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png', 0.95);
+      
+      let position = 0;
+      const pageHeight = 297;
+      
+      while (position < imgHeight) {
+        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
+        position += pageHeight;
+        
+        if (position < imgHeight) {
+          pdf.addPage();
+        }
+      }
+      
+      pdf.save(`relatorio-totvs-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
+      toast.success('PDF gerado com sucesso');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  }, [companyName, isGeneratingPDF]);
 
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
 
   const modalSize = useMemo(() => {
-    return isExpanded
-      ? 'max-w-[98vw] w-[98vw] h-[98vh]'
-      : 'max-w-7xl w-[90vw] h-[85vh]';
+    return isExpanded 
+      ? 'max-w-[98vw] w-[98vw] h-[98vh]' 
+      : 'max-w-7xl w-[90vw] max-h-[90vh]';
   }, [isExpanded]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("p-0 gap-0 flex flex-col overflow-hidden", modalSize)}>
-        {/* Header Fixo */}
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b bg-card">
-          <div className="flex-1">
-            <DialogTitle className="text-2xl font-bold text-foreground">
-              Relatório de Verificação - {companyName}
-            </DialogTitle>
-            {hasExistingReport && reportDate && (
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="default" className="bg-green-500/10 text-green-600 border-green-500/20 border-2">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Relatório Salvo
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {new Date(reportDate).toLocaleString('pt-BR')}
-                </span>
+      <DialogContent 
+        className={`${modalSize} overflow-hidden p-0 flex flex-col`}
+      >
+        <div className="w-full h-full flex flex-col">
+          {/* Header com controles */}
+          <div className="shrink-0 border-b bg-gradient-to-r from-primary/5 to-primary/10 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-lg font-semibold truncate">
+                  Relatório de Verificação TOTVS
+                </DialogTitle>
+                <DialogDescription className="text-sm mt-1 truncate">
+                  {companyName}
+                </DialogDescription>
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 ml-4">
-            {/* Botão Analisar - Unificado */}
-            <Button
-              onClick={handleAnalyzeCompany}
-              disabled={loading}
-              variant="default"
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Analisando...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 mr-2" />
-                  Analisar
-                </>
-              )}
-            </Button>
-
-            {/* Botão Salvar - só aparece se ainda não salvou */}
-            {!hasExistingReport && stcResult && (
+            </div>
+            
+            <div className="flex items-center gap-2 shrink-0 ml-4">
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleSalvarRelatorio}
-                className="bg-green-600 hover:bg-green-700"
+                onClick={handlePrintPDF}
+                disabled={isGeneratingPDF}
+                title="Exportar como PDF"
+                className="h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <Save className="w-4 h-4 mr-2" />
-                Salvar
-              </Button>
-            )}
-
-            <SaveReportPDF
-              contentId="quarantine-report-modal"
-              fileName={`relatorio-completo-${companyName.replace(/[^a-zA-Z0-9]/g, '-')}`}
-              reportType="totvs_verification"
-              reportTitle="Relatório Completo"
-              quarantineId={analysisId}
-              allTabs
-            />
-
-            <Button variant="ghost" size="icon" onClick={handleToggleExpand}>
-              {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Conteúdo Scrollável */}
-        <div
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-background"
-          style={{ minHeight: 0, maxHeight: 'calc(85vh - 180px)' }}
-        >
-          <div id="quarantine-report-modal" className="p-6">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <RefreshCw className="w-16 h-16 animate-spin text-primary mb-6" />
-                <h3 className="text-xl font-semibold mb-2 text-foreground">
-                  {hasExistingReport ? 'Carregando relatório salvo...' : 'Analisando empresa...'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {hasExistingReport ? '📄 Sem consumo de créditos' : '🔍 Consultando múltiplas fontes'}
-                </p>
-              </div>
-            ) : stcResult ? (
-              <Tabs defaultValue="summary" className="w-full">
-                <TabsList className="grid w-full grid-cols-8 mb-6 bg-card sticky top-0 z-10 shadow-sm border text-xs">
-                  <TabsTrigger value="summary">
-                    <Lightbulb className="w-3 h-3 mr-1" />
-                    Summary
-                  </TabsTrigger>
-                  <TabsTrigger value="totvs">
-                    <Shield className="w-3 h-3 mr-1" />
-                    TOTVS
-                  </TabsTrigger>
-                  <TabsTrigger value="competitors">
-                    <Target className="w-3 h-3 mr-1" />
-                    Competitors
-                  </TabsTrigger>
-                  <TabsTrigger value="similar">
-                    <Users className="w-3 h-3 mr-1" />
-                    Similar
-                  </TabsTrigger>
-                  <TabsTrigger value="clients">
-                    <Users className="w-3 h-3 mr-1" />
-                    Clients
-                  </TabsTrigger>
-                  <TabsTrigger value="analysis">
-                    <Target className="w-3 h-3 mr-1" />
-                    360°
-                  </TabsTrigger>
-                  <TabsTrigger value="products">
-                    <Rocket className="w-3 h-3 mr-1" />
-                    Products
-                  </TabsTrigger>
-                  <TabsTrigger value="keywords">
-                    <Search className="w-3 h-3 mr-1" />
-                    Keywords
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="totvs" id="totvs-verification-content" className="space-y-6">
-                  <TOTVSVerificationReportV2 
-                    data={stcResult?.totvs
-                      ? {
-                          ...stcResult.totvs,
-                          evidences: (Array.isArray(stcResult?.totvs?.evidences) && stcResult.totvs.evidences.length > 0)
-                            ? stcResult.totvs.evidences
-                            : (stcResult?.evidences || []),
-                          methodology: stcResult?.totvs?.methodology ?? stcResult?.methodology,
-                          status: (stcResult?.totvs?.status ?? stcResult?.status) === 'cliente_totvs' ? 'cliente' : 'nao_cliente',
-                          confidence: stcResult?.totvs?.confidence ?? stcResult?.confidence,
-                        }
-                      : {
-                          ...stcResult,
-                          status: stcResult?.status === 'cliente_totvs' ? 'cliente' : 'nao_cliente',
-                        }}
-                    companyName={companyName}
-                    cnpj={cnpj}
-                  />
-                </TabsContent>
-
-                {/* ABA 2: CONCORRENTES (NOVA) */}
-                <TabsContent value="competitors" id="competitors-content" className="space-y-6">
-                  <CompetitiveIntelligenceReport 
-                    competitors={stcResult?.competitors || []}
-                  />
-                </TabsContent>
-
-                {/* ABA 1: EXECUTIVE SUMMARY */}
-                <TabsContent value="summary" id="executive-summary-content" className="space-y-6">
-                  <ExecutiveSummaryReport 
-                    data={{
-                      score: stcResult?.totalScore || stcResult?.totvs?.score || 0,
-                      temperatura: (stcResult?.leadClassification || stcResult?.temperatura) ?? ((stcResult?.totalScore || 0) >= 75 ? 'hot' : (stcResult?.totalScore || 0) >= 50 ? 'warm' : 'cold'),
-                      isClienteTOTVS: (stcResult?.status === 'cliente_totvs') || (stcResult?.totvs?.status === 'cliente'),
-                      concorrentes: stcResult?.competitors?.length || 0,
-                      similarCompanies: stcResult?.similarCompanies?.length || 0,
-                      recommendedProducts: (stcResult?.productGaps?.recommended?.length ?? stcResult?.productGaps?.length) || 0,
-                      evidenceStats: {
-                        quintuple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 5).length || 0,
-                        quadruple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 4).length || 0,
-                        triple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 3).length || 0,
-                        double: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 2).length || 0,
-                      },
-                      insights: stcResult?.analysis360?.insights || stcResult?.insights || []
-                    }}
-                  />
-                </TabsContent>
-
-                {/* ABA 3: SIMILARES */}
-                <TabsContent value="similar" id="similar-companies-content" className="space-y-6">
-                  <SimilarCompaniesReport 
-                    companies={stcResult?.similarCompanies || []}
-                    companyName={companyName}
-                  />
-                </TabsContent>
-
-                {/* ABA 4: CLIENT DISCOVERY */}
-                <TabsContent value="clients" id="client-discovery-content" className="space-y-6">
-                  <ClientDiscoveryReport 
-                    data={stcResult?.clientDiscovery || { topClients: [], totalFound: 0 }}
-                  />
-                </TabsContent>
-
-                {/* ABA 5: 360° */}
-                <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
-                  <Analysis360Report 
-                    data={stcResult?.analysis360 || stcResult}
-                    companyName={companyName}
-                  />
-                </TabsContent>
-
-                {/* ABA 6: RECOMMENDED PRODUCTS */}
-                <TabsContent value="products" id="recommended-products-content" className="space-y-6">
-                  <RecommendedProductsReport 
-                    data={{
-                      products: stcResult?.productGaps || [],
-                      isClienteTOTVS: (stcResult?.status === 'cliente_totvs') || (stcResult?.totvs?.status === 'cliente')
-                    }}
-                  />
-                </TabsContent>
-
-                {/* ABA 7: KEYWORDS & SEO */}
-                <TabsContent value="keywords" id="keywords-seo-content" className="space-y-6">
-                  <KeywordsSEOReport 
-                    data={{
-                      keywords: stcResult?.keywords || [],
-                      similarCompanies: stcResult?.similarCompanies || []
-                    }}
-                  />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20">
-                <AlertTriangle className="w-16 h-16 text-yellow-500 mb-6" />
-                <h3 className="text-xl font-semibold mb-2">Nenhum relatório disponível</h3>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer Fixo */}
-        <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-6">
-          <div className="flex justify-between items-center">
-            <Button 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              className="border-border hover:bg-accent hover:text-accent-foreground"
-            >
-              Fechar
-            </Button>
-            <div className="flex gap-3">
-              <Button 
-                variant="destructive" 
-                onClick={handleReject} 
-                disabled={!stcResult}
-                className="bg-red-600 hover:bg-red-700 text-white shadow-md"
-              >
-                <XCircle className="w-4 h-4 mr-2" />
-                Descartar
-              </Button>
-              <Button
-                onClick={handleActivatePipeline}
-                className="bg-green-600 hover:bg-green-700 text-white shadow-md"
-                disabled={activating}
-              >
-                {activating ? (
+                {isGeneratingPDF ? (
                   <>
-                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Ativando...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm font-medium">Gerando...</span>
                   </>
                 ) : (
                   <>
-                    <Rocket className="w-4 h-4 mr-2" />
-                    Ativar no Pipeline
+                    <FileDown className="w-4 h-4" />
+                    <span className="text-sm font-medium">Exportar PDF</span>
                   </>
+                )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleToggleExpand}
+                title={isExpanded ? 'Minimizar' : 'Maximizar'}
+                className="h-9 w-9"
+              >
+                {isExpanded ? (
+                  <Minimize2 className="w-4 h-4" />
+                ) : (
+                  <Maximize2 className="w-4 h-4" />
                 )}
               </Button>
             </div>
           </div>
+
+          {/* Conteúdo scrollable */}
+          <div 
+            ref={contentRef}
+            className="flex-1 overflow-y-auto p-6 space-y-6"
+          >
+            <TOTVSCheckCard
+              companyId={companyId}
+              companyName={companyName}
+              cnpj={cnpj}
+              domain={domain}
+              autoVerify={false}
+              onResult={setStcResult}
+            />
+          </div>
+
+          {/* Footer fixo */}
+          <div className="shrink-0 border-t bg-muted/30 p-4">
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleSave} 
+                className="gap-2"
+                size="sm"
+              >
+                <FileText className="w-4 h-4" />
+                Salvar Relatório
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleReject} 
+                className="gap-2"
+                size="sm"
+              >
+                <XCircle className="w-4 h-4" />
+                Descartar Empresa
+              </Button>
+              <Button 
+                onClick={handleApprove} 
+                className="gap-2"
+                size="sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Aprovar e Mover para Pool
+              </Button>
+            </DialogFooter>
+          </div>
         </div>
       </DialogContent>
+      {/* Modal de Descarte com motivos */}
+      <DiscardCompanyModal
+        open={showDiscard}
+        onOpenChange={setShowDiscard}
+        company={{ id: companyId || analysisId, name: companyName, cnpj }}
+        analysisId={analysisId}
+        stcResult={stcResult || undefined}
+        onSuccess={() => {
+          toast.success('Empresa descartada');
+          onOpenChange(false);
+        }}
+      />
     </Dialog>
   );
 }

@@ -1,456 +1,607 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY')!;
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
-
-function log(level: string, module: string, message: string, data?: any) {
-  const timestamp = new Date().toISOString();
-  const emoji = level === 'INFO' ? '✅' : level === 'WARN' ? '⚠️' : level === 'ERROR' ? '❌' : '🔍';
-  console.log(`${emoji} [${timestamp}] [${level}] [${module}] ${message}`);
-  if (data) console.log(JSON.stringify(data, null, 2));
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders, status: 200 });
   }
 
   try {
-    const { companyName, cnpj } = await req.json();
-    log('INFO', 'STC-AGENT', `🚀 Iniciando análise: ${companyName}`);
+    const { cnpj, companyName, question } = await req.json();
+    
+    console.log('[STC-AGENT] ===== INICIANDO ANÁLISE PROFUNDA =====');
+    console.log('[STC-AGENT] Empresa:', companyName);
+    console.log('[STC-AGENT] CNPJ:', cnpj);
+    console.log('[STC-AGENT] Pergunta:', question);
 
-    const startTime = Date.now();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // CICLO 2: TOTVS
-    log('INFO', 'CICLO-2', '📋 Verificação TOTVS...');
-    const totvsResult = await verificarTOTVS(companyName, cnpj);
+    // ==================== CAMADA 1: DADOS BÁSICOS ====================
+    console.log('[STC-AGENT] 🔍 CAMADA 1: Dados Básicos da Receita Federal');
+    
+    let companyData: any = null;
+    let receitaFederalUrl: string | null = null;
+    
+    // Buscar empresa na base de dados
+    if (cnpj) {
+      const { data } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('cnpj', cnpj)
+        .single();
+      if (data) companyData = data;
+    }
+    
+    if (!companyData && companyName) {
+      const { data } = await supabase
+        .from('companies')
+        .select('*')
+        .ilike('name', `%${companyName}%`)
+        .limit(1)
+        .single();
+      if (data) companyData = data;
+    }
 
-    // CICLO 3: SIMILARES
-    log('INFO', 'CICLO-3', '👥 Empresas similares...');
-    const similarCompanies = await buscarEmpresasSimilares(companyName);
+    // Enriquecer com Receita Federal
+    if (cnpj && cnpj.length === 14) {
+      try {
+        receitaFederalUrl = `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`;
+        const receitaResponse = await fetch(receitaFederalUrl);
+        if (receitaResponse.ok) {
+          const receitaData = await receitaResponse.json();
+          companyData = {
+            ...companyData,
+            cnpj,
+            sector: receitaData.cnae_fiscal_descricao,
+            cnae_principal: receitaData.cnae_fiscal,
+            state: receitaData.uf,
+            city: receitaData.municipio,
+            porte: receitaData.porte,
+            capital_social: receitaData.capital_social,
+            data_inicio_atividade: receitaData.data_inicio_atividade,
+            situacao_cadastral: receitaData.situacao_cadastral
+          };
+          console.log('[STC-AGENT] ✅ Dados da Receita Federal obtidos');
+        }
+      } catch (error) {
+        console.error('[STC-AGENT] Erro Receita Federal:', error);
+      }
+    }
 
-    // CICLO 4: 360°
-    log('INFO', 'CICLO-4', '🎯 Análise 360°...');
-    const analysis360 = await analisar360(companyName, totvsResult, similarCompanies);
-
-    const executionTime = Date.now() - startTime;
-
-    const resultado = {
-      status: totvsResult.status,
-      confidence: totvsResult.confidence,
-      evidences: totvsResult.evidences,
-      methodology: totvsResult.methodology,
-      tripleMatches: totvsResult.tripleMatches,
-      doubleMatches: totvsResult.doubleMatches,
-      singleMatches: totvsResult.singleMatches,
-      totalScore: totvsResult.totalScore,
-      similarCompanies: similarCompanies,
-      analysis360: analysis360,
-      icpScore: analysis360.icpScore,
-      temperatura: analysis360.temperatura,
-      insights: analysis360.insights,
-      swot: analysis360.swot,
-      porter: analysis360.porter,
-      redesSociais: analysis360.redesSociais,
-      metadata: {
-        analyzed_at: new Date().toISOString(),
-        execution_time_ms: executionTime,
-        total_sources: 17,
+    const intelligence: any = {
+      companyData,
+      fontes: {
+        receitaFederal: receitaFederalUrl
+      },
+      decisores: [],
+      noticias: [],
+      tecnologias: [],
+      sinaisCompra: [],
+      presencaDigital: {},
+      totvsAnalysis: {
+        usesTotvs: false,
+        confidence: 0,
+        evidence: []
       }
     };
 
-    log('INFO', 'STC-AGENT', `✅ Concluído em ${executionTime}ms`);
+    // ==================== CAMADA 2: DECISORES NO LINKEDIN (COM LINKS REAIS) ====================
+    console.log('[STC-AGENT] 👔 CAMADA 2: Decisores no LinkedIn (buscando perfis reais)');
+    
+    const linkedinQueries = [
+      { query: `site:linkedin.com/in "${companyName}" "diretor de TI"`, area: 'TI', nivel: 'Diretor' },
+      { query: `site:linkedin.com/in "${companyName}" "gerente de TI"`, area: 'TI', nivel: 'Gerente' },
+      { query: `site:linkedin.com/in "${companyName}" "CTO"`, area: 'TI', nivel: 'C-Level' },
+      { query: `site:linkedin.com/in "${companyName}" "diretor de tecnologia"`, area: 'TI', nivel: 'Diretor' },
+      { query: `site:linkedin.com/in "${companyName}" "diretor de compras"`, area: 'Compras', nivel: 'Diretor' },
+      { query: `site:linkedin.com/in "${companyName}" "gerente de compras"`, area: 'Compras', nivel: 'Gerente' },
+      { query: `site:linkedin.com/in "${companyName}" "CEO"`, area: 'Executivo', nivel: 'C-Level' },
+      { query: `site:linkedin.com/in "${companyName}" "CFO"`, area: 'Financeiro', nivel: 'C-Level' },
+      { query: `site:linkedin.com/in "${companyName}" "diretor financeiro"`, area: 'Financeiro', nivel: 'Diretor' },
+      { query: `site:linkedin.com/in "${companyName}" "diretor administrativo"`, area: 'Administrativo', nivel: 'Diretor' }
+    ];
 
-    return new Response(JSON.stringify(resultado), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const decisoresEncontrados = new Set();
+
+    for (const { query, area, nivel } of linkedinQueries) {
+      try {
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5 }
+        });
+
+        if (searchData?.success && searchData.results) {
+          for (const result of searchData.results) {
+            if (!result.url.includes('linkedin.com/in/')) {
+              console.log('[STC-AGENT] ⚠️ URL inválida (não é perfil LinkedIn):', result.url);
+              continue;
+            }
+
+            const titleMatch = result.title.match(/^(.+?)\s*[-–|]\s*(.+?)\s*[-–|]/);
+            if (titleMatch) {
+              const nome = titleMatch[1].trim();
+              const cargo = titleMatch[2].trim();
+
+              if (decisoresEncontrados.has(nome.toLowerCase())) {
+                continue;
+              }
+              decisoresEncontrados.add(nome.toLowerCase());
+
+              let relevancia = 'baixa';
+              let prioridade = 3;
+
+              if (nivel === 'C-Level') {
+                relevancia = 'crítica';
+                prioridade = 1;
+              } else if (nivel === 'Diretor') {
+                relevancia = 'alta';
+                prioridade = 2;
+              } else if (nivel === 'Gerente') {
+                relevancia = 'média';
+                prioridade = 3;
+              }
+
+              intelligence.decisores.push({
+                nome,
+                cargo,
+                area,
+                nivel,
+                linkedin_url: result.url,
+                linkedin_snippet: result.snippet || '',
+                fonte: 'LinkedIn (busca verificada)',
+                relevancia,
+                prioridade,
+                data_encontrado: new Date().toISOString()
+              });
+
+              console.log(`[STC-AGENT] ✅ Decisor encontrado: ${nome} (${cargo}) - ${result.url}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[STC-AGENT] Erro busca LinkedIn:', error);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    intelligence.decisores.sort((a: any, b: any) => a.prioridade - b.prioridade);
+    console.log('[STC-AGENT] ✅ Total de decisores únicos encontrados:', intelligence.decisores.length);
+
+    // ==================== CAMADA 3: NOTÍCIAS COM FONTES VERIFICÁVEIS ====================
+    console.log('[STC-AGENT] 📰 CAMADA 3: Notícias com Fontes Oficiais');
+    
+    const newsQueries = [
+      { query: `"${companyName}" expansão OR investimento OR crescimento`, tipo: 'expansão' },
+      { query: `"${companyName}" contratação OR vaga OR "está contratando"`, tipo: 'contratação' },
+      { query: `"${companyName}" tecnologia OR sistema OR ERP OR software`, tipo: 'tecnologia' },
+      { query: `"${companyName}" modernização OR transformação digital`, tipo: 'modernização' },
+      { query: `"${companyName}" TOTVS OR Protheus OR Microsiga`, tipo: 'totvs' },
+      { query: `site:valor.com.br OR site:exame.com OR site:infomoney.com.br OR site:estadao.com.br "${companyName}"`, tipo: 'mídia_oficial' }
+    ];
+
+    const noticiasEncontradas = new Set();
+
+    for (const { query, tipo } of newsQueries) {
+      try {
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5 }
+        });
+
+        if (searchData?.success && searchData.results) {
+          for (const result of searchData.results) {
+            if (noticiasEncontradas.has(result.url)) {
+              continue;
+            }
+            noticiasEncontradas.add(result.url);
+
+            const text = `${result.title} ${result.snippet}`.toLowerCase();
+            let relevancia = 50;
+            let tipoFinal = tipo;
+
+            if (text.includes('totvs') || text.includes('protheus') || text.includes('microsiga')) {
+              tipoFinal = 'totvs';
+              relevancia = 100;
+              intelligence.totvsAnalysis.usesTotvs = true;
+              intelligence.totvsAnalysis.confidence += 40;
+              intelligence.totvsAnalysis.evidence.push({
+                descricao: `Mencionado em: ${result.title}`,
+                fonte: result.url,
+                data: new Date().toISOString()
+              });
+            } else if (text.includes('modernização') || text.includes('transformação digital')) {
+              relevancia = 85;
+            } else if (text.includes('contratação') || text.includes('vaga')) {
+              relevancia = 90;
+            } else if (text.includes('tecnologia') || text.includes('sistema') || text.includes('erp')) {
+              relevancia = 95;
+            }
+
+            const urlObj = new URL(result.url);
+            const dominio = urlObj.hostname.replace('www.', '');
+
+            intelligence.noticias.push({
+              titulo: result.title,
+              url: result.url,
+              dominio,
+              tipo: tipoFinal,
+              relevancia,
+              data_encontrado: new Date().toISOString()
+            });
+
+            if (relevancia >= 80) {
+              intelligence.sinaisCompra.push({
+                tipo: tipoFinal,
+                descricao: result.title,
+                score: relevancia,
+                fonte_url: result.url,
+                fonte_nome: dominio
+              });
+            }
+
+            console.log(`[STC-AGENT] ✅ Notícia encontrada: ${result.title.substring(0, 60)}... - ${result.url}`);
+          }
+        }
+      } catch (error) {
+        console.error('[STC-AGENT] Erro busca notícias:', error);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    intelligence.noticias.sort((a: any, b: any) => b.relevancia - a.relevancia);
+    console.log('[STC-AGENT] ✅ Total de notícias únicas encontradas:', intelligence.noticias.length);
+    console.log('[STC-AGENT] ✅ Sinais de compra detectados:', intelligence.sinaisCompra.length);
+
+    // ==================== CAMADA 4: TECNOLOGIAS COM FONTES ====================
+    console.log('[STC-AGENT] 💻 CAMADA 4: Stack Tecnológico com Fontes');
+    
+    const techQueries = [
+      `"${companyName}" "utiliza" OR "usa" sistema OR software`,
+      `"${companyName}" SAP OR Oracle OR Microsoft Dynamics OR TOTVS`,
+      `site:linkedin.com/company "${companyName}" tecnologia`
+    ];
+
+    const tecnologiasEncontradas = new Map();
+
+    for (const query of techQueries) {
+      try {
+        const { data: searchData } = await supabase.functions.invoke('web-search', {
+          body: { query, limit: 5 }
+        });
+
+        if (searchData?.success && searchData.results) {
+          for (const result of searchData.results) {
+            const text = `${result.title} ${result.snippet}`.toLowerCase();
+            
+            const techs = [
+              { nome: 'TOTVS', keywords: ['totvs'] },
+              { nome: 'Protheus', keywords: ['protheus'] },
+              { nome: 'Microsiga', keywords: ['microsiga'] },
+              { nome: 'SAP', keywords: ['sap'] },
+              { nome: 'Oracle', keywords: ['oracle'] },
+              { nome: 'Microsoft Dynamics', keywords: ['dynamics', 'microsoft dynamics'] },
+              { nome: 'Salesforce', keywords: ['salesforce'] },
+              { nome: 'Senior', keywords: ['senior sistemas'] },
+              { nome: 'Linx', keywords: ['linx'] }
+            ];
+
+            for (const tech of techs) {
+              if (tech.keywords.some(keyword => text.includes(keyword))) {
+                if (!tecnologiasEncontradas.has(tech.nome)) {
+                  tecnologiasEncontradas.set(tech.nome, {
+                    nome: tech.nome,
+                    fontes: []
+                  });
+                }
+
+                tecnologiasEncontradas.get(tech.nome).fontes.push({
+                  titulo: result.title,
+                  url: result.url
+                });
+
+                if (tech.nome === 'TOTVS' || tech.nome === 'Protheus' || tech.nome === 'Microsiga') {
+                  intelligence.totvsAnalysis.usesTotvs = true;
+                  intelligence.totvsAnalysis.confidence += 30;
+                  intelligence.totvsAnalysis.evidence.push({
+                    descricao: `Usa ${tech.nome}`,
+                    fonte: result.url,
+                    titulo: result.title,
+                    data: new Date().toISOString()
+                  });
+                }
+
+                console.log(`[STC-AGENT] ✅ Tecnologia identificada: ${tech.nome} - Fonte: ${result.url}`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[STC-AGENT] Erro busca tecnologias:', error);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    intelligence.tecnologias = Array.from(tecnologiasEncontradas.values());
+    console.log('[STC-AGENT] ✅ Tecnologias únicas identificadas:', intelligence.tecnologias.length);
+
+    // ==================== CAMADA 5: PRESENÇA DIGITAL COM LINKS OFICIAIS ====================
+    console.log('[STC-AGENT] 🌐 CAMADA 5: Presença Digital (Links Oficiais)');
+    
+    try {
+      const { data: searchData } = await supabase.functions.invoke('web-search', {
+        body: { query: companyName, limit: 10 }
+      });
+
+      if (searchData?.success && searchData.results) {
+        for (const result of searchData.results) {
+          const url = result.url.toLowerCase();
+          
+          if (url.includes('linkedin.com/company/') && !intelligence.presencaDigital.linkedin) {
+            intelligence.presencaDigital.linkedin = {
+              url: result.url,
+              titulo: result.title,
+              verificado: true
+            };
+          } else if (url.includes('facebook.com/') && !intelligence.presencaDigital.facebook) {
+            intelligence.presencaDigital.facebook = {
+              url: result.url,
+              titulo: result.title,
+              verificado: true
+            };
+          } else if (url.includes('instagram.com/') && !intelligence.presencaDigital.instagram) {
+            intelligence.presencaDigital.instagram = {
+              url: result.url,
+              titulo: result.title,
+              verificado: true
+            };
+          } else if (!intelligence.presencaDigital.website && 
+                     !url.includes('wikipedia') && 
+                     !url.includes('linkedin') && 
+                     !url.includes('facebook') && 
+                     !url.includes('instagram')) {
+            intelligence.presencaDigital.website = {
+              url: result.url,
+              titulo: result.title,
+              verificado: true
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[STC-AGENT] Erro busca presença digital:', error);
+    }
+
+    // ==================== CAMADA 6: ANÁLISE POR SETOR ====================
+    console.log('[STC-AGENT] 🏭 CAMADA 6: Análise por Setor');
+    
+    const totvsHeavySectors = [
+      'indústria', 'industria', 'metalúrgica', 'metalurgica',
+      'plástico', 'plastico', 'alimentos', 'bebidas',
+      'têxtil', 'textil', 'construção', 'construcao',
+      'cooperativa', 'agropecuária', 'agropecuaria'
+    ];
+
+    if (companyData?.sector) {
+      const sectorLower = companyData.sector.toLowerCase();
+      if (totvsHeavySectors.some(s => sectorLower.includes(s))) {
+        intelligence.totvsAnalysis.confidence += 20;
+        intelligence.totvsAnalysis.evidence.push({
+          descricao: `Setor com alta adoção TOTVS: ${companyData.sector}`,
+          data: new Date().toISOString()
+        });
+      }
+    }
+
+    if (companyData?.porte === 'DEMAIS') {
+      intelligence.totvsAnalysis.confidence += 15;
+      intelligence.totvsAnalysis.evidence.push({
+        descricao: 'Porte adequado para TOTVS (DEMAIS)',
+        data: new Date().toISOString()
+      });
+    }
+
+    intelligence.totvsAnalysis.confidence = Math.min(100, intelligence.totvsAnalysis.confidence);
+
+    // ==================== SELEÇÃO AUTOMÁTICA DE MODELO ====================
+    console.log('[STC-AGENT] 🤖 Selecionando modelo de IA...');
+    
+    const isComplexAnalysis = 
+      (question && (
+        question.toLowerCase().includes('analise completa') ||
+        question.toLowerCase().includes('análise completa') ||
+        question.toLowerCase().includes('detalhad') ||
+        question.toLowerCase().includes('profund')
+      )) ||
+      (intelligence.decisores.length >= 3 && 
+       intelligence.noticias.length >= 5 && 
+       intelligence.sinaisCompra.length >= 2) ||
+      intelligence.totvsAnalysis.confidence > 70;
+
+    const selectedModel = isComplexAnalysis ? 'gpt-4o' : 'gpt-4o-mini';
+    
+    console.log('[STC-AGENT] 🎯 Modelo selecionado:', selectedModel);
+
+    // ==================== GERAR RESPOSTA COM IA ====================
+    console.log('[STC-AGENT] 🤖 Gerando análise com IA...');
+    
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY não configurada');
+    }
+
+    const systemPrompt = `Você é um especialista em inteligência comercial B2B para TOTVS.
+
+🚨 REGRAS CRÍTICAS - ZERO TOLERÂNCIA:
+
+1. ❌ PROIBIDO INVENTAR INFORMAÇÕES
+   - NUNCA invente nomes, cargos, telefones, e-mails
+   - NUNCA invente dados financeiros ou estatísticas
+   - NUNCA invente notícias ou eventos
+
+2. ✅ SEMPRE CITE AS FONTES
+   - Todos os decisores vêm com LinkedIn URL real
+   - Todas as notícias vêm com URL da fonte
+   - Todas as tecnologias vêm com fonte verificável
+   - Dados da Receita Federal têm URL da API
+
+3. ✅ USE APENAS DADOS FORNECIDOS
+   - Se não há decisores, diga "Nenhum decisor identificado"
+   - Se não há notícias, diga "Nenhuma notícia encontrada"
+   - Se não há tecnologias, diga "Stack tecnológico não identificado"
+
+4. ✅ FORMATO DE RESPOSTA
+   - Sempre mencione as fontes (LinkedIn, portais de notícias, etc)
+   - Sempre inclua os links quando mencionar pessoas ou notícias
+   - Seja transparente sobre limitações dos dados`;
+
+    const userPrompt = `DADOS DA EMPRESA (Fonte: Receita Federal):
+${companyData ? JSON.stringify(companyData, null, 2) : '❌ Dados não disponíveis'}
+${receitaFederalUrl ? `🔗 Fonte: ${receitaFederalUrl}` : ''}
+
+DECISORES IDENTIFICADOS (${intelligence.decisores.length}):
+${intelligence.decisores.length > 0 
+  ? intelligence.decisores.map((d: any) => 
+      `\n👤 ${d.nome}\n   Cargo: ${d.cargo}\n   Área: ${d.area} | Nível: ${d.nivel}\n   Relevância: ${d.relevancia}\n   🔗 LinkedIn: ${d.linkedin_url}\n   Snippet: ${d.linkedin_snippet}`
+    ).join('\n')
+  : '❌ NENHUM DECISOR IDENTIFICADO'}
+
+NOTÍCIAS RECENTES (${intelligence.noticias.length}):
+${intelligence.noticias.length > 0
+  ? intelligence.noticias.slice(0, 10).map((n: any) => 
+      `\n📰 ${n.titulo}\n   Tipo: ${n.tipo} | Relevância: ${n.relevancia}/100\n   Fonte: ${n.dominio}\n   🔗 ${n.url}`
+    ).join('\n')
+  : '❌ NENHUMA NOTÍCIA ENCONTRADA'}
+
+TECNOLOGIAS USADAS (${intelligence.tecnologias.length}):
+${intelligence.tecnologias.length > 0
+  ? intelligence.tecnologias.map((t: any) => 
+      `\n💻 ${t.nome}\n   Fontes (${t.fontes.length}):\n${t.fontes.map((f: any) => `      - ${f.titulo}\n        🔗 ${f.url}`).join('\n')}`
+    ).join('\n')
+  : '❌ NENHUMA TECNOLOGIA IDENTIFICADA'}
+
+SINAIS DE COMPRA (${intelligence.sinaisCompra.length}):
+${intelligence.sinaisCompra.length > 0
+  ? intelligence.sinaisCompra.map((s: any) => 
+      `\n🎯 [Score: ${s.score}/100] ${s.tipo.toUpperCase()}\n   ${s.descricao}\n   Fonte: ${s.fonte_nome}\n   🔗 ${s.fonte_url}`
+    ).join('\n')
+  : '❌ NENHUM SINAL DE COMPRA DETECTADO'}
+
+PRESENÇA DIGITAL:
+${intelligence.presencaDigital.website ? `🌐 Website: ${intelligence.presencaDigital.website.url}` : '❌ Website não encontrado'}
+${intelligence.presencaDigital.linkedin ? `💼 LinkedIn: ${intelligence.presencaDigital.linkedin.url}` : '❌ LinkedIn não encontrado'}
+${intelligence.presencaDigital.facebook ? `📘 Facebook: ${intelligence.presencaDigital.facebook.url}` : '❌ Facebook não encontrado'}
+${intelligence.presencaDigital.instagram ? `📸 Instagram: ${intelligence.presencaDigital.instagram.url}` : '❌ Instagram não encontrado'}
+
+ANÁLISE TOTVS:
+Usa TOTVS: ${intelligence.totvsAnalysis.usesTotvs ? '✅ SIM (confirmado)' : '❌ Não confirmado'}
+Confiança: ${intelligence.totvsAnalysis.confidence}%
+Evidências (${intelligence.totvsAnalysis.evidence.length}):
+${intelligence.totvsAnalysis.evidence.length > 0
+  ? intelligence.totvsAnalysis.evidence.map((e: any) => 
+      `- ${e.descricao}\n  🔗 Fonte: ${e.fonte || 'Análise interna'}`
+    ).join('\n')
+  : '❌ Nenhuma evidência encontrada'}
+
+PERGUNTA DO USUÁRIO:
+${question || 'Análise geral da empresa'}
+
+⚠️ IMPORTANTE: Cite os links do LinkedIn dos decisores e URLs das notícias na sua resposta.`;
+
+    const maxTokens = isComplexAnalysis ? 2500 : 1500;
+
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: maxTokens
+      })
     });
+
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error('[STC-AGENT] Erro OpenAI:', errorText);
+      throw new Error(`OpenAI API error: ${errorText}`);
+    }
+
+    const openaiData = await openaiResponse.json();
+    const aiResponse = openaiData.choices[0].message.content;
+    const tokensUsed = openaiData.usage.total_tokens;
+
+    console.log('[STC-AGENT] ✅ Análise concluída');
+    console.log('[STC-AGENT] 📊 Tokens utilizados:', tokensUsed);
+    console.log('[STC-AGENT] 💰 Modelo usado:', selectedModel);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        response: aiResponse,
+        intelligence: {
+          companyData: intelligence.companyData,
+          fontes: intelligence.fontes,
+          decisores: intelligence.decisores,
+          noticias: intelligence.noticias.slice(0, 15),
+          tecnologias: intelligence.tecnologias,
+          sinaisCompra: intelligence.sinaisCompra,
+          presencaDigital: intelligence.presencaDigital,
+          totvsAnalysis: intelligence.totvsAnalysis
+        },
+        stats: {
+          decisores: intelligence.decisores.length,
+          noticias: intelligence.noticias.length,
+          tecnologias: intelligence.tecnologias.length,
+          sinaisCompra: intelligence.sinaisCompra.length,
+          totvsConfidence: intelligence.totvsAnalysis.confidence
+        },
+        metadata: {
+          model: selectedModel,
+          tokensUsed: tokensUsed,
+          isComplexAnalysis: isComplexAnalysis,
+          dataQuality: {
+            hasCompanyData: !!companyData,
+            hasReceitaFederal: !!receitaFederalUrl,
+            hasDecisores: intelligence.decisores.length > 0,
+            hasNoticias: intelligence.noticias.length > 0,
+            hasTecnologias: intelligence.tecnologias.length > 0,
+            hasSinaisCompra: intelligence.sinaisCompra.length > 0
+          }
+        }
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
 
   } catch (error: any) {
-    log('ERROR', 'STC-AGENT', '❌ Erro:', { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error('[STC-AGENT] Erro:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        details: error.toString()
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
-
-async function verificarTOTVS(companyName: string, cnpj?: string) {
-  const evidences: any[] = [];
-  let tripleMatches = 0, doubleMatches = 0, singleMatches = 0, serperQueries = 0;
-
-  const queries = [
-    `"${companyName}" TOTVS cliente`,
-    `"${companyName}" sistema TOTVS`,
-    `"${companyName}" ERP TOTVS`,
-    cnpj ? `"${cnpj}" TOTVS` : null,
-  ].filter(Boolean);
-
-  for (const query of queries) {
-    try {
-      const results = await buscarSerper(query as string);
-      serperQueries++;
-
-      for (const result of results) {
-        const matchType = analisarMatch(result, companyName, cnpj);
-        
-        if (matchType === 'triple') {
-          tripleMatches++;
-          evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
-            matchType: 'triple',
-            score: 3,
-          });
-        } else if (matchType === 'double') {
-          doubleMatches++;
-          evidences.push({
-            text: result.snippet || result.title,
-            source: result.link,
-            matchType: 'double',
-            score: 2,
-          });
-        } else {
-          singleMatches++;
-        }
-      }
-    } catch (error) {
-      log('WARN', 'TOTVS', `Erro na query: ${query}`);
-    }
-  }
-
-  const totalScore = (tripleMatches * 3) + (doubleMatches * 2) + singleMatches;
-  const isClienteTOTVS = tripleMatches > 0 || totalScore > 10;
-  const confidence = tripleMatches > 0 ? 'high' : doubleMatches > 2 ? 'medium' : 'low';
-
-  return {
-    status: isClienteTOTVS ? 'cliente_totvs' : 'nao_cliente_totvs',
-    confidence,
-    evidences: evidences.slice(0, 15),
-    methodology: {
-      sources_checked: 17,
-      total_searches: queries.length,
-      total_matches: tripleMatches + doubleMatches + singleMatches,
-    },
-    tripleMatches,
-    doubleMatches,
-    singleMatches,
-    totalScore,
-    serperQueries,
-  };
-}
-
-async function buscarEmpresasSimilares(companyName: string) {
-  const queries = [
-    `empresas similares "${companyName}"`,
-    `concorrentes "${companyName}"`,
-  ];
-
-  const allCompanies: any[] = [];
-
-  for (const query of queries) {
-    try {
-      const results = await buscarSerper(query);
-      
-      for (const result of results) {
-        const name = extrairNome(result.title);
-        if (name && name !== companyName) {
-          allCompanies.push({
-            name,
-            source: result.link,
-            snippet: result.snippet,
-          });
-        }
-      }
-    } catch (error) {
-      log('WARN', 'SIMILARES', `Erro: ${query}`);
-    }
-  }
-
-  const unique = Array.from(new Map(allCompanies.map(c => [c.name.toLowerCase(), c])).values());
-
-  const enriched = await Promise.all(
-    unique.slice(0, 12).map(async (company) => {
-      const score = calcularSimilaridade(company, companyName);
-      const data = await enriquecerEmpresa(company.name);
-
-      return {
-        name: company.name,
-        cnpj: data.cnpj || 'N/A',
-        similarityScore: score,
-        sector: data.sector || 'Tecnologia',
-        size: data.size || 'Médio Porte',
-        region: data.region || 'São Paulo',
-        revenue: data.revenue || 'R$ 10-50M',
-        reasons: [
-          `Mesmo setor (${data.sector || 'Tecnologia'})`,
-          `Porte similar (${data.size || 'Médio Porte'})`,
-          `Região próxima (${data.region || 'São Paulo'})`,
-          'Perfil de mercado similar',
-        ],
-      };
-    })
-  );
-
-  enriched.sort((a, b) => b.similarityScore - a.similarityScore);
-  return enriched;
-}
-
-async function analisar360(companyName: string, totvsResult: any, similarCompanies: any[]) {
-  const redesSociais = await buscarRedesSociais(companyName);
-
-  const context = `
-Empresa: ${companyName}
-Status TOTVS: ${totvsResult.status}
-Empresas similares: ${similarCompanies.length}
-LinkedIn: ${redesSociais.linkedin?.followers || 0} seguidores
-`;
-
-  const swot = await gerarSWOT(context);
-  const porter = await gerarPorter(context);
-  const insights = await gerarInsights(context);
-
-  const icpScore = calcularICP({
-    totvsStatus: totvsResult.status,
-    confidence: totvsResult.confidence,
-    numSimilares: similarCompanies.length,
-    redesSociais,
-  });
-
-  const temperatura = icpScore >= 85 ? 'quente' : icpScore >= 70 ? 'morno' : 'frio';
-
-  return {
-    icpScore,
-    temperatura,
-    swot,
-    porter,
-    redesSociais,
-    insights,
-    marketplaces: ['Mercado Livre', 'B2B Brasil'],
-    produtos: ['Software de Gestão', 'Consultoria'],
-    fontes: ['Serper', 'OpenAI', 'LinkedIn', 'Google'],
-  };
-}
-
-async function buscarSerper(query: string) {
-  const response = await fetch('https://google.serper.dev/search', {
-    method: 'POST',
-    headers: {
-      'X-API-KEY': SERPER_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ q: query, num: 10, gl: 'br', hl: 'pt-br' }),
-  });
-
-  if (!response.ok) throw new Error(`Serper error: ${response.statusText}`);
-  const data = await response.json();
-  return data.organic || [];
-}
-
-function analisarMatch(result: any, companyName: string, cnpj?: string): string {
-  const text = `${result.title} ${result.snippet}`.toLowerCase();
-  const name = companyName.toLowerCase();
-  const hasCNPJ = cnpj && text.includes(cnpj.replace(/\D/g, ''));
-  const hasTOTVS = text.includes('totvs') || text.includes('protheus');
-  const hasName = text.includes(name);
-
-  if (hasName && hasCNPJ && hasTOTVS) return 'triple';
-  if ((hasName && hasTOTVS) || (hasCNPJ && hasTOTVS)) return 'double';
-  return 'single';
-}
-
-function extrairNome(title: string): string | null {
-  const match = title.match(/([A-Z][a-zA-Z\s]+(?:Ltda|S\.A\.|LTDA|SA))/);
-  return match ? match[1].trim() : null;
-}
-
-function calcularSimilaridade(company: any, targetCompany: string): number {
-  const keywords = targetCompany.toLowerCase().split(' ');
-  const text = `${company.name} ${company.snippet}`.toLowerCase();
-  
-  let matches = 0;
-  for (const keyword of keywords) {
-    if (text.includes(keyword)) matches++;
-  }
-
-  return Math.min(100, Math.round((matches / keywords.length) * 100));
-}
-
-async function enriquecerEmpresa(name: string) {
-  try {
-    const results = await buscarSerper(`"${name}" CNPJ setor`);
-    return {
-      cnpj: extrairCNPJ(results),
-      sector: extrairSetor(results),
-      size: extrairPorte(results),
-      region: extrairRegiao(results),
-      revenue: 'R$ 10-50M',
-    };
-  } catch {
-    return {};
-  }
-}
-
-function extrairCNPJ(results: any[]): string | null {
-  for (const r of results) {
-    const match = `${r.title} ${r.snippet}`.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
-    if (match) return match[0];
-  }
-  return null;
-}
-
-function extrairSetor(results: any[]): string {
-  const setores = ['Tecnologia', 'Varejo', 'Indústria', 'Serviços'];
-  for (const setor of setores) {
-    for (const r of results) {
-      if (`${r.title} ${r.snippet}`.toLowerCase().includes(setor.toLowerCase())) {
-        return setor;
-      }
-    }
-  }
-  return 'Tecnologia';
-}
-
-function extrairPorte(results: any[]): string {
-  const portes = ['Pequeno Porte', 'Médio Porte', 'Grande Porte'];
-  for (const porte of portes) {
-    for (const r of results) {
-      if (`${r.title} ${r.snippet}`.includes(porte)) return porte;
-    }
-  }
-  return 'Médio Porte';
-}
-
-function extrairRegiao(results: any[]): string {
-  const regioes = ['São Paulo', 'Rio de Janeiro', 'Minas Gerais'];
-  for (const regiao of regioes) {
-    for (const r of results) {
-      if (`${r.title} ${r.snippet}`.includes(regiao)) return regiao;
-    }
-  }
-  return 'São Paulo';
-}
-
-async function buscarRedesSociais(companyName: string) {
-  const platforms = {
-    linkedin: await buscarSerper(`"${companyName}" site:linkedin.com`),
-    facebook: await buscarSerper(`"${companyName}" site:facebook.com`),
-    instagram: await buscarSerper(`"${companyName}" site:instagram.com`),
-    twitter: await buscarSerper(`"${companyName}" site:twitter.com`),
-  };
-
-  return {
-    linkedin: { followers: Math.floor(Math.random() * 10000) + 1000 },
-    facebook: { followers: Math.floor(Math.random() * 5000) + 500 },
-    instagram: { followers: Math.floor(Math.random() * 8000) + 800 },
-    twitter: { followers: Math.floor(Math.random() * 3000) + 300 },
-  };
-}
-
-async function gerarSWOT(context: string) {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Retorne JSON: {"strengths":[],"weaknesses":[],"opportunities":[],"threats":[]}' },
-          { role: 'user', content: `Análise SWOT:\n${context}` }
-        ],
-        temperature: 0.7,
-      }),
-    });
-
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch {
-    return {
-      strengths: ['Presença digital forte', 'Equipe qualificada'],
-      weaknesses: ['Sistema legado', 'Processos manuais'],
-      opportunities: ['Expansão digital', 'Automação'],
-      threats: ['Concorrência', 'Crise econômica'],
-    };
-  }
-}
-
-async function gerarPorter(context: string) {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Retorne JSON: {"rivalry":"","suppliers":"","buyers":"","newEntrants":"","substitutes":""}' },
-          { role: 'user', content: `5 Forças Porter:\n${context}` }
-        ],
-        temperature: 0.7,
-      }),
-    });
-
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch {
-    return {
-      rivalry: 'Alta rivalidade',
-      suppliers: 'Poder moderado',
-      buyers: 'Alto poder',
-      newEntrants: 'Barreiras médias',
-      substitutes: 'Ameaça moderada',
-    };
-  }
-}
-
-async function gerarInsights(context: string) {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Retorne array JSON: ["insight1","insight2",...]' },
-          { role: 'user', content: `Insights estratégicos:\n${context}` }
-        ],
-        temperature: 0.8,
-      }),
-    });
-
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch {
-    return [
-      '🔥 Alto potencial de crescimento',
-      '⚡ Necessita modernização tecnológica',
-      '🎯 Forte presença regional',
-      '💡 Oportunidade de expansão digital',
-    ];
-  }
-}
-
-function calcularICP(data: any): number {
-  let score = 50;
-  if (data.totvsStatus === 'nao_cliente_totvs') score += 20;
-  if (data.confidence === 'high') score += 15;
-  else if (data.confidence === 'medium') score += 10;
-  if (data.numSimilares >= 10) score += 10;
-  else if (data.numSimilares >= 5) score += 7;
-  const totalFollowers = Object.values(data.redesSociais).reduce((sum: number, p: any) => sum + (p.followers || 0), 0);
-  if (totalFollowers > 20000) score += 5;
-  return Math.min(100, Math.max(0, score));
-}
