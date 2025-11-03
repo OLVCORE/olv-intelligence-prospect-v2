@@ -16,7 +16,7 @@ export interface SEOKeywordsResult {
   };
 }
 
-export function useSEOKeywords(companyName: string | undefined) {
+export function useSEOKeywords(companyName: string | undefined, enabled: boolean = true) {
   return useQuery({
     queryKey: ['seo-keywords', companyName],
     queryFn: async () => {
@@ -36,7 +36,7 @@ export function useSEOKeywords(companyName: string | undefined) {
 
       return data as SEOKeywordsResult;
     },
-    enabled: !!companyName,
+    enabled: enabled && !!companyName,
     staleTime: 1000 * 60 * 30, // 30 minutos
   });
 }

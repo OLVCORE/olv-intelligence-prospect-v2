@@ -11,7 +11,7 @@ interface KeywordsSEOTabProps {
 }
 
 export function KeywordsSEOTab({ companyName, domain, savedData }: KeywordsSEOTabProps) {
-  const { data: seoData, isLoading, error } = useSEOKeywords(companyName);
+  const { data: seoData, isLoading, error } = useSEOKeywords(companyName, !savedData);
 
   // Usar dados salvos se disponíveis
   const loadedFromHistory = !!savedData;

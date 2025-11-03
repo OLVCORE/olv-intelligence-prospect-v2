@@ -110,13 +110,23 @@ export default function TOTVSCheckCard({
     return highlighted;
   };
 
-  const { data, isLoading, refetch } = useSimpleTOTVSCheck({
+  const { data: liveData, isLoading: isLoadingLive, refetch } = useSimpleTOTVSCheck({
     companyId,
     companyName,
     cnpj,
     domain,
     enabled,
   });
+
+  // Usar relatório salvo como fonte principal se existir
+  const data = (latestReport?.full_report as any) || liveData;
+  const isLoading = isLoadingLive && !latestReport?.full_report;
+
+  // Flags de abas salvas
+  const hasSaved = !!latestReport?.full_report;
+  const hasCompetitorsSaved = !!latestReport?.full_report?.competitors_report;
+  const hasSimilarSaved = Array.isArray(latestReport?.full_report?.similar_companies_report) && (latestReport?.full_report?.similar_companies_report?.length || 0) > 0;
+  const hasKeywordsSaved = !!latestReport?.full_report?.keywords_seo_report;
 
   // Buscar dados de empresas similares da tabela similar_companies
   const { data: similarCompaniesData } = useQuery({
@@ -199,34 +209,42 @@ export default function TOTVSCheckCard({
           <TabsTrigger value="executive" className="flex items-center gap-2 text-xs">
             <LayoutDashboard className="w-4 h-4" />
             Executive
+            {hasSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="detection" className="flex items-center gap-2 text-xs">
             <Search className="w-4 h-4" />
             TOTVS
+            {hasSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="competitors" className="flex items-center gap-2 text-xs">
             <Target className="w-4 h-4" />
             Competitors
+            {hasCompetitorsSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="similar" className="flex items-center gap-2 text-xs">
             <Building2 className="w-4 h-4" />
             Similar
+            {hasSimilarSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="clients" className="flex items-center gap-2 text-xs">
             <Users className="w-4 h-4" />
             Clients
+            {hasSimilarSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="analysis" className="flex items-center gap-2 text-xs">
             <BarChart3 className="w-4 h-4" />
             Analysis 360°
+            {(hasSaved || hasSimilarSaved) && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2 text-xs">
             <Package className="w-4 h-4" />
             Products
+            {hasSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
           <TabsTrigger value="keywords" className="flex items-center gap-2 text-xs">
             <Globe className="w-4 h-4" />
             Keywords
+            {hasKeywordsSaved && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-green-500" aria-label="salvo" />}
           </TabsTrigger>
         </TabsList>
 
