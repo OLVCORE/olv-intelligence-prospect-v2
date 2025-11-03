@@ -826,10 +826,13 @@ export default function QuarantineReportModal({
                             ? stcResult.totvs.evidences
                             : (stcResult?.evidences || []),
                           methodology: stcResult?.totvs?.methodology ?? stcResult?.methodology,
-                          status: stcResult?.totvs?.status ?? stcResult?.status,
+                          status: (stcResult?.totvs?.status ?? stcResult?.status) === 'cliente_totvs' ? 'cliente' : 'nao_cliente',
                           confidence: stcResult?.totvs?.confidence ?? stcResult?.confidence,
                         }
-                      : stcResult}
+                      : {
+                          ...stcResult,
+                          status: stcResult?.status === 'cliente_totvs' ? 'cliente' : 'nao_cliente',
+                        }}
                     companyName={companyName}
                     cnpj={cnpj}
                   />
@@ -846,19 +849,19 @@ export default function QuarantineReportModal({
                 <TabsContent value="summary" id="executive-summary-content" className="space-y-6">
                   <ExecutiveSummaryReport 
                     data={{
-                      score: stcResult?.totvs?.score || 0,
-                      temperatura: stcResult?.totvs?.score >= 75 ? 'hot' : stcResult?.totvs?.score >= 50 ? 'warm' : 'cold',
-                      isClienteTOTVS: stcResult?.totvs?.status === 'cliente',
+                      score: stcResult?.totalScore || stcResult?.totvs?.score || 0,
+                      temperatura: (stcResult?.leadClassification || stcResult?.temperatura) ?? ((stcResult?.totalScore || 0) >= 75 ? 'hot' : (stcResult?.totalScore || 0) >= 50 ? 'warm' : 'cold'),
+                      isClienteTOTVS: (stcResult?.status === 'cliente_totvs') || (stcResult?.totvs?.status === 'cliente'),
                       concorrentes: stcResult?.competitors?.length || 0,
                       similarCompanies: stcResult?.similarCompanies?.length || 0,
-                      recommendedProducts: stcResult?.productGaps?.recommended?.length || 0,
+                      recommendedProducts: (stcResult?.productGaps?.recommended?.length ?? stcResult?.productGaps?.length) || 0,
                       evidenceStats: {
-                        quintuple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'quintuple').length || 0,
-                        quadruple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'quadruple').length || 0,
-                        triple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'triple').length || 0,
-                        double: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'double').length || 0,
+                        quintuple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 5).length || 0,
+                        quadruple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 4).length || 0,
+                        triple: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 3).length || 0,
+                        double: (stcResult?.evidences || stcResult?.totvs?.evidences || []).filter((e: any) => e.matchLevel === 2).length || 0,
                       },
-                      insights: stcResult?.analysis360?.insights || []
+                      insights: stcResult?.analysis360?.insights || stcResult?.insights || []
                     }}
                   />
                 </TabsContent>
@@ -890,8 +893,8 @@ export default function QuarantineReportModal({
                 <TabsContent value="products" id="recommended-products-content" className="space-y-6">
                   <RecommendedProductsReport 
                     data={{
-                      products: stcResult?.productGaps?.recommended || [],
-                      isClienteTOTVS: stcResult?.totvs?.status === 'cliente'
+                      products: stcResult?.productGaps || [],
+                      isClienteTOTVS: (stcResult?.status === 'cliente_totvs') || (stcResult?.totvs?.status === 'cliente')
                     }}
                   />
                 </TabsContent>
@@ -900,8 +903,8 @@ export default function QuarantineReportModal({
                 <TabsContent value="keywords" id="keywords-seo-content" className="space-y-6">
                   <KeywordsSEOReport 
                     data={{
-                      keywords: stcResult?.keywords?.companyKeywords || [],
-                      similarCompanies: stcResult?.keywords?.similarCompanies || []
+                      keywords: stcResult?.keywords || [],
+                      similarCompanies: stcResult?.similarCompanies || []
                     }}
                   />
                 </TabsContent>
