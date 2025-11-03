@@ -1,8 +1,15 @@
 import { Evidence, processEvidence } from './matching.ts';
 
-const SERPER_API_KEY = Deno.env.get('SERPER_API_KEY');
-const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
-const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
+function extractSerperItems(results: any) {
+  return [
+    ...(results?.organic || []),
+    ...(results?.news || []),
+    ...(results?.topStories || []),
+    ...(results?.videos || []),
+    ...(results?.tweets || []),
+    ...(results?.discussions || []),
+  ];
+}
 
 export async function serperSearch(query: string): Promise<any> {
   try {
@@ -14,7 +21,7 @@ export async function serperSearch(query: string): Promise<any> {
       },
       body: JSON.stringify({ 
         q: query, 
-        num: 10,
+        num: 20,
         gl: 'br',
         hl: 'pt'
       })
@@ -110,12 +117,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   for (const query of wave1Queries) {
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
-        `${item.title} ${item.snippet}`,
+        `${item.title || ''} ${item.snippet || item.description || ''}`,
         companyName,
         'Serper (Wave 1)',
-        item.link,
+        item.link || item.url || '#',
         'news'
       );
       if (evidence) allEvidences.push(evidence);
@@ -136,12 +145,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   for (const query of wave2Queries) {
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
-        `${item.title} ${item.snippet}`,
+        `${item.title || ''} ${item.snippet || item.description || ''}`,
         companyName,
         'Serper (Wave 2 - Social)',
-        item.link,
+        item.link || item.url || '#',
         'social'
       );
       if (evidence) allEvidences.push(evidence);
@@ -172,12 +183,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   for (const site of wave3Sites) {
     const query = `site:${site} "${companyName}" TOTVS OR Protheus OR ADVPL`;
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
-        `${item.title} ${item.snippet}`,
+        `${item.title || ''} ${item.snippet || item.description || ''}`,
         companyName,
         `Jobs (${site})`,
-        item.link,
+        item.link || item.url || '#',
         'job'
       );
       if (evidence) allEvidences.push(evidence);
@@ -197,12 +210,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   for (const query of wave4Queries) {
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
-        `${item.title} ${item.snippet}`,
+        `${item.title || ''} ${item.snippet || item.description || ''}`,
         companyName,
         'Tech Portal',
-        item.link,
+        item.link || item.url || '#',
         'code'
       );
       if (evidence) allEvidences.push(evidence);
@@ -238,12 +253,14 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   for (const site of wave5Sites) {
     const query = `site:${site} "${companyName}"`;
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
-        `${item.title} ${item.snippet}`,
+        `${item.title || ''} ${item.snippet || item.description || ''}`,
         companyName,
         `B2B (${site})`,
-        item.link,
+        item.link || item.url || '#',
         'website'
       );
       if (evidence) allEvidences.push(evidence);
@@ -279,7 +296,9 @@ export async function collect50Sources(companyName: string, companyCnpj: string,
   
   for (const query of totvsQueries) {
     const results = await serperSearch(query);
-    for (const item of (results.organic || [])) {
+    const items = extractSerperItems(results);
+    console.log(`[50 SOURCES] Serper items (${query}): ${items.length}`);
+    for (const item of items) {
       const evidence = processEvidence(
         `${item.title} ${item.snippet}`,
         companyName,
