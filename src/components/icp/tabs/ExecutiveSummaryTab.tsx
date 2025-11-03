@@ -30,11 +30,14 @@ export function ExecutiveSummaryTab({
   clientsCount = 0,
   maturityScore = 0
 }: ExecutiveSummaryTabProps) {
-  // Calcular scores baseado nos dados disponíveis
-  const totvsConfidence = stcResult?.confidence_percentage || 0;
-  const totvsStatus = stcResult?.status || 'unknown';
+  // Calcular confiança TOTVS baseado nos dados STC reais
+  const evidenceCount = stcResult?.evidences?.length || 0;
+  const totalWeight = stcResult?.total_weight || 0;
   
-  // Determinar decisão final baseado nas regras
+  // Cálculo de confiança baseado em peso das evidências (metodologia STC)
+  const totvsConfidence = Math.min(Math.round((totalWeight / 10) * 100), 100);
+  
+  // Determinar decisão final baseado nas regras STC
   const getFinalDecision = () => {
     if (totvsConfidence >= 70) {
       return { status: 'NO-GO', color: 'destructive', icon: XCircle, text: 'DESCARTADO - Cliente TOTVS confirmado' };
@@ -87,7 +90,7 @@ export function ExecutiveSummaryTab({
           </div>
           <div className="text-2xl font-bold mb-1">{totvsConfidence}%</div>
           <Badge variant="outline" className="text-xs">
-            {stcResult?.triple_matches || 0} triple / {stcResult?.double_matches || 0} double
+            {evidenceCount} evidências / {totalWeight} peso
           </Badge>
         </Card>
 

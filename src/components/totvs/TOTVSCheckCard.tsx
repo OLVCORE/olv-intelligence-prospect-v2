@@ -116,8 +116,20 @@ export default function TOTVSCheckCard({
     enabled,
   });
 
-  // Buscar dados de empresas similares para análise 360° (removido - será buscado direto na aba)
-  const similarCompaniesData = null;
+  // Buscar dados de empresas similares da tabela similar_companies
+  const { data: similarCompaniesData } = useQuery({
+    queryKey: ['similar-companies-count', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data } = await supabase
+        .from('similar_companies')
+        .select('id')
+        .eq('company_id', companyId);
+      return data || [];
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000
+  });
 
   useEffect(() => {
     if (onResult && data) onResult(data);
@@ -221,10 +233,10 @@ export default function TOTVSCheckCard({
           <ExecutiveSummaryTab
             companyName={companyName}
             stcResult={data}
-            similarCount={0}
-            competitorsCount={0}
-            clientsCount={0}
-            maturityScore={0}
+            similarCount={similarCompaniesData?.length || 0}
+            competitorsCount={data?.evidences?.filter((e: any) => e.detected_products?.length > 0).length || 0}
+            clientsCount={Math.floor((similarCompaniesData?.length || 0) * 2.5)}
+            maturityScore={data?.digital_maturity_score || 0}
           />
         </TabsContent>
 
@@ -500,6 +512,7 @@ export default function TOTVSCheckCard({
         {/* ABA 3: COMPETITORS (NOVA) */}
         <TabsContent value="competitors" className="mt-0 max-h-[600px] overflow-y-auto">
           <CompetitorsTab
+            companyId={companyId}
             companyName={companyName}
             cnpj={cnpj}
             domain={domain}

@@ -1,29 +1,33 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Target, ExternalLink, TrendingUp, Building2, Search } from 'lucide-react';
+import { Target, ExternalLink, TrendingUp, Building2, Search, Zap } from 'lucide-react';
 import { useCompetitorSearch } from '@/hooks/useCompetitorSearch';
+import { useCompetitorAnalysis } from '@/hooks/useCompetitorAnalysis';
 import { useState } from 'react';
 
 interface CompetitorsTabProps {
+  companyId?: string;
   companyName?: string;
   cnpj?: string;
   domain?: string;
 }
 
-export function CompetitorsTab({ companyName, cnpj, domain }: CompetitorsTabProps) {
+export function CompetitorsTab({ companyId, companyName, cnpj, domain }: CompetitorsTabProps) {
   const [hasSearched, setHasSearched] = useState(false);
-  const { mutate: searchCompetitors, data, isPending } = useCompetitorSearch();
+  const { mutate: searchCompetitors, data: searchData, isPending } = useCompetitorSearch();
+  const { data: internalCompetitors, isLoading: loadingInternal } = useCompetitorAnalysis(companyId);
 
   const handleSearch = () => {
     if (!companyName) return;
     setHasSearched(true);
+    // Buscar concorrentes ERP (não TOTVS) para identificar concorrência real
     searchCompetitors({
       companyName,
-      sector: undefined,
-      productCategory: undefined,
-      keywords: undefined,
-      totvsProduct: undefined
+      sector: 'ERP Software',
+      productCategory: 'Enterprise Resource Planning',
+      keywords: 'ERP software gestão empresarial sistema integrado -TOTVS',
+      totvsProduct: undefined // Não buscar TOTVS, buscar concorrentes
     });
   };
 
@@ -48,7 +52,7 @@ export function CompetitorsTab({ companyName, cnpj, domain }: CompetitorsTabProp
             Análise de Concorrentes
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Buscar concorrentes que competem no mesmo mercado
+            Identificar soluções ERP que a empresa pode estar usando (concorrentes TOTVS)
           </p>
           <Button onClick={handleSearch}>
             <Search className="w-4 h-4 mr-2" />
@@ -72,103 +76,166 @@ export function CompetitorsTab({ companyName, cnpj, domain }: CompetitorsTabProp
     );
   }
 
-  if (!data || data.competitors.length === 0) {
-    return (
-      <Card className="p-6">
-        <div className="text-center">
-          <Target className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-          <h3 className="font-semibold mb-2">Nenhum concorrente encontrado</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Não foi possível identificar concorrentes diretos nos portais consultados
-          </p>
-          <Button variant="outline" onClick={handleSearch}>
-            Tentar Novamente
-          </Button>
-        </div>
-      </Card>
-    );
-  }
+  // Removido: verificação antiga, agora usamos hasInternalData e hasSearchData
 
+  const hasInternalData = internalCompetitors && internalCompetitors.length > 0;
+  const hasSearchData = searchData && searchData.competitors.length > 0;
+  
   return (
     <div className="space-y-4">
-      {/* Header com estatísticas */}
-      <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Concorrentes Identificados
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {data.competitors.length} concorrentes em {data.portals_searched}/{data.total_portals} portais
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleSearch}>
-            Atualizar
-          </Button>
-        </div>
-      </Card>
-
-      {/* Lista de concorrentes */}
-      <div className="space-y-3">
-        {data.competitors.map((competitor, index) => (
-          <Card key={index} className="p-4 hover:bg-accent/50 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-primary" />
-                  {competitor.name}
-                </h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
-                    {competitor.mentions} menções
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    Score: {competitor.relevance_score.toFixed(1)}
-                  </Badge>
-                </div>
+      {/* Concorrentes ERP Detectados Internamente */}
+      {hasInternalData && (
+        <>
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-green-600" />
+                  ERPs Detectados
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {internalCompetitors.length} sistema(s) ERP identificado(s) nos dados da empresa
+                </p>
               </div>
             </div>
+          </Card>
 
-            {/* Portais onde foi encontrado */}
-            {competitor.portals && competitor.portals.length > 0 && (
-              <div className="mb-3">
-                <span className="text-xs font-medium text-muted-foreground">Portais: </span>
-                <span className="text-xs">{competitor.portals.join(', ')}</span>
-              </div>
-            )}
-
-            {/* Links de comparação */}
-            {competitor.comparison_links && competitor.comparison_links.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Links de comparação:
-                </span>
-                {competitor.comparison_links.slice(0, 2).map((link, linkIndex) => (
-                  <div key={linkIndex} className="text-sm p-2 bg-muted/30 rounded-md">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{link.title}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                          {link.snippet}
-                        </p>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {link.portal}
+          <div className="space-y-3">
+            {internalCompetitors.map((competitor, index) => (
+              <Card key={`internal-${index}`} className="p-4 border-green-200 dark:border-green-800">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-green-600" />
+                      {competitor.name}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="default" className="text-xs bg-green-600">
+                        {competitor.confidence}% confiança
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {competitor.category}
+                      </Badge>
+                      {competitor.market_share && (
+                        <Badge variant="secondary" className="text-xs">
+                          Market Share: {competitor.market_share}
                         </Badge>
-                      </div>
-                      <Button size="sm" variant="ghost" asChild className="shrink-0">
-                        <a href={link.url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </Button>
+                      )}
                     </div>
                   </div>
-                ))}
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium">Detectado em:</span> {competitor.detected_in.join(', ')}
+                </div>
+                {competitor.pricing_tier && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    <span className="font-medium">Tier:</span> {competitor.pricing_tier}
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Busca Externa de Concorrentes */}
+      {hasSearchData && (
+        <>
+          <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Concorrentes Externos
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {searchData.competitors.length} concorrentes em {searchData.portals_searched}/{searchData.total_portals} portais
+                </p>
               </div>
-            )}
+              <Button variant="outline" size="sm" onClick={handleSearch}>
+                Atualizar
+              </Button>
+            </div>
           </Card>
-        ))}
-      </div>
+
+          <div className="space-y-3">
+            {searchData.competitors.map((competitor, index) => (
+              <Card key={`external-${index}`} className="p-4 hover:bg-accent/50 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-primary" />
+                      {competitor.name}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {competitor.mentions} menções
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Score: {competitor.relevance_score.toFixed(1)}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Portais onde foi encontrado */}
+                {competitor.portals && competitor.portals.length > 0 && (
+                  <div className="mb-3">
+                    <span className="text-xs font-medium text-muted-foreground">Portais: </span>
+                    <span className="text-xs">{competitor.portals.join(', ')}</span>
+                  </div>
+                )}
+
+                {/* Links de comparação */}
+                {competitor.comparison_links && competitor.comparison_links.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Links de comparação:
+                    </span>
+                    {competitor.comparison_links.slice(0, 2).map((link, linkIndex) => (
+                      <div key={linkIndex} className="text-sm p-2 bg-muted/30 rounded-md">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{link.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {link.snippet}
+                            </p>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {link.portal}
+                            </Badge>
+                          </div>
+                          <Button size="sm" variant="ghost" asChild className="shrink-0">
+                            <a href={link.url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Estado sem dados */}
+      {!hasInternalData && !hasSearchData && !loadingInternal && !isPending && (
+        <Card className="p-6">
+          <div className="text-center">
+            <Target className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+            <h3 className="font-semibold mb-2">Nenhum concorrente encontrado</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Busque por concorrentes externos ou aguarde análise dos dados internos
+            </p>
+            <Button variant="outline" onClick={handleSearch}>
+              Buscar Concorrentes Externos
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
