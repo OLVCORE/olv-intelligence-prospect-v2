@@ -842,6 +842,27 @@ export default function QuarantineReportModal({
                   />
                 </TabsContent>
 
+                {/* ABA 1: EXECUTIVE SUMMARY */}
+                <TabsContent value="summary" id="executive-summary-content" className="space-y-6">
+                  <ExecutiveSummaryReport 
+                    data={{
+                      score: stcResult?.totvs?.score || 0,
+                      temperatura: stcResult?.totvs?.score >= 75 ? 'hot' : stcResult?.totvs?.score >= 50 ? 'warm' : 'cold',
+                      isClienteTOTVS: stcResult?.totvs?.status === 'cliente',
+                      concorrentes: stcResult?.competitors?.length || 0,
+                      similarCompanies: stcResult?.similarCompanies?.length || 0,
+                      recommendedProducts: stcResult?.productGaps?.recommended?.length || 0,
+                      evidenceStats: {
+                        quintuple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'quintuple').length || 0,
+                        quadruple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'quadruple').length || 0,
+                        triple: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'triple').length || 0,
+                        double: stcResult?.totvs?.evidences?.filter((e: any) => e.matchLevel === 'double').length || 0,
+                      },
+                      insights: stcResult?.analysis360?.insights || []
+                    }}
+                  />
+                </TabsContent>
+
                 {/* ABA 3: SIMILARES */}
                 <TabsContent value="similar" id="similar-companies-content" className="space-y-6">
                   <SimilarCompaniesReport 
@@ -850,11 +871,38 @@ export default function QuarantineReportModal({
                   />
                 </TabsContent>
 
-                {/* ABA 4: 360° */}
+                {/* ABA 4: CLIENT DISCOVERY */}
+                <TabsContent value="clients" id="client-discovery-content" className="space-y-6">
+                  <ClientDiscoveryReport 
+                    data={stcResult?.clientDiscovery || { topClients: [], totalFound: 0 }}
+                  />
+                </TabsContent>
+
+                {/* ABA 5: 360° */}
                 <TabsContent value="analysis" id="analysis-360-content" className="space-y-6">
                   <Analysis360Report 
                     data={stcResult?.analysis360 || stcResult}
                     companyName={companyName}
+                  />
+                </TabsContent>
+
+                {/* ABA 6: RECOMMENDED PRODUCTS */}
+                <TabsContent value="products" id="recommended-products-content" className="space-y-6">
+                  <RecommendedProductsReport 
+                    data={{
+                      products: stcResult?.productGaps?.recommended || [],
+                      isClienteTOTVS: stcResult?.totvs?.status === 'cliente'
+                    }}
+                  />
+                </TabsContent>
+
+                {/* ABA 7: KEYWORDS & SEO */}
+                <TabsContent value="keywords" id="keywords-seo-content" className="space-y-6">
+                  <KeywordsSEOReport 
+                    data={{
+                      keywords: stcResult?.keywords?.companyKeywords || [],
+                      similarCompanies: stcResult?.keywords?.similarCompanies || []
+                    }}
                   />
                 </TabsContent>
               </Tabs>
