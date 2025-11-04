@@ -1,24 +1,48 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Building2, MapPin, TrendingUp, ExternalLink, Search } from 'lucide-react';
+import { Users, Building2, MapPin, TrendingUp, ExternalLink, Search, Loader2 } from 'lucide-react';
 import { useCompanySimilar } from '@/hooks/useCompanySimilar';
+import { useClientDiscoveryWave7 } from '@/hooks/useClientDiscoveryWave7';
 import { useState } from 'react';
 
 interface ClientDiscoveryTabProps {
   companyId?: string;
   companyName?: string;
   cnpj?: string;
+  domain?: string;
   savedData?: any[];
 }
 
-export function ClientDiscoveryTab({ companyId, companyName, cnpj, savedData }: ClientDiscoveryTabProps) {
+export function ClientDiscoveryTab({ companyId, companyName, cnpj, domain, savedData }: ClientDiscoveryTabProps) {
   const { data: similarCompanies, isLoading, refetch } = useCompanySimilar(companyId);
+  const { mutate: executeWave7, isPending: isExecutingWave7 } = useClientDiscoveryWave7();
   const [expandedLevel, setExpandedLevel] = useState<'direct' | 'indirect'>('direct');
+  const [wave7Results, setWave7Results] = useState<any>(null);
 
   // Usar dados salvos se disponíveis
   const loadedFromHistory = !!savedData;
   const directClients = savedData || similarCompanies || [];
+
+  // Função para executar Wave7
+  const handleExecuteWave7 = () => {
+    if (!companyId || !companyName) return;
+
+    executeWave7(
+      {
+        companyId,
+        companyName,
+        domain
+      },
+      {
+        onSuccess: (data) => {
+          setWave7Results(data);
+          setExpandedLevel('indirect');
+        }
+      }
+    );
+  };
+
   if (!companyId) {
     return (
       <Card className="p-6">
@@ -44,8 +68,9 @@ export function ClientDiscoveryTab({ companyId, companyName, cnpj, savedData }: 
 
   const totalDiscovered = directClients.length;
 
-  // Simular expansão exponencial (em produção, viria de API)
-  const potentialIndirectClients = Math.floor(totalDiscovered * 3.5);
+  // Expansão exponencial: usar resultados Wave7 se disponível, senão calcular
+  const potentialIndirectClients = wave7Results?.statistics?.potential_indirect || Math.floor(totalDiscovered * 3.5);
+  const discoveredClientsCount = wave7Results?.discovered_clients?.length || 0;
 
   return (
     <div className="space-y-4">
@@ -197,10 +222,42 @@ export function ClientDiscoveryTab({ companyId, companyName, cnpj, savedData }: 
                 <li>• Aplicar mesmos critérios de similaridade recursivamente</li>
               </ul>
             </div>
-            <Button className="mt-4" variant="outline">
-              <Search className="w-4 h-4 mr-2" />
-              Executar Expansão Completa (Em breve)
+            <Button 
+              className="mt-4" 
+              variant="default"
+              onClick={handleExecuteWave7}
+              disabled={isExecutingWave7}
+            >
+              {isExecutingWave7 ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Descobrindo clientes...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  Executar Expansão Completa (Wave7)
+                </>
+              )}
             </Button>
+            
+            {/* Resultados Wave7 */}
+            {wave7Results && wave7Results.discovered_clients.length > 0 && (
+              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">
+                  ✅ Wave7 Concluída!
+                </h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>• {discoveredClientsCount} clientes descobertos</p>
+                  <p>• {wave7Results.statistics.by_method.jina_scraping || 0} via scraping de páginas</p>
+                  <p>• {wave7Results.statistics.by_method.serper_news || 0} via notícias/press releases</p>
+                  <p>• {wave7Results.statistics.by_method.linkedin || 0} via LinkedIn</p>
+                  <p className="font-semibold pt-2">
+                    ~{potentialIndirectClients} empresas potenciais (expansão 3.5x)
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       )}
