@@ -1522,33 +1522,122 @@ export function SimilarCompaniesTab({
     try {
       console.log('[ENRICHMENT] Iniciando enriquecimento para:', newCompanyId);
       
+      // Buscar dados da empresa
+      const { data: company, error: fetchError } = await supabase
+        .from('suggested_companies')
+        .select('*')
+        .eq('id', newCompanyId)
+        .single();
+
+      if (fetchError || !company) {
+        throw new Error('Empresa não encontrada');
+      }
+
       // Atualizar status para in_progress
       await supabase
         .from('suggested_companies')
         .update({ enrichment_status: 'in_progress' })
         .eq('id', newCompanyId);
 
+      let enrichmentSteps: string[] = [];
+
       // PASSO 1: Enriquecer com Receita Federal (se tiver CNPJ)
-      // TODO: Implementar edge function
+      if (company.cnpj) {
+        console.log('[ENRICHMENT] Passo 1: Receita Federal');
+        try {
+          const { data: receitaData, error: receitaError } = await supabase.functions.invoke(
+            'enrich-receita-federal',
+            {
+              body: {
+                companyId: newCompanyId,
+                cnpj: company.cnpj
+              }
+            }
+          );
+
+          if (receitaError) {
+            console.error('[ENRICHMENT] Erro Receita:', receitaError);
+          } else {
+            console.log('[ENRICHMENT] Receita OK:', receitaData?.source);
+            enrichmentSteps.push(`✅ Receita Federal (${receitaData?.source})`);
+          }
+        } catch (error) {
+          console.error('[ENRICHMENT] Receita falhou:', error);
+          enrichmentSteps.push('⚠️ Receita Federal (erro)');
+        }
+      }
       
-      // PASSO 2: Enriquecer com Apollo (se tiver API key)
-      // TODO: Implementar edge function
+      // PASSO 2: Enriquecer com Apollo (se tiver nome ou domínio)
+      if (company.name || company.website) {
+        console.log('[ENRICHMENT] Passo 2: Apollo Decisores');
+        try {
+          const { data: apolloData, error: apolloError } = await supabase.functions.invoke(
+            'enrich-apollo-decisores',
+            {
+              body: {
+                companyId: newCompanyId,
+                companyName: company.name,
+                domain: company.website
+              }
+            }
+          );
+
+          if (apolloError) {
+            console.error('[ENRICHMENT] Erro Apollo:', apolloError);
+          } else {
+            console.log('[ENRICHMENT] Apollo OK:', apolloData?.decisores?.length || 0, 'decisores');
+            enrichmentSteps.push(`✅ Apollo (${apolloData?.decisores?.length || 0} decisores)`);
+          }
+        } catch (error) {
+          console.error('[ENRICHMENT] Apollo falhou:', error);
+          enrichmentSteps.push('⚠️ Apollo (erro)');
+        }
+      }
 
       // PASSO 3: Análise STC automática
-      // TODO: Implementar edge function
+      console.log('[ENRICHMENT] Passo 3: STC Automático');
+      try {
+        const { data: stcData, error: stcError } = await supabase.functions.invoke(
+          'analyze-stc-automatic',
+          {
+            body: {
+              companyId: newCompanyId,
+              cnpj: company.cnpj,
+              companyName: company.name,
+              domain: company.website
+            }
+          }
+        );
+
+        if (stcError) {
+          console.error('[ENRICHMENT] Erro STC:', stcError);
+        } else {
+          console.log('[ENRICHMENT] STC OK:', stcData?.stcResult?.status);
+          enrichmentSteps.push(`✅ STC (${stcData?.stcResult?.status})`);
+        }
+      } catch (error) {
+        console.error('[ENRICHMENT] STC falhou:', error);
+        enrichmentSteps.push('⚠️ STC (erro)');
+      }
 
       // Atualizar status para completed
       await supabase
         .from('suggested_companies')
-        .update({ enrichment_status: 'completed' })
+        .update({ 
+          enrichment_status: 'completed',
+          enrichment_completed_at: new Date().toISOString()
+        })
         .eq('id', newCompanyId);
 
-      console.log('[ENRICHMENT] Enriquecimento iniciado com sucesso');
+      console.log('[ENRICHMENT] Enriquecimento concluído com sucesso');
       
       toast({
-        title: 'Enriquecimento em andamento',
-        description: 'A empresa está sendo processada em segundo plano.'
+        title: 'Enriquecimento concluído! ✅',
+        description: enrichmentSteps.join('\n'),
       });
+
+      // Recarregar dados
+      queryClient.invalidateQueries({ queryKey: ['similar-companies-full'] });
       
     } catch (error) {
       console.error('[ENRICHMENT] Erro no enriquecimento:', error);
@@ -1556,8 +1645,17 @@ export function SimilarCompaniesTab({
       // Atualizar status para failed
       await supabase
         .from('suggested_companies')
-        .update({ enrichment_status: 'failed' })
+        .update({ 
+          enrichment_status: 'failed',
+          enrichment_error: (error as Error).message
+        })
         .eq('id', newCompanyId);
+
+      toast({
+        title: 'Erro no enriquecimento',
+        description: (error as Error).message,
+        variant: 'destructive'
+      });
     }
   };
 
