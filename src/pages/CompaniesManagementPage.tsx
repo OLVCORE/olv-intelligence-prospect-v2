@@ -59,6 +59,7 @@ import { EnrichmentProgressModal, type EnrichmentProgress } from '@/components/c
 import { PartnerSearchModal } from '@/components/companies/PartnerSearchModal';
 import { ExpandedCompanyCard } from '@/components/companies/ExpandedCompanyCard';
 import { UnifiedEnrichButton } from '@/components/companies/UnifiedEnrichButton';
+import { UnifiedCompanySearch } from '@/components/companies/UnifiedCompanySearch';
 
 
 export default function CompaniesManagementPage() {
@@ -1357,26 +1358,19 @@ export default function CompaniesManagementPage() {
         {/* Google Sheets Sync Config removido desta página (agora na tela de Busca) */}
 
         {/* Search */}
+        {/* 🔍 BUSCA ABRANGENTE UNIFICADA */}
+        <UnifiedCompanySearch
+          value={searchTerm}
+          onChange={(value) => {
+            setSearchTerm(value);
+            setPage(0); // Reset to first page when searching
+          }}
+          placeholder="🔍 Buscar por nome, CNPJ, domínio, cidade, UF, setor, origem..."
+          totalCompanies={totalCount}
+        />
+        
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Buscar Empresas
-            </CardTitle>
-            <CardDescription>
-              {totalCount} {totalCount === 1 ? 'empresa cadastrada' : 'empresas cadastradas'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              placeholder="Buscar por nome, CNPJ ou domínio..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(0); // Reset to first page when searching
-              }}
-              className="max-w-md"
-            />
+          <CardContent className="space-y-4 pt-6">
             
             {/* Export Buttons */}
             <div className="flex items-center gap-2 pt-2">

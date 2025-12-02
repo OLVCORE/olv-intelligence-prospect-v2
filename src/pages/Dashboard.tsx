@@ -69,7 +69,7 @@ import RealTimeAlerts from "@/components/dashboard/RealTimeAlerts";
 import AIPredictionBanner from "@/components/dashboard/AIPredictionBanner";
 import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
 import PlatformCostsPanel from "@/components/dashboard/PlatformCostsPanel";
-import ScrollToTop from "@/components/common/ScrollToTop";
+// ScrollToTop removido - já está no AppLayout
 import APICostExecutiveDashboard from "@/components/dashboard/APICostExecutiveDashboard";
 import PlatformCostsCompact from "@/components/dashboard/PlatformCostsCompact";
 import APIManagementCompact from "@/components/dashboard/APIManagementCompact";
@@ -1058,9 +1058,6 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Botão flutuante para voltar ao topo */}
-      <ScrollToTop />
     </div>
   );
 }

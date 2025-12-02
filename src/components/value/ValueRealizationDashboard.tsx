@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ExportButton } from "@/components/export/ExportButton";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+// ScrollToTopButton removido
 
 interface ValueRealizationDashboardProps {
   companyId: string;
@@ -340,7 +340,7 @@ export function ValueRealizationDashboard({
           </CardContent>
         </Card>
       )}
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
     </div>
   );
 }

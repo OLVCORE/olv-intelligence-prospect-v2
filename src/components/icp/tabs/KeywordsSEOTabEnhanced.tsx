@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Search, TrendingUp, ExternalLink, Globe, Target, BarChart3, Loader2, Sparkles, RefreshCw, Save, AlertTriangle, Zap, ChevronDown, Edit, Linkedin, Mail, Phone } from 'lucide-react';
-import { FloatingNavigation } from '@/components/common/FloatingNavigation';
+// FloatingNavigation removido - componente deletado
 import { useReportAutosave } from './useReportAutosave';
 import { TabStatusBadge } from './TabIndicator';
 import { registerTab, unregisterTab } from './tabsRegistry';

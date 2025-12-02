@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FloatingNavigation } from '@/components/common/FloatingNavigation';
+// FloatingNavigation removido - componente deletado
 import { toast } from 'sonner';
 import { 
   CheckCircle, 

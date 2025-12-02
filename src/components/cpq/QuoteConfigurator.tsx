@@ -9,7 +9,7 @@ import { Plus, Trash2, TrendingUp, AlertCircle, CheckCircle, Edit2, Save } from 
 import { useProductCatalog, Product } from "@/hooks/useProductCatalog";
 import { useCreateQuote, QuoteProduct } from "@/hooks/useQuotes";
 import { toast } from "sonner";
-import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+// ScrollToTopButton removido
 import { UnsavedChangesWarning } from "@/components/common/UnsavedChangesWarning";
 import { useModuleDraft } from "@/hooks/useModuleDraft";
 
@@ -468,7 +468,7 @@ export function QuoteConfigurator({ companyId, accountStrategyId, onQuoteCreated
       </div>
       </div>
       
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
     </div>
   );
 }

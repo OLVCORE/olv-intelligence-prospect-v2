@@ -9,7 +9,7 @@ import { OLVPremiumServicesSelector, type OLVServiceItem } from "@/components/co
 import { ArrowLeft, Download, Calculator, BookOpen, Briefcase, Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ExportButton } from "@/components/export/ExportButton";
-import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+// ScrollToTopButton removido
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -151,7 +151,7 @@ export default function ConsultoriaOLVPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
       {/* Header com navegação */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="space-y-2">

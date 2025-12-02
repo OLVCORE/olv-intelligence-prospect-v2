@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ExportButton } from "@/components/export/ExportButton";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+// ScrollToTopButton removido
 
 export function BattleCardViewer() {
   const { toast } = useToast();
@@ -49,7 +49,7 @@ export function BattleCardViewer() {
 
   return (
     <div className="space-y-6">
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">

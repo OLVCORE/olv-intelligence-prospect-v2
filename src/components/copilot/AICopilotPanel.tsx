@@ -36,13 +36,13 @@ export function AICopilotPanel() {
 
   if (isMinimized) {
     return (
-      <Card className="fixed bottom-24 right-6 w-16 h-16 cursor-pointer hover:shadow-lg transition-shadow z-40">
+      <Card className="fixed bottom-24 right-4 w-14 h-14 rounded-full cursor-pointer hover:shadow-2xl transition-all z-[99] bg-gradient-to-br from-purple-600 to-pink-600 border-2 border-purple-300 hover:scale-110 hover:border-white shadow-[0_0_25px_rgba(168,85,247,0.6)]">
         <CardContent 
           className="p-0 h-full flex items-center justify-center"
           onClick={() => setIsMinimized(false)}
         >
           <div className="relative">
-            <Sparkles className="h-6 w-6 text-primary" />
+            <Sparkles className="h-7 w-7 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
             {suggestions.length > 0 && (
               <Badge 
                 variant="destructive" 
@@ -58,7 +58,7 @@ export function AICopilotPanel() {
   }
 
   return (
-    <Card className="fixed bottom-6 right-[29rem] w-96 max-h-[600px] shadow-xl z-40 border-primary/20">
+    <Card className="fixed bottom-44 right-4 w-96 max-h-[600px] shadow-2xl z-[99] border-2 border-purple-500/50 bg-background/98 backdrop-blur-xl">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

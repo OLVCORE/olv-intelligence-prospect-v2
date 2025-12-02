@@ -16,7 +16,7 @@ import { TOTVSProductSelector, type TOTVSProduct } from './TOTVSProductSelector'
 import { CurrentCostsSelector, type CurrentCostItem } from './CurrentCostsSelector';
 import { TOTVSCostsSelector, type TOTVSCostItem } from './TOTVSCostsSelector';
 import { ExportButton } from '@/components/export/ExportButton';
-import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
+// ScrollToTopButton removido
 import { UnsavedChangesWarning } from '@/components/common/UnsavedChangesWarning';
 import { useModuleDraft } from '@/hooks/useModuleDraft';
 import { useCrossModuleData } from '@/hooks/useCrossModuleData';
@@ -362,7 +362,7 @@ const cpqSignature = JSON.stringify({
   return (
     <div className="space-y-6">
       <UnsavedChangesWarning hasUnsavedChanges={hasUnsavedChanges} onSave={save} />
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
       {/* Header */}
       <Card>
         <CardHeader>

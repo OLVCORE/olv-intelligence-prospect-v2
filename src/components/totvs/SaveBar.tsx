@@ -19,6 +19,7 @@ interface SaveBarProps {
   onExportPdf?: () => void;
   onShowHistory?: () => void; // 📜 Callback para abrir modal de histórico
   onRefresh?: () => void; // 🔄 Callback para atualizar verificação TOTVS
+  isRefreshing?: boolean; // 🔄 Estado de loading durante atualização
   readOnly?: boolean;
   isSaving?: boolean;
 }
@@ -30,6 +31,7 @@ export default function SaveBar({
   onExportPdf,
   onShowHistory,
   onRefresh,
+  isRefreshing = false,
   readOnly = false,
   isSaving = false,
 }: SaveBarProps) {
@@ -283,10 +285,11 @@ export default function SaveBar({
               variant="outline"
               size="sm"
               className="gap-2"
-              title="Atualizar verificação TOTVS"
+              disabled={isRefreshing || isSaving}
+              title="Atualizar verificação TOTVS (consome créditos)"
             >
-              <RefreshCw className="w-4 h-4" />
-              Atualizar
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Atualizando...' : 'Atualizar'}
             </Button>
           )}
 

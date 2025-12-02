@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FloatingNavigation } from '@/components/common/FloatingNavigation';
+// FloatingNavigation removido - componente deletado
 import { Users, Building2, MapPin, TrendingUp, ExternalLink, Search, Loader2 } from 'lucide-react';
 import { GenericProgressBar } from '@/components/ui/GenericProgressBar';
 import { useCompanySimilar } from '@/hooks/useCompanySimilar';

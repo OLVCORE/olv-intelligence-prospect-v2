@@ -6,10 +6,10 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { InsightsDock } from "@/components/insights/InsightsDock";
 import { Breadcrumb } from "@/components/common/Breadcrumb";
-import ScrollToTop from "@/components/common/ScrollToTop";
-import ScrollToBottom from "@/components/common/ScrollToBottom";
+import { FloatingButtons } from "@/components/common/FloatingButtons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { TrevoAssistant } from "@/components/trevo/TrevoAssistant";
+import { AICopilotPanel } from "@/components/copilot/AICopilotPanel";
 
 import { Button } from "@/components/ui/button";
 import { Sparkles, Home } from "lucide-react";
@@ -56,7 +56,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-1 md:gap-2">
             <NotificationBell />
             <ModeToggle />
-            <TrevoAssistant context={{ currentPage: location.pathname }} />
           </div>
         </header>
 
@@ -73,9 +72,16 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <InsightsDock open={insightsOpen} onOpenChange={setInsightsOpen} />
         
-        {/* ScrollToTop e ScrollToBottom Universal - Aparecem em TODAS as páginas */}
-        <ScrollToTop />
-        <ScrollToBottom />
+        {/* 🎨 BOTÕES FLUTUANTES */}
+        
+        {/* ⚡ COPILOT - DESATIVADO para evitar conflito com novo Trevo */}
+        {/* <AICopilotPanel /> */}
+        
+        {/* 🤖 TREVO ASSISTENTE NOVO - AZUL - Canto Inferior DIREITO */}
+        <TrevoAssistant context={{ currentPage: location.pathname }} />
+        
+        {/* 📍 Botão Flutuante Único de Scroll */}
+        <FloatingButtons />
       </div>
     </SidebarProvider>
   );

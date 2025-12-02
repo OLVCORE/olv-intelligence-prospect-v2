@@ -22,7 +22,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { ScrollToTopButton } from '@/components/common/ScrollToTopButton';
+// ScrollToTopButton removido
 import {
   Select,
   SelectContent,
@@ -331,7 +331,7 @@ export default function StrategyHistoryPage() {
           </Card>
         )}
 
-        <ScrollToTopButton />
+        {/* ScrollToTopButton removido */}
       </div>
     </AppLayout>
   );

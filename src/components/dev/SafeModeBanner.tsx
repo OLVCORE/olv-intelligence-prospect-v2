@@ -12,7 +12,7 @@ export default function SafeModeBanner() {
   if (!SAFE_MODE) return null;
 
   return (
-    <div className="fixed bottom-3 right-3 z-[9999] rounded-xl bg-gradient-to-r from-amber-900/95 to-orange-900/95 text-amber-50 px-5 py-3 shadow-2xl border-2 border-amber-500/50 backdrop-blur-sm animate-pulse">
+    <div className="fixed top-20 left-4 z-[9999] rounded-xl bg-gradient-to-r from-amber-900/95 to-orange-900/95 text-amber-50 px-5 py-3 shadow-2xl border-2 border-amber-500/50 backdrop-blur-sm animate-pulse">
       <div className="flex items-center gap-3">
         <Shield className="w-5 h-5 flex-shrink-0" />
         <div>

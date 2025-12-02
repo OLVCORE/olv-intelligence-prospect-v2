@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FloatingNavigation } from '@/components/common/FloatingNavigation';
+// FloatingNavigation removido - componente deletado
 import { toast } from 'sonner';
 import { Target, ExternalLink, TrendingUp, Building2, Search, Zap, AlertCircle, CheckCircle, Wrench, Code, Sparkles } from 'lucide-react';
 import { GenericProgressBar } from '@/components/ui/GenericProgressBar';

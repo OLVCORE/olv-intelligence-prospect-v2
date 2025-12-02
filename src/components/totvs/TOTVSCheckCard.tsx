@@ -49,7 +49,6 @@ import { ReportComparison } from './ReportComparison';
 import { IntentDashboard } from './IntentDashboard';
 import { AdvancedFilters } from './AdvancedFilters';
 import { exportEvidencesToCSV, exportEvidencesToExcel, exportEvidencesToJSON } from '@/services/exportService';
-import { supabase } from '@/integrations/supabase/client';
 import {
   RefreshCw,
   CheckCircle,
@@ -73,7 +72,9 @@ import {
   Globe,
   UserCircle,
   Save,
-  Loader2
+  Loader2,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 interface TOTVSCheckCardProps {
@@ -401,6 +402,53 @@ export default function TOTVSCheckCard({
     finalData: !!data,
     source: savedDetectionReport ? 'savedDetection' : (fallbackData ? 'fallback' : (freshData ? 'fresh' : 'NONE')),
   });
+  
+  // 🔥 AUTO-SAVE IMEDIATO após verificação TOTVS completar (02/12/2025)
+  // CRÍTICO: Salvar dados automaticamente para não perder ao sair da página
+  useEffect(() => {
+    // Se tem dados NOVOS (freshData) e não está carregando e tem stcHistoryId
+    if (freshData && !isLoadingLive && !isFetching && stcHistoryId && companyId) {
+      console.log('[TOTVS-CARD] 🔥 AUTO-SAVE: Detectados dados novos da verificação TOTVS');
+      console.log('[TOTVS-CARD] 💾 Salvando automaticamente...');
+      
+      // Salvar IMEDIATAMENTE
+      const autoSave = async () => {
+        try {
+          const success = await saveTabToDatabase({
+            companyId,
+            companyName,
+            stcHistoryId,
+            tabId: 'detection',
+            tabData: freshData,
+          });
+          
+          if (success) {
+            setTotvsSaved(true);
+            setUnsavedChanges(prev => ({ ...prev, detection: false }));
+            
+            // 🔥 CRÍTICO: Invalidar query para recarregar latestReport
+            await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+            await queryClient.invalidateQueries({ queryKey: ['stc-history'] });
+            
+            console.log('[TOTVS-CARD] ✅ AUTO-SAVE: Dados da verificação TOTVS salvos com sucesso!');
+            toast.success('✅ Verificação TOTVS salva automaticamente!', {
+              description: 'Dados preservados com segurança no banco de dados.',
+              duration: 3000,
+            });
+          }
+        } catch (error) {
+          console.error('[TOTVS-CARD] ❌ AUTO-SAVE: Erro ao salvar:', error);
+          toast.error('❌ Erro ao salvar verificação TOTVS', {
+            description: 'Por favor, clique em "Salvar Relatório" manualmente.',
+            duration: 5000,
+          });
+        }
+      };
+      
+      // Executar auto-save
+      autoSave();
+    }
+  }, [freshData, isLoadingLive, isFetching, stcHistoryId, companyId, companyName]);
   
   // 🐛 DEBUG: Log para diagnóstico (EXPANDIDO)
   useEffect(() => {
@@ -778,6 +826,13 @@ export default function TOTVSCheckCard({
   const handleVerify = async () => {
     console.log('[TOTVS] 🔍 handleVerify chamado', { hasSaved, companyId, companyName, cnpj });
     
+    // 🎯 TOAST INICIAL - Feedback imediato ao usuário
+    toast.loading('🔍 Iniciando verificação TOTVS...', {
+      id: 'totvs-verification',
+      description: 'Buscando em 60+ fontes: LinkedIn, YouTube, Site TOTVS, Notícias, etc',
+      duration: Infinity, // Manter até finalizar
+    });
+    
     // 🎯 INICIAR TRACKING DE PROGRESSO (CRÍTICO: Deve ser ANTES de qualquer await)
     setVerificationStartTime(Date.now());
     setCurrentPhase('job_portals');
@@ -792,8 +847,14 @@ export default function TOTVSCheckCard({
       );
       if (!confirmar) {
         console.log('[TOTVS] ❌ Usuário cancelou reprocessamento');
+        toast.dismiss('totvs-verification');
+        setVerificationStartTime(null);
+        setCurrentPhase(null);
         return;
       }
+      
+      // Toast de confirmação
+      toast.loading('🗑️ Limpando cache antigo...', { id: 'totvs-verification' });
       
       // 🔥 DELETAR CACHE ANTIGO PARA FORÇAR NOVA BUSCA
       if (companyId) {
@@ -855,8 +916,11 @@ export default function TOTVSCheckCard({
     console.log('[TOTVS] 🔄 Habilitando verificação...');
     setEnabled(true);
     
-    // 🔥 Mostrar toast de feedback para o usuário
-    toast.info('🔄 Reiniciando verificação... Buscando dados atualizados.');
+    // 🔥 Toast de progresso
+    toast.loading('🔍 Buscando evidências em 60+ fontes...', { 
+      id: 'totvs-verification',
+      description: 'LinkedIn, YouTube, TOTVS.com, Notícias, RI, Processos...',
+    });
     
     // 🔥 Aguardar para garantir que o estado foi atualizado e cache foi limpo
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -880,8 +944,10 @@ export default function TOTVSCheckCard({
         // 🔥 CRÍTICO: Invalidar latestReport para forçar recarregar com novos dados
         queryClient.invalidateQueries({ queryKey: ['latest-stc-report', companyId] });
         
-        toast.success('Verificação concluída!', {
-          description: 'Os dados foram atualizados com sucesso. Recarregando relatório...',
+        toast.success('✅ Verificação concluída!', {
+          id: 'totvs-verification',
+          description: `Evidências encontradas e salvas automaticamente!`,
+          duration: 5000,
         });
         
         // Aguardar um pouco e recarregar latestReport
@@ -900,7 +966,8 @@ export default function TOTVSCheckCard({
         errorMessage = error.message;
       }
       
-      toast.error('Erro ao verificar', {
+      toast.error('❌ Erro ao verificar', {
+        id: 'totvs-verification',
         description: errorMessage,
         duration: 5000,
       });
@@ -1090,7 +1157,6 @@ export default function TOTVSCheckCard({
       console.error('[REGISTRY] ❌ Erro crítico ao salvar:', error);
       toast.error('Erro ao salvar relatório', {
         description: (error as Error)?.message || 'Erro desconhecido',
-        variant: 'destructive',
       });
     } finally {
       setIsSaving(false);
@@ -1298,8 +1364,10 @@ export default function TOTVSCheckCard({
 
   console.log('[TOTVS-CARD] 🏢 Renderizando TOTVSCheckCard:', { companyName, cnpj, domain, stcHistoryId });
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
   return (
-    <Card className="p-6">
+    <Card className={`p-6 ${isFullscreen ? 'fixed inset-0 z-50 rounded-none overflow-auto' : ''}`}>
       {/* 🔒 AVISO DE MODO READ-ONLY */}
       {readOnly && snapshot && (
         <div className="mt-6 mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-500 dark:border-blue-600 rounded-xl">
@@ -1385,11 +1453,32 @@ export default function TOTVSCheckCard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 🏢 CABEÇALHO COM NOME DA EMPRESA + CNPJ (TODAS AS ABAS) */}
+      {/* 🏢 CABEÇALHO COM NOME DA EMPRESA + CNPJ + FULLSCREEN */}
       <div className="mb-4 pb-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">{companyName || 'Empresa Sem Nome'}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold tracking-tight">{companyName || 'Empresa Sem Nome'}</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="gap-2"
+                title={isFullscreen ? 'Sair do fullscreen' : 'Abrir em fullscreen'}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 className="w-4 h-4" />
+                    Minimizar
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-4 h-4" />
+                    Fullscreen
+                  </>
+                )}
+              </Button>
+            </div>
             {cnpj && (
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono text-sm">
@@ -1415,6 +1504,7 @@ export default function TOTVSCheckCard({
         statuses={getStatuses()}
         onSaveAll={handleSalvarNoSistema}
         onApprove={handleApproveAndMoveToPool}
+        isRefreshing={isLoading || isFetching}
         onExportPdf={async () => {
           try {
             toast.loading('Gerando PDF...', { id: 'pdf-export' });
@@ -1600,20 +1690,44 @@ export default function TOTVSCheckCard({
                   </>
                 )}
               </Button>
-              {/* 🔥 BARRA DE PROGRESSO: Sempre mostrar quando isLoading=true */}
+              {/* 🔥 BARRA DE PROGRESSO ELEGANTE */}
               {isLoading && (
-                <VerificationProgressBar 
-                  currentPhase={currentPhase || 'job_portals'}
-                  elapsedTime={verificationStartTime ? Math.floor((Date.now() - verificationStartTime) / 1000) : 0}
-                  evidences={evidences.map((e: any) => ({
-                    url: e.url || '',
-                    title: e.title || '',
-                    snippet: e.snippet || e.content || '',
-                    match_type: e.match_type || 'single',
-                    source: e.source || '',
-                    validation_method: e.validation_method
-                  }))}
-                />
+                <div className="mt-6 space-y-4">
+                  <VerificationProgressBar 
+                    currentPhase={currentPhase || 'job_portals'}
+                    elapsedTime={verificationStartTime ? Math.floor((Date.now() - verificationStartTime) / 1000) : 0}
+                    evidences={evidences.map((e: any) => ({
+                      url: e.url || '',
+                      title: e.title || '',
+                      snippet: e.snippet || e.content || '',
+                      match_type: e.match_type || 'single',
+                      source: e.source || '',
+                      validation_method: e.validation_method
+                    }))}
+                  />
+                  
+                  {/* TOAST VISUAL ADICIONAL */}
+                  <div className="p-6 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-2 border-blue-500/40 rounded-xl shadow-xl animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-500/30 flex items-center justify-center">
+                        <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-blue-100 mb-1">
+                          🔍 Verificação em andamento...
+                        </h4>
+                        <p className="text-sm text-blue-200">
+                          Buscando em LinkedIn, YouTube, Site TOTVS, Notícias Premium, RI, Processos Judiciais e mais 50+ fontes
+                        </p>
+                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-300">
+                          <span>⏱️ Tempo decorrido: {verificationStartTime ? Math.floor((Date.now() - verificationStartTime) / 1000) : 0}s</span>
+                          <span>•</span>
+                          <span>📊 Fase: {currentPhase || 'Iniciando...'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           ) : (
@@ -1851,20 +1965,25 @@ export default function TOTVSCheckCard({
             linkedinUrl={data?.linkedin_url}
             domain={domain}
             savedData={latestReport?.full_report?.decisors_report}
-            onDataChange={(decisorsData) => {
-              console.log('[TOTVS] 💾 Salvando decisores:', decisorsData);
+            onDataChange={async (decisorsData) => {
+              console.log('[TOTVS] 💾 Salvando decisores IMEDIATAMENTE:', decisorsData);
               tabDataRef.current.decisors = decisorsData;
               setUnsavedChanges(prev => ({ ...prev, decisors: true }));
               setTabsStatus(prev => ({ ...prev, decisors: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'decisors',
                   tabData: decisorsData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, decisors: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Decisores salvos automaticamente!', { duration: 2000 });
+                }
               }
             }}
             onWebsiteDiscovered={(website) => {
@@ -1887,19 +2006,24 @@ export default function TOTVSCheckCard({
             stcStatus={data?.status}
             savedData={latestReport?.full_report?.digital_report} // 🔥 PASSAR DADOS SALVOS!
             stcHistoryId={stcHistoryId || undefined}
-            onDataChange={(dataChange) => {
+            onDataChange={async (dataChange) => {
               tabDataRef.current.digital = dataChange;
               setUnsavedChanges(prev => ({ ...prev, digital: true }));
               setTabsStatus(prev => ({ ...prev, digital: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'digital',
                   tabData: dataChange,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, digital: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Digital Intelligence salvo automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />
@@ -1944,19 +2068,24 @@ export default function TOTVSCheckCard({
             savedData={latestReport?.full_report?.competitors_report}
             stcHistoryId={stcHistoryId || undefined}
             similarCompanies={sharedSimilarCompanies}
-            onDataChange={(competitorsData) => {
+            onDataChange={async (competitorsData) => {
               tabDataRef.current.competitors = competitorsData;
               setUnsavedChanges(prev => ({ ...prev, competitors: true }));
               setTabsStatus(prev => ({ ...prev, competitors: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'competitors',
                   tabData: competitorsData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, competitors: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Competidores salvos automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />
@@ -1973,19 +2102,24 @@ export default function TOTVSCheckCard({
               cnpj={cnpj}
               savedData={latestReport?.full_report?.similar_companies_report}
               stcHistoryId={stcHistoryId || undefined}
-              onDataChange={(similarData) => {
+              onDataChange={async (similarData) => {
                 tabDataRef.current.similar = similarData;
                 setUnsavedChanges(prev => ({ ...prev, similar: true }));
                 setTabsStatus(prev => ({ ...prev, similar: 'success' }));
-                // 🔥 AUTO-SAVE com debounce
-                if (companyId) {
-                  saveTabWithDebounce({
+                // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+                if (companyId && stcHistoryId) {
+                  const success = await saveTabToDatabase({
                     companyId,
                     companyName,
                     stcHistoryId,
                     tabId: 'similar',
                     tabData: similarData,
                   });
+                  if (success) {
+                    setUnsavedChanges(prev => ({ ...prev, similar: false }));
+                    await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                    toast.success('✅ Empresas Similares salvas automaticamente!', { duration: 2000 });
+                  }
                 }
               }}
             />
@@ -2008,19 +2142,24 @@ export default function TOTVSCheckCard({
             cnpj={cnpj}
             savedData={latestReport?.full_report?.clients_report}
             stcHistoryId={stcHistoryId || undefined}
-            onDataChange={(clientsData) => {
+            onDataChange={async (clientsData) => {
               tabDataRef.current.clients = clientsData;
               setUnsavedChanges(prev => ({ ...prev, clients: true }));
               setTabsStatus(prev => ({ ...prev, clients: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'clients',
                   tabData: clientsData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, clients: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Cliente Discovery salvo automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />
@@ -2038,19 +2177,24 @@ export default function TOTVSCheckCard({
               similarCompanies={similarCompaniesData}
               savedData={latestReport?.full_report?.analysis_report}
               stcHistoryId={stcHistoryId || undefined}
-              onDataChange={(analysisData) => {
+              onDataChange={async (analysisData) => {
                 tabDataRef.current.analysis = analysisData;
                 setUnsavedChanges(prev => ({ ...prev, analysis: true }));
                 setTabsStatus(prev => ({ ...prev, analysis: 'success' }));
-                // 🔥 AUTO-SAVE com debounce
-                if (companyId) {
-                  saveTabWithDebounce({
+                // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+                if (companyId && stcHistoryId) {
+                  const success = await saveTabToDatabase({
                     companyId,
                     companyName,
                     stcHistoryId,
                     tabId: 'analysis',
                     tabData: analysisData,
                   });
+                  if (success) {
+                    setUnsavedChanges(prev => ({ ...prev, analysis: false }));
+                    await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                    toast.success('✅ Análise 360° salva automaticamente!', { duration: 2000 });
+                  }
                 }
               }}
             />
@@ -2075,19 +2219,24 @@ export default function TOTVSCheckCard({
             similarCompanies={similarCompaniesData}
             savedData={latestReport?.full_report?.products_report}
             stcHistoryId={stcHistoryId}
-            onDataChange={(productsData) => {
+            onDataChange={async (productsData) => {
               tabDataRef.current.products = productsData;
               setUnsavedChanges(prev => ({ ...prev, products: true }));
               setTabsStatus(prev => ({ ...prev, products: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'products',
                   tabData: productsData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, products: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Produtos Recomendados salvos automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />
@@ -2104,19 +2253,24 @@ export default function TOTVSCheckCard({
             stcResult={data}
             savedData={latestReport?.full_report?.opportunities_report}
             stcHistoryId={stcHistoryId}
-            onDataChange={(opportunitiesData) => {
+            onDataChange={async (opportunitiesData) => {
               tabDataRef.current.opportunities = opportunitiesData;
               setUnsavedChanges(prev => ({ ...prev, opportunities: true }));
               setTabsStatus(prev => ({ ...prev, opportunities: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'opportunities',
                   tabData: opportunitiesData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, opportunities: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Oportunidades salvas automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />
@@ -2135,19 +2289,24 @@ export default function TOTVSCheckCard({
             maturityScore={data?.digital_maturity_score || 0}
             savedData={latestReport?.full_report?.executive_report}
             stcHistoryId={stcHistoryId || undefined}
-            onDataChange={(executiveData) => {
+            onDataChange={async (executiveData) => {
               tabDataRef.current.executive = executiveData;
               setUnsavedChanges(prev => ({ ...prev, executive: true }));
               setTabsStatus(prev => ({ ...prev, executive: 'success' }));
-              // 🔥 AUTO-SAVE com debounce
-              if (companyId) {
-                saveTabWithDebounce({
+              // 🔥 AUTO-SAVE IMEDIATO (SEM DEBOUNCE)
+              if (companyId && stcHistoryId) {
+                const success = await saveTabToDatabase({
                   companyId,
                   companyName,
                   stcHistoryId,
                   tabId: 'executive',
                   tabData: executiveData,
                 });
+                if (success) {
+                  setUnsavedChanges(prev => ({ ...prev, executive: false }));
+                  await queryClient.invalidateQueries({ queryKey: ['stc-latest', companyId] });
+                  toast.success('✅ Sumário Executivo salvo automaticamente!', { duration: 2000 });
+                }
               }
             }}
           />

@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ExportButton } from "@/components/export/ExportButton";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { ScrollToTopButton } from "@/components/common/ScrollToTopButton";
+// ScrollToTopButton removido
 
 interface ProposalManagerProps {
   companyId: string;
@@ -85,7 +85,7 @@ export function ProposalManager({ companyId, accountStrategyId, quoteId, scenari
 
   return (
     <div className="space-y-6">
-      <ScrollToTopButton />
+      {/* ScrollToTopButton removido */}
       {/* Header */}
       <Card>
         <CardHeader>

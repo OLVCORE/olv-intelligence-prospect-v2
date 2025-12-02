@@ -171,13 +171,16 @@ const SHORT_PRODUCT_PATTERNS: Record<string, RegExp> = {
   'BPM': /\b(BPM|Fluig\s+BPM|Business\s+Process\s+Management)\b/i
 };
 
-// 🌐 50+ PORTAIS DE VAGAS BRASILEIROS (Categoria 1: Plataformas Nacionais)
-// 💼 PORTAIS DE VAGAS ESTRATÉGICOS (Apenas os que Google indexa SEM login)
+// 🌐 PORTAIS DE VAGAS + PERFIS PROFISSIONAIS (ARMA MAIS PODEROSA! 🔥)
+// 💼 LINKEDIN É CRÍTICO: Perfis mostram "Empresa X + Experiência em TOTVS/Protheus"
 const JOB_PORTALS_NACIONAL = [
-  'br.linkedin.com/jobs',      // ✅ FUNCIONOU! (LinkedIn Jobs)
-  'br.linkedin.com/posts',     // ✅ FUNCIONOU! (LinkedIn Posts - Golden Cargo)
-  'portal.gupy.io',            // ✅ Google indexa vagas públicas
-  'br.indeed.com'              // ✅ Maior portal mundial, indexado
+  'br.linkedin.com/in',        // 🔥 NOVO: PERFIS DE PESSOAS (evidência fortíssima!)
+  'br.linkedin.com/jobs',      // ✅ LinkedIn Jobs
+  'br.linkedin.com/posts',     // ✅ LinkedIn Posts
+  'linkedin.com/in',           // 🔥 NOVO: Perfis globais (fallback)
+  'portal.gupy.io',            // ✅ Gupy
+  'br.indeed.com',             // ✅ Indeed
+  'www.vagas.com.br'           // 🔥 NOVO: Vagas.com (portal BR)
 ];
 
 // 🎓 PORTAIS DE ESTÁGIO/TRAINEE (Removidos - baixa relevância para decisores)
@@ -248,11 +251,17 @@ const NEWS_SOURCES_PREMIUM = [
   'fusionbynstech.com.br'       // ✨ Fusion (parceiro TOTVS com cases)
 ];
 
-// 📘 TIER 3: CASES OFICIAIS TOTVS (Peso Médio-Alto = 80 pts)
+// 📘 TIER 3: CASES OFICIAIS TOTVS (Peso Máximo = 100 pts) 🔥
+// SITE DA TOTVS É EVIDÊNCIA DEFINITIVA - Se lista como cliente = 100% confirmado!
 const TOTVS_OFFICIAL_SOURCES = [
-  'totvs.com/blog',             // Blog oficial TOTVS (cases de sucesso)
-  'totvs.com/cases',            // Cases publicados
-  'totvs.com/noticias'          // Notícias oficiais
+  'totvs.com.br/cases',         // 🔥 CRÍTICO: Cases de sucesso (evidência definitiva!)
+  'totvs.com.br/clientes',      // 🔥 CRÍTICO: Lista de clientes (evidência definitiva!)
+  'totvs.com.br/blog',          // Blog oficial (cases)
+  'totvs.com/blog',             // Blog global
+  'totvs.com/cases',            // Cases global
+  'totvs.com/noticias',         // Notícias oficiais
+  'ri.totvs.com.br',            // 🔥 RI TOTVS (relações comerciais, contratos)
+  'ri.totvs.com'                // RI global
 ];
 
 // 🎯 SEGMENTOS TOTVS (12 verticais oficiais)
@@ -439,36 +448,48 @@ function getProductSegmentBoost(product: string, segment: string | null): number
 }
 
 // 🎯 PESOS DAS FONTES (v5.0 - Alinhado com classificação 100%/80%/65%)
+// 🎯 PESOS DE FONTES (02/12/2025) - OTIMIZADO PARA FONTES PODEROSAS
 const SOURCE_WEIGHTS = {
-  // TIER 1: Documentos Oficiais (Peso Máximo = 100 pts → Auto NO-GO)
+  // ⭐ TIER S: EVIDÊNCIAS DEFINITIVAS (100 pts → Auto NO-GO)
+  totvs_official: 100,        // 🔥 SITE TOTVS OFICIAL (totvs.com.br/cases, /clientes) = DEFINITIVO!
   cvm_ri_docs: 100,           // CVM/RI = relação comercial comprovada
   b3_docs: 100,               // B3 = fornecedor listado
   tjsp_judicial: 100,         // TJSP/CNJ = litígio comercial
   diario_oficial: 100,        // Diário Oficial = documento público
   
-  // TIER 2: Notícias Premium (Peso Alto = 85 pts)
+  // ⭐ TIER A+: LINKEDIN PROFILES (95 pts) - ARMA MAIS PODEROSA! 🔥
+  linkedin_profiles: 95,      // 🔥 Perfis mostrando "Empresa X + Experiência: TOTVS/Protheus"
+  
+  // ⭐ TIER A: VAGAS + VÍDEOS (90 pts) - EVIDÊNCIAS MUITO FORTES
+  linkedin_jobs: 90,          // LinkedIn Jobs (empresa atual + requisitos TOTVS)
+  youtube_videos: 90,         // 🔥 YouTube (cases, depoimentos, eventos)
+  
+  // TIER B: VAGAS OUTROS PORTAIS (80-85 pts)
+  indeed_jobs: 85,            // Indeed
+  vagas_com: 85,              // Vagas.com
+  gupy: 85,                   // Gupy
+  job_portals: 80,            // Outros portais de vagas
+  
+  // TIER C: NOTÍCIAS PREMIUM (85 pts)
   valor_economico: 85,        // Valor Econômico
   exame: 85,                  // Exame
   estadao: 85,                // Estadão Economia
   infomoney: 85,              // InfoMoney
   startse: 85,                // StartSe (tech)
+  premium_news: 85,           // Outras notícias premium
   
-  // TIER 3: Vagas Oficiais (Peso Alto = 80 pts)
-  linkedin_jobs: 80,          // LinkedIn Jobs (empresa atual)
-  indeed_jobs: 80,            // Indeed
-  vagas_com: 80,              // Vagas.com
-  catho: 80,                  // Catho
-  gupy: 80,                   // Gupy
-  job_portals: 75,            // Outros portais de vagas
+  // TIER D: TECH PORTALS & RI (75-80 pts)
+  tech_news: 75,              // Portais de tecnologia
+  ri_totvs: 80,               // RI TOTVS (relações comerciais)
   
-  // TIER 4: Profiles LinkedIn (Peso Médio-Alto = 75 pts)
-  linkedin_profiles: 75,      // Skills de funcionários atuais
-  
-  // TIER 5: Notícias Gerais (Peso Médio = 60 pts)
+  // TIER E: NOTÍCIAS GERAIS (60 pts)
   google_news: 60,            // Google News
   tech_blogs: 60,             // Blogs de tecnologia
   
-  // TIER 6: Busca Geral (Peso Baixo = 40 pts)
+  // TIER F: OUTROS (40-50 pts)
+  judicial: 50,               // Processos judiciais gerais
+  memorandos: 50,             // Memorandos
+  cvm_balancetes: 50,         // Balancetes CVM
   google_search: 40           // Busca genérica
 };
 
@@ -689,6 +710,41 @@ async function isValidTOTVSEvidence(
   console.log('[SIMPLE-TOTVS] 📄 Snippet:', snippet.substring(0, 150));
   console.log('[SIMPLE-TOTVS] 🏢 Empresa:', companyName);
   console.log('[SIMPLE-TOTVS] 📏 Tamanho total da matéria:', fullText.length, 'caracteres');
+  console.log('[SIMPLE-TOTVS] 🔗 URL:', url?.substring(0, 100));
+  
+  // 🔥 VALIDAÇÃO ESPECIAL: PERFIS DO LINKEDIN (02/12/2025)
+  // Perfis são EVIDÊNCIA FORTÍSSIMA: Funcionário lista "Empresa X" + "Experiência: TOTVS/Protheus"
+  const isLinkedInProfile = url?.includes('linkedin.com/in/') || url?.includes('br.linkedin.com/in/');
+  if (isLinkedInProfile) {
+    console.log('[SIMPLE-TOTVS] 💼 PERFIL LINKEDIN detectado - validação especial');
+    
+    // Para perfis, aceitar se:
+    // 1. Menciona nome da empresa (em "Experiências" ou "Empresa atual")
+    // 2. Menciona TOTVS ou produtos em "Habilidades" ou "Experiências"
+    const profilePatterns = [
+      /experiência.*totvs/i,
+      /habilidade.*totvs/i,
+      /conhecimento.*totvs/i,
+      /skills?.*totvs/i,
+      /experience.*totvs/i,
+      /protheus|datasul|rm|logix|winthor/i // Produtos TOTVS
+    ];
+    
+    const hasProfileEvidence = profilePatterns.some(pattern => pattern.test(fullText));
+    
+    if (hasProfileEvidence) {
+      console.log('[SIMPLE-TOTVS] 🔥 PERFIL LINKEDIN: Funcionário com experiência em TOTVS detectado!');
+      console.log('[SIMPLE-TOTVS] ✅ Isso é EVIDÊNCIA FORTÍSSIMA - Empresa usa/usou TOTVS');
+      // Detectar produtos no perfil
+      const produtosPerfil = detectTotvsProducts(fullText.toLowerCase());
+      return { 
+        valid: true, 
+        matchType: 'triple', // SEMPRE TRIPLE para perfis LinkedIn
+        produtos: produtosPerfil.length > 0 ? produtosPerfil : ['TOTVS'],
+        validationMethod: 'linkedin_profile' // Novo tipo de validação
+      };
+    }
+  }
   
   // 1. REJEITAR: Vagas NA TOTVS (não cliente)
   const totvsJobPatterns = [
@@ -746,8 +802,7 @@ async function isValidTOTVSEvidence(
     }
   }
   
-  // 🔥 CRÍTICO: REJEITAR listas de ações/cotações genéricas (não é sobre a empresa)
-  // Exemplo: "Vale, Suzano, Jalles Machado, Totvs, B3 e mais ações" = REJEITAR
+  // REJEITAR: Padrões de listas de ações/cotações genéricas (MANTIDO - estava funcionando)
   const genericStockPatterns = [
     /vale,?\s+suzano,?\s+.*totvs,?\s+.*a[cç][iõ]o|a[cç][õo]es/i, // Listas de ações
     /totvs,?\s+.*vale,?\s+suzano/i, // TOTVS em listas genéricas
@@ -865,16 +920,15 @@ async function isValidTOTVSEvidence(
   }
   
   // 🔥 CRÍTICO: Verificar se TOTVS aparece JUNTO com a empresa na MESMA MATÉRIA
-  // Janela de contexto: 250 caracteres antes e depois da empresa (aumentado para melhor contexto)
-  // ⚠️ BALANCEAMENTO: 250 chars captura mais contexto sem perder precisão
-  // - Permite capturar menções em parágrafos adjacentes
-  // - Ainda mantém proximidade suficiente para evitar falsos positivos
-  const WINDOW_SIZE = 250; // Caracteres ao redor da empresa (aumentado de 150 para 250)
+  // Janela de contexto: 1500 caracteres = TODO O SNIPPET DO GOOGLE
+  // MOTIVO: Snippet do Google já representa UMA matéria específica
+  // Se empresa e TOTVS estão no mesmo snippet = MESMA MATÉRIA (não precisa verificar proximidade)
+  const WINDOW_SIZE = 1500; // Praticamente todo o snippet (Google retorna ~300-500 chars)
   const startWindow = Math.max(0, companyPosition - WINDOW_SIZE);
   const endWindow = Math.min(fullText.length, companyPosition + matchedVariation.length + WINDOW_SIZE);
   const contextWindow = fullText.substring(startWindow, endWindow).toLowerCase();
   
-  console.log('[SIMPLE-TOTVS] 🔍 Janela de contexto (250 chars):', contextWindow.substring(0, 400));
+  console.log('[SIMPLE-TOTVS] 🔍 Janela de contexto (1500 chars = snippet completo):', contextWindow.substring(0, 400));
   
   // Verificar se TOTVS está no contexto próximo à empresa (MESMA MATÉRIA)
   // 🔥 CRÍTICO: Usar os mesmos padrões para detectar TOTVS no contexto
@@ -882,10 +936,34 @@ async function isValidTOTVSEvidence(
     /\btotvs\b/i,           // "totvs" como palavra
     /totvs\.com\.br/i,      // "totvs.com.br"
     /\btotvs\s+(rm|protheus|datasul|logix|fluig|carol|techfin|winthor|microsiga)/i, // "totvs rm", etc
-    /totsa/i                // "totsa"
+    /totsa/i,               // "totsa"
+    /totvs\s+s\.?a\.?/i     // "TOTVS S.A." (incluir razão social)
   ];
   
   const hasTotvsInContext = totvsPatternsContext.some(pattern => pattern.test(contextWindow));
+  
+  // 🔥 PADRÕES DE RELAÇÃO COMERCIAL (02/12/2025)
+  // TOTVS como credora, fornecedora, parceira = EVIDÊNCIA VÁLIDA DE RELAÇÃO COMERCIAL
+  const businessRelationshipPatterns = [
+    /credor|credores|recupera[çc][aã]o\s+judicial|quadro.*credor/i,      // Recuperação judicial
+    /fornecedor|fornecedora|fornecimento/i,                                // Fornecimento
+    /contrato|contrata[çc][aã]o|contratada?/i,                            // Contratos
+    /licita[çc][aã]o|licitante|vencedor.*licita[çc][aã]o/i,              // Licitações
+    /parceria|parceiro|parceira|acordo\s+comercial/i,                     // Parcerias
+    /cliente|clientes|portf[óo]lio|cases?/i,                              // Cliente/Cases
+    /implementa[çc][aã]o|implanta[çc][aã]o|migra[çc][aã]o/i,             // Implementação
+    /homologa[çc][aã]o|certifica[çc][aã]o|integra[çc][aã]o/i,            // Homologação/Integração
+    /projeto.*conjunto|desenvolvimento.*conjunto/i,                        // Projetos conjuntos
+    /rela[çc][õo]es?\s+com\s+investidores?|RI|relat[óo]rio.*administra[çc][aã]o/i, // RI
+    /balan[çc]o|demonstra[çc][õo]es?\s+financeiras?|DRE/i                // Balanços
+  ];
+  
+  const hasBusinessRelationship = businessRelationshipPatterns.some(pattern => pattern.test(contextWindow));
+  if (hasBusinessRelationship && hasTotvsInContext) {
+    console.log('[SIMPLE-TOTVS] 💼 RELAÇÃO COMERCIAL FORTE detectada (contrato/parceria/RI/licitação)');
+    console.log('[SIMPLE-TOTVS] 🎯 Padrão encontrado no contexto - evidência MUITO VÁLIDA');
+    // Aceitar como evidência forte
+  }
   
   // 🔥 NOVO: Se não encontrou TOTVS explícito, verificar se há produtos TOTVS no contexto
   // Se há produtos TOTVS, considerar como válido - será DOUBLE MATCH com produtos
@@ -914,40 +992,18 @@ async function isValidTOTVSEvidence(
   
   console.log('[SIMPLE-TOTVS] 🎯 Produtos detectados:', produtosDetectados.length > 0 ? produtosDetectados.join(', ') : 'Nenhum');
   
-  // 🔥 NOVO: Se temos URL, fazer leitura de contexto completo para validação precisa
-  // ⚠️ OTIMIZAÇÃO: Só fazer fetch se passou na validação básica E temos limite de memória disponível
-  let hasBusinessContext = true; // Default: aceitar se não tiver URL
-  let validationMethod = 'basic'; // 'basic' ou 'ai' - para badge de verificação
+  // 🚨 VALIDAÇÃO AI DESABILITADA (02/12/2025)
+  // MOTIVO: Estava rejeitando evidências válidas (ex: TOTVS como credora em recuperação judicial)
+  // USAR APENAS VALIDAÇÃO BÁSICA (snippet do Google)
+  let hasBusinessContext = true; // Sempre aceitar se passou na validação básica
+  let validationMethod = 'basic'; // Apenas validação básica
+  
+  // Se tem URL e passou na validação básica, pode tentar ler contexto completo
+  // para detectar mais produtos, mas NÃO rejeitar se IA falhar
   if (url && (hasTotvsInContext || produtosDetectados.length > 0)) {
-    // 🎯 LIMITAR: Só fazer fetch se ainda temos "cota" de URLs disponíveis
-    // Isso previne consumo excessivo de memória
-    if (urlsProcessedCount && urlsProcessedCount.current >= urlsProcessedCount.max) {
-      console.log('[SIMPLE-TOTVS] ⚠️ Limite de URLs atingido, usando validação básica apenas');
-      validationMethod = 'basic';
-      // Aceitar baseado na validação básica já feita
-    } else {
-      console.log('[SIMPLE-TOTVS] 🔍 Lendo contexto completo da URL para validação precisa...');
-      if (urlsProcessedCount) {
-        urlsProcessedCount.current++;
-      }
-      const urlContext = await fetchAndAnalyzeUrlContext(url, companyName);
-      hasBusinessContext = urlContext.hasBusinessContext;
-      validationMethod = 'ai'; // ✅ Validado com IA
-      
-      if (!hasBusinessContext) {
-        console.log('[SIMPLE-TOTVS] ❌ Rejeitado: IA não detectou correlação de negócios real no contexto completo da URL');
-        return { valid: false, matchType: 'rejected', produtos: [], validationMethod: 'ai' };
-      }
-      
-      // Se passou na validação IA, usar texto completo da URL para detecção de produtos
-      if (urlContext.fullText) {
-        const fullContextWindow = urlContext.fullText.toLowerCase();
-        const produtosDetectadosFull = detectTotvsProducts(fullContextWindow);
-        if (produtosDetectadosFull.length > produtosDetectados.length) {
-          produtosDetectados.push(...produtosDetectadosFull.filter(p => !produtosDetectados.includes(p)));
-        }
-      }
-    }
+    console.log('[SIMPLE-TOTVS] 📝 URL disponível, usando snippet do Google (validação básica)');
+    // Não fazer fetch da URL completa para economizar tempo e memória
+    // Snippet do Google já é suficiente para validação
   }
   
   // 5. CLASSIFICAR: Triple, Double ou Single Match (TUDO NA MESMA MATÉRIA)
@@ -1134,13 +1190,23 @@ function generateQueryBySourceType(
   const produtosQuery = produtosPrincipais.join(' OR ');
   
   switch (sourceType) {
-    // 📋 PORTALS DE VAGAS: Buscar empresa + produtos TOTVS (não só "TOTVS")
+    // 📋 PORTAIS DE VAGAS + PERFIS: Buscar empresa + produtos TOTVS
     case 'job_portals':
+      // 🔥 LINKEDIN: Query MUITO AMPLA (Google retorna mais que Serper)
+      if (portal.includes('linkedin.com')) {
+        // Buscar em QUALQUER LinkedIn (posts, profiles, jobs)
+        return `site:linkedin.com "${companyName}" TOTVS`;
+      }
+      // Outros portais: query normal
       return `site:${portal} "${companyName}" (${produtosQuery})`;
     
-    // 📘 CASES OFICIAIS TOTVS: Buscar por "case" ou "cliente"
+    // 📘 CASES OFICIAIS TOTVS: Buscar por "case" ou "cliente" (EVIDÊNCIA DEFINITIVA!)
     case 'totvs_cases':
-      return `site:${portal} ("case" OR "cliente" OR "depoimento") "${companyName}"`;
+      // 🔥 SITE TOTVS: Query MUITO SIMPLES = máxima cobertura
+      if (portal.includes('totvs.com')) {
+        return `site:totvs.com.br "${companyName}"`;
+      }
+      return `site:${portal} "${companyName}"`;
     
     // 📰 NOTÍCIAS PREMIUM: Buscar empresa + contexto de uso/implementação
     case 'premium_news':
@@ -1150,9 +1216,13 @@ function generateQueryBySourceType(
     case 'official_docs':
       return `site:${portal} "${companyName}" ("TOTVS" OR "contrato" OR "licitação" OR ${produtosQuery})`;
     
-    // 🎥 VÍDEOS: Buscar empresa + produtos
+    // 🎥 VÍDEOS: Buscar empresa + produtos (DEPOIMENTOS, CASES, EVENTOS)
     case 'video_content':
-      return `site:${portal} "${companyName}" (${produtosQuery})`;
+      // YouTube: Query SIMPLIFICADA = mais resultados
+      if (portal.includes('youtube.com')) {
+        return `site:youtube.com "${companyName}" TOTVS`;
+      }
+      return `site:${portal} "${companyName}" TOTVS`;
     
     // 📱 REDES SOCIAIS: Buscar empresa + produtos
     case 'social_media':
@@ -1430,30 +1500,31 @@ serve(async (req) => {
     if (serperKey) {
       console.log('[SIMPLE-TOTVS] ✅ Serper API Key OK, iniciando busca massiva...');
       
-      // 🌐 FASE 1: BUSCA NOS 30+ PORTAIS DE VAGAS NACIONAIS (últimos 5 anos)
+      // 🌐 FASE 1: BUSCA EM PORTAIS DE VAGAS + PERFIS LINKEDIN (ARMA MAIS PODEROSA! 🔥)
+      console.log('[SIMPLE-TOTVS] 💼 FASE 1: Buscando em LinkedIn Profiles + Vagas (evidência FORTÍSSIMA!)...');
       const evidenciasVagas = await searchMultiplePortals({
         portals: JOB_PORTALS_NACIONAL,
         companyName: shortSearchTerm,
         serperKey,
         sourceType: 'job_portals',
-        sourceWeight: SOURCE_WEIGHTS.job_portals,
-        dateRestrict: 'y5', // Últimos 5 anos (1-6 configurável depois)
-        domain: empresaDomain, // 🔥 NOVO: Passar domínio para queries específicas
+        sourceWeight: SOURCE_WEIGHTS.linkedin_profiles, // 95 pts (MÁXIMA PRIORIDADE!)
+        dateRestrict: 'y5', // Últimos 5 anos
+        domain: empresaDomain,
       });
       evidencias.push(...evidenciasVagas);
       sourcesConsulted += JOB_PORTALS_NACIONAL.length;
       totalQueries += JOB_PORTALS_NACIONAL.length;
       
-      console.log(`[SIMPLE-TOTVS] ✅ FASE 1 concluída: ${evidenciasVagas.length} evidências de vagas`);
+      console.log(`[SIMPLE-TOTVS] ✅ FASE 1 concluída: ${evidenciasVagas.length} evidências de vagas/perfis`);
       
-      // 📘 FASE 2: BUSCA NOS CASES OFICIAIS TOTVS (Blog, Cases, Notícias)
-      console.log('[SIMPLE-TOTVS] 📘 FASE 2: Buscando em fontes oficiais TOTVS...');
+      // 📘 FASE 2: BUSCA NO SITE TOTVS OFICIAL (EVIDÊNCIA DEFINITIVA! 🔥)
+      console.log('[SIMPLE-TOTVS] 🏢 FASE 2: Buscando no site TOTVS oficial (cases, clientes)...');
       const evidenciasTotvsCases = await searchMultiplePortals({
         portals: TOTVS_OFFICIAL_SOURCES,
         companyName: shortSearchTerm,
         serperKey,
         sourceType: 'totvs_cases',
-        sourceWeight: 80, // Peso alto para cases oficiais
+        sourceWeight: SOURCE_WEIGHTS.totvs_official, // 100 pts (EVIDÊNCIA DEFINITIVA!)
         dateRestrict: 'y5',
         domain: empresaDomain,
       });
@@ -1461,7 +1532,12 @@ serve(async (req) => {
       sourcesConsulted += TOTVS_OFFICIAL_SOURCES.length;
       totalQueries += TOTVS_OFFICIAL_SOURCES.length;
       
-      console.log(`[SIMPLE-TOTVS] ✅ FASE 2 concluída: ${evidenciasTotvsCases.length} evidências de cases TOTVS`);
+      console.log(`[SIMPLE-TOTVS] ✅ FASE 2 concluída: ${evidenciasTotvsCases.length} evidências do site TOTVS`);
+      
+      // 🔥 ALERTA: Se encontrou no site TOTVS = EVIDÊNCIA DEFINITIVA
+      if (evidenciasTotvsCases.length > 0) {
+        console.log('[SIMPLE-TOTVS] 🎯 EVIDÊNCIA DEFINITIVA: Empresa listada no site TOTVS oficial!');
+      }
       
       // 📄 FASE 3: BUSCA NAS FONTES OFICIAIS (CVM, B3, TJSP) - PESO 100 = AUTO NO-GO
       console.log('[SIMPLE-TOTVS] 📄 FASE 3: Buscando em fontes oficiais (CVM, B3, TJSP)...');
@@ -1527,14 +1603,14 @@ serve(async (req) => {
       
       console.log(`[SIMPLE-TOTVS] ✅ FASE 4.5 concluída: ${evidenciasTechPortals.length} evidências de portais tech`);
       
-      // 🎥 FASE 5: BUSCA EM VÍDEOS (YouTube, Vimeo)
-      console.log('[SIMPLE-TOTVS] 🎥 FASE 5: Buscando em canais de vídeo (YouTube, Vimeo)...');
+      // 🎥 FASE 5: BUSCA EM VÍDEOS (YouTube, Vimeo) - EVIDÊNCIAS MUITO FORTES! 🔥
+      console.log('[SIMPLE-TOTVS] 🎥 FASE 5: Buscando em YouTube/Vimeo (cases, depoimentos, eventos)...');
       const evidenciasVideos = await searchMultiplePortals({
         portals: ['youtube.com', 'vimeo.com'],
         companyName: shortSearchTerm,
         serperKey,
         sourceType: 'video_content',
-        sourceWeight: 75, // Peso médio-alto (vídeos são boas evidências)
+        sourceWeight: SOURCE_WEIGHTS.youtube_videos, // 90 pts (EVIDÊNCIA MUITO FORTE!)
         dateRestrict: 'y5',
         domain: empresaDomain,
       });
@@ -1543,6 +1619,11 @@ serve(async (req) => {
       totalQueries += 2;
       
       console.log(`[SIMPLE-TOTVS] ✅ FASE 5 concluída: ${evidenciasVideos.length} evidências de vídeo`);
+      
+      // 🔥 ALERTA: Se encontrou vídeo = EVIDÊNCIA MUITO FORTE
+      if (evidenciasVideos.length > 0) {
+        console.log('[SIMPLE-TOTVS] 🎯 VÍDEO DETECTADO: Depoimento/case em vídeo é evidência fortíssima!');
+      }
       
       // 📱 FASE 6: BUSCA EM REDES SOCIAIS (Instagram, Facebook, LinkedIn)
       console.log('[SIMPLE-TOTVS] 📱 FASE 6: Buscando em redes sociais corporativas...');
@@ -2034,6 +2115,213 @@ serve(async (req) => {
         } catch (error) {
           console.error('[SIMPLE-TOTVS] ❌ Erro busca CNPJ:', error);
         }
+      }
+      
+      // 🔥 FASE 10: BUSCAS COMPLEMENTARES DIRETAS (02/12/2025)
+      // GOOGLE NORMAL retorna resultados que SERPER não pega!
+      // Buscas ULTRA-ESPECÍFICAS para fontes poderosas
+      
+      console.log('[SIMPLE-TOTVS] 🎯 FASE 10: Buscas complementares DIRETAS (LinkedIn, TOTVS.com, YouTube)...');
+      
+      try {
+        // 🔥 BUSCA 1: Site TOTVS.com.br (cases oficiais) - EVIDÊNCIA DEFINITIVA
+        totalQueries++;
+        const totvsQuery = `site:totvs.com.br "${shortSearchTerm}"`;
+        console.log('[SIMPLE-TOTVS] 🏢 Query TOTVS.com.br:', totvsQuery);
+        
+        const totvsSiteResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: totvsQuery, num: 10, gl: 'br' })
+        });
+        
+        if (totvsSiteResponse.ok) {
+          const totvsSiteData = await totvsSiteResponse.json();
+          const totvsResults = totvsSiteData.organic || [];
+          
+          console.log('[SIMPLE-TOTVS] 🏢 TOTVS.com.br resultados:', totvsResults.length);
+          
+          for (const result of totvsResults) {
+            const validation = await isValidTOTVSEvidence(
+              result.snippet || '', 
+              result.title || '', 
+              shortSearchTerm, 
+              result.link
+            );
+            
+            if (validation.valid) {
+              evidencias.push({
+                source: 'totvs_official',
+                source_name: 'Site TOTVS Oficial',
+                weight: SOURCE_WEIGHTS.totvs_official, // 100 pts - DEFINITIVO!
+                match_type: validation.matchType,
+                content: result.snippet,
+                url: result.link,
+                title: result.title,
+                detected_products: validation.produtos,
+                validation_method: validation.validationMethod || 'basic'
+              });
+              console.log('[SIMPLE-TOTVS] 🎯 EVIDÊNCIA DEFINITIVA! Site TOTVS lista empresa como cliente!');
+            }
+          }
+        }
+        
+        // 🔥 BUSCA 2: LinkedIn GERAL (posts + profiles + jobs) - SEM RESTRIÇÃO
+        totalQueries++;
+        const linkedinQuery = `site:linkedin.com "${shortSearchTerm}" TOTVS`;
+        console.log('[SIMPLE-TOTVS] 💼 Query LinkedIn GERAL:', linkedinQuery);
+        
+        const linkedinResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: linkedinQuery, num: 50, gl: 'br' }) // 🔥 AUMENTADO: 20 → 50
+        });
+        
+        if (linkedinResponse.ok) {
+          const linkedinData = await linkedinResponse.json();
+          const linkedinResults = linkedinData.organic || [];
+          
+          console.log('[SIMPLE-TOTVS] 💼 LinkedIn GERAL resultados:', linkedinResults.length);
+          
+          for (const result of linkedinResults) {
+            const validation = await isValidTOTVSEvidence(
+              result.snippet || '', 
+              result.title || '', 
+              shortSearchTerm, 
+              result.link
+            );
+            
+            if (validation.valid) {
+              evidencias.push({
+                source: 'linkedin_all',
+                source_name: 'LinkedIn (Posts/Profiles/Jobs)',
+                weight: SOURCE_WEIGHTS.linkedin_profiles, // 95 pts - FORTÍSSIMO!
+                match_type: validation.matchType,
+                content: result.snippet,
+                url: result.link,
+                title: result.title,
+                detected_products: validation.produtos,
+                validation_method: validation.validationMethod || 'basic'
+              });
+              console.log('[SIMPLE-TOTVS] 💼 LinkedIn detectado:', result.title.substring(0, 60));
+            }
+          }
+        }
+        
+        // 🔥 BUSCA 3: YouTube DIRETO
+        totalQueries++;
+        const youtubeQuery = `site:youtube.com "${shortSearchTerm}" TOTVS`;
+        console.log('[SIMPLE-TOTVS] 🎥 Query YouTube:', youtubeQuery);
+        
+        const youtubeResponse = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: youtubeQuery, num: 10, gl: 'br' })
+        });
+        
+        if (youtubeResponse.ok) {
+          const youtubeData = await youtubeResponse.json();
+          const youtubeResults = youtubeData.organic || [];
+          
+          console.log('[SIMPLE-TOTVS] 🎥 YouTube resultados:', youtubeResults.length);
+          
+          for (const result of youtubeResults) {
+            const validation = await isValidTOTVSEvidence(
+              result.snippet || '', 
+              result.title || '', 
+              shortSearchTerm, 
+              result.link
+            );
+            
+            if (validation.valid) {
+              evidencias.push({
+                source: 'youtube',
+                source_name: 'YouTube',
+                weight: SOURCE_WEIGHTS.youtube_videos, // 90 pts - MUITO FORTE!
+                match_type: validation.matchType,
+                content: result.snippet,
+                url: result.link,
+                title: result.title,
+                detected_products: validation.produtos,
+                validation_method: validation.validationMethod || 'basic'
+              });
+              console.log('[SIMPLE-TOTVS] 🎥 YouTube detectado:', result.title.substring(0, 60));
+            }
+          }
+        }
+        
+        console.log('[SIMPLE-TOTVS] ✅ FASE 10 concluída - Buscas complementares finalizadas');
+        
+      } catch (error) {
+        console.error('[SIMPLE-TOTVS] ❌ Erro nas buscas complementares:', error);
+      }
+      
+      // 🔥 FASE 11: GOOGLE CUSTOM SEARCH (SEMPRE ATIVO! 02/12/2025)
+      // NÃO É FALLBACK - RODA SEMPRE EM PARALELO COM SERPER!
+      // Motivo: Google pega resultados que Serper NÃO pega (LinkedIn profiles, etc)
+      
+      console.log('[SIMPLE-TOTVS] 🌐 FASE 11: Google Custom Search (PARALELO - máxima cobertura!)');
+      
+      const googleApiKey = Deno.env.get('GOOGLE_SEARCH_API_KEY');
+      const googleCseId = Deno.env.get('GOOGLE_CSE_ID');
+      
+      if (googleApiKey && googleCseId) {
+          try {
+            // Buscas ULTRA-ESPECÍFICAS no Google Custom Search
+            const googleQueries = [
+              `"${shortSearchTerm}" TOTVS site:linkedin.com`,
+              `"${shortSearchTerm}" TOTVS site:br.linkedin.com`,
+              `"${shortSearchTerm}" site:totvs.com.br`,
+              `"${shortSearchTerm}" TOTVS site:youtube.com`,
+              `"${shortSearchTerm}" TOTVS site:instagram.com`,
+            ];
+            
+            for (const query of googleQueries) {
+              totalQueries++;
+              console.log('[SIMPLE-TOTVS] 🔍 Google CSE Query:', query);
+              
+              const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodeURIComponent(query)}&num=10&gl=br`;
+              
+              const googleResponse = await fetch(googleUrl);
+              
+              if (googleResponse.ok) {
+                const googleData = await googleResponse.json();
+                const googleResults = googleData.items || [];
+                
+                console.log('[SIMPLE-TOTVS] 🌐 Google CSE resultados:', googleResults.length);
+                
+                for (const result of googleResults) {
+                  const validation = await isValidTOTVSEvidence(
+                    result.snippet || '', 
+                    result.title || '', 
+                    shortSearchTerm, 
+                    result.link
+                  );
+                  
+                  if (validation.valid) {
+                    evidencias.push({
+                      source: 'google_custom_search',
+                      source_name: 'Google Search (Fallback)',
+                      weight: 80, // Peso alto (Google oficial)
+                      match_type: validation.matchType,
+                      content: result.snippet,
+                      url: result.link,
+                      title: result.title,
+                      detected_products: validation.produtos,
+                      validation_method: validation.validationMethod || 'basic'
+                    });
+                    console.log('[SIMPLE-TOTVS] 🌐 Google CSE detectou:', result.title.substring(0, 60));
+                  }
+                }
+              }
+            }
+            
+            console.log('[SIMPLE-TOTVS] ✅ FASE 11 concluída - Google Custom Search finalizado');
+          } catch (error) {
+            console.error('[SIMPLE-TOTVS] ❌ Erro Google Custom Search:', error);
+          }
+      } else {
+        console.log('[SIMPLE-TOTVS] ⚠️ Google Custom Search não configurado (chaves ausentes)');
       }
     }
 

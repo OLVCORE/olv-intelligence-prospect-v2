@@ -40,6 +40,7 @@ import { searchApolloOrganizations, searchApolloPeople } from '@/services/apollo
 import { enrichment360Simplificado } from '@/services/enrichment360';
 import { ColumnFilter } from '@/components/companies/ColumnFilter';
 import { UnifiedEnrichButton } from '@/components/companies/UnifiedEnrichButton';
+import { UnifiedCompanySearch } from '@/components/companies/UnifiedCompanySearch';
 
 export default function ICPQuarantine() {
   const navigate = useNavigate();
@@ -1573,81 +1574,51 @@ export default function ICPQuarantine() {
         </CardContent>
       </Card>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px] relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou CNPJ..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="pendente">Pendentes</SelectItem>
-                <SelectItem value="aprovada">Aprovadas</SelectItem>
-                <SelectItem value="descartada">Descartadas</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={tempFilter} onValueChange={setTempFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Temperaturas</SelectItem>
-                <SelectItem value="hot">Hot</SelectItem>
-                <SelectItem value="warm">Warm</SelectItem>
-                <SelectItem value="cold">Cold</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 👥 BUSCA APOLLO DECISORES (NOVA - ADICIONAL) */}
-      <Card className="border-cyan-500/30 bg-cyan-500/5">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-cyan-400">
-              <Globe className="h-5 w-5" />
-              <span className="font-semibold text-sm">Buscar Decisores/Colaboradores Apollo:</span>
-            </div>
-            <div className="flex-1 max-w-xl relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-400" />
-              <Input
-                placeholder="👥 Digite: nome do decisor, cargo, departamento, email..."
-                value={apolloSearchQuery}
-                onChange={(e) => setApolloSearchQuery(e.target.value)}
-                className="pl-10 border-cyan-500/30 focus:border-cyan-500"
-              />
-            </div>
-            {apolloSearchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setApolloSearchQuery('')}
-                className="text-cyan-400 hover:text-cyan-300"
-              >
-                <XCircle className="h-4 w-4 mr-1" />
-                Limpar
-              </Button>
-            )}
-          </div>
-          {apolloSearchQuery && (
-            <p className="text-xs text-cyan-400/70 mt-2 ml-7">
+      {/* 🔍 BUSCA ABRANGENTE UNIFICADA */}
+      <UnifiedCompanySearch
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="🔍 Buscar por nome, CNPJ, domínio, cidade, UF, setor, origem..."
+        totalCompanies={companies.length}
+      />
+      
+      {/* FILTROS COMPLEMENTARES */}
+      <div className="flex flex-wrap gap-3">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos Status</SelectItem>
+            <SelectItem value="pendente">Pendentes</SelectItem>
+            <SelectItem value="aprovada">Aprovadas</SelectItem>
+            <SelectItem value="descartada">Descartadas</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select value={tempFilter} onValueChange={setTempFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas Temperaturas</SelectItem>
+            <SelectItem value="hot">🔥 Hot</SelectItem>
+            <SelectItem value="warm">☀️ Warm</SelectItem>
+            <SelectItem value="cold">❄️ Cold</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* 👥 BUSCA APOLLO DECISORES (MANTIDA ABAIXO) */}
+      {apolloSearchQuery && (
+        <Card className="border-cyan-500/30 bg-cyan-500/5">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-cyan-400/70">
               🔍 Filtrando empresas que têm decisores com: "{apolloSearchQuery}"
             </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Table */}
       <Card>

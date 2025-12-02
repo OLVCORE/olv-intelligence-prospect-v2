@@ -1126,7 +1126,7 @@ export default function ICPBulkAnalysisWithMapping() {
         {showScrollTop && (
           <Button
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            className="fixed bottom-6 left-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
             size="icon"
             aria-label="Voltar ao topo"
           >
@@ -1673,7 +1673,7 @@ export default function ICPBulkAnalysisWithMapping() {
       {showScrollTop && (
         <Button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+          className="fixed bottom-6 left-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
           size="icon"
           aria-label="Voltar ao topo"
         >
@@ -1697,7 +1697,7 @@ export default function ICPBulkAnalysisWithMapping() {
         {showScrollTop && (
           <Button
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            className="fixed bottom-6 left-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
             size="icon"
             aria-label="Voltar ao topo"
           >
@@ -1758,7 +1758,7 @@ export default function ICPBulkAnalysisWithMapping() {
         {showScrollTop && (
           <Button
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            className="fixed bottom-6 left-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
             size="icon"
             aria-label="Voltar ao topo"
           >
@@ -1791,7 +1791,7 @@ export default function ICPBulkAnalysisWithMapping() {
         {showScrollTop && (
           <Button
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
+            className="fixed bottom-6 left-6 z-50 rounded-full w-12 h-12 shadow-lg hover:scale-110 transition-transform animate-fade-in"
             size="icon"
             aria-label="Voltar ao topo"
           >

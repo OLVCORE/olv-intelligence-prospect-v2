@@ -58,7 +58,7 @@ export function SimpleTOTVSCheckDialog({
   // Modo Minimizado (botão flutuante)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 animate-fade-in">
+      <div className="fixed bottom-4 left-20 z-50 animate-fade-in">
         <Button 
           variant="default" 
           onClick={() => {
