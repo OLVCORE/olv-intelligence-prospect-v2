@@ -248,10 +248,6 @@ export function CompetitorsTab({ companyId, companyName, cnpj, domain, savedData
   if (!hasSearched) {
     return (
       <Card className="p-6">
-        <FloatingNavigation
-          onHome={handleReset}
-          showSaveButton={false}
-        />
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Target className="w-8 h-8 text-primary" />
@@ -354,18 +350,6 @@ export function CompetitorsTab({ companyId, companyName, cnpj, domain, savedData
         </div>
       )}
     <div className="space-y-4">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-      {externalData && (
-        <FloatingNavigation
-          onBack={handleReset}
-          onHome={handleReset}
-          onSave={handleSave}
-          showSaveButton={true}
-          saveDisabled={!externalData}
-          hasUnsavedChanges={!!externalData}
-        />
-      )}
-      
       {/* Concorrentes ERP Detectados Internamente */}
       {hasInternalData && (
         <>

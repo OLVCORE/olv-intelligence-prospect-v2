@@ -779,19 +779,9 @@ export function KeywordsSEOTabEnhanced({
 
   return (
     <div className="space-y-4 relative">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE REUTILIZÁVEL */}
+      {/* 🎯 INDICADOR DE STATUS AUTOSAVE */}
       {hasData && (
         <>
-          <FloatingNavigation
-            onBack={handleReset}
-            onHome={handleReset}
-            onSave={handleSaveReport}
-            showSaveButton={true}
-            saveDisabled={!seoData && !digitalPresence && !intelligenceReport}
-            hasUnsavedChanges={hasUnsaved}
-          />
-
-          {/* 🎯 INDICADOR DE STATUS AUTOSAVE */}
           {stcHistoryId && (
             <div className="flex items-center justify-end mb-2">
               <TabStatusBadge status={autosaveStatus} />

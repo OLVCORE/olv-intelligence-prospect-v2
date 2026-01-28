@@ -1156,18 +1156,6 @@ export function RecommendedProductsTab({
   return (
     <ScrollArea className="h-[calc(100vh-250px)]">
       <div className="space-y-6 pb-20">
-        {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-        {productGapsData && (
-          <FloatingNavigation
-            onBack={handleReset}
-            onHome={handleReset}
-            onSave={handleSave}
-            showSaveButton={true}
-            saveDisabled={!productGapsData}
-            hasUnsavedChanges={false}
-          />
-        )}
-        
         {/* ========================================
             0️⃣ RESUMO EXECUTIVO HOLÍSTICO (ANÁLISE 100%)
         ======================================== */}

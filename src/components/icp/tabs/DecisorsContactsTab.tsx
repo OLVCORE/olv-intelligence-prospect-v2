@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // FloatingNavigation removido - componente deletado
 import { Users, Mail, Phone, Linkedin, Sparkles, Loader2, ExternalLink, Target, TrendingUp, MapPin, AlertCircle, CheckCircle2, XCircle, Building2, Filter, RefreshCw } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { performFullLinkedInAnalysis } from '@/services/phantomBusterEnhanced';
@@ -39,7 +38,6 @@ export function DecisorsContactsTab({
   stcHistoryId,
   onDataChange 
 }: DecisorsContactsTabProps) {
-  const { toast } = useToast();
   const [analysisData, setAnalysisData] = useState<any>(savedData || {
     decisors: [],
     decisorsWithEmails: [],
@@ -856,15 +854,12 @@ export function DecisorsContactsTab({
       const emailsFound = enrichedDecisors.filter((d: any) => d.email).length;
       const phonesFound = enrichedDecisors.filter((d: any) => d.phone).length;
 
-      toast({
-        title: `✅ Enriquecimento via ${source} concluído!`,
+      sonnerToast.success(`✅ Enriquecimento via ${source} concluído!`, {
         description: `${emailsFound} emails | ${phonesFound} telefones encontrados`,
       });
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: '❌ Erro no enriquecimento Apollo',
+      sonnerToast.error('❌ Erro no enriquecimento Apollo', {
         description: error.message,
       });
     },
@@ -882,8 +877,7 @@ export function DecisorsContactsTab({
       return await performFullLinkedInAnalysis(companyName, linkedinToUse, domainToUse, companyId);
     },
     onMutate: () => {
-      toast({
-        title: '🔍 Analisando LinkedIn...',
+      sonnerToast.info('🔍 Analisando LinkedIn...', {
         description: 'Extraindo decisores, posts e dados da empresa',
       });
     },
@@ -893,8 +887,7 @@ export function DecisorsContactsTab({
       
       const emailsFound = data.decisorsWithEmails.filter(d => d.email).length;
       
-      toast({
-        title: '✅ Análise LinkedIn concluída!',
+      sonnerToast.success('✅ Análise LinkedIn concluída!', {
         description: `${data.decisors?.length || 0} decisores | ${emailsFound} emails | ${data.insights?.length || 0} insights`,
       });
       
@@ -928,10 +921,8 @@ export function DecisorsContactsTab({
       }
     },
     onError: (error) => {
-      toast({
-        title: '❌ Erro na análise LinkedIn',
+      sonnerToast.error('❌ Erro na análise LinkedIn', {
         description: (error as Error).message,
-        variant: 'destructive'
       });
     }
   });
@@ -963,18 +954,6 @@ export function DecisorsContactsTab({
 
   return (
     <div className="space-y-4">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-      {analysisData && (
-        <FloatingNavigation
-          onBack={handleReset}
-          onHome={handleReset}
-          onSave={handleSave}
-          showSaveButton={true}
-          saveDisabled={!analysisData}
-          hasUnsavedChanges={!!analysisData}
-        />
-      )}
-      
       {/* Header */}
       <Card className="p-6 bg-slate-800 border border-slate-600">
         <div className="flex items-center justify-between">

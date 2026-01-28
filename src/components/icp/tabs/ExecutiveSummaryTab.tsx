@@ -114,17 +114,6 @@ export function ExecutiveSummaryTab({
 
   return (
     <div className="space-y-6">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-      {hasData && (
-        <FloatingNavigation
-          onBack={handleReset}
-          onHome={handleReset}
-          onSave={handleSave}
-          showSaveButton={true}
-          saveDisabled={!stcResult}
-          hasUnsavedChanges={false}
-        />
-      )}
       {/* Decisão Final */}
       <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10">
         <div className="flex items-center gap-4">

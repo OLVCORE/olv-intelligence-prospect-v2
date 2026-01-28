@@ -1755,18 +1755,6 @@ export function SimilarCompaniesTab({
 
   return (
     <div className="space-y-6">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-      {data?.similar_companies && (
-        <FloatingNavigation
-          onBack={handleReset}
-          onHome={handleReset}
-          onSave={handleSave}
-          showSaveButton={true}
-          saveDisabled={!data?.similar_companies?.length}
-          hasUnsavedChanges={false}
-        />
-      )}
-      
       {/* Header com Estatísticas */}
       <Card className="border-muted/50 bg-card/50 backdrop-blur-sm relative z-0">
         <CardHeader>

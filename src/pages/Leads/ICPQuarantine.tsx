@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, Flame, Thermometer, Snowflake, Download, Filter, Search, RefreshCw, FileText, Globe, ArrowUpDown, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -1794,8 +1794,8 @@ export default function ICPQuarantine() {
                     : {};
                   
                   return (
-                    <>
-                  <TableRow key={company.id} className={expandedRow === company.id ? 'bg-muted/30' : ''}>
+                    <Fragment key={company.id}>
+                  <TableRow className={expandedRow === company.id ? 'bg-muted/30' : ''}>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -2134,7 +2134,7 @@ export default function ICPQuarantine() {
                       </TableCell>
                     </TableRow>
                   )}
-                  </>
+                  </Fragment>
                 );
                 })
               )}

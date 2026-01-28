@@ -426,17 +426,6 @@ export function Analysis360Tab({
 
   return (
     <div className="space-y-6">
-      {/* 🎯 NAVEGAÇÃO FLUTUANTE */}
-      {data && (
-        <FloatingNavigation
-          onBack={handleReset}
-          onHome={handleReset}
-          onSave={handleSave}
-          showSaveButton={true}
-          saveDisabled={!data}
-          hasUnsavedChanges={false}
-        />
-      )}
       {/* Score Principal */}
       <Card className={`relative overflow-hidden border-2 ${getScoreBorder(opportunity_score)} bg-gradient-to-br ${getScoreGradient(opportunity_score)} backdrop-blur-sm`}>
         <CardHeader className="pb-3">

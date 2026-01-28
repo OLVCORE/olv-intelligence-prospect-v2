@@ -1964,6 +1964,7 @@ export default function TOTVSCheckCard({
             companyName={companyName}
             linkedinUrl={data?.linkedin_url}
             domain={domain}
+            stcHistoryId={stcHistoryId || undefined}
             savedData={latestReport?.full_report?.decisors_report}
             onDataChange={async (decisorsData) => {
               console.log('[TOTVS] 💾 Salvando decisores IMEDIATAMENTE:', decisorsData);
